@@ -1,75 +1,80 @@
 import React from "react";
+import starImage from "../assets/images/alcor-star.png";
 
 const CircularProgress = ({ steps, activeStep }) => {
   return (
     <div className="relative flex justify-center items-center py-12 px-4">
       <div className="flex justify-between w-full max-w-5xl z-10 relative">
+        {/* Base connector line */}
+        <div className="absolute top-5 h-0.5 bg-gray-200" style={{ left: '12%', right: '12%' }}></div>
+
+        {/* Active connector line */}
+        <div 
+          className="absolute top-5 h-0.5 bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 transition-all duration-300"
+          style={{ 
+            left: '12%',
+            width: `${activeStep === 0 ? 0 : (activeStep / (steps.length - 1)) * 76}%`
+          }}
+        ></div>
+
         {steps.map((step, index) => {
           const isActive = index === activeStep;
           const isCompleted = index < activeStep;
+
+          let containerClasses = "w-8 h-8 md:w-9 md:h-9 sm:w-7 sm:h-7 xs:w-6 xs:h-6 rounded-full flex items-center justify-center z-20 relative ";
           
-          // Circle color logic
-          let circleClasses = "w-14 h-14 md:w-14 md:h-14 sm:w-10 sm:h-10 xs:w-8 xs:h-8 rounded-full flex items-center justify-center text-lg sm:text-base xs:text-sm font-bold border-4 sm:border-3 xs:border-2 z-20 relative ";
-          
-          if (isActive) {
-            if (index === 0) {
-              circleClasses += "bg-yellow-300 text-brand-purple border-yellow-300 ";
-            } else if (index === 1) {
-              circleClasses += "bg-orange-400 text-white border-orange-400 ";
-            } else if (index === 2) {
-              circleClasses += "bg-red-500 text-white border-red-500 ";
-            } else {
-              circleClasses += "bg-brand-purple text-white border-brand-purple ";
-            }
-          } else if (isCompleted) {
-            if (index === 0) {
-              circleClasses += "bg-yellow-300 text-white border-yellow-300 ";
-            } else if (index === 1) {
-              circleClasses += "bg-orange-400 text-white border-orange-400 ";
-            } else if (index === 2) {
-              circleClasses += "bg-red-500 text-white border-red-500 ";
-            } else {
-              circleClasses += "bg-brand-purple text-white border-brand-purple ";
-            }
+          let bgColor;
+          if (isActive || isCompleted) {
+            if (index === 0) bgColor = "#facc15"; // yellow-300
+            else if (index === 1) bgColor = "#fb923c"; // orange-400
+            else if (index === 2) bgColor = "#ef4444"; // red-500
+            else bgColor = "#6f2d74"; // purple
           } else {
-            circleClasses += "bg-gray-300 text-gray-600 border-gray-300 opacity-60 ";
+            bgColor = "rgba(251, 146, 60, 0.2)";
           }
-          
-          // Add glow effect class for active step
-          if (isActive) {
-            circleClasses += "circle-glow ";
-          }
-          
+
+          const opacity = (isActive || isCompleted) ? 1 : 0.7;
+          if (isActive) containerClasses += "circle-glow ";
+
           return (
             <div key={index} className="flex flex-col items-center flex-1 relative">
-              {/* No separate glow element - glow is applied directly to the circle */}
-              <div className={circleClasses}>
-                {index + 1}
+              <div 
+                className={containerClasses}
+                style={{ 
+                  backgroundColor: bgColor,
+                  opacity: opacity
+                }}
+              >
+                <img 
+                  src={starImage} 
+                  alt={`Step ${index + 1}`}
+                  className="w-4 h-4 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-3 xs:h-3"
+                />
               </div>
               <div
-                className={`mt-3 text-sm xs:text-xs text-center ${
+                className={`mt-2 text-xs text-center ${
                   isActive ? "text-black font-medium" : "text-gray-400"
                 }`}
               >
-                {step}
+                {`${index + 1}. ${step}`}
               </div>
             </div>
           );
         })}
       </div>
-      
+
       {/* CSS for the circle glow effect */}
       <style jsx>{`
         .circle-glow {
           animation: double-circle-pulse 5s infinite;
         }
-        
+
         @keyframes double-circle-pulse {
           0%, 55%, 100% {
             box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
           }
           5%, 25% {
-            box-shadow: 0 0 12px 5px rgba(250, 204, 21, 0.6);
+            box-shadow: 0 0 8px 3px rgba(250, 204, 21, 0.5);
           }
           15%, 35% {
             box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
