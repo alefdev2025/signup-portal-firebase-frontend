@@ -4,9 +4,8 @@
 
 /* Base global styles for the app */
 body {
-  @apply bg-brand-dark text-white font-sans m-0 min-h-screen;
+  @apply font-sans m-0 min-h-screen; /* remove bg-brand-dark */
 }
-
 /* Links */
 a {
   @apply text-brand-gold hover:underline font-medium;
