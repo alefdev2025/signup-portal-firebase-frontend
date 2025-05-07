@@ -1,22 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import darkLogo from "../assets/images/alcor-placeholder-logo.png";
-import starImage from "../assets/images/alcor-star.png";
 import Banner from "../components/Banner";
 import ProgressBar from "../components/CircularProgress";
+import { 
+  requestEmailVerification, 
+  verifyEmailCode, 
+  signInWithGoogle,
+  updateSignupProgress,
+  clearVerificationState
+} from "../services/auth";
+import { useUser, getVerificationState } from "../contexts/UserContext";
 
 const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];
 
 export default function SignupPage() {
+  const { currentUser, signupState } = useUser();
+  
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [verificationStep, setVerificationStep] = useState("initial"); // "initial", "verifying", "verification"
+  const [verificationStep, setVerificationStep] = useState("initial"); // "initial", "verification"
   const [showHelpInfo, setShowHelpInfo] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     termsAccepted: false,
     verificationCode: "",
+    verificationId: "",
   });
   
   const [errors, setErrors] = useState({
@@ -26,6 +37,52 @@ export default function SignupPage() {
     verificationCode: "",
   });
   
+  // Check for existing verification and user state on component mount
+  useEffect(() => {
+    // Clear any form errors on mount
+    setErrors({
+      name: "",
+      email: "",
+      termsAccepted: "",
+      verificationCode: "",
+    });
+    
+    // Check if there's a saved verification state
+    const savedVerificationState = getVerificationState();
+    if (savedVerificationState) {
+      // Check if verification state is stale (older than 15 minutes)
+      const now = Date.now();
+      const stateAge = now - (savedVerificationState.timestamp || 0);
+      const maxAge = 15 * 60 * 1000; // 15 minutes in milliseconds
+      
+      if (stateAge < maxAge) {
+        setFormData(prevData => ({
+          ...prevData,
+          email: savedVerificationState.email || "",
+          name: savedVerificationState.name || "",
+          verificationId: savedVerificationState.verificationId || ""
+        }));
+        
+        setIsExistingUser(savedVerificationState.isExistingUser || false);
+        
+        // If verification is in progress, show verification form
+        if (savedVerificationState.verificationId) {
+          setVerificationStep("verification");
+        }
+      } else {
+        // Verification state is stale, clear it
+        clearVerificationState();
+      }
+    }
+    
+    // If user is already logged in and has signup state, set active step
+    if (currentUser && signupState) {
+      // Set active step based on signup progress
+      const stepIndex = Math.min(signupState.signupProgress || 0, steps.length - 1);
+      setActiveStep(stepIndex);
+    }
+  }, [currentUser, signupState]);
+  
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -33,11 +90,12 @@ export default function SignupPage() {
       [name]: type === "checkbox" ? checked : value
     });
     
+    // Clear the specific error when user makes changes
     if (errors[name]) {
-      setErrors({
-        ...errors,
+      setErrors(prev => ({
+        ...prev,
         [name]: ""
-      });
+      }));
     }
   };
   
@@ -46,10 +104,14 @@ export default function SignupPage() {
     return emailPattern.test(email);
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Prevent double submission
+    if (isSubmitting) return;
+    
     if (verificationStep === "initial") {
+      // Email & Name Form Submission
       const newErrors = {
         name: !formData.name.trim() ? "Name is required" : "",
         email: !formData.email.trim() 
@@ -64,69 +126,236 @@ export default function SignupPage() {
       
       setErrors(newErrors);
       
+      // Check if there are any errors
       if (Object.values(newErrors).some(error => error)) {
         return;
       }
       
-      // Show loading state
       setIsSubmitting(true);
       
-      // Simulate backend call
-      setTimeout(() => {
+      try {
+        // Call Firebase function to create email verification
+        const result = await requestEmailVerification(formData.email, formData.name);
+        
+        if (result.success) {
+          // Store verification ID for the next step
+          setFormData(prev => ({
+            ...prev,
+            verificationId: result.verificationId,
+            verificationCode: "" // Clear any previous code
+          }));
+          
+          // Check if this is an existing user
+          if (result.isExistingUser) {
+            setIsExistingUser(true);
+          }
+          
+          // Move to verification step
+          setVerificationStep("verification");
+        } else {
+          // This should never happen due to error handling in the service
+          setErrors(prev => ({
+            ...prev,
+            email: "Failed to send verification code"
+          }));
+        }
+      } catch (error) {
+        console.error('Error requesting verification:', error);
+        setErrors(prev => ({
+          ...prev,
+          email: error.message || "Failed to send verification code. Please try again."
+        }));
+      } finally {
         setIsSubmitting(false);
-        setVerificationStep("verification");
-        console.log("Form submitted:", formData);
-      }, 1500);
+      }
     } else if (verificationStep === "verification") {
-      // Validate verification code
+      // Verify Code Submission
+      
+      // Validate verification code format
       if (!formData.verificationCode.trim()) {
-        setErrors({
-          ...errors,
+        setErrors(prev => ({
+          ...prev,
           verificationCode: "Verification code is required"
-        });
+        }));
         return;
       }
       
-      if (formData.verificationCode.length !== 6) {
-        setErrors({
-          ...errors,
+      if (formData.verificationCode.length !== 6 || !/^\d{6}$/.test(formData.verificationCode)) {
+        setErrors(prev => ({
+          ...prev,
           verificationCode: "Please enter a valid 6-digit code"
-        });
+        }));
         return;
       }
       
-      // Show loading state
+      // Ensure we have a verification ID
+      if (!formData.verificationId) {
+        setErrors(prev => ({
+          ...prev,
+          verificationCode: "Verification session expired. Please request a new code."
+        }));
+        return;
+      }
+      
       setIsSubmitting(true);
       
-      // Simulate verification API call
-      setTimeout(() => {
+      try {
+        // Call Firebase function to verify the code
+        const result = await verifyEmailCode(formData.verificationId, formData.verificationCode);
+        
+        if (result.success) {
+          // For existing users, navigate to where they left off
+          if (result.isExistingUser) {
+            const nextStepIndex = result.signupProgress || 1;
+            setActiveStep(nextStepIndex);
+          } else {
+            // For new users, move to the next step
+            setActiveStep(1);
+          }
+          
+          // Reset verification step
+          setVerificationStep("initial");
+          
+          // Clear verification code
+          setFormData(prev => ({
+            ...prev,
+            verificationCode: "",
+            verificationId: ""
+          }));
+        } else {
+          // This should never happen due to error handling in the service
+          setErrors(prev => ({
+            ...prev,
+            verificationCode: "Invalid verification code"
+          }));
+        }
+      } catch (error) {
+        console.error("Error verifying code:", error);
+        
+        // Handle specific error cases
+        if (error.message.includes('expired')) {
+          setErrors(prev => ({
+            ...prev,
+            verificationCode: "Verification code has expired. Please request a new one."
+          }));
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            verificationCode: error.message || "Failed to verify code. Please try again."
+          }));
+        }
+      } finally {
         setIsSubmitting(false);
-        // Move to next step
-        setActiveStep(1);
-        // Reset verification step for future use
-        setVerificationStep("initial");
-        console.log("Verification successful:", formData.verificationCode);
-        // Here you would navigate to next step
-      }, 1500);
+      }
     }
   };
   
-  const resendVerificationCode = () => {
+  const handleGoogleSignIn = async () => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     
-    // Simulate API call to resend code
-    setTimeout(() => {
+    try {
+      const result = await signInWithGoogle();
+      
+      if (result.success) {
+        // Move to next step or resume from previous point
+        const nextStep = result.signupProgress || 1;
+        setActiveStep(nextStep);
+      } else {
+        // This should never happen due to error handling in the service
+        console.error("Google sign-in failed");
+      }
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      // Optionally show an error message to the user
+    } finally {
       setIsSubmitting(false);
-      console.log("Verification code resent to:", formData.email);
-    }, 1500);
+    }
+  };
+  
+  const resendVerificationCode = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Call Firebase function to resend verification code
+      const result = await requestEmailVerification(formData.email, formData.name);
+      
+      if (result.success) {
+        // Update verification ID
+        setFormData(prev => ({
+          ...prev,
+          verificationId: result.verificationId,
+          verificationCode: "" // Clear any previous code
+        }));
+        
+        // Show success message
+        alert("Verification code sent successfully!");
+      }
+    } catch (error) {
+      console.error("Error resending verification code:", error);
+      setErrors(prev => ({
+        ...prev,
+        verificationCode: error.message || "Failed to resend code. Please try again."
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const changeEmail = () => {
+    // Clear verification state in localStorage
+    clearVerificationState();
+    
+    // Reset the verification step
     setVerificationStep("initial");
+    
+    // Clear verification data but keep name
+    setFormData(prev => ({
+      ...prev,
+      verificationId: "",
+      verificationCode: ""
+    }));
+    
+    // Reset the existing user flag
+    setIsExistingUser(false);
+    
+    // Clear any errors
+    setErrors({
+      name: "",
+      email: "",
+      termsAccepted: "",
+      verificationCode: "",
+    });
   };
 
   const toggleHelpInfo = () => {
     setShowHelpInfo(!showHelpInfo);
+  };
+  
+  // Get appropriate verification message based on user status
+  const getVerificationMessage = () => {
+    if (isExistingUser) {
+      return (
+        <>
+          <div className="bg-blue-50 p-4 rounded-md mb-4">
+            <p className="text-blue-700 font-medium">Welcome back!</p>
+            <p className="text-blue-600 text-sm">We've sent a verification code to confirm it's you.</p>
+          </div>
+          <p className="text-gray-800 font-medium mb-4">{formData.email}</p>
+          <p className="text-gray-600 text-sm">Please enter the 6-digit code below.</p>
+        </>
+      );
+    }
+    
+    return (
+      <>
+        <p className="text-gray-600 mb-2">We've sent a verification code to</p>
+        <p className="text-gray-800 font-medium mb-4">{formData.email}</p>
+        <p className="text-gray-600 text-sm">Please enter the 6-digit code below.</p>
+      </>
+    );
   };
 
   return (
@@ -142,7 +371,6 @@ export default function SignupPage() {
 
       <ProgressBar steps={steps} activeStep={activeStep} />
 
-      {/* Enhanced mobile spacing with more padding */}
       <div className="flex-1 flex justify-center px-8 sm:px-8 md:px-12 pb-16 sm:pb-12 pt-8 sm:pt-4">
         <form onSubmit={handleSubmit} className="w-full max-w-3xl">
           {verificationStep === "initial" ? (
@@ -237,6 +465,7 @@ export default function SignupPage() {
                 
                 <button 
                   type="button"
+                  onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
                   className="w-full bg-white border border-gray-300 text-gray-700 py-5 sm:py-3 px-6 rounded-full font-medium text-lg mb-12 sm:mb-8 flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
                 >
@@ -263,9 +492,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Verify your email</h2>
-                <p className="text-gray-600 mb-2">We've sent a verification code to</p>
-                <p className="text-gray-800 font-medium mb-4">{formData.email}</p>
-                <p className="text-gray-600 text-sm">Please enter the 6-digit code below.</p>
+                {getVerificationMessage()}
               </div>
               
               <div className="mb-8">

@@ -1,0 +1,12 @@
+/* Banner gradient styles */
+.banner-gradient-bg {
+    background-color: #12243b; /* Fallback color */
+    background-image: linear-gradient(90deg, #12243b 0%, #12243b 50%, #383257 85%, #7d5c86 100%);
+  }
+  
+  /* Add !important to override any conflicting styles */
+  @media screen and (min-width: 768px) {
+    .banner-gradient-bg {
+      background-image: linear-gradient(90deg, #12243b 0%, #12243b 40%, #383257 75%, #7d5c86 100%) !important;
+    }
+  }
