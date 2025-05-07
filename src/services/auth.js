@@ -195,48 +195,110 @@ export async function updateSignupProgress(step, progress) {
 }
 
 export async function signInWithGoogle() {
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    
-    // Call backend function to process the sign-in
-    const processGoogleSignIn = httpsCallable(functions, 'processGoogleSignIn');
-    
-    // Call the function with a timeout
-    const backendResult = await Promise.race([
-      processGoogleSignIn(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), 10000)
-      )
-    ]);
-    
-    // Check if result exists and has data
-    if (!backendResult || !backendResult.data) {
-      throw new Error('Invalid response from server');
+    try {
+      // Create Google auth provider
+      const provider = new GoogleAuthProvider();
+      
+      // Add scopes if needed
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Set custom parameters
+      provider.setCustomParameters({
+        prompt: 'select_account' // Force account selection even if user is already signed in
+      });
+      
+      // Sign in with popup
+      console.log("Attempting Google sign-in...");
+      const result = await signInWithPopup(auth, provider);
+      
+      // Extract user information
+      const user = result.user;
+      console.log("Google sign-in successful:", user.email);
+      
+      // Call backend function to process the sign-in
+      console.log("Calling backend to process Google sign-in...");
+      const processGoogleSignIn = httpsCallable(functions, 'processGoogleSignIn');
+      
+      try {
+        // Pass the user ID explicitly in the call payload
+        // This works around the auth context issue in the emulator
+        const backendResult = await processGoogleSignIn({
+          userId: user.uid,
+          email: user.email,
+          displayName: user.displayName || ''
+        });
+        
+        console.log("Backend response:", backendResult.data);
+        
+        // Check if result exists and has data
+        if (!backendResult || !backendResult.data) {
+          console.error("Invalid backend response:", backendResult);
+          throw new Error('Invalid response from server');
+        }
+        
+        // Check for success in the response
+        if (!backendResult.data.success) {
+          console.error("Backend error:", backendResult.data.error);
+          throw new Error(backendResult.data.error || 'Failed to process sign-in');
+        }
+        
+        // Save signup state
+        saveSignupState({
+          userId: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          isExistingUser: backendResult.data.isNewUser === false,
+          signupProgress: backendResult.data.signupProgress || 1,
+          signupStep: backendResult.data.signupStep || "contact_info",
+          timestamp: Date.now()
+        });
+        
+        return {
+          success: true,
+          user: user,
+          isExistingUser: backendResult.data.isNewUser === false,
+          signupProgress: backendResult.data.signupProgress || 1
+        };
+      } catch (backendError) {
+        console.error("Backend processing error:", backendError);
+        
+        // Even if the backend fails, we can still return basic info
+        // This allows the user to proceed with the process
+        saveSignupState({
+          userId: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          isExistingUser: false,
+          signupProgress: 1,
+          signupStep: "contact_info",
+          timestamp: Date.now()
+        });
+        
+        return {
+          success: true,
+          user: user,
+          isExistingUser: false,
+          signupProgress: 1,
+          fallbackMode: true
+        };
+      }
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      
+      // Handle specific error codes
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in was cancelled');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Pop-up was blocked by the browser. Please enable pop-ups for this site.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        throw new Error('Sign-in operation was cancelled');
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        throw new Error('An account already exists with the same email address but different sign-in credentials.');
+      }
+      
+      throw error;
     }
-    
-    // Check for success in the response
-    if (!backendResult.data.success) {
-      throw new Error(backendResult.data.error || 'Failed to process sign-in');
-    }
-    
-    // Save signup state
-    saveSignupState({
-      userId: result.user.uid,
-      signupProgress: backendResult.data.signupProgress || 1,
-      signupStep: backendResult.data.signupStep || "contact_info",
-      timestamp: Date.now()
-    });
-    
-    return {
-      success: true,
-      user: result.user,
-      signupProgress: backendResult.data.signupProgress || 1
-    };
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-    throw error;
   }
-}
 
 export { auth, functions };

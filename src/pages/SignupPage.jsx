@@ -254,21 +254,51 @@ export default function SignupPage() {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    setErrors({
+      name: "",
+      email: "",
+      termsAccepted: "",
+      verificationCode: ""
+    });
     
     try {
+      console.log("Starting Google sign-in process");
       const result = await signInWithGoogle();
       
-      if (result.success) {
-        // Move to next step or resume from previous point
-        const nextStep = result.signupProgress || 1;
-        setActiveStep(nextStep);
+      console.log("Google sign-in result:", result);
+      
+      if (result && result.success) {
+        // For existing users, navigate to where they left off
+        if (result.isExistingUser) {
+          const nextStepIndex = result.signupProgress || 1;
+          console.log(`Existing user, moving to step ${nextStepIndex}`);
+          setActiveStep(nextStepIndex);
+        } else {
+          // For new users, move to step 1 (Contact Info)
+          console.log("New user, moving to step 1");
+          setActiveStep(1);
+        }
       } else {
-        // This should never happen due to error handling in the service
-        console.error("Google sign-in failed");
+        console.error("Google sign-in did not return success=true");
+        // Show a generic error message
+        alert("Failed to sign in with Google. Please try again or use email verification.");
       }
     } catch (error) {
-      console.error("Error signing in with Google:", error);
-      // Optionally show an error message to the user
+      console.error("Error during Google sign-in:", error);
+      
+      // Handle user-friendly error messages
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      
+      if (error.message === 'Sign-in was cancelled') {
+        errorMessage = "Google sign-in was cancelled. Please try again.";
+      } else if (error.message.includes('pop-up')) {
+        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
+      } else if (error.message.includes('network')) {
+        errorMessage = "Network error. Please check your internet connection.";
+      }
+      
+      // Show error message to user
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
