@@ -25,8 +25,13 @@ export const clearSignupState = () => {
   localStorage.removeItem(VERIFICATION_STATE_KEY);
 };
 
+// Modified to NOT store password in localStorage
 export const saveVerificationState = (data) => {
-  localStorage.setItem(VERIFICATION_STATE_KEY, JSON.stringify(data));
+  // Extract password from the data object to avoid storing it
+  const { password, ...safeData } = data;
+  
+  // Only store safe data without password
+  localStorage.setItem(VERIFICATION_STATE_KEY, JSON.stringify(safeData));
 };
 
 export const getVerificationState = () => {
@@ -75,6 +80,19 @@ export function UserProvider({ children }) {
     </UserContext.Provider>
   );
 }
+
+export const saveStepData = (stepName, data) => {
+  const currentState = getSignupState() || {};
+  const stepData = currentState.stepData || {};
+  
+  saveSignupState({
+    ...currentState,
+    stepData: {
+      ...stepData,
+      [stepName]: data
+    }
+  });
+};
 
 // Custom hook
 export function useUser() {

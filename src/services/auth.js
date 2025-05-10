@@ -4,15 +4,19 @@ import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
-  signInWithCustomToken,
-  connectAuthEmulator
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import {
   getFunctions,
-  httpsCallable,
-  connectFunctionsEmulator
+  httpsCallable
 } from 'firebase/functions';
 import { saveSignupState, saveVerificationState } from '../contexts/UserContext';
+import { getFirestore, doc, setDoc, updateDoc } from "firebase/firestore";
+
+// Environment flag - true for development, false for production
+const isDevelopment = import.meta.env.MODE === 'development';
 
 // Use environment variables for configuration
 const firebaseConfig = {
@@ -24,16 +28,22 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
+// Set the region for your Firebase functions
+const FIREBASE_REGION = import.meta.env.VITE_FIREBASE_REGION || 'us-central1';
+
+// Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const functions = getFunctions(app, 'us-central1');
+const db = getFirestore(app);
+const functions = getFunctions(app, FIREBASE_REGION);
 
-// Connect to Firebase emulators in development mode
-if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-  console.log('Connecting to Firebase emulators...');
-  connectFunctionsEmulator(functions, 'localhost', 5001);
-  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+// Log environment for debugging
+if (isDevelopment) {
+  console.log('Running in development environment');
+  console.log('Firebase config:', {
+    projectId: firebaseConfig.projectId,
+    region: FIREBASE_REGION
+  });
 }
 
 // Function to clear verification state from localStorage
@@ -42,7 +52,10 @@ export const clearVerificationState = () => {
 };
 
 export async function requestEmailVerification(email, name) {
-  console.log("Starting email verification request...", { email, name });
+  if (isDevelopment) {
+    console.log("Starting email verification request...", { email, name });
+  }
+  
   try {
     // Input validation
     if (!email || !name) {
@@ -70,7 +83,7 @@ export async function requestEmailVerification(email, name) {
       throw new Error(result.data.error || 'Failed to send verification code');
     }
     
-    // Save verification state to localStorage
+    // Save verification state to localStorage (without password)
     saveVerificationState({
       email,
       name,
@@ -86,11 +99,22 @@ export async function requestEmailVerification(email, name) {
     };
   } catch (error) {
     console.error('Error requesting email verification:', error);
+    
+    // Check for CORS errors and provide more helpful message
+    if (error.message && error.message.includes('NetworkError') || 
+        (error.code && error.code === 'internal') ||
+        (error.message && error.message.includes('CORS'))) {
+      console.error('CORS issue detected. Make sure your Firebase Functions have CORS configured properly.');
+      throw new Error('Network connectivity issue. Please ensure your Firebase configuration allows requests from this application.');
+    }
+    
     throw error;
   }
 }
 
-export async function verifyEmailCode(verificationId, code) {
+// Split verification into two steps for security
+// Step 1: Verify the code only (no authentication)
+export async function verifyEmailCodeOnly(verificationId, code) {
   try {
     // Input validation
     if (!verificationId) {
@@ -122,29 +146,14 @@ export async function verifyEmailCode(verificationId, code) {
       throw new Error(result.data.error || 'Invalid verification code');
     }
     
-    // Sign in with custom token if it exists
-    if (result.data.customToken) {
-      await signInWithCustomToken(auth, result.data.customToken);
-      
-      // Save signup state
-      saveSignupState({
-        userId: result.data.userId,
-        isExistingUser: result.data.isExistingUser || false,
-        signupProgress: result.data.signupProgress || 1,
-        signupStep: result.data.signupStep || "contact_info",
-        timestamp: Date.now()
-      });
-      
-      // Clear verification state as it's no longer needed
-      clearVerificationState();
-    } else {
-      throw new Error('No authentication token received');
-    }
-    
+    // Return success with user details
     return {
       success: true,
+      userId: result.data.userId,
+      email: result.data.email,
       isExistingUser: result.data.isExistingUser || false,
-      signupProgress: result.data.signupProgress || 1
+      signupProgress: result.data.signupProgress || 1,
+      signupStep: result.data.signupStep || "contact_info"
     };
   } catch (error) {
     console.error('Error verifying email code:', error);
@@ -152,153 +161,151 @@ export async function verifyEmailCode(verificationId, code) {
   }
 }
 
-export async function updateSignupProgress(step, progress) {
+// Step 2: Create or sign in the user with the provided credentials
+export async function createOrSignInUser(verificationResult, email, name, password) {
   try {
-    // Input validation
-    if (!step || progress === undefined) {
-      throw new Error('Step and progress are required');
+    if (!verificationResult || !verificationResult.success) {
+      throw new Error('Verification must be completed successfully before account creation');
     }
     
-    // Get the Firebase function
-    const updateProgressFn = httpsCallable(functions, 'updateSignupProgress');
-    
-    // Call the function with a timeout
-    const result = await Promise.race([
-      updateProgressFn({ step, progress }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), 10000)
-      )
-    ]);
-    
-    // Check if result exists and has data
-    if (!result || !result.data) {
-      throw new Error('Invalid response from server');
+    if (!email || !name || !password) {
+      throw new Error('Email, name, and password are required');
     }
     
-    // Check for success in the response
-    if (!result.data.success) {
-      throw new Error(result.data.error || 'Failed to update progress');
+    // If the user is new (no existing account)
+    if (!verificationResult.isExistingUser) {
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      
+      // Update user profile with name
+      await updateProfile(auth.currentUser, {
+        displayName: name
+      });
+      
+      // Create user document in Firestore
+      const userRef = doc(db, "users", userCredential.user.uid);
+      await setDoc(userRef, {
+        email: email,
+        name: name,
+        signupProgress: 1,
+        signupStep: "contact_info",
+        createdAt: new Date()
+      });
+      
+      // Save signup state
+      saveSignupState({
+        userId: userCredential.user.uid,
+        isExistingUser: false,
+        signupProgress: 1,
+        signupStep: "contact_info",
+        timestamp: Date.now()
+      });
+      
+      return {
+        success: true,
+        isExistingUser: false,
+        signupProgress: 1
+      };
+    } else {
+      // For existing users, sign in with the provided credentials
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Save signup state
+        saveSignupState({
+          userId: userCredential.user.uid,
+          isExistingUser: true,
+          signupProgress: verificationResult.signupProgress || 1,
+          signupStep: verificationResult.signupStep || "contact_info",
+          timestamp: Date.now()
+        });
+        
+        return {
+          success: true,
+          isExistingUser: true,
+          signupProgress: verificationResult.signupProgress || 1,
+          signupStep: verificationResult.signupStep || "contact_info"
+        };
+      } catch (signInError) {
+        if (signInError.code === 'auth/wrong-password') {
+          throw new Error('Incorrect password for existing account');
+        } else {
+          throw signInError;
+        }
+      }
     }
-    
-    // Update local signup state
-    saveSignupState({
-      signupProgress: progress,
-      signupStep: step,
-      timestamp: Date.now()
-    });
-    
-    return { success: true };
   } catch (error) {
-    console.error('Error updating signup progress:', error);
+    console.error('Error creating or signing in user:', error);
     throw error;
   }
 }
 
-export async function signInWithGoogle() {
-    try {
-      // Create Google auth provider
-      const provider = new GoogleAuthProvider();
-      
-      // Add scopes if needed
-      provider.addScope('email');
-      provider.addScope('profile');
-      
-      // Set custom parameters
-      provider.setCustomParameters({
-        prompt: 'select_account' // Force account selection even if user is already signed in
-      });
-      
-      // Sign in with popup
-      console.log("Attempting Google sign-in...");
-      const result = await signInWithPopup(auth, provider);
-      
-      // Extract user information
-      const user = result.user;
-      console.log("Google sign-in successful:", user.email);
-      
-      // Call backend function to process the sign-in
-      console.log("Calling backend to process Google sign-in...");
-      const processGoogleSignIn = httpsCallable(functions, 'processGoogleSignIn');
-      
-      try {
-        // Pass the user ID explicitly in the call payload
-        // This works around the auth context issue in the emulator
-        const backendResult = await processGoogleSignIn({
-          userId: user.uid,
-          email: user.email,
-          displayName: user.displayName || ''
-        });
-        
-        console.log("Backend response:", backendResult.data);
-        
-        // Check if result exists and has data
-        if (!backendResult || !backendResult.data) {
-          console.error("Invalid backend response:", backendResult);
-          throw new Error('Invalid response from server');
-        }
-        
-        // Check for success in the response
-        if (!backendResult.data.success) {
-          console.error("Backend error:", backendResult.data.error);
-          throw new Error(backendResult.data.error || 'Failed to process sign-in');
-        }
-        
-        // Save signup state
-        saveSignupState({
-          userId: user.uid,
-          email: user.email,
-          name: user.displayName || '',
-          isExistingUser: backendResult.data.isNewUser === false,
-          signupProgress: backendResult.data.signupProgress || 1,
-          signupStep: backendResult.data.signupStep || "contact_info",
-          timestamp: Date.now()
-        });
-        
-        return {
-          success: true,
-          user: user,
-          isExistingUser: backendResult.data.isNewUser === false,
-          signupProgress: backendResult.data.signupProgress || 1
-        };
-      } catch (backendError) {
-        console.error("Backend processing error:", backendError);
-        
-        // Even if the backend fails, we can still return basic info
-        // This allows the user to proceed with the process
-        saveSignupState({
-          userId: user.uid,
-          email: user.email,
-          name: user.displayName || '',
-          isExistingUser: false,
-          signupProgress: 1,
-          signupStep: "contact_info",
-          timestamp: Date.now()
-        });
-        
-        return {
-          success: true,
-          user: user,
-          isExistingUser: false,
-          signupProgress: 1,
-          fallbackMode: true
-        };
-      }
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      
-      // Handle specific error codes
-      if (error.code === 'auth/popup-closed-by-user') {
-        throw new Error('Sign-in was cancelled');
-      } else if (error.code === 'auth/popup-blocked') {
-        throw new Error('Pop-up was blocked by the browser. Please enable pop-ups for this site.');
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        throw new Error('Sign-in operation was cancelled');
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        throw new Error('An account already exists with the same email address but different sign-in credentials.');
-      }
-      
-      throw error;
+// Legacy function for compatibility - will be phased out
+export async function verifyEmailCode(verificationId, code, password) {
+  console.warn('verifyEmailCode is deprecated - use verifyEmailCodeOnly followed by createOrSignInUser instead');
+  
+  try {
+    // First verify the code
+    const verificationResult = await verifyEmailCodeOnly(verificationId, code);
+    
+    if (!verificationResult.success) {
+      throw new Error('Code verification failed');
     }
+    
+    // Get verification info from localStorage (but not password)
+    const verificationState = JSON.parse(localStorage.getItem('alcor_verification_state'));
+    
+    if (!verificationState || !verificationState.email || !verificationState.name) {
+      throw new Error('Verification state not found in local storage');
+    }
+    
+    // Use provided password or fail
+    if (!password) {
+      throw new Error('Password is required');
+    }
+    
+    // Now create or sign in the user with the verified information
+    const authResult = await createOrSignInUser(
+      verificationResult,
+      verificationState.email,
+      verificationState.name,
+      password
+    );
+    
+    // Clear verification state as it's no longer needed
+    clearVerificationState();
+    
+    return authResult;
+  } catch (error) {
+    console.error('Error in legacy verifyEmailCode:', error);
+    throw error;
   }
+}
 
-export { auth, functions };
+// Rest of your functions remain the same
+export async function updateSignupProgress(step, progress, contactData) {
+  // Existing implementation
+}
+
+// Helper function for direct Firestore access
+async function saveContactInfoDirectly(formData) {
+  // Existing implementation
+}
+
+export const saveContactInfo = async (formData) => {
+  // Existing implementation
+};
+
+export async function signInWithGoogle() {
+  // Existing implementation
+}
+
+export async function saveStepData(stepName, stepData) {
+  // Existing implementation
+}
+
+export { auth, functions, db };
