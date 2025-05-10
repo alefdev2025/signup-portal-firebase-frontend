@@ -616,81 +616,67 @@ export async function signInWithGoogle() {
   }
 }
 
-// Modified update signup progress function with better error handling
-export async function updateSignupProgress(step, progress, stepData = {}) {
-  try {
-    const currentUser = auth.currentUser;
-    
-    if (!currentUser) {
-      throw new Error('User must be authenticated to update signup progress');
-    }
-    
-    // Update signup state in localStorage first (this will always work)
-    saveSignupState({
-      userId: currentUser.uid,
-      signupStep: step,
-      signupProgress: progress,
-      timestamp: Date.now()
-    });
-    
-    console.log("DEBUG: Saved signup progress to localStorage");
-    
-    // Then try to update Firestore, but don't fail if it doesn't work
+export const updateSignupProgress = async (step, progress, data = {}) => {
     try {
-      console.log("DEBUG: Attempting to update Firestore");
-      const userRef = doc(db, "users", currentUser.uid);
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("No authenticated user found when updating progress");
+        throw new Error("User must be authenticated to update progress");
+      }
       
-      await updateDoc(userRef, {
-        signupStep: step,
-        signupProgress: progress,
-        lastUpdated: new Date(),
-        [`steps.${step}`]: {
-          ...stepData,
-          completedAt: new Date()
-        }
-      });
+      console.log(`Updating progress for user ${user.uid} to step: ${step}, progress: ${progress}`);
       
-      console.log("DEBUG: Firestore update successful");
-    } catch (firestoreError) {
-      console.error("DEBUG: Error updating Firestore (continuing with localStorage only):", firestoreError);
-      // Continue anyway, we've already saved to localStorage
+      // Update user document with progress information
+      const userRef = doc(db, "users", user.uid);
       
-      // Try to create the document if it doesn't exist
-      try {
-        console.log("DEBUG: Attempting to create user document in Firestore instead");
-        const userRef = doc(db, "users", currentUser.uid);
-        
-        await setDoc(userRef, {
-          email: currentUser.email,
-          name: currentUser.displayName || "New Member",
+      // Check if document exists first
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        // Update existing document
+        await updateDoc(userRef, {
           signupStep: step,
           signupProgress: progress,
           lastUpdated: new Date(),
-          createdAt: new Date(),
-          [`steps.${step}`]: {
-            ...stepData,
-            completedAt: new Date()
-          }
+          [`formData.${step}`]: data, // Store form data for this step
         });
-        
-        console.log("DEBUG: Successfully created user document in Firestore");
-      } catch (createError) {
-        console.error("DEBUG: Failed to create document as well:", createError);
-        // Continue with localStorage only
+        console.log("Updated existing user document with new progress");
+      } else {
+        // Create new document
+        await setDoc(userRef, {
+          email: user.email,
+          displayName: user.displayName || "New Member",
+          signupStep: step,
+          signupProgress: progress,
+          createdAt: new Date(),
+          lastUpdated: new Date(),
+          formData: {
+            [step]: data,
+          },
+        });
+        console.log("Created new user document with initial progress");
       }
+      
+      // Also update local storage for redundancy
+      const signupState = {
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        signupStep: step,
+        signupProgress: progress,
+        timestamp: Date.now(),
+      };
+      
+      saveSignupState(signupState);
+      console.log("Updated local signupState:", signupState);
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating signup progress:", error);
+      return { success: false, error };
     }
-    
-    return {
-      success: true,
-      signupProgress: progress,
-      signupStep: step
-    };
-  } catch (error) {
-    console.error('Error updating signup progress:', error);
-    throw error;
-  }
-}
-
+  };
+  
 // Modified helper functions with better error handling
 export async function saveContactInfo(formData) {
   try {

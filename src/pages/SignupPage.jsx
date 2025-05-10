@@ -103,29 +103,6 @@ export default function SignupPage() {
     }
   }, []);
   
-  // Track navigation for back button functionality
-  useEffect(() => {
-    // Add current path to navigation history
-    const currentPath = location.pathname + location.search;
-    console.log("Adding path to navigation history:", currentPath);
-    
-    // Store in localStorage (a simplified version)
-    const history = JSON.parse(localStorage.getItem('navigation_history') || '[]');
-    if (history.length === 0 || history[history.length - 1] !== currentPath) {
-      const newHistory = [...history, currentPath].slice(-20); // Keep last 20 entries
-      localStorage.setItem('navigation_history', JSON.stringify(newHistory));
-      console.log("Updated navigation history:", newHistory);
-    }
-  }, [location]);
-  
-  // Function to get previous path
-  const getPreviousPath = () => {
-    const history = JSON.parse(localStorage.getItem('navigation_history') || '[]');
-    if (history.length <= 1) return "/";
-    return history[history.length - 2];
-  };
-  
-  // URL-based routing and step management
   useEffect(() => {
     console.log("--- Navigation Debug ---");
     console.log("URL Params:", new URLSearchParams(location.search).get('step'));
@@ -138,25 +115,43 @@ export default function SignupPage() {
     console.log("URL Step Param:", stepParam);
     
     // First handle the case where we have a user
-    if (currentUser && signupState) {
-      // Set active step based on signup progress
-      const stepIndex = Math.min(signupState?.signupProgress || 0, steps.length - 1);
-      console.log("User logged in - stepIndex:", stepIndex);
+    if (currentUser) {
+      console.log("User is logged in - checking step param");
       
-      // If valid step in URL that is not greater than user's progress, set active step
-      if (!isNaN(stepParam) && stepParam >= 0 && stepParam <= stepIndex) {
+      // User is authenticated - we should allow progression
+      // Get the progress from signupState if available
+      let storedProgress = 0;
+      if (signupState) {
+        storedProgress = Math.min(signupState.signupProgress || 0, steps.length - 1);
+        console.log("Using progress from signupState:", storedProgress);
+      } else {
+        // No signupState available, but user is authenticated
+        // We'll let them proceed but will set activeStep to 0 if no valid step param
+        console.log("No signupState available, but user is authenticated");
+      }
+      
+      // If valid step in URL and not greater than stored progress + 1, allow it
+      // (we allow current progress + 1 to let users move forward one step)
+      if (!isNaN(stepParam) && stepParam >= 0 && stepParam <= Math.max(1, storedProgress + 1)) {
         console.log("Setting activeStep to URL param:", stepParam);
         setActiveStep(stepParam);
+      } else if (!isNaN(stepParam) && stepParam > storedProgress + 1) {
+        // If trying to access a step too far ahead, redirect to highest allowed
+        const allowedStep = Math.max(storedProgress, 1); // Allow at least step 1 for authenticated users
+        console.log(`Step ${stepParam} is too far ahead. Redirecting to allowed step:`, allowedStep);
+        setActiveStep(allowedStep);
+        navigate(`/signup?step=${allowedStep}`, { replace: true });
       } else {
-        // Otherwise use the highest step the user has completed
-        console.log("Setting activeStep to highest completed:", stepIndex);
-        setActiveStep(stepIndex);
+        // If no valid param, set to stored progress or 0
+        const defaultStep = Math.max(storedProgress, 0);
+        console.log("No valid step param, setting activeStep to:", defaultStep);
+        setActiveStep(defaultStep);
         
-        // Update URL to reflect current step without reload
-        navigate(`/signup?step=${stepIndex}`, { replace: true });
+        // Update URL if needed
+        navigate(`/signup?step=${defaultStep}`, { replace: true });
       }
     } else {
-      // For non-authenticated users or without signup state
+      // For non-authenticated users
       console.log("No user, URL Step Param:", stepParam);
       
       // If valid step in URL, set active step with some validation
@@ -195,7 +190,7 @@ export default function SignupPage() {
         }
       }
     }
-  }, [location, currentUser, signupState, navigate]);
+  }, [location, currentUser, signupState, navigate, steps.length]);
   
   // Check for one-time email links
   useEffect(() => {
@@ -525,10 +520,13 @@ export default function SignupPage() {
             console.log("Cleared password from memory");
             
             if (authResult.success) {
-              console.log("Existing user sign in successful");
+              console.log("New user creation successful");
               // Clear verification state
               clearVerificationState();
-              console.log("Cleared verification state from localStorage");
+                
+              // Skip step 0 (success screen) and go directly to step 1
+              setActiveStep(1);
+              navigate(`/signup?step=1`, { replace: true });
               
               // Navigate to where they left off
               const nextStepIndex = authResult.signupProgress || 1;
@@ -776,6 +774,13 @@ export default function SignupPage() {
     if (activeStep > 0) {
       const prevStep = activeStep - 1;
       console.log("Going back to step:", prevStep);
+      
+      // Set a flag when going back to the account step (step 0)
+      if (prevStep === 0 && currentUser) {
+        console.log("Returning to account step, setting flag");
+        sessionStorage.setItem('returning_to_account', 'true');
+      }
+      
       setActiveStep(prevStep);
       
       // Update URL to reflect current step without reload
@@ -787,6 +792,13 @@ export default function SignupPage() {
       navigate(prevPath);
     }
   };
+
+  useEffect(() => {
+    // Clear the "returning to account" flag when leaving step 0
+    if (activeStep !== 0) {
+      sessionStorage.removeItem('returning_to_account');
+    }
+  }, [activeStep]);
   
   // Enhanced handleNext function with form data persistence
   const handleNext = async (stepData = {}) => {
@@ -846,7 +858,12 @@ export default function SignupPage() {
   };
   
   // Determine if we should show AccountCreationSuccess
-  const showAccountSuccess = currentUser && activeStep === 0;
+  //const showAccountSuccess = currentUser && activeStep === 0;
+  const showAccountSuccess = currentUser && activeStep === 0 && (
+    // Show success screen if any of these conditions are true:
+    signupState?.signupProgress > 0 || // User has progressed beyond step 0
+    sessionStorage.getItem('completed_verification') === 'true' // User just completed verification
+  );
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

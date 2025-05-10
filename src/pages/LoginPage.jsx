@@ -11,7 +11,7 @@ import {
   logout,
   db
 } from "../services/auth";
-import { getDoc, doc } from "firebase/firestore";
+import { getDoc, doc, setDoc } from "firebase/firestore";
 import { 
   useUser,
   saveSignupState
