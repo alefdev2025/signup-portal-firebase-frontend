@@ -8,8 +8,8 @@ import CircularProgress from "../components/CircularProgress";
 import { 
   requestEmailVerification, 
   verifyEmailCodeOnly,
-  createNewUser, // CHANGED: Use createNewUser directly
-  signInExistingUser, // CHANGED: Use signInExistingUser directly
+  createNewUser,
+  signInExistingUser,
   signInWithGoogle,
   updateSignupProgress,
   clearVerificationState,
@@ -859,18 +859,7 @@ export default function SignupPage() {
       {/* Main Content - Now without the sidebar */}
       <div className="flex-grow p-4 md:p-8 flex justify-center">
         <div className="w-full max-w-3xl">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              {steps[activeStep]}
-            </h1>
-            <p className="text-gray-600">
-              {activeStep === 0 && (showAccountSuccess 
-                ? "Your account has been created successfully!" 
-                : "Create your account to begin the membership process.")}
-              {activeStep === 1 && "Please provide your contact information."}
-              {/* Add descriptions for other steps */}
-            </p>
-          </div>
+          {/* Removed the entire header section including title */}
           
           {/* Step Content */}
           {activeStep === 0 && (
