@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { updateSignupProgress } from "../../services/auth";
 import { saveContactInfo } from "../../services/auth";
+import { getStepFormData, saveFormData } from "../../contexts/UserContext";
 
 // Environment flag - true for development, false for production
 const isDevelopment = import.meta.env.MODE === 'development';
@@ -95,7 +96,7 @@ const countries = [
   "Mexico"
 ].sort();
 
-export default function ContactInfoPage({ onNext, onBack }) {
+export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const { currentUser, signupState } = useUser();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,11 +137,28 @@ export default function ContactInfoPage({ onNext, onBack }) {
     workPhone: "",
     homePhone: ""
   });
-  
+
   // Current country configuration - use default config if localization is disabled
   const [countryConfig, setCountryConfig] = useState(
     ENABLE_LOCALIZATION ? (countryConfigs["United States"] || defaultConfig) : defaultConfig
   );
+
+  // Auto-save form data when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Save form data to localStorage before leaving the page
+      saveFormData('contact_info', formData);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Also save when component unmounts
+      saveFormData('contact_info', formData);
+    };
+  }, [formData]);
   
   // Update country config when country changes (only if localization is enabled)
   useEffect(() => {
@@ -149,23 +167,53 @@ export default function ContactInfoPage({ onNext, onBack }) {
     }
   }, [formData.country]);
   
-  // Load existing data if available
+  // Load existing data if available - prioritize in this order:
+  // 1. Passed initialData prop
+  // 2. Data from localStorage
+  // 3. Data from signupState
   useEffect(() => {
-    if (currentUser) {
-      // If user is already logged in, pre-fill the email
+    // First, check for passed initialData prop
+    if (initialData && Object.keys(initialData).length > 0) {
+      if (isDevelopment) {
+        console.log("Loading data from initialData prop:", initialData);
+      }
       setFormData(prev => ({
         ...prev,
-        email: currentUser.email || ""
+        ...initialData
       }));
+    } 
+    // Then check localStorage
+    else {
+      const savedData = getStepFormData('contact_info');
+      if (savedData && Object.keys(savedData).length > 0) {
+        if (isDevelopment) {
+          console.log("Loading data from localStorage:", savedData);
+        }
+        setFormData(prev => ({
+          ...prev,
+          ...savedData
+        }));
+      }
+      // Finally check signupState
+      else if (signupState && signupState.contactInfo) {
+        if (isDevelopment) {
+          console.log("Loading data from signupState:", signupState.contactInfo);
+        }
+        setFormData(prev => ({
+          ...prev,
+          ...signupState.contactInfo
+        }));
+      }
     }
     
-    if (signupState && signupState.contactInfo) {
+    // If user is already logged in, ensure email is filled
+    if (currentUser && currentUser.email) {
       setFormData(prev => ({
         ...prev,
-        ...signupState.contactInfo
+        email: currentUser.email
       }));
     }
-  }, [currentUser, signupState]);
+  }, [currentUser, signupState, initialData]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -185,7 +233,7 @@ export default function ContactInfoPage({ onNext, onBack }) {
     // Special handling for date of birth verification
     if (name === 'dateOfBirth') {
       // Clear verifyDateOfBirth error if it exists and the dates now match
-      if (prev.verifyDateOfBirth && prev.verifyDateOfBirth === value) {
+      if (formData.verifyDateOfBirth && formData.verifyDateOfBirth === value) {
         setErrors(prev => ({
           ...prev,
           verifyDateOfBirth: ""
@@ -195,13 +243,16 @@ export default function ContactInfoPage({ onNext, onBack }) {
     
     if (name === 'verifyDateOfBirth') {
       // Clear verifyDateOfBirth error if the dates now match
-      if (prev.dateOfBirth && prev.dateOfBirth === value) {
+      if (formData.dateOfBirth && formData.dateOfBirth === value) {
         setErrors(prev => ({
           ...prev,
           verifyDateOfBirth: ""
         }));
       }
     }
+    
+    // Auto-save form data as user types (optional, could be throttled for performance)
+    // saveFormData('contact_info', {...formData, [name]: value});
   };
   
   const validatePhoneNumber = (phone) => {
@@ -312,6 +363,9 @@ export default function ContactInfoPage({ onNext, onBack }) {
         console.log("About to send contact data:", JSON.stringify(formData));
       }
       
+      // Save to localStorage regardless of API call success
+      saveFormData('contact_info', formData);
+      
       // Try to update via Firebase function
       try {
         // Save the contact information directly to Firestore
@@ -329,25 +383,32 @@ export default function ContactInfoPage({ onNext, onBack }) {
         } else {
           // Show error message
           alert("Failed to save contact information. Please try again.");
+          setIsSubmitting(false);
         }
       } catch (error) {
         if (isDevelopment) {
           console.error('Error saving contact info:', error);
         }
         alert("Failed to save contact information. Please try again.");
-      } finally {
         setIsSubmitting(false);
-      }
-      
-      // Move to next step regardless
-      if (onNext) {
-        onNext(formData);
       }
     } catch (error) {
       if (isDevelopment) {
         console.error('Error updating contact info:', error);
       }
       alert("Failed to save contact information. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handler for back button that saves data before going back
+  const handleBack = () => {
+    // Save current form data before going back
+    saveFormData('contact_info', formData);
+    
+    // Then navigate back
+    if (onBack) {
+      onBack();
     }
   };
   
@@ -633,7 +694,7 @@ export default function ContactInfoPage({ onNext, onBack }) {
         <div className="flex justify-between mt-10">
           <button
             type="button"
-            onClick={onBack}
+            onClick={handleBack} // Use custom handler to save data
             className="py-4 px-8 border border-gray-300 rounded-full text-gray-600 font-medium flex items-center hover:bg-gray-50"
             disabled={isSubmitting}
           >

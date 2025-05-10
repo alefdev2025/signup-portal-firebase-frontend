@@ -1,6 +1,19 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 
 const ProgressBar = ({ steps, activeStep }) => {
+  const navigate = useNavigate();
+  const { signupState } = useUser();
+  const maxCompletedStep = signupState?.signupProgress || 0;
+  
+  const handleStepClick = (index) => {
+    // Only navigate to steps that are completed or the current step
+    if (index <= maxCompletedStep) {
+      navigate(`/signup?step=${index}`);
+    }
+  };
+
   return (
     <div className="flex justify-center py-12 px-4">
       <div className="w-full max-w-5xl overflow-hidden rounded-full h-16 bg-gray-200 flex">
@@ -33,15 +46,33 @@ const ProgressBar = ({ steps, activeStep }) => {
             textColor = "text-gray-600";
           }
           
+          // Add cursor styles and onClick handler only for completed steps
+          const isClickable = index <= maxCompletedStep;
+          const cursorStyle = isClickable ? 'cursor-pointer' : 'cursor-not-allowed';
+          
           return (
             <div
               key={index}
-              className={`flex-1 flex flex-col items-center justify-center font-semibold ${bgColor} ${textColor}`}
+              className={`flex-1 flex flex-col items-center justify-center font-semibold ${bgColor} ${textColor} ${cursorStyle}`}
+              onClick={() => isClickable && handleStepClick(index)}
+              role={isClickable ? "button" : "presentation"}
+              aria-label={isClickable ? `Go to ${step}` : `${step} (not available yet)`}
             >
               {/* Apply rapid double-bounce animation */}
               <div className={index === activeStep ? 'step-content rapid-double-bounce' : ''}>
                 <div className="text-xs uppercase tracking-wider">STEP {index + 1}</div>
                 <div className="text-sm mt-1">{step}</div>
+                
+                {/* Add a visual indicator for clickable steps */}
+                {index < activeStep && (
+                  <div className="mt-1 text-xs opacity-70">
+                    {/* Small edit icon or text */}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    <span className="ml-1">Edit</span>
+                  </div>
+                )}
               </div>
             </div>
           );
