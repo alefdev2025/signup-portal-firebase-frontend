@@ -27,7 +27,6 @@ const checkPasswordStrength = (password) => {
   const hasLowercase = /[a-z]/.test(password);
   const hasNumbers = /[0-9]/.test(password);
   const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-  const hasNoSpaces = !/\s/.test(password);
   
   // Calculate a simple strength score (0-100)
   let score = 0;
@@ -43,10 +42,10 @@ const checkPasswordStrength = (password) => {
   
   return {
     score,
-    isStrong: score >= 70 && hasNoSpaces,
-    isMedium: score >= 40 && score < 70 && hasNoSpaces,
-    isWeak: score < 40 || !hasNoSpaces,
-    meetsMinimumRequirements: password.length >= minLength && hasUppercase && hasLowercase && hasNumbers && hasNoSpaces
+    isStrong: score >= 70,
+    isMedium: score >= 40 && score < 70,
+    isWeak: score < 40,
+    meetsMinimumRequirements: password.length >= minLength && hasUppercase && hasLowercase && hasNumbers
   };
 };
 
@@ -186,16 +185,6 @@ const PasswordField = ({
                 </svg>
                 Number (0-9)
               </li>
-              <li className={`flex items-center ${value && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) ? 'text-green-600' : 'text-gray-500'}`}>
-                <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {value && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  )}
-                </svg>
-                Special character (!@#$%, etc.)
-              </li>
             </ul>
           </div>
         </>
@@ -287,9 +276,8 @@ export default function SignupPage() {
     
     // Special handling for password - store in memory state, not in formData
     if (name === 'password') {
-      // Strip spaces from passwords
-      const noSpacesValue = value.replace(/\s/g, '');
-      setPasswordState(noSpacesValue);
+      // We now allow spaces in passwords - don't strip them
+      setPasswordState(value);
     } else {
       // For all other fields, store in formData
       setFormData({
@@ -313,19 +301,23 @@ export default function SignupPage() {
   };
   
   const isValidPassword = (password) => {
-    // Do not allow spaces and enforce other security requirements:
-    // 8+ chars with mix of upper, lower, and numbers
-    // Check if password contains spaces
-  if (/\s/.test(password)) {
-    return false;
-  }
-  
-  // Check other password requirements
-  return password.length >= 8 && 
-         /[A-Z]/.test(password) && 
-         /[a-z]/.test(password) && 
-         /[0-9]/.test(password);
+    // Allow spaces but enforce other security requirements:
+    // Either: 8+ chars with mix of upper, lower, and numbers
+    // Or: 12+ chars with some complexity (more flexible for longer passwords)
+    if (password.length >= 12) {
+      // For longer passwords, be more flexible but still require some complexity
+      return ((/[A-Z]/.test(password) || /[a-z]/.test(password)) && // Some letters
+              (/[0-9]/.test(password) || /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))); // Some numbers/symbols
+    } else {
+      // For shorter passwords, require more complexity
+      return password.length >= 8 && 
+             /[A-Z]/.test(password) && 
+             /[a-z]/.test(password) && 
+             /[0-9]/.test(password);
+    }
   };
+  
+  // Removed duplicate checkPasswordStrength function (now defined at the top)
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -345,9 +337,9 @@ export default function SignupPage() {
         password: !passwordState 
           ? "Password is required" 
           : !isValidPassword(passwordState)
-            ? /\s/.test(passwordState)
-              ? "Password cannot contain spaces. Please remove any spaces from your password."
-              : "Password must be at least 8 characters with uppercase letters, lowercase letters, and numbers."
+            ? passwordState.length >= 12 
+              ? "For longer passwords, please include some letters and at least one number or symbol" 
+              : "Password must be at least 8 characters with uppercase letters, lowercase letters, and numbers. Alternatively, use 12+ characters with mixed character types."
             : "",
         termsAccepted: !formData.termsAccepted 
           ? "You must accept the Terms of Use and Privacy Policy" 
