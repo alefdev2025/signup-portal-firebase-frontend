@@ -1,7 +1,7 @@
 // File: components/ResponsiveBanner.jsx
 import React from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
-import starImage from "../assets/images/alcor-star.png";
+import yellowStar from "../assets/images/alcor-yellow-star.png";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 
@@ -113,7 +113,7 @@ const ResponsiveBanner = ({
             <div className="flex items-center">
               <h1 className="flex items-center">
                 <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>{isWelcomePage ? "Your Membership Journey" : displayHeading}</span>
-                {showStar && <img src={starImage} alt="" className="h-6 ml-0.5" />}
+                {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
               </h1>
             </div>
           </div>
@@ -201,7 +201,7 @@ const ResponsiveBanner = ({
                             </svg>
                           ) : (
                             <img 
-                              src={starImage} 
+                              src={yellowStar} 
                               alt={`Step ${index + 1}`}
                               className="w-4.5 h-4.5"
                             />
@@ -225,6 +225,20 @@ const ResponsiveBanner = ({
             </div>
           )}
         </div>
+        
+        {/* Transparent section with Sign up text - NEW SECTION */}
+        {showSteps && !isWelcomePage && (
+          <div className="bg-transparent text-black px-4 pt-8 pb-5 flex flex-col items-center text-center">
+            <div className="flex items-center justify-center mb-3">
+              <span className="text-2xl font-semibold">Sign up → Step {stepNumber}:</span>
+              <span className="flex items-center ml-2">
+                <img src={yellowStar} alt="" className="h-8 mr-1" />
+                <span className="font-semibold text-2xl">{stepName}</span>
+              </span>
+            </div>
+            <p className="text-base text-gray-600 max-w-xs mx-auto">{displaySubText}</p>
+          </div>
+        )}
       </div>
       
       {/* Desktop Banner - consistent height regardless of progress bar visibility */}
@@ -251,14 +265,14 @@ const ResponsiveBanner = ({
               <p className="text-lg flex items-center justify-center text-white/80 mb-2">
                 <span>Sign up → Step {stepNumber}:</span> 
                 <span className="flex items-center ml-1">
-                  <img src={starImage} alt="" className="h-5 mr-1" />
+                  <img src={yellowStar} alt="" className="h-5 mr-1" />
                   {stepName}
                 </span>
               </p>
             )}
             <h1 className={`flex items-center ${isWelcomePage ? "justify-start" : "justify-center"}`}>
               <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>{isWelcomePage ? "Your Membership Journey" : displayHeading}</span>
-              {showStar && <img src={starImage} alt="" className="h-8 ml-1" />}
+              {showStar && <img src={yellowStar} alt="" className="h-8 ml-1" />}
             </h1>
             <p className={`${showProgressBar ? "text-xl md:text-2xl mt-3" : "text-xl md:text-2xl mt-4"} text-white/80 ${isWelcomePage ? "max-w-xl" : "max-w-3xl mx-auto"}`}>
               {displaySubText}
@@ -347,7 +361,7 @@ const ResponsiveBanner = ({
                           </svg>
                         ) : (
                           <img 
-                            src={starImage} 
+                            src={yellowStar} 
                             alt={`Step ${index + 1}`}
                             className="w-5 h-5 md:w-6 md:h-6 sm:w-5 sm:h-5 xs:w-4.5 xs:h-4.5"
                           />
