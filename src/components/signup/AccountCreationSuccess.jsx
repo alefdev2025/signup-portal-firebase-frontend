@@ -4,16 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, updateSignupProgress } from '../../services/auth';
 import { saveSignupState } from '../../contexts/UserContext';
-import alcorFullLogo from '../../assets/images/navy-alcor-logo.png'; // Updated import name
+import alcorFullLogo from '../../assets/images/navy-alcor-logo.png';
 
 const AccountCreationSuccess = ({ currentUser, onNext }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
   // Function to directly set backend data and navigate
   const updateBackendAndNavigate = async () => {
     console.log("Updating backend data and navigating");
     setIsLoading(true);
+    setError(null);
     
     try {
       if (!currentUser || !currentUser.uid) {
@@ -24,6 +26,7 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
       // Get user document reference
       const userDocRef = doc(db, "users", currentUser.uid);
       
+      console.log("Updating user document in Firestore...");
       // Directly update/create the document with progress 1
       await setDoc(userDocRef, {
         email: currentUser.email,
@@ -49,18 +52,16 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
       saveSignupState(signupState);
       console.log("Local state updated with progress 1");
       
-      // Force the navigation to step 1
+      // Only navigate once everything is complete
       console.log("Navigating to step 1");
       navigate('/signup?step=1&force=true', { replace: true });
       
     } catch (error) {
       console.error("Error updating backend:", error);
-      
-      // Final fallback: Direct navigation with force parameter
-      console.log("Using direct forced navigation as fallback");
-      navigate('/signup?step=1&force=true', { replace: true });
-    } finally {
+      setError("There was an issue updating your progress. Please try again.");
       setIsLoading(false);
+      
+      // Don't navigate automatically on error - let user retry
     }
   };
   
@@ -120,10 +121,22 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
         <div className="flex justify-between items-center bg-[#0C2340]/5 rounded-xl p-5 mb-8">
           <p className="text-gray-600 text-sm pr-4">
             You can continue with your membership application below.
-            Next we'll gather your conact info.
+            Password reset and account settings will be available after completing your signup.
           </p>
           <img src={alcorFullLogo} alt="Alcor Logo" className="h-12 hidden sm:block" />
         </div>
+        
+        {/* Show error message if there is one */}
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-700 p-4 rounded-lg mb-6 text-sm">
+            <p className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {error}
+            </p>
+          </div>
+        )}
       </div>
           
       {/* Continue button */}
@@ -131,7 +144,7 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
         <button 
           onClick={handleContinue}
           disabled={isLoading}
-          className="bg-gradient-to-r from-[#6f2d74] to-[#8e3a96] hover:from-[#7b3282] hover:to-[#9a46a2] text-white py-4 px-10 rounded-full font-semibold text-lg shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center disabled:opacity-70"
+          className="bg-[#6f2d74] text-white py-4 px-10 rounded-full font-semibold text-lg shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center disabled:opacity-70 hover:bg-[#7b3382]"
         >
           {isLoading ? (
             <>

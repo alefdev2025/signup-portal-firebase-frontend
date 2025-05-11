@@ -1,5 +1,5 @@
 // File: pages/SignupPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 import Banner from "../components/Banner";
@@ -49,9 +49,11 @@ export default function SignupPage() {
   const [verificationStep, setVerificationStep] = useState("initial"); // "initial", "verification"
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(false);
+  const hasNavigatedRef = useRef(false); // Ref to track if user has completed account creation
   
   console.log("SignupPage rendered with activeStep:", activeStep);
   console.log("URL params:", Object.fromEntries([...searchParams]));
+  console.log("hasNavigatedRef:", hasNavigatedRef.current);
   
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
@@ -91,6 +93,7 @@ export default function SignupPage() {
     if (isFreshSignup) {
       // Reset verification step
       setVerificationStep("initial");
+      hasNavigatedRef.current = false;
       
       // Reset form data
       setFormData({
@@ -136,11 +139,24 @@ export default function SignupPage() {
     console.log("URL Params:", new URLSearchParams(location.search).get('step'));
     console.log("Current User:", currentUser);
     console.log("Signup State:", signupState);
+    console.log("hasNavigatedRef:", hasNavigatedRef.current);
     
     // Parse URL for parameters
     const urlParams = new URLSearchParams(location.search);
     const stepParam = parseInt(urlParams.get('step'));
     const forceParam = urlParams.get('force') === 'true';
+    const showSuccessParam = urlParams.get('showSuccess') === 'true';
+    
+    // Check for showSuccess parameter
+    if (showSuccessParam && currentUser) {
+      console.log("showSuccess parameter detected, setting hasNavigatedRef to true");
+      hasNavigatedRef.current = true;
+      
+      // Clean up the URL by removing the showSuccess parameter
+      const newUrl = `/signup?step=0`;
+      navigate(newUrl, { replace: true });
+      return;
+    }
     
     console.log("URL Step Param:", stepParam);
     console.log("Force Navigation:", forceParam);
@@ -318,6 +334,13 @@ export default function SignupPage() {
     
     // If user is already logged in and has signup state, set active step
     if (currentUser && signupState) {
+      // Check if we should set hasNavigated based on progress
+      const storedProgress = signupState.signupProgress || 0;
+      if (storedProgress >= 1 && activeStep === 0) {
+        console.log("Setting hasNavigatedRef to true based on user progress");
+        hasNavigatedRef.current = true;
+      }
+      
       // Set active step based on signup progress
       const stepIndex = Math.min(signupState.signupProgress || 0, steps.length - 1);
       setActiveStep(stepIndex);
@@ -327,15 +350,7 @@ export default function SignupPage() {
     // User state debug
     console.log("Current user:", currentUser);
     console.log("Signup state:", signupState);
-  }, [currentUser, signupState, steps.length]);
-  
-  // Clear returning_to_account flag when leaving step 0
-  useEffect(() => {
-    // Clear the "returning to account" flag when leaving step 0
-    if (activeStep !== 0) {
-      sessionStorage.removeItem('returning_to_account');
-    }
-  }, [activeStep]);
+  }, [currentUser, signupState, steps.length, activeStep]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -600,16 +615,9 @@ export default function SignupPage() {
               clearVerificationState();
               console.log("Cleared verification state from localStorage");
               
-              // Skip the success screen for existing users
-              sessionStorage.setItem('completed_verification', 'true');
-              
-              // Navigate to where they left off
-              const nextStepIndex = authResult.signupProgress || 1;
-              console.log("Existing user, navigating to step:", nextStepIndex);
-              setActiveStep(nextStepIndex);
-              
-              // Update URL
-              navigate(`/signup?step=${nextStepIndex}`, { replace: true });
+              // Set hasNavigatedRef to true to show success screen
+              hasNavigatedRef.current = true;
+              console.log("Set hasNavigatedRef to true");
               
               // Reset verification step
               setVerificationStep("initial");
@@ -622,6 +630,9 @@ export default function SignupPage() {
                 verificationId: ""
               }));
               console.log("Cleared verification code and ID from formData");
+              
+              // Navigate to signup with showSuccess parameter
+              navigate('/signup?step=0&showSuccess=true', { replace: true });
             }
           } else {
             // Use createNewUser for new users
@@ -647,8 +658,9 @@ export default function SignupPage() {
               clearVerificationState();
               console.log("Cleared verification state from localStorage");
               
-              // For new users, skip the success screen and go directly to step 1
-              console.log("New user, skipping success screen and going to step 1");
+              // Set hasNavigatedRef to true to show success screen
+              hasNavigatedRef.current = true;
+              console.log("Set hasNavigatedRef to true");
               
               // Update progress in Firebase
               try {
@@ -658,10 +670,6 @@ export default function SignupPage() {
                 console.error("Error updating progress:", progressError);
                 // Continue anyway
               }
-              
-              // Set active step directly to 1 and navigate
-              setActiveStep(1);
-              navigate(`/signup?step=1&force=true`, { replace: true });
               
               // Reset verification step
               setVerificationStep("initial");
@@ -674,6 +682,9 @@ export default function SignupPage() {
                 verificationId: ""
               }));
               console.log("Cleared verification code and ID from formData");
+              
+              // Navigate to signup with showSuccess parameter
+              navigate('/signup?step=0&showSuccess=true', { replace: true });
             }
           }
         }
@@ -734,22 +745,12 @@ export default function SignupPage() {
         clearVerificationState();
         console.log("Cleared verification state");
         
-        // For existing users, navigate to where they left off
-        if (result.isExistingUser) {
-          const nextStepIndex = result.signupProgress || 1;
-          console.log(`Existing user, moving to step ${nextStepIndex}`);
-          setActiveStep(nextStepIndex);
-          
-          // Update URL to reflect current step without reload
-          navigate(`/signup?step=${nextStepIndex}`, { replace: true });
-        } else {
-          // For new users, move to step 1 (Contact Info)
-          console.log("New user, moving to step 1");
-          setActiveStep(1);
-          
-          // Update URL to reflect current step without reload
-          navigate(`/signup?step=1`, { replace: true });
-        }
+        // Set hasNavigatedRef to true to show success screen
+        hasNavigatedRef.current = true;
+        console.log("Set hasNavigatedRef to true");
+        
+        // Navigate to signup with showSuccess parameter
+        navigate('/signup?step=0&showSuccess=true', { replace: true });
       } else {
         console.error("Google sign-in did not return success=true");
         // Show a generic error message
@@ -805,9 +806,6 @@ export default function SignupPage() {
           isExistingUser: result.isExistingUser || false,
           timestamp: Date.now()
         });
-        
-        // Show success message
-        // alert("Verification code sent successfully!");
       }
     } catch (error) {
       console.error("Error resending verification code:", error);
@@ -862,10 +860,10 @@ export default function SignupPage() {
       const prevStep = activeStep - 1;
       console.log("Going back to step:", prevStep);
       
-      // Set a flag when going back to the account step (step 0)
-      if (prevStep === 0 && currentUser) {
-        console.log("Returning to account step, setting flag");
-        sessionStorage.setItem('returning_to_account', 'true');
+      // Set hasNavigatedRef to true if going back to step 0
+      if (prevStep === 0) {
+        hasNavigatedRef.current = true;
+        console.log("Setting hasNavigatedRef to true because going back to step 0");
       }
       
       setActiveStep(prevStep);
@@ -937,16 +935,13 @@ export default function SignupPage() {
     }
   };
   
-  // Determine if we should show AccountCreationSuccess
-  // Use direct check against sessionStorage instead of state variable
-  
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header Banner */}
       <ResponsiveBanner 
-      activeStep={activeStep}
-      steps={steps}
-    />
+        activeStep={activeStep}
+        steps={steps}
+      />
       
       {/* Add CircularProgress component below Banner */}
       <CircularProgress steps={steps} activeStep={activeStep} />
@@ -954,12 +949,10 @@ export default function SignupPage() {
       {/* Main Content - Now without the sidebar */}
       <div className="flex-grow p-4 md:p-8 flex justify-center">
         <div className="w-full max-w-3xl">
-          {/* Removed the entire header section including title */}
-          
           {/* Step Content with direct component check */}
           {activeStep === 0 && (
             <>
-              {currentUser && sessionStorage.getItem('returning_to_account') === 'true' ? (
+              {currentUser && (signupState?.signupProgress >= 1 || hasNavigatedRef.current) ? (
                 <AccountCreationSuccess 
                   currentUser={currentUser} 
                   onNext={handleNext} 
@@ -992,31 +985,11 @@ export default function SignupPage() {
         </div>
       </div>
       
-      {/* Mobile Help Panel */}
-      {showHelpInfo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Help Information</h3>
-              <button 
-                onClick={toggleHelpInfo}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <HelpPanel activeStep={activeStep} />
-            <button
-              onClick={toggleHelpInfo}
-              className="w-full mt-6 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Use the HelpPanel component directly */}
+      <HelpPanel 
+        showHelpInfo={showHelpInfo} 
+        toggleHelpInfo={toggleHelpInfo} 
+      />
     </div>
   );
 }
