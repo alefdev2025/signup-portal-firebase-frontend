@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, updateSignupProgress } from '../../services/auth';
 import { saveSignupState } from '../../contexts/UserContext';
+import alcorFullLogo from '../../assets/images/navy-alcor-logo.png'; // Updated import name
 
 const AccountCreationSuccess = ({ currentUser, onNext }) => {
   const navigate = useNavigate();
@@ -69,49 +70,68 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
   };
   
   return (
-    <div className="w-full max-w-3xl">
-      <div className="bg-white rounded-lg shadow-sm p-8 text-center mb-8">
-        <div className="flex justify-center mb-6">
-          <div className="bg-green-50 rounded-full p-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div className="w-full max-w-3xl px-2 sm:px-0">
+      <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-sm p-6 sm:p-8 mb-8 border border-gray-100 max-w-[85%] sm:max-w-none mx-auto">
+        {/* More compact top section with success icon and text */}
+        <div className="flex items-center mb-6">
+          <div className="bg-gradient-to-br from-[#0C2340] to-[#26396A] rounded-full p-2 sm:p-2.5 shadow-sm mr-3 sm:mr-4 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0C2340] leading-tight">Account Created!</h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Your Alcor account has been successfully created and verified.
+            </p>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
-        <p className="text-gray-600 mb-6">
-          Your Alcor account has been successfully created and verified.
-        </p>
-        <div className="bg-gray-50 p-4 rounded-md mb-6 text-left">
-          <div className="flex flex-col space-y-2">
-            <div>
-              <span className="text-gray-500 text-sm">Email:</span>
-              <p className="font-medium">{currentUser?.email || "Your email"}</p>
+        
+        {/* Account info card */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center border-b border-gray-100 pb-4">
+              <div className="w-10 h-10 rounded-full bg-[#0C2340]/10 flex items-center justify-center mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0C2340]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <span className="text-gray-500 text-sm font-medium">Email</span>
+                <p className="font-semibold text-[#0C2340]">{currentUser?.email || "Your email"}</p>
+              </div>
             </div>
-            <div>
-              <span className="text-gray-500 text-sm">Account Status:</span>
-              <p className="font-medium text-green-600">Verified</p>
+            
+            <div className="flex items-center">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <span className="text-gray-500 text-sm font-medium">Account Status</span>
+                <p className="font-semibold text-green-600">Verified</p>
+              </div>
             </div>
           </div>
         </div>
-        <p className="text-gray-600 text-sm">
-          You can continue with your membership application below.
-          Password reset and account settings will be available after completing your signup.
-        </p>
+        
+        {/* Info text with logo */}
+        <div className="flex justify-between items-center bg-[#0C2340]/5 rounded-xl p-5 mb-8">
+          <p className="text-gray-600 text-sm pr-4">
+            You can continue with your membership application below.
+            Next we'll gather your conact info.
+          </p>
+          <img src={alcorFullLogo} alt="Alcor Logo" className="h-12 hidden sm:block" />
+        </div>
       </div>
           
-      {/* Continue button with backend update */}
+      {/* Continue button */}
       <div className="text-center">
         <button 
           onClick={handleContinue}
           disabled={isLoading}
-          style={{
-            backgroundColor: "#6f2d74",
-            color: "white",
-            display: "inline-flex",
-            alignItems: "center"
-          }}
-          className="py-4 px-8 rounded-full font-semibold text-lg mx-auto hover:opacity-90 disabled:opacity-70"
+          className="bg-gradient-to-r from-[#6f2d74] to-[#8e3a96] hover:from-[#7b3282] hover:to-[#9a46a2] text-white py-4 px-10 rounded-full font-semibold text-lg shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center disabled:opacity-70"
         >
           {isLoading ? (
             <>
