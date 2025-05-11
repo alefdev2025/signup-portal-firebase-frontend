@@ -86,12 +86,12 @@ const WelcomePage = () => {
       <ResponsiveBanner 
         logo={darkLogo}
         heading="Your Membership Journey"
-        subText="We are the world's leader in cryopreservation, research, and technology"
+        subText="We are the world's leader in cryopreservation, research, and technology since 1972"
         showSteps={false}
         showStar={true}
-        showProgressBar={false}  // Hide the actual progress circles but maintain spacing
-        steps={steps}  // Pass the full steps array for consistent structure
-        bgClass="bg-gradient-to-r from-[#0C2340] to-[#462a5a]" // Apply gradient directly
+        showProgressBar={false}
+        steps={steps}
+        isWelcomePage={true} // Use the new prop to enable welcome page styling
       />
       
       {/* Main Content - Cards */}
