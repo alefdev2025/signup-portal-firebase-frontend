@@ -807,7 +807,7 @@ export default function SignupPage() {
         });
         
         // Show success message
-        alert("Verification code sent successfully!");
+        // alert("Verification code sent successfully!");
       }
     } catch (error) {
       console.error("Error resending verification code:", error);
