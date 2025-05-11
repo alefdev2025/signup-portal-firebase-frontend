@@ -334,7 +334,7 @@ const AccountCreationForm = ({
             type="submit"
             disabled={isSubmitting}
             style={{
-              backgroundColor: "#6f2d74",
+              backgroundColor: "#31314f", /**4c3a57 */
               color: "white"
             }}
             className="w-full py-3 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-2 sm:mb-10 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
