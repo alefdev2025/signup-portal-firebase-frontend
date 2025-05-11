@@ -5,12 +5,19 @@ import { useUser } from "../contexts/UserContext";
 
 const CircularProgress = ({ steps = [], activeStep = 0 }) => {
   const navigate = useNavigate();
-  const { signupState } = useUser() || {};
+  const { currentUser, signupState } = useUser() || {};
   const maxCompletedStep = (signupState && signupState.signupProgress) || 0;
   
   const handleStepClick = (index) => {
     // Only navigate to steps that are completed or the current step
     if (index <= maxCompletedStep) {
+      // If navigating back to step 0 (Account) and user is authenticated,
+      // set the flag to show the success screen instead of the form
+      if (index === 0 && currentUser) {
+        console.log("Circular navigation to account step, setting returning flag");
+        sessionStorage.setItem('returning_to_account', 'true');
+      }
+      
       navigate(`/signup?step=${index}`);
     }
   };

@@ -1,10 +1,12 @@
 // File: pages/SignupPage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import darkLogo from "../assets/images/alcor-placeholder-logo.png";
+
 import Banner from "../components/Banner";
 import ProgressBar from "../components/CircularProgress";
 import CircularProgress from "../components/CircularProgress";
+import ResponsiveBanner from "../components/ResponsiveBanner";
+import alcorWhiteLogo from "../assets/images/alcor-white-logo-no-text.png";
 import { 
   requestEmailVerification, 
   verifyEmailCodeOnly,
@@ -53,6 +55,7 @@ export default function SignupPage() {
   
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
+  const [confirmPasswordState, setConfirmPasswordState] = useState('');
   
   const [formData, setFormData] = useState({
     name: "New Member", // Using placeholder name
@@ -66,9 +69,17 @@ export default function SignupPage() {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     termsAccepted: "",
     verificationCode: "",
   });
+  
+  // Function to get previous path
+  const getPreviousPath = () => {
+    const history = JSON.parse(localStorage.getItem('navigation_history') || '[]');
+    if (history.length <= 1) return "/";
+    return history[history.length - 2];
+  };
   
   // Check for fresh signup flag on component mount
   useEffect(() => {
@@ -95,6 +106,7 @@ export default function SignupPage() {
         name: "",
         email: "",
         password: "",
+        confirmPassword: "",
         termsAccepted: "",
         verificationCode: "",
       });
@@ -103,16 +115,46 @@ export default function SignupPage() {
     }
   }, []);
   
+  // Track navigation for back button functionality
+  useEffect(() => {
+    // Add current path to navigation history
+    const currentPath = location.pathname + location.search;
+    console.log("Adding path to navigation history:", currentPath);
+    
+    // Store in localStorage (a simplified version)
+    const history = JSON.parse(localStorage.getItem('navigation_history') || '[]');
+    if (history.length === 0 || history[history.length - 1] !== currentPath) {
+      const newHistory = [...history, currentPath].slice(-20); // Keep last 20 entries
+      localStorage.setItem('navigation_history', JSON.stringify(newHistory));
+      console.log("Updated navigation history:", newHistory);
+    }
+  }, [location]);
+  
+  // URL-based routing and step management
   useEffect(() => {
     console.log("--- Navigation Debug ---");
     console.log("URL Params:", new URLSearchParams(location.search).get('step'));
     console.log("Current User:", currentUser);
     console.log("Signup State:", signupState);
     
-    // Parse URL for step parameter first
+    // Parse URL for parameters
     const urlParams = new URLSearchParams(location.search);
     const stepParam = parseInt(urlParams.get('step'));
+    const forceParam = urlParams.get('force') === 'true';
+    
     console.log("URL Step Param:", stepParam);
+    console.log("Force Navigation:", forceParam);
+    
+    // If force=true parameter is present, override verification checks
+    if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
+      console.log("Force parameter detected, setting activeStep to:", stepParam);
+      setActiveStep(stepParam);
+      
+      // Clean up the URL by removing the force parameter
+      const newUrl = `/signup?step=${stepParam}`;
+      navigate(newUrl, { replace: true });
+      return;
+    }
     
     // First handle the case where we have a user
     if (currentUser) {
@@ -234,6 +276,7 @@ export default function SignupPage() {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
       termsAccepted: "",
       verificationCode: "",
     });
@@ -284,8 +327,16 @@ export default function SignupPage() {
     // User state debug
     console.log("Current user:", currentUser);
     console.log("Signup state:", signupState);
-  }, [currentUser, signupState]);
+  }, [currentUser, signupState, steps.length]);
   
+  // Clear returning_to_account flag when leaving step 0
+  useEffect(() => {
+    // Clear the "returning to account" flag when leaving step 0
+    if (activeStep !== 0) {
+      sessionStorage.removeItem('returning_to_account');
+    }
+  }, [activeStep]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
@@ -293,6 +344,24 @@ export default function SignupPage() {
     if (name === 'password') {
       // We now allow spaces in passwords - don't strip them
       setPasswordState(value);
+      
+      // Clear confirm password error if password changes
+      if (errors.confirmPassword && confirmPasswordState === value) {
+        setErrors(prev => ({
+          ...prev,
+          confirmPassword: ""
+        }));
+      }
+    } else if (name === 'confirmPassword') {
+      setConfirmPasswordState(value);
+      
+      // Clear confirm password error if it now matches
+      if (errors.confirmPassword && value === passwordState) {
+        setErrors(prev => ({
+          ...prev,
+          confirmPassword: ""
+        }));
+      }
     } else {
       // For all other fields, store in formData
       setFormData({
@@ -362,6 +431,11 @@ export default function SignupPage() {
             ? passwordState.length >= 12 
               ? "For longer passwords, please include some letters and at least one number or symbol" 
               : "Password must be at least 8 characters with uppercase letters, lowercase letters, and numbers. Alternatively, use 12+ characters with mixed character types."
+            : "",
+        confirmPassword: !confirmPasswordState
+          ? "Please confirm your password"
+          : confirmPasswordState !== passwordState
+            ? "Passwords do not match"
             : "",
         termsAccepted: !formData.termsAccepted 
           ? "You must accept the Terms of Use and Privacy Policy" 
@@ -517,16 +591,17 @@ export default function SignupPage() {
             
             // Clear password from memory immediately
             setPasswordState('');
+            setConfirmPasswordState('');
             console.log("Cleared password from memory");
             
             if (authResult.success) {
-              console.log("New user creation successful");
+              console.log("Existing user sign in successful");
               // Clear verification state
               clearVerificationState();
-                
-              // Skip step 0 (success screen) and go directly to step 1
-              setActiveStep(1);
-              navigate(`/signup?step=1`, { replace: true });
+              console.log("Cleared verification state from localStorage");
+              
+              // Skip the success screen for existing users
+              sessionStorage.setItem('completed_verification', 'true');
               
               // Navigate to where they left off
               const nextStepIndex = authResult.signupProgress || 1;
@@ -563,6 +638,7 @@ export default function SignupPage() {
             
             // Clear password from memory immediately
             setPasswordState('');
+            setConfirmPasswordState('');
             console.log("Cleared password from memory");
             
             if (authResult.success) {
@@ -571,12 +647,21 @@ export default function SignupPage() {
               clearVerificationState();
               console.log("Cleared verification state from localStorage");
               
-              // For new users, move to step 1
-              console.log("New user, navigating to step 1");
-              setActiveStep(1);
+              // For new users, skip the success screen and go directly to step 1
+              console.log("New user, skipping success screen and going to step 1");
               
-              // Update URL
-              navigate(`/signup?step=1`, { replace: true });
+              // Update progress in Firebase
+              try {
+                await updateSignupProgress("contact_info", 1, {});
+                console.log("Firebase progress updated to step 1");
+              } catch (progressError) {
+                console.error("Error updating progress:", progressError);
+                // Continue anyway
+              }
+              
+              // Set active step directly to 1 and navigate
+              setActiveStep(1);
+              navigate(`/signup?step=1&force=true`, { replace: true });
               
               // Reset verification step
               setVerificationStep("initial");
@@ -633,6 +718,7 @@ export default function SignupPage() {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
       termsAccepted: "",
       verificationCode: ""
     });
@@ -757,6 +843,7 @@ export default function SignupPage() {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
       termsAccepted: "",
       verificationCode: "",
     });
@@ -792,13 +879,6 @@ export default function SignupPage() {
       navigate(prevPath);
     }
   };
-
-  useEffect(() => {
-    // Clear the "returning to account" flag when leaving step 0
-    if (activeStep !== 0) {
-      sessionStorage.removeItem('returning_to_account');
-    }
-  }, [activeStep]);
   
   // Enhanced handleNext function with form data persistence
   const handleNext = async (stepData = {}) => {
@@ -858,17 +938,15 @@ export default function SignupPage() {
   };
   
   // Determine if we should show AccountCreationSuccess
-  //const showAccountSuccess = currentUser && activeStep === 0;
-  const showAccountSuccess = currentUser && activeStep === 0 && (
-    // Show success screen if any of these conditions are true:
-    signupState?.signupProgress > 0 || // User has progressed beyond step 0
-    sessionStorage.getItem('completed_verification') === 'true' // User just completed verification
-  );
+  // Use direct check against sessionStorage instead of state variable
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header Banner */}
-      <Banner />
+      <ResponsiveBanner 
+      activeStep={activeStep}
+      steps={steps}
+    />
       
       {/* Add CircularProgress component below Banner */}
       <CircularProgress steps={steps} activeStep={activeStep} />
@@ -878,10 +956,10 @@ export default function SignupPage() {
         <div className="w-full max-w-3xl">
           {/* Removed the entire header section including title */}
           
-          {/* Step Content */}
+          {/* Step Content with direct component check */}
           {activeStep === 0 && (
             <>
-              {showAccountSuccess ? (
+              {currentUser && sessionStorage.getItem('returning_to_account') === 'true' ? (
                 <AccountCreationSuccess 
                   currentUser={currentUser} 
                   onNext={handleNext} 
@@ -890,6 +968,7 @@ export default function SignupPage() {
                 <AccountCreationForm
                   formData={formData}
                   passwordState={passwordState}
+                  confirmPasswordState={confirmPasswordState}
                   errors={errors}
                   isSubmitting={isSubmitting}
                   handleChange={handleChange}
@@ -910,16 +989,6 @@ export default function SignupPage() {
             />
           )}
           
-          {/* Debug Info - remove in production */}
-          {process.env.NODE_ENV === 'development' && (
-            <DebugInfo 
-              activeStep={activeStep}
-              verificationStep={verificationStep}
-              currentUser={currentUser}
-              formData={formData}
-              signupState={signupState}
-            />
-          )}
         </div>
       </div>
       

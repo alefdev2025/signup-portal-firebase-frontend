@@ -1,7 +1,7 @@
 // File: pages/WelcomePage.jsx
 import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import darkLogo from "../assets/images/alcor-placeholder-logo.png";
+import darkLogo from "../assets/images/alcor-white-logo.png";
 import { logout } from "../services/auth";
 
 const WelcomePage = () => {

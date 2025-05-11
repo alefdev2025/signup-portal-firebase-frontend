@@ -1,7 +1,7 @@
 // File: pages/LoginPage.jsx - With progress-aware redirection
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import darkLogo from "../assets/images/alcor-placeholder-logo.png";
+import darkLogo from "../assets/images/alcor-white-logo.png";
 import Banner from "../components/Banner";
 import { 
   auth,

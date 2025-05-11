@@ -5,6 +5,7 @@ import PasswordField from './PasswordField';
 const AccountCreationForm = ({ 
   formData, 
   passwordState,
+  confirmPasswordState,
   handleChange, 
   isSubmitting, 
   errors, 
@@ -24,6 +25,7 @@ const AccountCreationForm = ({
     console.log("Form verificationStep:", verificationStep);
     console.log("Form data being submitted:", formData);
     console.log("Password state:", passwordState ? "Password exists" : "No password");
+    console.log("Confirm Password state:", confirmPasswordState ? "Confirm Password exists" : "No confirm password");
     handleSubmit(e);
   };
   
@@ -129,6 +131,37 @@ const AccountCreationForm = ({
         isSubmitting={isSubmitting}
         error={errors.password}
       />
+      
+      {/* Confirm Password Field with Match Indicator */}
+      <div className="mb-10 sm:mb-6 mx-auto max-w-md md:max-w-none">
+        <label htmlFor="confirmPassword" className="block text-gray-800 text-lg font-medium mb-4 sm:mb-2">
+          Confirm Password
+        </label>
+        <div className="relative">
+          <input 
+            type="password" 
+            id="confirmPassword"
+            name="confirmPassword"
+            value={confirmPasswordState}
+            onChange={handleChange}
+            placeholder="Re-enter your password" 
+            className={`w-full px-4 py-5 sm:py-4 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-brand-purple/30'} rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-lg`}
+            disabled={isSubmitting}
+            autoComplete="new-password"
+          />
+          {confirmPasswordState && confirmPasswordState === passwordState && !errors.confirmPassword && (
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+        </div>
+        {errors.confirmPassword && <p className="text-red-500 text-sm mt-3 sm:mt-1">{errors.confirmPassword}</p>}
+        {confirmPasswordState && confirmPasswordState !== passwordState && !errors.confirmPassword && (
+          <p className="text-gray-500 text-sm mt-3 sm:mt-1">Passwords do not match</p>
+        )}
+      </div>
       
       <div className="mb-12 sm:mb-8 mx-auto max-w-md md:max-w-none">
         <label className={`flex items-start ${errors.termsAccepted ? 'text-red-500' : ''}`}>
