@@ -1,9 +1,14 @@
+// File: components/CircularProgress.jsx
 import React from "react";
 import starImage from "../assets/images/alcor-star.png";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 
-const CircularProgress = ({ steps = [], activeStep = 0 }) => {
+const CircularProgress = ({ 
+  steps = [], 
+  activeStep = 0,
+  visible = true // Prop to control visibility
+}) => {
   const navigate = useNavigate();
   const { currentUser, signupState } = useUser() || {};
   const maxCompletedStep = (signupState && signupState.signupProgress) || 0;
@@ -26,6 +31,12 @@ const CircularProgress = ({ steps = [], activeStep = 0 }) => {
   if (!Array.isArray(steps) || steps.length === 0) {
     console.warn("CircularProgress: steps prop is not an array or is empty");
     return null; // Return null if no steps to render
+  }
+
+  // If not visible, return an empty container with EXACT padding
+  if (!visible) {
+    // Use the exact same container class as the visible version
+    return <div className="relative flex justify-center items-center py-12 px-4"></div>;
   }
 
   return (

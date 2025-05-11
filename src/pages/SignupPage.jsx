@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
+// Updated imports
 import Banner from "../components/Banner";
-import ProgressBar from "../components/CircularProgress";
-import CircularProgress from "../components/CircularProgress";
 import ResponsiveBanner from "../components/ResponsiveBanner";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo-no-text.png";
 import { 
@@ -27,7 +26,7 @@ import {
 } from "../contexts/UserContext";
 
 // Import step components
-import ContactInfoPage from "./signup/ContactInfoPage.jsx";
+import ContactInfoPage from "./ContactInfoPage.jsx";
 
 // Import decomposed components
 import AccountCreationForm from "../components/signup/AccountCreationForm";
@@ -937,16 +936,16 @@ export default function SignupPage() {
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header Banner */}
+      {/* Integrated ResponsiveBanner with progress bar */}
       <ResponsiveBanner 
         activeStep={activeStep}
         steps={steps}
+        showSteps={true}
+        showStar={true}
+        showProgressBar={true} // Show the progress circles
       />
       
-      {/* Add CircularProgress component below Banner */}
-      <CircularProgress steps={steps} activeStep={activeStep} />
-      
-      {/* Main Content - Now without the sidebar */}
+      {/* Main Content */}
       <div className="flex-grow p-4 md:p-8 flex justify-center">
         <div className="w-full max-w-3xl">
           {/* Step Content with direct component check */}
@@ -981,11 +980,10 @@ export default function SignupPage() {
               onBack={handleBack}
             />
           )}
-          
         </div>
       </div>
       
-      {/* Use the HelpPanel component directly */}
+      {/* Help Panel */}
       <HelpPanel 
         showHelpInfo={showHelpInfo} 
         toggleHelpInfo={toggleHelpInfo} 

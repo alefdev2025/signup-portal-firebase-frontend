@@ -1,7 +1,7 @@
 // File: components/signup/AccountCreationForm.jsx
 import React, { useState } from 'react';
 import PasswordField from './PasswordField';
-import navyAlcorLogo from '../../assets/images/navy-alcor-logo.png';
+import navyAlcorLogo from '../../assets/images/navy-a-logo.png';
 import TermsPrivacyModal from '../modals/TermsPrivacyModal';
 
 const AccountCreationForm = ({ 
