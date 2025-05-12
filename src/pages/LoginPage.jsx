@@ -1,4 +1,4 @@
-// File: pages/LoginPage.jsx - With improved navigation after account linking
+// File: pages/LoginPage.jsx - With improved navigation and skip options for both auth flows
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -14,6 +14,7 @@ import {
   linkPasswordToGoogleAccount,
   linkGoogleToEmailAccount
 } from "../services/auth";
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { 
   useUser,
@@ -34,6 +35,9 @@ const LoginPage = () => {
   const [highlightPasswordForm, setHighlightPasswordForm] = useState(false);
   const [loginMessage, setLoginMessage] = useState(null);
   const [linkingSuccessful, setLinkingSuccessful] = useState(false);
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
+  const [pendingGoogleLinking, setPendingGoogleLinking] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
   
   // Determine if this is for continuing signup from the URL
   const searchParams = new URLSearchParams(location.search);
@@ -64,11 +68,27 @@ const LoginPage = () => {
     linkGoogle: ""
   });
 
-  // Clear localStorage and sign out on mount
+  // Clear localStorage and sign out on mount (with Google auth check)
   useEffect(() => {
     const clearAndPrepare = async () => {
       try {
-        // First, sign out any existing user
+        // Check if user is already authenticated with Google
+        const currentUser = auth.currentUser;
+        const isGoogleUser = currentUser && 
+                            currentUser.providerData && 
+                            currentUser.providerData.some(p => p.providerId === 'google.com');
+        
+        // Set state to track if user is authenticated with Google
+        setIsGoogleAuthenticated(isGoogleUser);
+        
+        // If already authenticated with Google and trying to add password, skip the Google sign-in part
+        if (currentUser && isGoogleUser && provider === 'google' && addPassword) {
+          console.log("DEBUG: User already authenticated with Google, skipping sign-in");
+          setShowAddPasswordForm(true);
+          return; // Skip the logout and other setup
+        }
+        
+        // First, sign out any existing user (do this only if we haven't detected an existing authenticated user)
         console.log("DEBUG: Signing out user on login page load");
         try {
           await logout();
@@ -127,10 +147,12 @@ const LoginPage = () => {
     clearAndPrepare();
   }, [emailParam, isContinueSignup, provider, addPassword, linkAccounts]);
 
-  // Simplified redirect when user becomes authenticated
+  // Modified redirect when user becomes authenticated
   useEffect(() => {
-    if (currentUser) {
-      console.log("DEBUG: User authenticated, getting step from backend");
+    // Only proceed with navigation if we should navigate
+    // This helps prevent premature navigation during linking flows
+    if (currentUser && shouldNavigate) {
+      console.log("DEBUG: User authenticated and shouldNavigate=true, getting step from backend");
       console.log("DEBUG: Current user:", currentUser.uid, currentUser.email);
       setIsLoading(true);
       
@@ -199,68 +221,22 @@ const LoginPage = () => {
           navigate(`/signup?step=${fallbackStep}`);
         } finally {
           setIsLoading(false);
+          setShouldNavigate(false); // Reset flag after navigation
         }
       };
       
       processUser();
+    } else if (currentUser && pendingGoogleLinking) {
+      // This case handles when a user is authenticated and has pending Google linking
+      console.log("DEBUG: User authenticated with pending Google linking");
+      setLoginMessage({
+        type: 'success',
+        content: "Account authenticated. Please click 'Continue with Google' to complete the linking process."
+      });
+      setHighlightGoogleButton(true);
+      setPendingGoogleLinking(false);
     }
-  }, [currentUser, navigate]);
-
-  // Function to get user progress from backend
-  const getUserProgressFromBackend = async (userId) => {
-    try {
-      // This could be a direct Firestore call, Firebase Function, or your own API
-      console.log(`DEBUG: Fetching user progress for ${userId} from backend`);
-      
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log("DEBUG: User document retrieved:", userData);
-        return {
-          success: true,
-          step: userData.signupProgress || 0,
-          userData: userData
-        };
-      } else {
-        console.log("DEBUG: No user document found, creating one for new user");
-        // Create a basic document for new users
-        await setDoc(userDocRef, {
-          email: currentUser.email,
-          name: currentUser.displayName || "New Member",
-          signupProgress: 0,
-          signupStep: "account",
-          createdAt: new Date(),
-          authProvider: determineAuthProvider(currentUser),
-          lastSignIn: new Date()
-        });
-        
-        return { success: true, step: 0 };
-      }
-    } catch (error) {
-      console.error("DEBUG: Backend error:", error);
-      throw error;
-    }
-  };
-
-  // Function to update local state to match backend
-  const updateLocalState = (user, step) => {
-    console.log(`DEBUG: Updating local storage with step ${step}`);
-    
-    // Update localStorage
-    saveSignupState({
-      userId: user.uid,
-      email: user.email,
-      displayName: user.displayName || "New Member",
-      isExistingUser: true,
-      signupProgress: step,
-      signupStep: getStepName(step),
-      timestamp: Date.now()
-    });
-    
-    console.log("DEBUG: Local storage updated successfully");
-  };
+  }, [currentUser, navigate, shouldNavigate, pendingGoogleLinking]);
 
   // Helper to map step numbers to step names
   const getStepName = (step) => {
@@ -425,6 +401,9 @@ const LoginPage = () => {
       const result = await signInWithEmailAndPassword(formData.email, formData.password);
       console.log("DEBUG: Sign in successful, result:", result);
       
+      // Set flag to allow navigation
+      setShouldNavigate(true);
+      
       // Redirect will happen automatically via the useEffect when currentUser changes
     } catch (error) {
       console.error("DEBUG: Login error:", error);
@@ -499,6 +478,11 @@ const LoginPage = () => {
       if (showLinkGoogleForm || loginMessage?.type === 'success') {
         console.log("DEBUG: Google sign-in was part of account linking");
         setLinkingSuccessful(true);
+        // Now it's safe to navigate
+        setShouldNavigate(true);
+      } else {
+        // Standard Google sign-in flow
+        setShouldNavigate(true);
       }
       
       // Redirect will happen automatically via the useEffect when currentUser changes
@@ -585,9 +569,14 @@ const LoginPage = () => {
     setIsSubmitting(true);
     
     try {
-      // First sign in with Google
-      await signInWithGoogle();
-      console.log("DEBUG: Google sign-in successful for password linking");
+      // Check if we need to sign in with Google first
+      if (!isGoogleAuthenticated) {
+        // First sign in with Google
+        await signInWithGoogle();
+        console.log("DEBUG: Google sign-in successful for password linking");
+      } else {
+        console.log("DEBUG: Already authenticated with Google, skipping sign-in");
+      }
       
       // Then link password to the account
       await linkPasswordToGoogleAccount(newPassword);
@@ -606,6 +595,9 @@ const LoginPage = () => {
       setNewPassword("");
       setConfirmPassword("");
       setShowAddPasswordForm(false);
+      
+      // Now it's safe to navigate
+      setShouldNavigate(true);
       
       // The navigation will happen automatically via the useEffect when currentUser changes
     } catch (error) {
@@ -630,8 +622,140 @@ const LoginPage = () => {
     }
   };
   
-  // Handle linking Google to password account
-  const handleLinkGoogle = async (e) => {
+  // Updated handler for skipping password add
+  const handleSkipPasswordAdd = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Check if already authenticated
+      if (isGoogleAuthenticated) {
+        console.log("DEBUG: Already authenticated with Google, proceeding without re-authentication");
+        
+        // Show a clear message to the user
+        setLoginMessage({
+          type: 'success',
+          content: "Continuing with Google account only. You can add a password later in your settings."
+        });
+        
+        // Allow the message to be seen before navigation
+        setTimeout(() => {
+          // Simply set linking as successful to trigger navigation
+          setLinkingSuccessful(true);
+          setShouldNavigate(true);
+          // The navigation will happen automatically via the useEffect when currentUser changes
+        }, 1000);
+      } else {
+        // Need to authenticate with Google first
+        console.log("DEBUG: Not authenticated with Google yet, signing in");
+        
+        // Make the Google sign-in call and ensure it succeeds
+        const result = await signInWithGoogle();
+        
+        if (!result || !result.success) {
+          throw new Error("Google authentication failed or was canceled");
+        }
+        
+        console.log("DEBUG: Google sign-in successful after skipping password add");
+        
+        // Show success message
+        setLoginMessage({
+          type: 'success',
+          content: "Successfully signed in with Google. Continuing without adding a password."
+        });
+        
+        // Allow the message to be seen before navigation
+        setTimeout(() => {
+          setLinkingSuccessful(true);
+          setShouldNavigate(true);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("DEBUG: Error during Google sign-in after skip:", error);
+      
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      
+      if (error.message === 'Sign-in was cancelled') {
+        errorMessage = "Google sign-in was cancelled. You must complete the sign-in to continue.";
+      } else if (error.message && error.message.includes('pop-up')) {
+        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
+      }
+      
+      setErrors(prev => ({
+        ...prev,
+        general: errorMessage
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Updated function to properly complete authentication
+  const handleSkipGoogleLinking = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Don't call the form handler - instead directly call sign in function
+      console.log("DEBUG: Skipping Google linking, proceeding with just password auth");
+      
+      // Make sure we have email and password
+      if (!formData.email.trim() || !currentPassword.trim()) {
+        setErrors(prev => ({
+          ...prev,
+          linkGoogle: "Please enter your password to continue"
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Sign in directly with email and password
+      const authResult = await signInWithEmailAndPassword(formData.email, currentPassword);
+      
+      if (!authResult || !authResult.success) {
+        throw new Error("Authentication failed");
+      }
+      
+      // Set a flag indicating successful authentication
+      console.log("DEBUG: Password sign-in successful");
+      
+      // Show a clear message to the user that they're proceeding without linking
+      setLoginMessage({
+        type: 'success',
+        content: `Successfully signed in as ${formData.email}. Continuing without linking Google account.`
+      });
+      
+      // Force a delay to show the success message before navigating
+      setTimeout(() => {
+        console.log("DEBUG: Navigating to signup step");
+        setShouldNavigate(true);
+        // The navigation will happen automatically through the useEffect that watches currentUser
+      }, 1000);
+      
+    } catch (error) {
+      console.error("DEBUG: Error during password sign-in after skipping Google:", error);
+      
+      let errorMessage = "Failed to sign in. Please check your password and try again.";
+      
+      if (error.code === "auth/user-not-found" || 
+          error.code === "auth/wrong-password" || 
+          error.code === "auth/invalid-credential") {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed login attempts. Please try again later.";
+      }
+      
+      setErrors(prev => ({
+        ...prev,
+        linkGoogle: errorMessage
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+// Handle linking Google to password account
+const handleLinkGoogle = async (e) => {
     e.preventDefault();
     
     if (isSubmitting) return;
@@ -645,26 +769,39 @@ const LoginPage = () => {
       console.log("DEBUG: Email/password sign-in successful for Google linking");
       
       // Then link Google to the account
-      await linkGoogleToEmailAccount();
-      console.log("DEBUG: Account prepared for Google linking");
+      const linkResult = await linkGoogleToEmailAccount();
       
-      // Show success message with instructions
-      setLoginMessage({
-        type: 'success',
-        content: "Account authenticated. Please click 'Continue with Google' to complete the linking process and continue to your profile."
-      });
-      
-      // Reset password field but keep the form visible
-      setCurrentPassword("");
-      
-      // Show a highlighted Google button and hide the password form
-      setHighlightGoogleButton(true);
-      setHighlightPasswordForm(false);
-      setShowLinkGoogleForm(false);
-      
-      // The user will now need to click the Google button to complete the linking
-      // When they do, setLinkingSuccessful will be set to true in handleGoogleSignIn
-      // And navigation will occur automatically
+      if (linkResult.success) {
+        console.log("DEBUG: Account prepared for Google linking");
+        
+        // Set pending Google linking flag
+        setPendingGoogleLinking(true);
+        
+        // Show success message with instructions
+        setLoginMessage({
+          type: 'success',
+          content: "Account authenticated. Please click 'Continue with Google' to complete the linking process and continue to your profile."
+        });
+        
+        // Reset password field but keep the form visible
+        setCurrentPassword("");
+        
+        // Show a highlighted Google button and hide the password form
+        setHighlightGoogleButton(true);
+        setHighlightPasswordForm(false);
+        setShowLinkGoogleForm(false);
+      } else if (linkResult.error === 'auth/credential-already-in-use') {
+        // Handle the case where a Google account with this email already exists separately
+        setLoginMessage({
+          type: 'info',
+          content: linkResult.message || "A Google account with this email already exists. Continuing with your password account."
+        });
+        
+        // Skip linking and just proceed with the current authentication
+        setTimeout(() => {
+          setShouldNavigate(true);
+        }, 2000);
+      }
     } catch (error) {
       console.error("DEBUG: Error preparing for Google account linking:", error);
       
@@ -879,7 +1016,7 @@ const LoginPage = () => {
                 </>
               )}
               
-              {/* Link Google Account Form */}
+              {/* Link Google Account Form - WITH SKIP OPTION */}
               {showLinkGoogleForm && (
                 <div className="mt-2 mb-6">
                   <p className="text-gray-600 mb-4">
@@ -918,31 +1055,46 @@ const LoginPage = () => {
                     <div className="mb-4 text-red-500 text-sm">{errors.linkGoogle}</div>
                   )}
                   
-                  <button
-                    type="button"
-                    onClick={handleLinkGoogle}
-                    disabled={isSubmitting}
-                    className="w-full bg-blue-600 text-white py-4 px-5 rounded-full font-semibold text-lg hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 w-5 mr-2" />
-                        Sign In & Link with Google
-                      </>
-                    )}
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={handleLinkGoogle}
+                      disabled={isSubmitting}
+                      className="w-full bg-blue-600 text-white py-4 px-5 rounded-full font-semibold text-lg hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 w-5 mr-2" />
+                          Sign In & Link with Google
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Skip option for Google linking */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Submit form to sign in with just password
+                        handleSkipGoogleLinking();
+                      }}
+                      disabled={isSubmitting}
+                      className="w-full border border-gray-300 text-gray-700 py-4 px-5 rounded-full font-medium text-lg hover:bg-gray-50 disabled:opacity-70"
+                    >
+                      {isSubmitting ? "Processing..." : "Skip and Continue with Password Only"}
+                    </button>
+                  </div>
                 </div>
               )}
               
-              {/* Add Password Form */}
+              {/* Add Password Form with Skip Option */}
               {showAddPasswordForm && (
                 <div className="mt-2 mb-6">
                   <p className="text-gray-600 mb-4">
@@ -996,29 +1148,41 @@ const LoginPage = () => {
                     <div className="mb-4 text-red-500 text-sm">{errors.addPassword}</div>
                   )}
                   
-                  <button
-                    type="button"
-                    onClick={handleAddPassword}
-                    disabled={isSubmitting}
-                    className="w-full bg-purple-600 text-white py-4 px-5 rounded-full font-semibold text-lg hover:bg-purple-700 disabled:opacity-70"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      "Add Password & Continue"
-                    )}
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={handleAddPassword}
+                      disabled={isSubmitting}
+                      className="w-full bg-purple-600 text-white py-4 px-5 rounded-full font-semibold text-lg hover:bg-purple-700 disabled:opacity-70"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        "Add Password & Continue"
+                      )}
+                    </button>
+                    
+                    {/* Skip Password Option */}
+                    <button
+                      type="button"
+                      onClick={handleSkipPasswordAdd}
+                      disabled={isSubmitting}
+                      className="w-full border border-gray-300 text-gray-700 py-4 px-5 rounded-full font-medium text-lg hover:bg-gray-50 disabled:opacity-70"
+                    >
+                      {isSubmitting ? "Processing..." : "Skip and Continue with Google Only"}
+                    </button>
+                  </div>
                 </div>
               )}
               
               {/* Show the Google Sign-In option except in password-only linking flow */}
-              {(!showLinkGoogleForm || loginMessage?.type === 'success') && (
+              {(!showLinkGoogleForm || loginMessage?.type === 'success') && !showAddPasswordForm && (
                 <>
                   <div className="flex items-center my-6">
                     <div className="flex-grow border-t border-gray-300"></div>
@@ -1035,9 +1199,11 @@ const LoginPage = () => {
                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-6 w-6 mr-3" />
                     {highlightGoogleButton && loginMessage?.type === 'success' 
                       ? 'Continue with Google to Complete Linking' 
-                      : highlightGoogleButton 
-                        ? 'Sign in with Google (Recommended)' 
-                        : 'Continue with Google'}
+                      : isGoogleAuthenticated 
+                        ? 'Continue with Google' 
+                        : highlightGoogleButton 
+                          ? 'Sign in with Google (Recommended)' 
+                          : 'Continue with Google'}
                   </button>
                 </>
               )}

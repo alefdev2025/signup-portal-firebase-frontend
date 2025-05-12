@@ -282,46 +282,71 @@ export const linkPasswordToGoogleAccount = async (password) => {
   }
 };
 
-// Function to link a Google account to a password account
 export const linkGoogleToEmailAccount = async () => {
-  try {
-    console.log("DEBUG: Linking Google account to password-based account");
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("No authenticated user found");
-    }
-    
-    // Create Google auth provider
-    const googleProvider = new GoogleAuthProvider();
-    
-    // Link the Google account to the current user
-    const result = await linkWithPopup(currentUser, googleProvider);
-    
-    console.log("DEBUG: Successfully linked Google account");
-    
-    // Update user document to reflect multiple auth methods
     try {
-      const userRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userRef, {
-        hasGoogleAuth: true,
-        authProviders: arrayUnion("google.com"),
-        lastUpdated: new Date()
+      console.log("DEBUG: Linking Google account to password-based account");
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user found");
+      }
+      
+      // Store the current user's email
+      const userEmail = currentUser.email;
+      
+      // Create Google auth provider
+      const googleProvider = new GoogleAuthProvider();
+      
+      // Set login hint to force selection of the right Google account
+      googleProvider.setCustomParameters({
+        login_hint: userEmail
       });
-    } catch (firestoreError) {
-      console.error("DEBUG: Error updating user document:", firestoreError);
-      // Continue despite error - the Google account is still linked
+      
+      // Link the Google account to the current user
+      try {
+        const result = await linkWithPopup(currentUser, googleProvider);
+        
+        console.log("DEBUG: Successfully linked Google account");
+        
+        // Update user document to reflect multiple auth methods
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          await updateDoc(userRef, {
+            hasGoogleAuth: true,
+            authProviders: arrayUnion("google.com"),
+            lastUpdated: new Date()
+          });
+        } catch (firestoreError) {
+          console.error("DEBUG: Error updating user document:", firestoreError);
+          // Continue despite error - the Google account is still linked
+        }
+        
+        return { 
+          success: true,
+          user: result.user
+        };
+      } catch (linkError) {
+        console.error("DEBUG: Linking error:", linkError);
+        
+        if (linkError.code === 'auth/credential-already-in-use') {
+          console.log("DEBUG: Detected credential already in use");
+          
+          // This means a Google account with this email already exists separately
+          // Let's tell the user to just continue with their password account for now
+          return {
+            success: false,
+            error: linkError.code,
+            message: "A Google account with this email already exists. Please continue with your password account for now."
+          };
+        }
+        
+        throw linkError;
+      }
+    } catch (error) {
+      console.error("DEBUG: Error linking Google account:", error);
+      throw error;
     }
-    
-    return { 
-      success: true,
-      user: result.user
-    };
-  } catch (error) {
-    console.error("DEBUG: Error linking Google account:", error);
-    throw error;
-  }
-};
+  };
 
 // Password reset function for login page
 export const resetPassword = async (email) => {
