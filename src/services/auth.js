@@ -240,47 +240,214 @@ const handleGoogleSignIn = async () => {
     }
   };
 
-
-// Function to link a password to a Google account
-export const linkPasswordToGoogleAccount = async (password) => {
-  try {
-    console.log("DEBUG: Linking password to Google account");
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("No authenticated user found");
-    }
-    
-    // Create email credential
-    const emailCredential = EmailAuthProvider.credential(
-      currentUser.email,
-      password
-    );
-    
-    // Link the credential to the current user
-    await linkWithCredential(currentUser, emailCredential);
-    
-    console.log("DEBUG: Successfully linked password to Google account");
-    
-    // Update user document to reflect multiple auth methods
+  export const linkGoogleToEmailAccount = async () => {
     try {
-      const userRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userRef, {
-        hasPasswordAuth: true,
-        authProviders: arrayUnion("password"),
-        lastUpdated: new Date()
+      console.log("DEBUG: Linking Google account to password-based account");
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user found");
+      }
+      
+      // Store the current user's email
+      const userEmail = currentUser.email;
+      console.log(`DEBUG: Current user email: ${userEmail}`);
+      
+      // Create Google auth provider
+      const googleProvider = new GoogleAuthProvider();
+      
+      // Set login hint to force selection of the right Google account
+      googleProvider.setCustomParameters({
+        login_hint: userEmail
       });
-    } catch (firestoreError) {
-      console.error("DEBUG: Error updating user document:", firestoreError);
-      // Continue despite error - the password is still linked
+      
+      // Link the Google account to the current user
+      try {
+        const result = await linkWithPopup(currentUser, googleProvider);
+        console.log("DEBUG: Successfully linked Google account");
+        
+        // Update user document to reflect multiple auth methods
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          await updateDoc(userRef, {
+            hasGoogleAuth: true,
+            authProvider: "multiple",
+            authProviders: arrayUnion("google.com"),
+            lastUpdated: new Date()
+          });
+          console.log("DEBUG: Updated user document with Google auth info");
+        } catch (firestoreError) {
+          console.error("DEBUG: Error updating user document:", firestoreError);
+          // Continue despite error - the Google account is still linked
+        }
+        
+        return { 
+          success: true,
+          user: result.user
+        };
+      } catch (linkError) {
+        console.error("DEBUG: Linking error:", linkError);
+        
+        if (linkError.code === 'auth/credential-already-in-use') {
+          console.log("DEBUG: Detected credential already in use");
+          
+          // This means a Google account with this email already exists separately
+          // Let the user know they need to use their password account
+          return {
+            success: false,
+            error: linkError.code,
+            message: "A Google account with this email already exists separately. Please continue with your password account."
+          };
+        }
+        
+        // For other errors, just pass them through
+        throw linkError;
+      }
+    } catch (error) {
+      console.error("DEBUG: Error linking Google account:", error);
+      throw error;
     }
-    
-    return { success: true };
-  } catch (error) {
-    console.error("DEBUG: Error linking password:", error);
-    throw error;
-  }
-};
+  };
+
+  export const linkPasswordToGoogleAccount = async (password) => {
+    try {
+      console.log("DEBUG: Linking password to Google account");
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user found");
+      }
+      
+      // Check if this is actually a Google-authenticated user
+      const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+      if (!isGoogleUser) {
+        console.error("DEBUG: Not a Google-authenticated user");
+        throw new Error("User must be authenticated with Google to add a password");
+      }
+      
+      // Check if the user already has password auth
+      const hasPasswordAuth = currentUser.providerData.some(p => p.providerId === 'password');
+      if (hasPasswordAuth) {
+        console.log("DEBUG: User already has password auth");
+        throw new Error("This account already has a password");
+      }
+      
+      // Create email credential
+      const emailCredential = EmailAuthProvider.credential(
+        currentUser.email,
+        password
+      );
+      
+      // Link the credential to the current user
+      await linkWithCredential(currentUser, emailCredential);
+      console.log("DEBUG: Successfully linked password to Google account");
+      
+      // Update user document to reflect multiple auth methods
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          // Update existing document
+          await updateDoc(userRef, {
+            hasPasswordAuth: true,
+            authProvider: "multiple",
+            authProviders: arrayUnion("password"),
+            lastUpdated: new Date()
+          });
+        } else {
+          // Create new document
+          await setDoc(userRef, {
+            email: currentUser.email,
+            name: currentUser.displayName || "New Member",
+            hasPasswordAuth: true,
+            hasGoogleAuth: true,
+            authProvider: "multiple",
+            authProviders: ["google.com", "password"],
+            signupProgress: 1, // Default to step 1
+            signupStep: "contact_info",
+            createdAt: new Date(),
+            lastUpdated: new Date()
+          });
+        }
+        
+        console.log("DEBUG: Updated user document with password auth info");
+      } catch (firestoreError) {
+        console.error("DEBUG: Error updating user document:", firestoreError);
+        // Continue despite error - the password is still linked
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("DEBUG: Error linking password:", error);
+      throw error;
+    }
+  };
+
+  /*export const linkPasswordToGoogleAccount = async (password) => {
+    try {
+      console.log("DEBUG: Linking password to Google account");
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("No authenticated user found");
+      }
+      
+      // Check if this is actually a Google-authenticated user
+      const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+      if (!isGoogleUser) {
+        console.error("DEBUG: Not a Google-authenticated user");
+        throw new Error("User must be authenticated with Google to add a password");
+      }
+      
+      // Log full provider data for debugging
+      console.log("DEBUG: User provider data:", currentUser.providerData);
+      
+      // Check if already has password provider
+      const hasPasswordProvider = currentUser.providerData.some(
+        p => p.providerId === 'password'
+      );
+      
+      if (hasPasswordProvider) {
+        console.log("DEBUG: User already has password auth");
+        throw new Error("This account already has a password");
+      }
+      
+      // Create email credential
+      const emailCredential = EmailAuthProvider.credential(
+        currentUser.email,
+        password
+      );
+      
+      // Link the credential to the current user
+      try {
+        await linkWithCredential(currentUser, emailCredential);
+        console.log("DEBUG: Successfully linked password to Google account");
+      } catch (linkError) {
+        console.error("DEBUG: Error linking credentials:", linkError);
+        throw linkError;
+      }
+      
+      // Update user document to reflect multiple auth methods
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, {
+          hasPasswordAuth: true,
+          authProvider: "multiple",
+          authProviders: arrayUnion("password"),
+          lastUpdated: new Date()
+        });
+      } catch (firestoreError) {
+        console.error("DEBUG: Error updating user document:", firestoreError);
+        // Continue despite error - the password is still linked
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("DEBUG: Error linking password:", error);
+      throw error;
+    }
+  };
 
 export const linkGoogleToEmailAccount = async () => {
     try {
@@ -346,7 +513,7 @@ export const linkGoogleToEmailAccount = async () => {
       console.error("DEBUG: Error linking Google account:", error);
       throw error;
     }
-  };
+  };*/
 
 // Password reset function for login page
 export const resetPassword = async (email) => {
@@ -849,7 +1016,7 @@ export async function verifyEmailCode(verificationId, code, password) {
 }
 
 // Modified signInWithGoogle with direct Firestore check
-export async function signInWithGoogle() {
+/*export async function signInWithGoogle() {
     console.log("DEBUG: Starting Google sign-in process");
     
     try {
@@ -980,6 +1147,149 @@ export async function signInWithGoogle() {
       }
     } catch (error) {
       console.error("DEBUG: Error in Google sign-in:", error);
+      throw error;
+    }
+  }*/
+
+// The error is likely in the signInWithGoogle function where I added options parameters.
+// Let's provide the correct version that maintains compatibility:
+
+export async function signInWithGoogle(options) {
+    // Handle options in a backward-compatible way
+    const keepExistingUser = options && options.maintainSession === true;
+    
+    console.log("DEBUG: Starting Google sign-in process", { keepExistingUser });
+    
+    try {
+      // Only sign out if not keeping the existing user
+      if (!keepExistingUser) {
+        console.log("DEBUG: Signing out any current user");
+        try {
+          await auth.signOut();
+          console.log("DEBUG: Sign out successful or no user was logged in");
+        } catch (signOutError) {
+          console.error("DEBUG: Error during sign out:", signOutError);
+          // Continue anyway
+        }
+      } else {
+        console.log("DEBUG: Maintaining current session, not signing out");
+      }
+      
+      // Create Google auth provider
+      const googleProvider = new GoogleAuthProvider();
+      
+      // Authenticate with Google
+      console.log("DEBUG: Authenticating with Google");
+      const tempResult = await signInWithPopup(auth, googleProvider);
+      const user = tempResult.user;
+      const email = user.email;
+      console.log(`DEBUG: Google account email: ${email}`);
+      
+      // Check for existing email with password auth
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      
+      // Check if any users were found with password auth
+      if (!querySnapshot.empty) {
+        console.log(`DEBUG: Found ${querySnapshot.size} existing user(s) in Firestore with email: ${email}`);
+        
+        let hasPasswordUser = false;
+        
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          console.log(`DEBUG: User data for ${doc.id}:`, userData);
+          
+          if (userData.authProvider === "email" || 
+              userData.authProvider === "password" ||
+              (userData.authProviders && userData.authProviders.includes("password"))) {
+            console.log(`DEBUG: User ${doc.id} has password auth`);
+            hasPasswordUser = true;
+          }
+        });
+        
+        if (hasPasswordUser) {
+          console.log(`DEBUG: Email ${email} exists with password auth, signing out user`);
+          
+          // Sign out the temporary user
+          await auth.signOut();
+          
+          return {
+            success: false,
+            error: 'auth/account-exists-with-different-credential',
+            email,
+            message: "This email is already registered with a password. Please sign in with your password first to link your accounts."
+          };
+        }
+      } else {
+        console.log(`DEBUG: No existing users found in Firestore with email: ${email}`);
+      }
+      
+      // User can safely continue with Google sign-in
+      console.log(`DEBUG: Email ${email} can safely use Google sign-in`);
+      
+      // Update Firestore
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+          // Create new user document
+          await setDoc(userRef, {
+            email: user.email,
+            name: user.displayName || "New Member",
+            signupProgress: 1,
+            signupStep: "contact_info",
+            createdAt: new Date(),
+            authProvider: "google",
+            hasGoogleAuth: true,
+            authProviders: ["google.com"],
+            lastSignIn: new Date()
+          });
+        } else {
+          // Update existing document
+          await updateDoc(userRef, {
+            lastSignIn: new Date(),
+            hasGoogleAuth: true
+          });
+        }
+      } catch (firestoreError) {
+        console.error("DEBUG: Error with Firestore:", firestoreError);
+        // Continue anyway
+      }
+      
+      // Update local storage
+      saveSignupState({
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        isExistingUser: false,
+        signupProgress: 1,
+        signupStep: "contact_info",
+        timestamp: Date.now()
+      });
+      
+      // Clear any verification state
+      clearVerificationState();
+      
+      return {
+        success: true,
+        isNewUser: true,
+        user
+      };
+    } catch (error) {
+      console.error("DEBUG: Error in Google sign-in:", error);
+      
+      // Handle specific errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        return {
+          success: false,
+          error: error.code,
+          message: "Google sign-in was cancelled."
+        };
+      }
+      
+      // For any other errors, rethrow
       throw error;
     }
   }

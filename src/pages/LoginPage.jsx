@@ -69,7 +69,7 @@ const LoginPage = () => {
   });
 
   // Clear localStorage and sign out on mount (with Google auth check)
-  useEffect(() => {
+  /*useEffect(() => {
     const clearAndPrepare = async () => {
       try {
         // Check if user is already authenticated with Google
@@ -145,6 +145,104 @@ const LoginPage = () => {
     };
     
     clearAndPrepare();
+  }, [emailParam, isContinueSignup, provider, addPassword, linkAccounts]);*/
+
+  // ONLY modify the useEffect in LoginPage.jsx to prevent logout when adding password to Google account
+// This is a minimal change to fix Scenario 1
+
+useEffect(() => {
+    const checkAuthAndSetup = async () => {
+      try {
+        // Get current authentication state
+        const currentUser = auth.currentUser;
+        console.log("DEBUG: Current user on login page load:", currentUser?.uid);
+        
+        // If we're adding a password to a Google account, check if they're authenticated with Google
+        if (provider === 'google' && addPassword) {
+          console.log("DEBUG: In add password to Google flow");
+          
+          // Check if user is authenticated with Google
+          const isGoogleUser = currentUser && 
+                              currentUser.providerData && 
+                              currentUser.providerData.some(p => p.providerId === 'google.com');
+          
+          console.log("DEBUG: Is Google authenticated:", isGoogleUser);
+          setIsGoogleAuthenticated(isGoogleUser);
+          
+          if (isGoogleUser) {
+            console.log("DEBUG: User is authenticated with Google, showing password form");
+            setShowAddPasswordForm(true);
+            
+            // Set email from current user if not provided in URL
+            if (!emailParam && currentUser.email) {
+              setFormData(prev => ({
+                ...prev,
+                email: currentUser.email
+              }));
+            }
+            
+            // No need to do anything else for this flow
+            return;
+          }
+        }
+        
+        // For all other scenarios, log out and start fresh
+        console.log("DEBUG: Not in Google+addPassword flow or not authenticated, signing out");
+        try {
+          await logout();
+        } catch (error) {
+          console.log("DEBUG: No user to log out or error during logout:", error);
+        }
+        
+        // Clear verification state
+        localStorage.removeItem('alcor_verification_state');
+        
+        // Set initial form state if email provided
+        if (emailParam) {
+          setFormData(prev => ({
+            ...prev,
+            email: emailParam
+          }));
+        }
+        
+        // Handle various URL parameters for account linking
+        if (emailParam) {
+          if (provider === 'google') {
+            // Handle Google account users
+            setLoginMessage({
+              type: 'info',
+              content: `This email (${emailParam}) is associated with a Google account. You can sign in with Google or add a password to link your accounts.`
+            });
+            setHighlightGoogleButton(true);
+            
+            if (addPassword) {
+              setShowAddPasswordForm(true);
+            }
+          } else if (provider === 'password') {
+            // Handle email/password account users trying to use Google
+            setLoginMessage({
+              type: 'info',
+              content: `This email (${emailParam}) already has a password. You can sign in with your password or link your Google account.`
+            });
+            setHighlightPasswordForm(true);
+            
+            if (linkAccounts) {
+              setShowLinkGoogleForm(true);
+            }
+          } else if (isContinueSignup) {
+            // Generic existing user message
+            setLoginMessage({
+              type: 'info',
+              content: `This email is already registered. Please sign in to continue your membership process.`
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing login page:", error);
+      }
+    };
+    
+    checkAuthAndSetup();
   }, [emailParam, isContinueSignup, provider, addPassword, linkAccounts]);
 
   // Modified redirect when user becomes authenticated
@@ -520,46 +618,6 @@ const LoginPage = () => {
     }
   };
   
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    
-    if (isSubmitting) return;
-    if (!validateResetForm()) return;
-    
-    setIsSubmitting(true);
-    
-    try {
-      await resetPassword(resetEmail);
-      
-      // Show success message
-      setLoginMessage({
-        type: 'success',
-        content: `Password reset email sent to ${resetEmail}. Please check your inbox and follow the instructions.`
-      });
-      
-      // Reset form and go back to login
-      setResetEmail("");
-      setShowResetForm(false);
-    } catch (error) {
-      console.error("Password reset error:", error);
-      
-      if (error.code === "auth/user-not-found") {
-        setErrors(prev => ({
-          ...prev,
-          reset: "No account found with this email address."
-        }));
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          reset: error.message || "Failed to send reset email. Please try again."
-        }));
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle adding password to Google account
   const handleAddPassword = async (e) => {
     e.preventDefault();
     
@@ -569,16 +627,48 @@ const LoginPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Check if we need to sign in with Google first
-      if (!isGoogleAuthenticated) {
-        // First sign in with Google
-        await signInWithGoogle();
-        console.log("DEBUG: Google sign-in successful for password linking");
-      } else {
-        console.log("DEBUG: Already authenticated with Google, skipping sign-in");
+      // Verify Google authentication
+      const currentUser = auth.currentUser;
+      const isGoogleAuthenticated = currentUser && 
+                                  currentUser.providerData && 
+                                  currentUser.providerData.some(p => p.providerId === 'google.com');
+      
+      console.log("DEBUG: Current user in handleAddPassword:", currentUser?.uid);
+      console.log("DEBUG: Is Google authenticated:", isGoogleAuthenticated);
+      
+      // If not already authenticated with Google, authenticate now
+      if (!currentUser || !isGoogleAuthenticated) {
+        console.log("DEBUG: Not authenticated with Google, signing in now");
+        
+        try {
+          const result = await signInWithGoogle();
+          console.log("DEBUG: Google sign-in result:", result);
+          
+          if (!result.success) {
+            throw new Error(result.message || "Failed to sign in with Google");
+          }
+          
+          // Re-check authentication state after Google sign-in
+          const updatedUser = auth.currentUser;
+          const nowAuthenticated = updatedUser && 
+                                updatedUser.providerData && 
+                                updatedUser.providerData.some(p => p.providerId === 'google.com');
+                                
+          if (!nowAuthenticated) {
+            throw new Error("Google authentication failed. Please try again.");
+          }
+          
+          console.log("DEBUG: Successfully authenticated with Google, proceeding with password linking");
+        } catch (authError) {
+          console.error("DEBUG: Error during Google authentication:", authError);
+          throw authError; // Re-throw to be caught by outer catch
+        }
       }
       
-      // Then link password to the account
+      console.log("DEBUG: User is authenticated with Google, proceeding with password linking");
+      
+      // At this point, we should have a Google-authenticated user
+      // Link password to the account
       await linkPasswordToGoogleAccount(newPassword);
       console.log("DEBUG: Password successfully linked to Google account");
       
@@ -597,20 +687,27 @@ const LoginPage = () => {
       setShowAddPasswordForm(false);
       
       // Now it's safe to navigate
-      setShouldNavigate(true);
+      setTimeout(() => {
+        setShouldNavigate(true);
+      }, 1500);
       
-      // The navigation will happen automatically via the useEffect when currentUser changes
     } catch (error) {
       console.error("DEBUG: Error adding password:", error);
       
       let errorMessage = "Failed to add password. Please try again.";
       
       if (error.code === 'auth/requires-recent-login') {
-        errorMessage = "For security reasons, please sign in again before adding a password.";
+        errorMessage = "For security reasons, please sign in again with Google by clicking 'Continue with Google' below.";
+        
+        // Show the Google button in case of re-authentication needs
+        setShowAddPasswordForm(false);
+        setHighlightGoogleButton(true);
       } else if (error.code === 'auth/email-already-in-use') {
         errorMessage = "This email is already in use with another account.";
       } else if (error.code === 'auth/credential-already-in-use') {
         errorMessage = "This account already has a password. Please use password reset if you forgot it.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       setErrors(prev => ({
@@ -621,7 +718,81 @@ const LoginPage = () => {
       setIsSubmitting(false);
     }
   };
+
+
+/*const handleAddPassword = async (e) => {
+  e.preventDefault();
   
+  if (isSubmitting) return;
+  if (!validatePasswordForm()) return;
+  
+  setIsSubmitting(true);
+  
+  try {
+    // Verify Google authentication
+    const currentUser = auth.currentUser;
+    const isGoogleAuthenticated = currentUser && 
+                                currentUser.providerData && 
+                                currentUser.providerData.some(p => p.providerId === 'google.com');
+    
+    console.log("DEBUG: Current user in handleAddPassword:", currentUser?.uid);
+    console.log("DEBUG: Is Google authenticated:", isGoogleAuthenticated);
+    
+    // Safety check - don't proceed if not authenticated with Google
+    if (!currentUser || !isGoogleAuthenticated) {
+      throw new Error("You must be authenticated with Google to add a password");
+    }
+    
+    console.log("DEBUG: Proceeding with password linking");
+    
+    // Link password to the account
+    await linkPasswordToGoogleAccount(newPassword);
+    console.log("DEBUG: Password successfully linked to Google account");
+    
+    // Mark linking as successful so we navigate to the appropriate step
+    setLinkingSuccessful(true);
+    
+    // This is just for feedback, but we'll actually navigate away
+    setLoginMessage({
+      type: 'success',
+      content: "Password successfully added to your account. Redirecting to your profile..."
+    });
+    
+    // Reset form fields
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowAddPasswordForm(false);
+    
+    // Now it's safe to navigate
+    setTimeout(() => {
+      setShouldNavigate(true);
+    }, 1500);
+    
+  } catch (error) {
+    console.error("DEBUG: Error adding password:", error);
+    
+    let errorMessage = "Failed to add password. Please try again.";
+    
+    if (error.code === 'auth/requires-recent-login') {
+      errorMessage = "For security reasons, please return to the signup page and try this process again.";
+    } else if (error.code === 'auth/email-already-in-use') {
+      errorMessage = "This email is already in use with another account.";
+    } else if (error.code === 'auth/credential-already-in-use') {
+      errorMessage = "This account already has a password. Please use password reset if you forgot it.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    setErrors(prev => ({
+      ...prev, 
+      addPassword: errorMessage
+    }));
+  } finally {
+    setIsSubmitting(false);
+  }
+};*/
+
+
   // Updated handler for skipping password add
   const handleSkipPasswordAdd = async () => {
     if (isSubmitting) return;
@@ -754,7 +925,8 @@ const LoginPage = () => {
     }
   };
   
-// Handle linking Google to password account
+// Modified handleLinkGoogle function for LoginPage.jsx
+
 const handleLinkGoogle = async (e) => {
     e.preventDefault();
     
@@ -767,43 +939,33 @@ const handleLinkGoogle = async (e) => {
       // First sign in with email & password
       await signInWithEmailAndPassword(formData.email, currentPassword);
       console.log("DEBUG: Email/password sign-in successful for Google linking");
+
+      // Create a Firebase Functions instance for direct linking
+      const functions = getFunctions();
+      const finalizeGoogleLinking = httpsCallable(functions, 'finalizeGoogleLinking');
       
-      // Then link Google to the account
-      const linkResult = await linkGoogleToEmailAccount();
+      // Call the cloud function to finalize the linking
+      // This will check if the user already has both auth providers
+      const result = await finalizeGoogleLinking();
       
-      if (linkResult.success) {
-        console.log("DEBUG: Account prepared for Google linking");
+      if (result.data && result.data.success) {
+        console.log("DEBUG: Account linking successful via cloud function");
         
-        // Set pending Google linking flag
-        setPendingGoogleLinking(true);
-        
-        // Show success message with instructions
+        // Show success message
         setLoginMessage({
           type: 'success',
-          content: "Account authenticated. Please click 'Continue with Google' to complete the linking process and continue to your profile."
+          content: "Your accounts have been successfully linked! Redirecting to your profile..."
         });
         
-        // Reset password field but keep the form visible
-        setCurrentPassword("");
-        
-        // Show a highlighted Google button and hide the password form
-        setHighlightGoogleButton(true);
-        setHighlightPasswordForm(false);
-        setShowLinkGoogleForm(false);
-      } else if (linkResult.error === 'auth/credential-already-in-use') {
-        // Handle the case where a Google account with this email already exists separately
-        setLoginMessage({
-          type: 'info',
-          content: linkResult.message || "A Google account with this email already exists. Continuing with your password account."
-        });
-        
-        // Skip linking and just proceed with the current authentication
+        // Set a slight delay before navigating to allow the user to see the success message
         setTimeout(() => {
           setShouldNavigate(true);
-        }, 2000);
+        }, 1500);
+      } else {
+        throw new Error(result.data?.error || "Failed to link accounts");
       }
     } catch (error) {
-      console.error("DEBUG: Error preparing for Google account linking:", error);
+      console.error("DEBUG: Error during account linking:", error);
       
       let errorMessage = "Failed to authenticate. Please check your password and try again.";
       
@@ -811,6 +973,8 @@ const handleLinkGoogle = async (e) => {
         errorMessage = "Incorrect password. Please check your password and try again.";
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Too many failed attempts. Please try again later or reset your password.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       setErrors(prev => ({
