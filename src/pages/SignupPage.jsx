@@ -726,7 +726,9 @@ export default function SignupPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+// In SignupPage.jsx, ensure the handleGoogleSignIn function properly handles conflicts
+
+const handleGoogleSignIn = async () => {
     if (isSubmitting) return;
     console.log("Starting Google sign-in process");
     
@@ -737,7 +739,8 @@ export default function SignupPage() {
       password: "",
       confirmPassword: "",
       termsAccepted: "",
-      verificationCode: ""
+      verificationCode: "",
+      general: ""
     });
     
     try {
@@ -745,6 +748,19 @@ export default function SignupPage() {
       const result = await signInWithGoogle();
       
       console.log("Google sign-in result:", result);
+      
+      // Check specifically for account-exists-with-different-credential error
+      if (result && result.error === 'auth/account-exists-with-different-credential') {
+        console.log("Account conflict detected");
+        
+        // Get the email from the result
+        const email = result.email || '';
+        console.log(`Redirecting to login for account linking with email: ${email}`);
+        
+        // Navigate to login page with parameters to trigger account linking
+        navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
+        return;
+      }
       
       if (result && result.success) {
         // Clear verification state since we're now authenticated
@@ -755,29 +771,51 @@ export default function SignupPage() {
         hasNavigatedRef.current = true;
         console.log("Set hasNavigatedRef to true");
         
-        // Navigate to signup with showSuccess parameter
-        navigate('/signup?step=0&showSuccess=true', { replace: true });
+        // After sign-in, wait a moment for auth state to update
+        setTimeout(() => {
+          // Navigate to signup with showSuccess parameter
+          console.log("Navigating to signup with showSuccess parameter");
+          navigate('/signup?step=0&showSuccess=true', { replace: true });
+        }, 500);
       } else {
         console.error("Google sign-in did not return success=true");
-        // Show a generic error message
-        alert("Failed to sign in with Google. Please try again or use email verification.");
+        
+        // Show error message
+        setErrors(prev => ({
+          ...prev,
+          general: result?.message || "Failed to sign in with Google. Please try again."
+        }));
       }
     } catch (error) {
       console.error("Error during Google sign-in:", error);
       
-      // Handle user-friendly error messages
+      // Check for different credential error directly from the caught error
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        console.log("Caught auth/account-exists-with-different-credential error");
+        
+        // Get the email from the error if available
+        const email = error.customData?.email || '';
+        
+        // Navigate to login page with parameters for linking
+        navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
+        return;
+      }
+      
+      // Handle other errors
       let errorMessage = "Failed to sign in with Google. Please try again.";
       
       if (error.message === 'Sign-in was cancelled') {
         errorMessage = "Google sign-in was cancelled. Please try again.";
-      } else if (error.message && error.message.includes('pop-up')) {
-        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
+      } else if (error.message && error.message.includes('popup')) {
+        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site and try again.";
       } else if (error.message && error.message.includes('network')) {
         errorMessage = "Network error. Please check your internet connection.";
       }
       
-      // Show error message to user
-      alert(errorMessage);
+      setErrors(prev => ({
+        ...prev,
+        general: errorMessage
+      }));
     } finally {
       setIsSubmitting(false);
       console.log("Setting isSubmitting back to false");
