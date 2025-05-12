@@ -1,9 +1,11 @@
-// File: components/ResponsiveBanner.jsx - With adjusted logo positioning
+// File: components/ResponsiveBanner.jsx - With original background gradient
 import React from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
+import ProgressCircles from "./ProgressCircles";
+import MobileProgressCircles from "./MobileProgressCircles";
 
 /**
  * Responsive Banner Component that handles proper navigation and state management
@@ -135,7 +137,7 @@ const ResponsiveBanner = ({
   
   const alignmentClasses = getTextAlignmentClasses();
 
-  // Gradient style for banners that need it
+  // Original gradient style for the background
   const gradientStyle = {
     background: 'linear-gradient(90deg, #13233e 0%, #2D3050 40%, #49355B 80%, #654a54 100%)'
   };
@@ -266,104 +268,14 @@ const ResponsiveBanner = ({
             </div>
           )}
           
-          {/* Mobile Progress Bar - inside colored banner */}
+          {/* Mobile Progress Bar - using the separated component */}
           {showProgressBar && (
-            <div className="py-3 pb-6">
-              <div className="flex justify-between w-full">
-                {/* Create a centered container for circles and lines */}
-                <div className="flex items-center w-full relative">
-                  {/* Base connector line - Exactly centered with circles */}
-                  <div 
-                    className="absolute h-0.5 bg-white/5" 
-                    style={{ 
-                      left: '10%', 
-                      right: '10%',
-                      top: 'calc(50% - 7px)',
-                    }}
-                  ></div>
-
-                  {/* Active connector line - with animation */}
-                  <div 
-                    className="absolute h-0.5 bg-gradient-to-r from-yellow-300/90 via-orange-400/90 to-red-500/90 transition-all duration-700"
-                    style={{ 
-                      left: '10%',
-                      width: `${activeStep === 0 ? 0 : (activeStep / (steps.length - 1)) * 80}%`,
-                      top: 'calc(50% - 7px)',
-                    }}
-                  ></div>
-
-                  {/* Step circles */}
-                  {steps.map((step, index) => {
-                    const isActive = index === activeStep;
-                    const isCompleted = index < activeStep;
-                    // Step 0 is always clickable if we've completed any steps
-                    const isClickable = (index === 0 && maxCompletedStep > 0) || (index <= maxCompletedStep);
-
-                    let containerClasses = "w-5 h-5 rounded-full flex items-center justify-center relative";
-                    
-                    let bgColor;
-                    if (isActive || isCompleted) {
-                      if (index === 0) bgColor = "rgba(250, 204, 21, 0.7)"; // yellow-300 at 70% opacity
-                      else if (index === 1) bgColor = "rgba(251, 146, 60, 0.7)"; // orange-400 at 70% opacity
-                      else if (index === 2) bgColor = "rgba(239, 68, 68, 0.7)"; // red-500 at 70% opacity
-                      else bgColor = "rgba(111, 45, 116, 0.7)"; // purple at 70% opacity
-                    } else {
-                      // For incomplete steps, use the same color but with lower opacity
-                      if (index === 0) bgColor = "rgba(250, 204, 21, 0.15)"; // yellow-300 at 15% opacity
-                      else if (index === 1) bgColor = "rgba(251, 146, 60, 0.15)"; // orange-400 at 15% opacity
-                      else if (index === 2) bgColor = "rgba(239, 68, 68, 0.15)"; // red-500 at 15% opacity
-                      else bgColor = "rgba(111, 45, 116, 0.15)"; // purple at 15% opacity
-                    }
-
-                    const opacity = isActive || isCompleted ? 1 : 0.5; // Lower opacity for inactive steps
-                    if (isActive) containerClasses += " mobile-circle-glow";
-                    if (isClickable) containerClasses += " cursor-pointer";
-
-                    return (
-                      <div 
-                        key={index} 
-                        className="flex flex-col items-center flex-1 relative"
-                        onClick={() => {
-                          if (isClickable) {
-                            handleStepClick(index);
-                          }
-                        }}
-                      >
-                        <div 
-                          className={containerClasses}
-                          style={{ 
-                            backgroundColor: bgColor,
-                            opacity: opacity,
-                          }}
-                        >
-                          {isCompleted ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <img 
-                              src={yellowStar} 
-                              alt={`Step ${index + 1}`}
-                              className="w-4.5 h-4.5"
-                            />
-                          )}
-                        </div>
-                        {/* Text labels with WHITE color */}
-                        <div
-                          className={`mt-1 text-xs text-center ${
-                            isActive ? "text-white font-medium" : 
-                            isCompleted ? "text-white" : 
-                            "text-white/70"
-                          }`}
-                        >
-                          {`${index + 1}. ${step}`}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <MobileProgressCircles 
+              steps={steps}
+              activeStep={activeStep}
+              maxCompletedStep={maxCompletedStep}
+              onStepClick={handleStepClick}
+            />
           )}
         </div>
         
@@ -423,158 +335,16 @@ const ResponsiveBanner = ({
           </div>
         </div>
         
-        {/* Progress bar section - only shown when required */}
+        {/* Progress bar section - using the separated component */}
         {showProgressBar && (
-          <div className="progress-section py-5 pb-8">
-            <div className="flex justify-between w-full max-w-5xl relative mx-auto px-8">
-              {/* Create a centered container for circles and lines */}
-              <div className="flex items-center w-full relative" style={{ height: '44px' }}>
-                {/* Base connector line - Straight through the center */}
-                <div 
-                  className="absolute bg-white/5" 
-                  style={{ 
-                    left: '10%', 
-                    right: '10%',
-                    height: '2px',
-                    top: 'calc(50% - 7px)',
-                  }}
-                ></div>
-
-                {/* Active connector line - with animation */}
-                <div 
-                  className="absolute bg-gradient-to-r from-yellow-300/90 via-orange-400/90 to-red-500/90 transition-all duration-700"
-                  style={{ 
-                    left: '10%',
-                    width: `${activeStep === 0 ? 0 : (activeStep / (steps.length - 1)) * 80}%`,
-                    height: '2px',
-                    top: 'calc(50% - 7px)',
-                  }}
-                ></div>
-
-                {/* Step circles */}
-                {steps.map((step, index) => {
-                  const isActive = index === activeStep;
-                  const isCompleted = index < activeStep;
-                  // Step 0 is always clickable if we've completed any steps
-                  const isClickable = (index === 0 && maxCompletedStep > 0) || (index <= maxCompletedStep);
-
-                  let containerClasses = "w-6 h-6 md:w-8 md:h-8 sm:w-6 sm:h-6 xs:w-5 xs:h-5 rounded-full flex items-center justify-center";
-                  
-                  let bgColor;
-                  if (isActive || isCompleted) {
-                    if (index === 0) bgColor = "rgba(250, 204, 21, 0.7)"; // yellow-300 at 70% opacity
-                    else if (index === 1) bgColor = "rgba(251, 146, 60, 0.7)"; // orange-400 at 70% opacity
-                    else if (index === 2) bgColor = "rgba(239, 68, 68, 0.7)"; // red-500 at 70% opacity
-                    else bgColor = "rgba(111, 45, 116, 0.7)"; // purple at 70% opacity
-                  } else {
-                    // For incomplete steps, use the same color but with lower opacity
-                    if (index === 0) bgColor = "rgba(250, 204, 21, 0.15)"; // yellow-300 at 15% opacity
-                    else if (index === 1) bgColor = "rgba(251, 146, 60, 0.15)"; // orange-400 at 15% opacity
-                    else if (index === 2) bgColor = "rgba(239, 68, 68, 0.15)"; // red-500 at 15% opacity
-                    else bgColor = "rgba(111, 45, 116, 0.15)"; // purple at 15% opacity
-                  }
-
-                  const opacity = isActive || isCompleted ? 1 : 0.5; // Lower opacity for inactive steps
-                  if (isActive) containerClasses += " circle-glow";
-                  if (isClickable) containerClasses += " cursor-pointer";
-
-                  return (
-                    <div 
-                      key={index} 
-                      className="flex flex-col items-center flex-1"
-                      onClick={() => {
-                        if (isClickable) {
-                          handleStepClick(index);
-                        }
-                      }}
-                      data-testid={`progress-step-${index}`}
-                    >
-                      <div 
-                        className={containerClasses}
-                        style={{ 
-                          backgroundColor: bgColor,
-                          opacity: opacity,
-                          position: 'relative',
-                          zIndex: 20
-                        }}
-                      >
-                        {isCompleted ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 sm:w-5 sm:h-5 xs:w-4.5 xs:h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <img 
-                            src={yellowStar} 
-                            alt={`Step ${index + 1}`}
-                            className="w-5 h-5 md:w-6 md:h-6 sm:w-5 sm:h-5 xs:w-4.5 xs:h-4.5"
-                          />
-                        )}
-                      </div>
-                      {/* Text labels with WHITE color */}
-                      <div
-                        className={`mt-1 text-xs text-center ${
-                          isActive ? "text-white font-medium" : 
-                          isCompleted ? "text-white" : 
-                          "text-white/70"
-                        }`}
-                      >
-                        {`${index + 1}. ${step}`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <ProgressCircles
+            steps={steps}
+            activeStep={activeStep}
+            maxCompletedStep={maxCompletedStep}
+            onStepClick={handleStepClick}
+          />
         )}
       </div>
-
-      {/* CSS for glow effect */}
-      <style jsx>{`
-        .circle-glow {
-          animation: double-circle-pulse 4s infinite;
-        }
-
-        .mobile-circle-glow {
-          animation: mobile-circle-pulse 4s infinite;
-        }
-
-        @keyframes double-circle-pulse {
-          0%, 55%, 100% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-          5% {
-            box-shadow: 0 0 12px 5px rgba(250, 204, 21, 0.6);
-          }
-          9% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-          13% {
-            box-shadow: 0 0 12px 5px rgba(250, 204, 21, 0.7);
-          }
-          17% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-        }
-
-        @keyframes mobile-circle-pulse {
-          0%, 55%, 100% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-          5% {
-            box-shadow: 0 0 10px 4px rgba(250, 204, 21, 0.6);
-          }
-          9% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-          13% {
-            box-shadow: 0 0 10px 4px rgba(250, 204, 21, 0.7);
-          }
-          17% {
-            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
