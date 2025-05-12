@@ -794,7 +794,7 @@ useEffect(() => {
 
 
   // Updated handler for skipping password add
-  const handleSkipPasswordAdd = async () => {
+  /*const handleSkipPasswordAdd = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     
@@ -857,6 +857,204 @@ useEffect(() => {
         general: errorMessage
       }));
     } finally {
+      setIsSubmitting(false);
+    }
+  };*/
+
+  // Updated handler for skipping password add with proper navigation
+const handleSkipPasswordAdd = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Check if already authenticated
+      const currentUser = auth.currentUser;
+      const isGoogleUser = currentUser && 
+                          currentUser.providerData && 
+                          currentUser.providerData.some(p => p.providerId === 'google.com');
+      
+      console.log("DEBUG: In handleSkipPasswordAdd, authenticated:", !!currentUser);
+      console.log("DEBUG: Is Google user:", isGoogleUser);
+      
+      if (currentUser && isGoogleUser) {
+        console.log("DEBUG: Already authenticated with Google, proceeding without re-authentication");
+        
+        // Show a clear message to the user
+        setLoginMessage({
+          type: 'success',
+          content: "Continuing with Google account only. You can add a password later in your settings."
+        });
+        
+        // Ensure we get the user's current step before navigation
+        setIsLoading(true);
+        
+        try {
+          // Set up Firebase functions
+          const functions = getFunctions();
+          
+          // Call the getUserStep function to get the user's current progress
+          console.log("DEBUG: Calling getUserStep to get current step");
+          const getUserStepFn = httpsCallable(functions, 'getUserStep');
+          
+          const result = await getUserStepFn({ userId: currentUser.uid });
+          
+          if (result.data && result.data.success) {
+            console.log("DEBUG: getUserStep success:", result.data);
+            
+            const step = result.data.step || 0;
+            const stepName = result.data.stepName || getStepName(step);
+            
+            // Save the state before navigation
+            saveSignupState({
+              userId: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName || "New Member",
+              isExistingUser: true, // This is an existing user
+              signupProgress: step,
+              signupStep: stepName,
+              timestamp: Date.now()
+            });
+            
+            console.log(`DEBUG: Will navigate to step ${step} (${stepName})`);
+            
+            // Allow the message to be seen before navigation
+            setTimeout(() => {
+              setIsLoading(false);
+              navigate(`/signup?step=${step}`);
+            }, 1500);
+          } else {
+            throw new Error("Error getting user step");
+          }
+        } catch (error) {
+          console.error("DEBUG: Error getting user step:", error);
+          
+          // Fallback - Check if this is a Google user and default appropriately
+          const fallbackStep = isGoogleUser ? 1 : 0;
+          
+          console.log(`DEBUG: Falling back to step ${fallbackStep}`);
+          
+          // Update local storage with fallback state
+          saveSignupState({
+            userId: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName || "New Member",
+            isExistingUser: true,
+            signupProgress: fallbackStep,
+            signupStep: getStepName(fallbackStep),
+            timestamp: Date.now()
+          });
+          
+          // Navigate after delay
+          setTimeout(() => {
+            setIsLoading(false);
+            navigate(`/signup?step=${fallbackStep}`);
+          }, 1500);
+        }
+      } else {
+        // Need to authenticate with Google first
+        console.log("DEBUG: Not authenticated with Google yet, signing in");
+        
+        // Make the Google sign-in call and ensure it succeeds
+        const result = await signInWithGoogle();
+        
+        if (!result || !result.success) {
+          throw new Error("Google authentication failed or was canceled");
+        }
+        
+        // Now that we're authenticated, get the current user again
+        const authenticatedUser = auth.currentUser;
+        
+        console.log("DEBUG: Google sign-in successful", authenticatedUser?.uid);
+        
+        // Show success message
+        setLoginMessage({
+          type: 'success',
+          content: "Successfully signed in with Google. Continuing to your profile..."
+        });
+        
+        // Just like above, ensure we get the user's current step
+        setIsLoading(true);
+        
+        try {
+          // Set up Firebase functions
+          const functions = getFunctions();
+          
+          // Call the getUserStep function
+          console.log("DEBUG: Calling getUserStep after authentication");
+          const getUserStepFn = httpsCallable(functions, 'getUserStep');
+          
+          const stepResult = await getUserStepFn({ userId: authenticatedUser.uid });
+          
+          if (stepResult.data && stepResult.data.success) {
+            console.log("DEBUG: getUserStep success:", stepResult.data);
+            
+            const step = stepResult.data.step || 0;
+            const stepName = stepResult.data.stepName || getStepName(step);
+            
+            // Save the state before navigation
+            saveSignupState({
+              userId: authenticatedUser.uid,
+              email: authenticatedUser.email,
+              displayName: authenticatedUser.displayName || "New Member",
+              isExistingUser: true, // This is an existing user
+              signupProgress: step,
+              signupStep: stepName,
+              timestamp: Date.now()
+            });
+            
+            console.log(`DEBUG: Will navigate to step ${step} (${stepName})`);
+            
+            // Navigate after delay
+            setTimeout(() => {
+              setIsLoading(false);
+              navigate(`/signup?step=${step}`);
+            }, 1500);
+          } else {
+            throw new Error("Error getting user step");
+          }
+        } catch (error) {
+          console.error("DEBUG: Error getting user step after authentication:", error);
+          
+          // Fallback - Default to step 1 for Google users
+          const fallbackStep = 1;
+          
+          console.log(`DEBUG: Falling back to step ${fallbackStep}`);
+          
+          // Update local storage with fallback state
+          saveSignupState({
+            userId: authenticatedUser.uid,
+            email: authenticatedUser.email,
+            displayName: authenticatedUser.displayName || "New Member",
+            isExistingUser: true,
+            signupProgress: fallbackStep,
+            signupStep: getStepName(fallbackStep),
+            timestamp: Date.now()
+          });
+          
+          // Navigate after delay
+          setTimeout(() => {
+            setIsLoading(false);
+            navigate(`/signup?step=${fallbackStep}`);
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      console.error("DEBUG: Error during Google sign-in after skip:", error);
+      
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      
+      if (error.message === 'Sign-in was cancelled') {
+        errorMessage = "Google sign-in was cancelled. You must complete the sign-in to continue.";
+      } else if (error.message && error.message.includes('pop-up')) {
+        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
+      }
+      
+      setErrors(prev => ({
+        ...prev,
+        general: errorMessage
+      }));
+      
+      setIsLoading(false);
       setIsSubmitting(false);
     }
   };

@@ -3,7 +3,9 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveBanner from "../components/ResponsiveBanner";
 import darkLogo from "../assets/images/alcor-white-logo.png";
-import navyAlcorLogo from "../assets/images/navy-alcor-logo.png";
+import yellowStar from "../assets/images/alcor-yellow-star.png"; // Import yellow star image
+
+// Import from auth service
 import { logout } from "../services/auth";
 
 // Define the same steps array that's used in SignupPage for consistency
@@ -80,12 +82,85 @@ const WelcomePage = () => {
     }
   };
 
+  // Define the card data with content and specific styling for each card
+  const iconGradientId = "icon-gradient";
+  
+  // Define the card data with content and specific styling for each card
+  const cardData = [
+    {
+      id: 'new-membership',
+      title: 'New Membership',
+      description: 'Begin your journey to become an Alcor member. Complete your application in about 5 minutes.',
+      buttonText: 'Get Started',
+      buttonAction: goToSignup,
+      iconPath: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <defs>
+            <linearGradient id="newMemberGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#d59560" />
+              <stop offset="100%" stopColor="#513a6d" />
+            </linearGradient>
+          </defs>
+          <path stroke="url(#newMemberGradient)" fill="none" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      ),
+      buttonClasses: 'bg-[#13273f] hover:bg-[#1d3351] text-white',
+      cardClasses: 'bg-white border-[#0C2340]/10 hover:border-[#0C2340]/30',
+      starClasses: 'text-[#FFCB05]',
+      borderColor: 'border-[#13273f]/30'
+    },
+    {
+      id: 'continue-application',
+      title: 'Continue Application',
+      description: 'Already started the signup process? Sign in to continue where you left off.',
+      buttonText: 'Continue Sign Up',
+      buttonAction: () => goToLogin(true),
+      iconPath: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <defs>
+            <linearGradient id="continueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#d59560" />
+              <stop offset="100%" stopColor="#513a6d" />
+            </linearGradient>
+          </defs>
+          <path stroke="url(#continueGradient)" fill="none" d="M8 7h12m0 0l-4-4m4 4l-4 4m-4 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      ),
+      buttonClasses: 'bg-[#825f7c] hover:bg-[#936e8c] text-white border border-[#825f7c]',
+      cardClasses: 'bg-[#f8f9fa] border-[#FFCB05]/10 hover:border-[#FFCB05]/50',
+      starClasses: 'text-[#FFCB05]',
+      borderColor: 'border-[#825f7c]/30'
+    },
+    {
+      id: 'member-portal',
+      title: 'Member Portal',
+      description: 'Access your account, view benefits, manage your profile, and more as an existing member.',
+      buttonText: 'Sign In',
+      buttonAction: () => goToLogin(false),
+      iconPath: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+          <defs>
+            <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#d59560" />
+              <stop offset="100%" stopColor="#513a6d" />
+            </linearGradient>
+          </defs>
+          <path stroke="url(#portalGradient)" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      buttonClasses: 'bg-[#404060] hover:bg-[#4e4e73] text-white font-semibold',
+      cardClasses: 'bg-white border-[#9194A1]/10 hover:border-[#9194A1]/30',
+      starClasses: 'text-[#9194A1]',
+      borderColor: 'border-[#404060]/30'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Use the integrated ResponsiveBanner with progress bar hidden */}
       <ResponsiveBanner 
         logo={darkLogo}
-        heading="Your Membership Journey"
+        heading="Your Membership"
         subText="We are the world's leader in cryopreservation, research, and technology since 1972"
         showSteps={false}
         showStar={true}
@@ -95,90 +170,61 @@ const WelcomePage = () => {
       />
       
       {/* Main Content - Cards */}
-      <div className="flex-grow p-4 md:p-8 flex justify-center">
-        <div className="w-full max-w-6xl">
+      <div className="flex-grow px-8 sm:px-12 py-6 md:p-10 flex justify-center">
+        <div className="w-full max-w-6xl md:mx-auto">
+          {/* Section Title - Mobile Only */}
+          <h2 className="text-2xl font-bold text-[#13273f] my-8 text-center md:hidden">
+            Select from the following options
+          </h2>
+          
           {/* Cards in horizontal layout on desktop */}
           <div className="grid md:grid-cols-3 gap-8 md:gap-10">
-            {/* Option 1: New Signup */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border border-gray-100 hover:border-[#6f2d74]/30 flex flex-col h-full">
-              <div className="p-8 flex-1">
-                <div className="w-16 h-16 bg-[#6f2d74]/10 rounded-full flex items-center justify-center mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#6f2d74]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
+            {/* Map through the card data to create each card */}
+            {cardData.map((card) => (
+              <div 
+                key={card.id}
+                className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-11/12 sm:w-9/12 md:w-full mx-auto md:mx-0`}
+              >
+                {/* Card Header - No gradient bar, just spacing */}
+                <div className="h-4"></div>
+                
+                {/* Card Content */}
+                <div className="p-5 sm:p-8 flex-1">
+                  <div className="w-14 sm:w-20 h-14 sm:h-20 rounded-full flex items-center justify-center mb-5 bg-white shadow-sm border ${card.borderColor} mx-auto">
+                    {card.iconPath}
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#0C2340] mb-4 flex items-center justify-center">
+                    {card.title}
+                    <img src={yellowStar} alt="" className="h-7 sm:h-9 ml-2" />
+                  </h3>
+                  <p className="text-gray-600 mb-6 text-base sm:text-lg text-center">{card.description}</p>
                 </div>
-                <h3 className="text-2xl font-bold text-[#0C2340] mb-4">New Membership</h3>
-                <p className="text-gray-600 mb-6 text-lg">Begin your journey to become an Alcor member. Complete your application in about 5 minutes.</p>
-              </div>
-              <div className="px-8 pb-8">
-                <button 
-                  onClick={goToSignup}
-                  className="w-full py-4 px-8 rounded-full font-semibold text-lg bg-[#6f2d74] text-white flex items-center justify-center hover:bg-[#5f2964] transition-colors shadow-sm mb-6"
-                >
-                  Get Started
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                <div className="flex justify-center">
-                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-8 w-auto opacity-80" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Option 2: Continue Signup */}
-            <div className="bg-[#eef2ff] rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border border-blue-100 hover:border-blue-200 flex flex-col h-full">
-              <div className="p-8 flex-1">
-                <div className="w-16 h-16 bg-[#4a75da]/10 rounded-full flex items-center justify-center mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#4a75da]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m-4 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-[#0C2340] mb-4">Continue Application</h3>
-                <p className="text-gray-600 mb-6 text-lg">Already started the signup process? Sign in to continue where you left off.</p>
-              </div>
-              <div className="px-8 pb-8">
-                <button 
-                  onClick={() => goToLogin(true)}
-                  className="w-full py-4 px-8 rounded-full font-semibold text-lg bg-[#4a75da] text-white flex items-center justify-center hover:bg-[#3e64c8] transition-colors shadow-sm mb-6"
-                >
-                  Continue Sign Up
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                <div className="flex justify-center">
-                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-8 w-auto opacity-80" />
+                
+                {/* Card Footer */}
+                <div className="px-4 sm:px-8 pb-8 mt-auto">
+                  <button 
+                    onClick={card.buttonAction}
+                    className={`w-full py-3 sm:py-4 px-4 sm:px-8 rounded-full font-semibold text-base sm:text-lg ${card.buttonClasses} flex items-center justify-center transition-all duration-300 shadow-sm mb-4`}
+                  >
+                    {card.buttonText}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {/* Star accent at the bottom instead of logo */}
+                  <div className="flex justify-center">
+                    <div className={`text-center ${card.starClasses}`}>
+                      <div className="flex justify-center items-center space-x-2">
+                        <img src={yellowStar} alt="Alcor Star" className="h-6 opacity-70" />
+                        <img src={yellowStar} alt="Alcor Star" className="h-10 opacity-90" />
+                        <img src={yellowStar} alt="Alcor Star" className="h-6 opacity-70" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Option 3: Member Login */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md border border-gray-100 hover:border-[#0C2340]/30 flex flex-col h-full">
-              <div className="p-8 flex-1">
-                <div className="w-16 h-16 bg-[#0C2340]/10 rounded-full flex items-center justify-center mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#0C2340]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-[#0C2340] mb-4">Member Portal</h3>
-                <p className="text-gray-600 mb-6 text-lg">Access your account, view benefits, manage your profile, and more as an existing member.</p>
-              </div>
-              <div className="px-8 pb-8">
-                <button 
-                  onClick={() => goToLogin(false)}
-                  className="w-full py-4 px-8 rounded-full font-semibold text-lg bg-white border border-gray-300 text-[#0C2340] flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm mb-6"
-                >
-                  Sign In
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                <div className="flex justify-center">
-                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-8 w-auto opacity-80" />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

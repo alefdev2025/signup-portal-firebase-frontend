@@ -112,7 +112,7 @@ const ResponsiveBanner = ({
             {/* Header text positioned at the top right */}
             <div className="flex items-center">
               <h1 className="flex items-center">
-                <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>{isWelcomePage ? "Your Membership Journey" : displayHeading}</span>
+                <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>{isWelcomePage ? "Your Membership" : displayHeading}</span>
                 {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
               </h1>
             </div>
@@ -271,7 +271,7 @@ const ResponsiveBanner = ({
               </p>
             )}
             <h1 className={`flex items-center ${isWelcomePage ? "justify-start" : "justify-center"}`}>
-              <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>{isWelcomePage ? "Your Membership Journey" : displayHeading}</span>
+              <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>{isWelcomePage ? "Your Membership" : displayHeading}</span>
               {showStar && <img src={yellowStar} alt="" className="h-8 ml-1" />}
             </h1>
             <p className={`${showProgressBar ? "text-xl md:text-2xl mt-3" : "text-xl md:text-2xl mt-4"} text-white/80 ${isWelcomePage ? "max-w-xl" : "max-w-3xl mx-auto"}`}>
