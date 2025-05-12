@@ -23,6 +23,8 @@ const ResetPasswordPage = () => {
   const [email, setEmail] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [message, setMessage] = useState(null);
+  const [resetSuccessful, setResetSuccessful] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
   
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -55,6 +57,19 @@ const ResetPasswordPage = () => {
     // Continue with normal verification
     verifyResetCode();
   }, [location.pathname, location.search]);
+
+  // Countdown effect for redirection after successful reset
+  useEffect(() => {
+    if (resetSuccessful && redirectCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRedirectCountdown(redirectCountdown - 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else if (resetSuccessful && redirectCountdown === 0) {
+      navigate('/login');
+    }
+  }, [resetSuccessful, redirectCountdown, navigate]);
 
   // Verify the reset code
   const verifyResetCode = async () => {
@@ -160,16 +175,13 @@ const ResetPasswordPage = () => {
       
       console.log("Password reset successful for email:", email);
       
-      // Show success message
-      setMessage({
-        type: 'success',
-        content: 'Your password has been successfully reset! You can now log in with your new password.'
-      });
+      // Clear the form fields
+      setNewPassword("");
+      setConfirmPassword("");
       
-      // Redirect to login page after a delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      // Show success message and start redirection countdown
+      setResetSuccessful(true);
+      
     } catch (error) {
       console.error("Error resetting password:", error);
       
@@ -219,7 +231,7 @@ const ResetPasswordPage = () => {
         <div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-8">
             {/* Show messages */}
-            {message && (
+            {message && !resetSuccessful && (
               <div className={`p-4 mb-6 rounded-md ${
                 message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-600' : 
                 message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-600' : 
@@ -229,7 +241,37 @@ const ResetPasswordPage = () => {
               </div>
             )}
             
-            {isValid ? (
+            {resetSuccessful ? (
+              // Success state with countdown
+              <div className="text-center py-8">
+                <div className="inline-block bg-green-100 rounded-full p-3 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Password Reset Successful!</h2>
+                <p className="text-gray-600 mb-6">
+                  Your password for <span className="font-medium">{email}</span> has been successfully reset.
+                </p>
+                <div className="mt-4 bg-gray-50 rounded-md p-4 text-center">
+                  <p className="text-gray-600">
+                    Redirecting to login page in <span className="font-bold text-purple-600">{redirectCountdown}</span> seconds<span className="dots">
+                      <span className="dot">.</span><span className="dot">.</span><span className="dot">.</span>
+                    </span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/login')}
+                  style={{
+                    backgroundColor: "#6f2d74",
+                    color: "white"
+                  }}
+                  className="mt-6 py-3 px-6 rounded-full font-semibold text-lg hover:opacity-90"
+                >
+                  Go to Login Now
+                </button>
+              </div>
+            ) : isValid ? (
               // Password reset form
               <form onSubmit={handleSubmit}>
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Create New Password</h2>
@@ -349,5 +391,30 @@ const ResetPasswordPage = () => {
     </div>
   );
 };
+
+// Add CSS for animated dots
+const style = document.createElement('style');
+style.textContent = `
+  .dots .dot {
+    animation: loading 1.4s infinite;
+    display: inline-block;
+    opacity: 0;
+  }
+  .dots .dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+  .dots .dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .dots .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes loading {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
 
 export default ResetPasswordPage;
