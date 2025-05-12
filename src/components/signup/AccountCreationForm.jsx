@@ -15,7 +15,8 @@ const AccountCreationForm = ({
   handleGoogleSignIn,
   verificationStep,
   resendVerificationCode,
-  changeEmail
+  changeEmail,
+  highlightGoogleButton
 }) => {
   // State for modal control
   const [modalOpen, setModalOpen] = useState(false);

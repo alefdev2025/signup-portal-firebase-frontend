@@ -7,14 +7,19 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  EmailAuthProvider,
+  linkWithCredential,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  linkWithPopup
 } from 'firebase/auth';
 import {
   getFunctions,
   httpsCallable
 } from 'firebase/functions';
 import { saveSignupState, saveVerificationState, getVerificationState } from '../contexts/UserContext';
-import { getFirestore, doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, updateDoc, getDoc, arrayUnion } from "firebase/firestore";
 
 // Environment flag - true for development, false for production
 const isDevelopment = import.meta.env.MODE === 'development';
@@ -121,6 +126,88 @@ export const signInWithEmailAndPassword = async (email, password) => {
     }
   };
 
+// Function to link a password to a Google account
+export const linkPasswordToGoogleAccount = async (password) => {
+  try {
+    console.log("DEBUG: Linking password to Google account");
+    
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No authenticated user found");
+    }
+    
+    // Create email credential
+    const emailCredential = EmailAuthProvider.credential(
+      currentUser.email,
+      password
+    );
+    
+    // Link the credential to the current user
+    await linkWithCredential(currentUser, emailCredential);
+    
+    console.log("DEBUG: Successfully linked password to Google account");
+    
+    // Update user document to reflect multiple auth methods
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, {
+        hasPasswordAuth: true,
+        authProviders: arrayUnion("password"),
+        lastUpdated: new Date()
+      });
+    } catch (firestoreError) {
+      console.error("DEBUG: Error updating user document:", firestoreError);
+      // Continue despite error - the password is still linked
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("DEBUG: Error linking password:", error);
+    throw error;
+  }
+};
+
+// Function to link a Google account to a password account
+export const linkGoogleToEmailAccount = async () => {
+  try {
+    console.log("DEBUG: Linking Google account to password-based account");
+    
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No authenticated user found");
+    }
+    
+    // Create Google auth provider
+    const googleProvider = new GoogleAuthProvider();
+    
+    // Link the Google account to the current user
+    const result = await linkWithPopup(currentUser, googleProvider);
+    
+    console.log("DEBUG: Successfully linked Google account");
+    
+    // Update user document to reflect multiple auth methods
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, {
+        hasGoogleAuth: true,
+        authProviders: arrayUnion("google.com"),
+        lastUpdated: new Date()
+      });
+    } catch (firestoreError) {
+      console.error("DEBUG: Error updating user document:", firestoreError);
+      // Continue despite error - the Google account is still linked
+    }
+    
+    return { 
+      success: true,
+      user: result.user
+    };
+  } catch (error) {
+    console.error("DEBUG: Error linking Google account:", error);
+    throw error;
+  }
+};
+
 // Password reset function for login page
 export const resetPassword = async (email) => {
   try {
@@ -189,20 +276,70 @@ export async function requestEmailVerification(email, name) {
       if (result.data.isExistingUser) {
         console.log("DEBUG: Email belongs to an existing user:", email);
         
-        // We still save verification state, but will handle redirect in UI component
-        saveVerificationState({
-          email,
-          name,
-          verificationId: result.data.verificationId,
-          isExistingUser: true,
-          timestamp: Date.now()
-        });
+        // Call a server function to check auth method (need to create this)
+        const checkAuthMethodFn = httpsCallable(functions, 'checkAuthMethod');
         
-        return {
-          success: true,
-          verificationId: result.data.verificationId,
-          isExistingUser: true
-        };
+        try {
+          const authMethodResult = await checkAuthMethodFn({ email });
+          
+          if (authMethodResult.data && authMethodResult.data.success) {
+            // Get auth provider info
+            const authProvider = authMethodResult.data.primaryAuthMethod || 'password';
+            
+            // Save verification state with auth provider info
+            saveVerificationState({
+              email,
+              name,
+              verificationId: result.data.verificationId,
+              isExistingUser: true,
+              authProvider,
+              timestamp: Date.now()
+            });
+            
+            return {
+              success: true,
+              verificationId: result.data.verificationId,
+              isExistingUser: true,
+              authProvider
+            };
+          } else {
+            // Default to password if function doesn't give clear answer
+            saveVerificationState({
+              email,
+              name,
+              verificationId: result.data.verificationId,
+              isExistingUser: true,
+              authProvider: 'password',
+              timestamp: Date.now()
+            });
+            
+            return {
+              success: true,
+              verificationId: result.data.verificationId,
+              isExistingUser: true,
+              authProvider: 'password'
+            };
+          }
+        } catch (authCheckError) {
+          console.error("Error checking auth method:", authCheckError);
+          
+          // Default to password if function fails
+          saveVerificationState({
+            email,
+            name,
+            verificationId: result.data.verificationId,
+            isExistingUser: true,
+            authProvider: 'password',
+            timestamp: Date.now()
+          });
+          
+          return {
+            success: true,
+            verificationId: result.data.verificationId,
+            isExistingUser: true,
+            authProvider: 'password'
+          };
+        }
       }
       
       // Save verification state for new user
@@ -219,6 +356,7 @@ export async function requestEmailVerification(email, name) {
         verificationId: result.data.verificationId,
         isExistingUser: false
       };
+      
     } catch (error) {
       console.error('Error requesting email verification:', error);
       
@@ -246,7 +384,7 @@ export async function requestEmailVerification(email, name) {
       
       throw error;
     }
-  }
+}
 
 // Split verification into two steps for security
 // Step 1: Verify the code only (no authentication)
@@ -355,6 +493,8 @@ export async function createNewUser(verificationResult, email, name, password) {
               signupStep: "contact_info",
               createdAt: new Date(),
               authProvider: "email",
+              hasPasswordAuth: true,
+              authProviders: ["password"],
               lastSignIn: new Date()
             });
             console.log("DEBUG: User document created directly");
@@ -451,6 +591,8 @@ export async function createNewUser(verificationResult, email, name, password) {
                   signupStep: result.data.signupStep || "account",
                   createdAt: new Date(),
                   authProvider: "email",
+                  hasPasswordAuth: true,
+                  authProviders: ["password"],
                   lastSignIn: new Date()
                 });
                 console.log("DEBUG: User document created directly");
@@ -566,9 +708,9 @@ export async function verifyEmailCode(verificationId, code, password) {
   }
 }
 
-// Simplified Google sign-in function
+// Enhanced Google sign-in function with better error handling
 export async function signInWithGoogle() {
-  console.log("DEBUG: Starting simplified Google sign-in process");
+  console.log("DEBUG: Starting Google sign-in process");
   
   try {
     // First, sign out any existing user
@@ -585,31 +727,75 @@ export async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     
     console.log("DEBUG: Attempting sign in with popup");
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    console.log("DEBUG: Google sign-in successful, user:", user.uid);
-    
-    // Save directly to localStorage without trying to access Firestore
-    console.log("DEBUG: Saving minimal signup state to localStorage");
-    saveSignupState({
-      userId: user.uid,
-      email: user.email,
-      displayName: user.displayName || "New Member",
-      isExistingUser: true, // Assume existing for safety
-      signupProgress: 0,
-      signupStep: "account",
-      timestamp: Date.now()
-    });
-    
-    // Clear verification state if exists
-    clearVerificationState();
-    
-    return {
-      success: true,
-      isExistingUser: true,
-      signupProgress: 0,
-      signupStep: "account"
-    };
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log("DEBUG: Google sign-in successful, user:", user.uid);
+      
+      // Check for existing Firestore document and create if needed
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+          console.log("DEBUG: Creating Firestore document for Google user");
+          await setDoc(userRef, {
+            email: user.email,
+            name: user.displayName || "New Member",
+            signupProgress: 0,
+            signupStep: "account",
+            createdAt: new Date(),
+            authProvider: "google",
+            hasGoogleAuth: true,
+            authProviders: ["google.com"],
+            lastSignIn: new Date()
+          });
+        } else {
+          console.log("DEBUG: Updating last sign-in time for existing Google user");
+          await updateDoc(userRef, {
+            lastSignIn: new Date()
+          });
+        }
+      } catch (firestoreError) {
+        console.error("DEBUG: Error with Firestore for Google user:", firestoreError);
+        // Continue anyway - we'll use localStorage state
+      }
+      
+      // Save to localStorage for redundancy
+      saveSignupState({
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        isExistingUser: true,
+        signupProgress: 0,
+        signupStep: "account",
+        timestamp: Date.now()
+      });
+      
+      // Clear verification state if exists
+      clearVerificationState();
+      
+      return {
+        success: true,
+        isExistingUser: true,
+        user: user
+      };
+    } catch (signInError) {
+      console.error("DEBUG: Google sign-in error:", signInError);
+      
+      // Check if this is a "different credential" error
+      if (signInError.code === 'auth/account-exists-with-different-credential') {
+        // This means the email exists but with password auth
+        return {
+          success: false,
+          error: 'auth/account-exists-with-different-credential',
+          email: signInError.customData?.email || null,
+          message: "This email is already registered with a password. Please sign in with your password first to link accounts."
+        };
+      }
+      
+      throw signInError;
+    }
   } catch (error) {
     console.error("DEBUG: Error in Google sign-in:", error);
     throw error;
@@ -813,4 +999,15 @@ export const logout = async () => {
   }
 };
 
-export { auth, functions, db };
+export { 
+    auth, 
+    functions, 
+    db,
+    // Re-export necessary Firebase functions for use in other components
+    EmailAuthProvider,
+    GoogleAuthProvider,
+    linkWithCredential,
+    reauthenticateWithCredential,
+    reauthenticateWithPopup,
+    linkWithPopup
+  };

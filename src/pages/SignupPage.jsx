@@ -49,6 +49,7 @@ export default function SignupPage() {
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(false);
   const hasNavigatedRef = useRef(false); // Ref to track if user has completed account creation
+  const [highlightGoogleButton, setHighlightGoogleButton] = useState(false);
   
   console.log("SignupPage rendered with activeStep:", activeStep);
   console.log("URL params:", Object.fromEntries([...searchParams]));
@@ -482,10 +483,16 @@ export default function SignupPage() {
           // Check if this is an existing user - based on the backend response
           if (result.isExistingUser) {
             console.log("Existing user detected:", formData.email);
-            // Redirect to login page instead of showing alert
-            navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
-            setIsSubmitting(false);
-            return; // Stop here, don't proceed to verification
+            
+            // Check if this is a Google-only user
+            if (result.authProvider === 'google') {
+                console.log("Google account detected");
+                
+                // Navigate to login page with parameters indicating Google account and option to add password
+                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`);
+                setIsSubmitting(false);
+                return;
+              }
           }
           
           // Store verification ID for the next step
@@ -958,17 +965,18 @@ export default function SignupPage() {
                 />
               ) : (
                 <AccountCreationForm
-                  formData={formData}
-                  passwordState={passwordState}
-                  confirmPasswordState={confirmPasswordState}
-                  errors={errors}
-                  isSubmitting={isSubmitting}
-                  handleChange={handleChange}
-                  handleSubmit={handleSubmit}
-                  handleGoogleSignIn={handleGoogleSignIn}
-                  verificationStep={verificationStep}
-                  resendVerificationCode={resendVerificationCode}
-                  changeEmail={changeEmail}
+                formData={formData}
+                passwordState={passwordState}
+                confirmPasswordState={confirmPasswordState}
+                errors={errors}
+                isSubmitting={isSubmitting}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                handleGoogleSignIn={handleGoogleSignIn}
+                verificationStep={verificationStep}
+                resendVerificationCode={resendVerificationCode}
+                changeEmail={changeEmail}
+                highlightGoogleButton={highlightGoogleButton}
                 />
               )}
             </>
