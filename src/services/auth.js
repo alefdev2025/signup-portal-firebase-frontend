@@ -13,7 +13,9 @@ import {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   linkWithPopup,
-  fetchSignInMethodsForEmail 
+  fetchSignInMethodsForEmail ,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from 'firebase/auth';
 import {
   getFunctions,
@@ -517,25 +519,32 @@ export const linkGoogleToEmailAccount = async () => {
 
 // Password reset function for login page
 export const resetPassword = async (email) => {
-  try {
-    // Input validation
-    if (!email) {
-      throw new Error('Email is required');
+    try {
+      // Input validation
+      if (!email) {
+        throw new Error('Email is required');
+      }
+      
+      // Get Firebase functions
+      const functions = getFunctions();
+      const sendPasswordResetLinkFn = httpsCallable(functions, 'sendPasswordResetLink');
+      
+      // Call the cloud function
+      const result = await sendPasswordResetLinkFn({ email });
+      
+      // Always return success for security reasons
+      console.log("Password reset email sent for:", email);
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+      
+      // Generic error for security
+      throw new Error('Unable to send reset email. Please try again later.');
     }
-    
-    // Send password reset email
-    await sendPasswordResetEmail(auth, email);
-    
-    console.log("DEBUG: Password reset email sent successfully");
-    
-    return {
-      success: true
-    };
-  } catch (error) {
-    console.error("Error sending password reset email:", error);
-    throw error;
-  }
-};
+  };
 
 // Updated requestEmailVerification function in auth.js
 export async function requestEmailVerification(email, name) {
@@ -1529,5 +1538,7 @@ export {
     linkWithCredential,
     reauthenticateWithCredential,
     reauthenticateWithPopup,
-    linkWithPopup
+    linkWithPopup,
+    verifyPasswordResetCode,
+    confirmPasswordReset
   };

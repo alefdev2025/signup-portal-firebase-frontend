@@ -1,8 +1,10 @@
+// App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import SignupPage from "./pages/SignupPage";
 import WelcomePage from "./pages/WelcomePage";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPassword"; // Import the reset page component
 import CompletionSummary from "./components/CompletionSummary";
 import ProtectedRoute from './components/ProtectedRoute';
 import { UserProvider } from "./contexts/UserContext";
@@ -16,6 +18,12 @@ function App() {
           <Route path="/" element={<WelcomePage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* Add action handling route that will redirect correctly */}
+          <Route path="/__/auth/action" element={<ResetPasswordPage />} />
+          
+          {/* The main reset password page */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           
           {/* Protected route for completion summary */}
           <Route 

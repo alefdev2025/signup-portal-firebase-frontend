@@ -1123,8 +1123,44 @@ const handleSkipPasswordAdd = async () => {
     }
   };
   
-// Modified handleLinkGoogle function for LoginPage.jsx
+const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (isSubmitting) return;
+    if (!validateResetForm()) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      console.log("DEBUG: Attempting to send reset password email for:", resetEmail);
+      
+      // Call the resetPassword function
+      const result = await resetPassword(resetEmail);
+      
+      // Always show success, even if email doesn't exist (for security)
+      setLoginMessage({
+        type: 'success',
+        content: `If an account exists for ${resetEmail}, we've sent a password reset link. Please check your email.`
+      });
+      
+      // Clear the form and go back to login
+      setResetEmail("");
+      setShowResetForm(false);
+      
+    } catch (error) {
+      console.error("DEBUG: Error in reset password:", error);
+      
+      // Generic error message that doesn't reveal if email exists
+      setErrors(prev => ({
+        ...prev,
+        reset: "Unable to send reset email. Please try again later."
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
+// Modified handleLinkGoogle function for LoginPage.jsx
 const handleLinkGoogle = async (e) => {
     e.preventDefault();
     
