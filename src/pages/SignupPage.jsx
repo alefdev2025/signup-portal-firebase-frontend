@@ -3,9 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 // Updated imports
-import Banner from "../components/Banner";
 import ResponsiveBanner from "../components/ResponsiveBanner";
-import alcorWhiteLogo from "../assets/images/alcor-white-logo-no-text.png";
 import { 
   requestEmailVerification, 
   verifyEmailCodeOnly,
@@ -30,10 +28,8 @@ import ContactInfoPage from "./ContactInfoPage.jsx";
 
 // Import decomposed components
 import AccountCreationForm from "../components/signup/AccountCreationForm";
-import VerificationForm from "../components/signup/VerificationForm";
 import AccountCreationSuccess from "../components/signup/AccountCreationSuccess";
 import HelpPanel from "../components/signup/HelpPanel";
-import DebugInfo from "../components/signup/DebugInfo";
 
 const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];
 
@@ -987,8 +983,10 @@ const handleGoogleSignIn = async () => {
         steps={steps}
         showSteps={true}
         showStar={true}
-        showProgressBar={true} // Show the progress circles
-      />
+        showProgressBar={true}
+        useGradient={true} // NEW: Use the gradient background for signup page
+        textAlignment="center" // Center the text while keeping logo left-aligned
+        />
       
       {/* Main Content */}
       <div className="flex-grow p-4 md:p-8 flex justify-center">

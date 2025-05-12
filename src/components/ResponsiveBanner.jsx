@@ -1,4 +1,4 @@
-// File: components/ResponsiveBanner.jsx
+// File: components/ResponsiveBanner.jsx - With adjusted logo positioning
 import React from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
@@ -17,11 +17,21 @@ const ResponsiveBanner = ({
   showSteps = true,
   showStar = true,
   showProgressBar = true,
-  isWelcomePage = false, // New prop to identify welcome page
+  isWelcomePage = false, // Prop to identify welcome page
+  useGradient = false, // NEW: explicit control over gradient background
+  textAlignment = "default", // New prop: 'default', 'left', 'center'
 }) => {
   const navigate = useNavigate();
   const { currentUser, signupState } = useUser() || {};
   const maxCompletedStep = signupState ? (signupState.signupProgress || 0) : 0;
+  
+  // Check if this is a signup page (has progress bar)
+  const isSignupPage = showProgressBar;
+  // Check if this is a login page (not a signup page, and text is centered)
+  const isLoginPage = !isSignupPage && textAlignment === "center";
+  
+  // Should use gradient background
+  const shouldUseGradient = useGradient || isWelcomePage;
   
   // Navigation logic for progress steps - maintain state when navigating
   const handleStepClick = (index) => {
@@ -77,11 +87,130 @@ const ResponsiveBanner = ({
   const displayHeading = getHeading();
   const displaySubText = getSubText();
 
-  // Subtle gradient style matching the reference images with new colors
+  // Determine text alignment classes based on the textAlignment prop and page type
+  const getTextAlignmentClasses = () => {
+    // For login page or center alignment
+    if (isLoginPage || textAlignment === "center") {
+      return {
+        containerClass: "text-center",
+        headingClass: "justify-center",
+        subtextClass: "mx-auto",
+      };
+    }
+    
+    // For signup page, always center the text
+    if (isSignupPage) {
+      return {
+        containerClass: "text-center",
+        headingClass: "justify-center",
+        subtextClass: "mx-auto",
+      };
+    }
+    
+    // For welcome page, default to left aligned
+    if (isWelcomePage && textAlignment === "default") {
+      return {
+        containerClass: "text-left",
+        headingClass: "justify-start",
+        subtextClass: "",
+      };
+    }
+    
+    // For explicit left alignment
+    if (textAlignment === "left") {
+      return {
+        containerClass: "text-left",
+        headingClass: "justify-start",
+        subtextClass: "",
+      };
+    }
+    
+    // Fallback to default (center)
+    return {
+      containerClass: "text-center",
+      headingClass: "justify-center",
+      subtextClass: "mx-auto",
+    };
+  };
+  
+  const alignmentClasses = getTextAlignmentClasses();
+
+  // Gradient style for banners that need it
   const gradientStyle = {
     background: 'linear-gradient(90deg, #13233e 0%, #2D3050 40%, #49355B 80%, #654a54 100%)'
   };
 
+  // Get logo positioning class based on page type
+  const getLogoPositioningClass = () => {
+    // For signup page, always left-align logo
+    if (isSignupPage) {
+      return "justify-start";
+    }
+    
+    // For login page, always left-align logo
+    if (isLoginPage) {
+      return "justify-start";
+    }
+    
+    // For welcome page with default alignment, left-align
+    if (isWelcomePage && textAlignment === "default") {
+      return "justify-start";
+    }
+    
+    // For explicit alignments
+    if (textAlignment === "center") {
+      return "justify-center";
+    } else if (textAlignment === "left") {
+      return "justify-start";
+    } 
+    
+    // Default to center
+    return "justify-center";
+  };
+
+  const logoPositioningClass = getLogoPositioningClass();
+
+  // Get logo size based on page type
+  const getLogoSizeClass = () => {
+    // Signup and login pages have the same logo size
+    if (isSignupPage || isLoginPage) {
+      return "h-16 md:h-20";
+    }
+    
+    // Welcome page has a slightly smaller logo
+    if (isWelcomePage) {
+      return "h-12 md:h-16";
+    }
+    
+    // Default size
+    return "h-16 md:h-20";
+  };
+
+  const logoSizeClass = getLogoSizeClass();
+  
+  // Get top padding class for login/portal pages
+  const getTopPaddingClass = () => {
+    // For login page, use more top padding to position logo higher
+    if (isLoginPage && !isWelcomePage) {
+      return "pt-8 md:pt-14";
+    }
+    
+    // For welcome page
+    if (isWelcomePage) {
+      return "pt-16";
+    }
+    
+    // For signup page with progress bar
+    if (isSignupPage) {
+      return "pt-10";
+    }
+    
+    // Default padding
+    return "pt-16";
+  };
+  
+  const topPaddingClass = getTopPaddingClass();
+  
   // Debug output to help identify issues
   console.log("ResponsiveBanner render:");
   console.log("- currentUser:", currentUser ? "logged in" : "not logged in");
@@ -89,44 +218,56 @@ const ResponsiveBanner = ({
   console.log("- activeStep:", activeStep);
   console.log("- maxCompletedStep:", maxCompletedStep);
   console.log("- isWelcomePage:", isWelcomePage);
+  console.log("- isSignupPage:", isSignupPage);
+  console.log("- isLoginPage:", isLoginPage);
+  console.log("- shouldUseGradient:", shouldUseGradient);
+  console.log("- textAlignment:", textAlignment);
+  console.log("- displayHeading:", displayHeading);
+  console.log("- logoPositioningClass:", logoPositioningClass);
+  console.log("- logoSizeClass:", logoSizeClass);
+  console.log("- topPaddingClass:", topPaddingClass);
 
   return (
     <div className="banner-container">
       {/* Mobile Banner (compact version) */}
       <div className="md:hidden">
         <div 
-          className={`text-white px-4 ${isWelcomePage ? 'py-8' : 'py-4'} relative overflow-hidden`}
-          style={gradientStyle}
+          className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-8' : isLoginPage ? 'py-6' : 'py-4'} relative overflow-hidden`}
+          style={shouldUseGradient ? gradientStyle : {}}
         >
           {/* Top section with logo and heading */}
-          <div className="flex items-center justify-between mb-4">
-            {/* Logo at the left of the banner */}
+          <div className={`flex items-center ${isSignupPage || isLoginPage ? "justify-between" : textAlignment === "center" ? "justify-center flex-col" : "justify-between"} mb-4`}>
+            {/* Logo at the left or centered based on page type and textAlignment */}
             <div className="flex items-center">
               <img 
                 src={logo} 
                 alt="Alcor Logo" 
-                className={isWelcomePage ? "h-10" : "h-12"}
+                className={isWelcomePage && !isLoginPage ? "h-10" : "h-12"}
               />
             </div>
             
-            {/* Header text positioned at the top right */}
-            <div className="flex items-center">
-              <h1 className="flex items-center">
-                <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>{isWelcomePage ? "Your Membership" : displayHeading}</span>
+            {/* Header text */}
+            <div className={`flex items-center ${textAlignment === "center" && !(isSignupPage || isLoginPage) ? "mt-4" : ""}`}>
+              <h1 className={`flex items-center ${isSignupPage || isLoginPage || textAlignment === "center" ? "justify-center" : ""}`}>
+                <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>
+                  {displayHeading}
+                </span>
                 {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
               </h1>
             </div>
           </div>
           
-          {/* Mobile subtext - only shown on welcome page or when enough space */}
-          {isWelcomePage && (
+          {/* Mobile subtext */}
+          {(isWelcomePage || textAlignment === "center" || (isSignupPage && !showProgressBar) || isLoginPage) && (
             <div className="mb-4">
-              <p className="text-base text-white/80 leading-tight">{displaySubText}</p>
+              <p className={`text-base text-white/80 leading-tight ${isSignupPage || isLoginPage || textAlignment === "center" ? "text-center" : ""}`}>
+                {displaySubText}
+              </p>
             </div>
           )}
           
           {/* Mobile Progress Bar - inside colored banner */}
-          {showProgressBar && !isWelcomePage && (
+          {showProgressBar && (
             <div className="py-3 pb-6">
               <div className="flex justify-between w-full">
                 {/* Create a centered container for circles and lines */}
@@ -243,24 +384,24 @@ const ResponsiveBanner = ({
       
       {/* Desktop Banner - consistent height regardless of progress bar visibility */}
       <div 
-        className="hidden md:block" 
-        style={gradientStyle}
+        className={`hidden md:block ${shouldUseGradient ? '' : 'bg-[#13263f]'}`}
+        style={shouldUseGradient ? gradientStyle : {}}
       >
-        {/* Main Banner Content - taller for welcome page and when progress bar is not visible */}
+        {/* Main Banner Content - dynamic padding based on page type */}
         <div 
-          className={`text-white px-10 ${isWelcomePage ? 'pt-16 pb-24' : showProgressBar ? 'pt-10 pb-10' : 'pt-16 pb-20'}`}
+          className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'}`}
         >
-          {/* Logo at the top with conditional positioning */}
-          <div className={`flex ${isWelcomePage ? 'justify-start' : 'items-start'} ${isWelcomePage ? 'mb-8' : 'mb-4'}`}>
+          {/* Logo at the top with conditional positioning - now using logoSizeClass */}
+          <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
             <img 
               src={logo} 
               alt="Alcor Logo" 
-              className={isWelcomePage ? "h-12 md:h-16" : "h-16 md:h-20"}
+              className={logoSizeClass}
             />
           </div>
           
-          {/* Banner content - conditional alignment based on page type */}
-          <div className={`${isWelcomePage ? "text-left" : "text-center"} max-w-4xl ${isWelcomePage ? "" : "mx-auto"}`}>
+          {/* Banner content - alignment based on textAlignment prop */}
+          <div className={`${alignmentClasses.containerClass} max-w-4xl ${alignmentClasses.subtextClass}`}>
             {showSteps && !isWelcomePage && (
               <p className="text-lg flex items-center justify-center text-white/80 mb-2">
                 <span>Sign up → Step {stepNumber}:</span> 
@@ -270,11 +411,13 @@ const ResponsiveBanner = ({
                 </span>
               </p>
             )}
-            <h1 className={`flex items-center ${isWelcomePage ? "justify-start" : "justify-center"}`}>
-              <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>{isWelcomePage ? "Your Membership" : displayHeading}</span>
-              {showStar && <img src={yellowStar} alt="" className="h-8 ml-1" />}
+            <h1 className={`flex items-center ${alignmentClasses.headingClass}`}>
+              <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>
+                {displayHeading}
+              </span>
+              {showStar && <img src={yellowStar} alt="" className="h-9 ml-1" />}
             </h1>
-            <p className={`${showProgressBar ? "text-xl md:text-2xl mt-3" : "text-xl md:text-2xl mt-4"} text-white/80 ${isWelcomePage ? "max-w-xl" : "max-w-3xl mx-auto"}`}>
+            <p className={`${showProgressBar ? "text-xl md:text-2xl mt-3" : "text-xl md:text-2xl mt-4"} text-white/80 ${alignmentClasses.subtextClass}`}>
               {displaySubText}
             </p>
           </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import darkLogo from "../assets/images/alcor-white-logo.png";
-import Banner from "../components/Banner";
+import ResponsiveBanner from "../components/ResponsiveBanner";
 import { 
   auth,
   signInWithEmailAndPassword,
@@ -1220,12 +1220,16 @@ const handleLinkGoogle = async (e) => {
   
   return (
     <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
-      {/* Header Banner */}
-      <Banner 
-        logo={darkLogo}
-        heading={isContinueSignup ? "Continue Your Membership Application" : "Sign In to Member Portal"}
-        subText={isContinueSignup ? "Sign in to continue where you left off." : "Access your Alcor membership account."}
-      />
+    <ResponsiveBanner 
+    logo={darkLogo}
+    heading={isContinueSignup ? "Continue Your Membership Application" : "Sign In to Member Portal"}
+    subText={isContinueSignup ? "Sign in to continue where you left off." : "Access your Alcor membership account."}
+    showSteps={false}
+    showStar={true}
+    showProgressBar={false}
+    useGradient={true} // Use gradient styling instead of isWelcomePage
+    textAlignment="center" // Center the text for login page
+    />
       
       <div className="flex-1 flex justify-center items-start px-4 sm:px-8 md:px-12 pb-16 sm:pb-12 pt-12 sm:pt-8">
         <div className="w-full max-w-2xl bg-white rounded-xl shadow-md overflow-hidden">
