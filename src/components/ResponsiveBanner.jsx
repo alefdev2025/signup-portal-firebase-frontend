@@ -89,43 +89,34 @@ const ResponsiveBanner = ({
     
     return () => clearInterval(intervalId);
   }, [currentUser, showProgressBar, navigate]);
-  
-  // Navigation logic - maintain state when navigating
+
+  // MOST DIRECT SOLUTION: Complete rewrite of handleStepClick in ResponsiveBanner.jsx
   const handleStepClick = (index) => {
     if (!showProgressBar || isLoading) return;
     
     // Allow navigation to any previously completed step (including step 0)
     if (index <= maxCompletedStep) {
-      console.log(`Navigating to step ${index}`);
+      console.log(`EMERGENCY DIRECT NAVIGATION: Force to step ${index}`);
       
-      // Set flag to indicate returning to account page if going to step 0
+      // Set account creation flag if going to step 0
       if (index === 0 && currentUser) {
-        console.log("Setting account_creation_success flag in localStorage");
         localStorage.setItem('account_creation_success', 'true');
       }
       
-      // Use query parameter to navigate between steps without losing state
-      navigate(`/signup?step=${index}`);
+      // Force update the parent's active step directly
+      // This bypasses the URL system entirely
+      
+      // First update local storage to ensure state persists after reload
+      localStorage.setItem('force_active_step', index.toString());
+      localStorage.setItem('force_timestamp', Date.now().toString());
+      
+      // Use setTimeout to ensure this happens after current event loop
+      setTimeout(() => {
+        // Then force a page reload to clear any stale state
+        window.location.href = `/signup?step=${index}&force=true&_=${Date.now()}`;
+      }, 0);
     } else {
       console.log(`Cannot navigate to step ${index}, max completed step is ${maxCompletedStep}`);
-    }
-  };
-
-  // Handler for back button
-  const handleBackClick = () => {
-    if (activeStep > 0) {
-      // Navigate to previous step
-      const prevStep = activeStep - 1;
-      
-      // Set flag to indicate returning to account page if going to step 0
-      if (prevStep === 0 && currentUser) {
-        sessionStorage.setItem('returning_to_account', 'true');
-      }
-      
-      navigate(`/signup?step=${prevStep}`);
-    } else {
-      // At first step, navigate back to welcome page
-      navigate('/');
     }
   };
 
@@ -311,19 +302,6 @@ const ResponsiveBanner = ({
         >
           {/* Top section with logo and heading */}
           <div className={`flex items-center ${isSignupPage || isLoginPage ? "justify-between" : textAlignment === "center" ? "justify-center flex-col" : "justify-between"} mb-4`}>
-            {/* Back button for signup pages */}
-            {isSignupPage && activeStep > 0 && (
-              <button 
-                onClick={handleBackClick}
-                className="p-2 rounded-full text-white hover:bg-white/10 transition-colors"
-                aria-label="Go Back"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
-            
             {/* Logo at the left or centered based on page type and textAlignment */}
             <div className="flex items-center">
               <img 
@@ -333,10 +311,8 @@ const ResponsiveBanner = ({
               />
             </div>
             
-            {/* Placeholder for spacing symmetry if no back button */}
-            {isSignupPage && activeStep === 0 && (
-              <div className="w-6"></div>
-            )}
+            {/* Placeholder for spacing symmetry */}
+            <div className="w-6"></div>
           </div>
           
           {/* Header text */}
@@ -400,20 +376,6 @@ const ResponsiveBanner = ({
         <div 
           className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'} relative`}
         >
-          {/* Back Button - Only show on signup pages when not on first step */}
-          {isSignupPage && activeStep > 0 && (
-            <button 
-              onClick={handleBackClick}
-              className="absolute top-10 left-10 p-2 rounded-full text-white hover:bg-white/10 transition-colors flex items-center"
-              aria-label="Go Back"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span>Back</span>
-            </button>
-          )}
-          
           {/* Logo at the top with conditional positioning - now using logoSizeClass */}
           <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
             <img 

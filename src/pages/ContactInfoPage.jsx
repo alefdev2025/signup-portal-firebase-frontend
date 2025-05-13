@@ -443,15 +443,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 
   // Handler for back button
   const handleBack = () => {
+    // Save form data first
     saveFormData('contact_info', formData);
     
-    if (typeof onBack === 'function') {
-      onBack();
-    } else {
-      navigate(-1);
-    }
+    console.log("ContactInfoPage: Handle back button clicked");
+    
+    // Use the more reliable force navigation method
+    localStorage.setItem('force_active_step', '0'); // Force to step 0
+    localStorage.setItem('force_timestamp', Date.now().toString());
+    
+    // Use setTimeout to ensure this happens after current event loop
+    setTimeout(() => {
+      // Then force a page reload to clear any stale state
+      window.location.href = `/signup?step=0&force=true&_=${Date.now()}`;
+    }, 0);
   };
-  
   // Helper function to render the DatePicker with icon
   const renderDateField = (id, name, label, value, required = false) => (
     <div className="relative">

@@ -89,6 +89,32 @@ export default function SignupPage() {
     if (history.length <= 1) return "/";
     return history[history.length - 2];
   };
+
+  // EMERGENCY FORCE STEP HANDLER - This must run before any other logic
+useEffect(() => {
+    // Check for force_active_step in localStorage
+    const forceStep = localStorage.getItem('force_active_step');
+    const forceTimestamp = localStorage.getItem('force_timestamp');
+    
+    // Only apply if it's recent (within last 5 seconds)
+    if (forceStep && forceTimestamp) {
+      const stepNumber = parseInt(forceStep, 10);
+      const timestamp = parseInt(forceTimestamp, 10);
+      const now = Date.now();
+      const isRecent = (now - timestamp) < 5000; // 5 seconds
+      
+      if (!isNaN(stepNumber) && isRecent) {
+        console.log(`🚨 EMERGENCY OVERRIDE: Force setting step to ${stepNumber}`);
+        
+        // Force update the step
+        setActiveStep(stepNumber);
+        
+        // Clean up
+        localStorage.removeItem('force_active_step');
+        localStorage.removeItem('force_timestamp');
+      }
+    }
+  }, []); // Empty deps - runs once on mount
   
   // Check for fresh signup flag on component mount
   useEffect(() => {
@@ -141,6 +167,7 @@ export default function SignupPage() {
     }
   }, [location]);
   
+  
   // URL-based routing and step management
   useEffect(() => {
     console.log("--- Navigation Debug ---");
@@ -172,7 +199,7 @@ export default function SignupPage() {
     console.log("Force Navigation:", forceParam);
     
     // If force=true parameter is present, override verification checks
-    if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
+    /*if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
       console.log("Force parameter detected, setting activeStep to:", stepParam);
       setActiveStep(stepParam);
       
@@ -180,7 +207,26 @@ export default function SignupPage() {
       const newUrl = `/signup?step=${stepParam}`;
       navigate(newUrl, { replace: true });
       return;
-    }
+    }*/
+
+    // If force=true parameter is present, override verification checks
+if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
+    console.log("🚨 FORCE PARAM: Emergency setting activeStep to:", stepParam);
+    
+    // Force update with timeout to ensure it happens after everything else
+    setTimeout(() => {
+      setActiveStep(stepParam);
+      
+      // DO NOT clean up the URL right away - wait a moment
+      setTimeout(() => {
+        const newUrl = `/signup?step=${stepParam}`;
+        navigate(newUrl, { replace: true });
+      }, 500);
+    }, 0);
+    
+    // Early exit to prevent other logic from interfering
+    return;
+  }
     
     // First handle the case where we have a user
     if (currentUser) {
