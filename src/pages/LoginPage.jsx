@@ -20,6 +20,7 @@ import {
   useUser,
   saveSignupState
 } from "../contexts/UserContext";
+import PasswordField from "../components/signup/PasswordField"; // Import PasswordField
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -38,14 +39,15 @@ const LoginPage = () => {
   const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
   const [pendingGoogleLinking, setPendingGoogleLinking] = useState(false);
   const [shouldNavigate, setShouldNavigate] = useState(false);
+  const [showNoAccountMessage, setShowNoAccountMessage] = useState(false);
   
   // Determine if this is for continuing signup from the URL
   const searchParams = new URLSearchParams(location.search);
   const isContinueSignup = searchParams.get('continue') === 'signup';
   const emailParam = searchParams.get('email');
   const provider = searchParams.get('provider');
-  const addPassword = searchParams.get('addPassword') === 'true';
-  const linkAccounts = searchParams.get('linkAccounts') === 'true';
+  const addPasswordParam = searchParams.get('addPassword') === 'true'; // Renamed to avoid conflict
+  const linkAccountsParam = searchParams.get('linkAccounts') === 'true'; // Renamed to avoid conflict
   
   // Account linking states
   const [newPassword, setNewPassword] = useState("");
@@ -68,85 +70,6 @@ const LoginPage = () => {
     linkGoogle: ""
   });
 
-  // Clear localStorage and sign out on mount (with Google auth check)
-  /*useEffect(() => {
-    const clearAndPrepare = async () => {
-      try {
-        // Check if user is already authenticated with Google
-        const currentUser = auth.currentUser;
-        const isGoogleUser = currentUser && 
-                            currentUser.providerData && 
-                            currentUser.providerData.some(p => p.providerId === 'google.com');
-        
-        // Set state to track if user is authenticated with Google
-        setIsGoogleAuthenticated(isGoogleUser);
-        
-        // If already authenticated with Google and trying to add password, skip the Google sign-in part
-        if (currentUser && isGoogleUser && provider === 'google' && addPassword) {
-          console.log("DEBUG: User already authenticated with Google, skipping sign-in");
-          setShowAddPasswordForm(true);
-          return; // Skip the logout and other setup
-        }
-        
-        // First, sign out any existing user (do this only if we haven't detected an existing authenticated user)
-        console.log("DEBUG: Signing out user on login page load");
-        try {
-          await logout();
-        } catch (error) {
-          console.log("DEBUG: No user to log out or error during logout:", error);
-        }
-        
-        // Clear verification state
-        localStorage.removeItem('alcor_verification_state');
-        
-        // Set initial form state if email provided
-        if (emailParam) {
-          setFormData(prev => ({
-            ...prev,
-            email: emailParam
-          }));
-        }
-        
-        // Handle various URL parameters for account linking
-        if (emailParam) {
-          if (provider === 'google') {
-            // Handle Google account users
-            setLoginMessage({
-              type: 'info',
-              content: `This email (${emailParam}) is associated with a Google account. You can sign in with Google or add a password to link your accounts.`
-            });
-            setHighlightGoogleButton(true);
-            
-            if (addPassword) {
-              setShowAddPasswordForm(true);
-            }
-          } else if (provider === 'password') {
-            // Handle email/password account users trying to use Google
-            setLoginMessage({
-              type: 'info',
-              content: `This email (${emailParam}) already has a password. You can sign in with your password or link your Google account.`
-            });
-            setHighlightPasswordForm(true);
-            
-            if (linkAccounts) {
-              setShowLinkGoogleForm(true);
-            }
-          } else if (isContinueSignup) {
-            // Generic existing user message
-            setLoginMessage({
-              type: 'info',
-              content: `This email is already registered. Please sign in to continue your membership process.`
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing login page:", error);
-      }
-    };
-    
-    clearAndPrepare();
-  }, [emailParam, isContinueSignup, provider, addPassword, linkAccounts]);*/
-
   // ONLY modify the useEffect in LoginPage.jsx to prevent logout when adding password to Google account
 // This is a minimal change to fix Scenario 1
 
@@ -158,7 +81,7 @@ useEffect(() => {
         console.log("DEBUG: Current user on login page load:", currentUser?.uid);
         
         // If we're adding a password to a Google account, check if they're authenticated with Google
-        if (provider === 'google' && addPassword) {
+        if (provider === 'google' && addPasswordParam) {
           console.log("DEBUG: In add password to Google flow");
           
           // Check if user is authenticated with Google
@@ -215,7 +138,7 @@ useEffect(() => {
             });
             setHighlightGoogleButton(true);
             
-            if (addPassword) {
+            if (addPasswordParam) {
               setShowAddPasswordForm(true);
             }
           } else if (provider === 'password') {
@@ -226,7 +149,7 @@ useEffect(() => {
             });
             setHighlightPasswordForm(true);
             
-            if (linkAccounts) {
+            if (linkAccountsParam) {
               setShowLinkGoogleForm(true);
             }
           } else if (isContinueSignup) {
@@ -243,7 +166,7 @@ useEffect(() => {
     };
     
     checkAuthAndSetup();
-  }, [emailParam, isContinueSignup, provider, addPassword, linkAccounts]);
+  }, [emailParam, isContinueSignup, provider, addPasswordParam, linkAccountsParam]);
 
   // Modified redirect when user becomes authenticated
   useEffect(() => {
@@ -370,13 +293,30 @@ useEffect(() => {
     }
   };
   
-  const handleChange = (e) => {
+const handleChange = (e) => {
     const { name, value } = e.target;
+  
+    // Clear the "No Account Message" if it's showing
+    if (showNoAccountMessage) {
+      setShowNoAccountMessage(false);
+    }
     
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    // Clear any success/info messages when user starts typing again
+    if (loginMessage) {
+      setLoginMessage(null);
+    }
+    
+    // Handle specific password fields for "Add Password" form
+    if (name === "newPassword") {
+      setNewPassword(value);
+    } else if (name === "confirmPassword") {
+      setConfirmPassword(value);
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
     
     // Clear errors when the user types
     if (errors[name]) {
@@ -384,6 +324,12 @@ useEffect(() => {
         ...prev,
         [name]: ""
       }));
+    }
+    if (name === "newPassword" && errors.addPassword) {
+      setErrors(prev => ({...prev, addPassword: ""}));
+    }
+    if (name === "confirmPassword" && errors.addPassword) {
+      setErrors(prev => ({...prev, addPassword: ""}));
     }
     
     // Clear general error when user types anything
@@ -442,35 +388,36 @@ useEffect(() => {
   };
   
   const validatePasswordForm = () => {
+    let currentAddPasswordError = "";
+
     if (!newPassword) {
-      setErrors(prev => ({...prev, addPassword: "Password is required"}));
-      return false;
+      currentAddPasswordError = "Password is required";
+    } else if (newPassword !== confirmPassword) {
+      currentAddPasswordError = "Passwords do not match";
+    } else {
+        // Password strength validation (consistent with PasswordField and SignupPage)
+        if (newPassword.length < 8) {
+            currentAddPasswordError = "Password must be at least 8 characters";
+        } else {
+            const hasUppercase = /[A-Z]/.test(newPassword);
+            const hasLowercase = /[a-z]/.test(newPassword);
+            const hasNumber = /[0-9]/.test(newPassword);
+            // const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+
+
+            if (newPassword.length < 12 && (!hasUppercase || !hasLowercase || !hasNumber)) {
+                 currentAddPasswordError = "Password must contain uppercase letters, lowercase letters, and numbers. Alternatively, use 12+ characters with mixed character types.";
+            }
+            // More detailed checks can be added here if desired, aligning with PasswordField.jsx logic
+            // For now, the visual feedback will come from PasswordField component itself.
+        }
     }
     
-    if (newPassword !== confirmPassword) {
-      setErrors(prev => ({...prev, addPassword: "Passwords do not match"}));
-      return false;
+    if (currentAddPasswordError) {
+        setErrors(prev => ({...prev, addPassword: currentAddPasswordError}));
+        return false;
     }
-    
-    // Password strength validation
-    if (newPassword.length < 8) {
-      setErrors(prev => ({...prev, addPassword: "Password must be at least 8 characters"}));
-      return false;
-    }
-    
-    // Basic password strength validation
-    const hasUppercase = /[A-Z]/.test(newPassword);
-    const hasLowercase = /[a-z]/.test(newPassword);
-    const hasNumber = /[0-9]/.test(newPassword);
-    
-    if (newPassword.length < 12 && (!hasUppercase || !hasLowercase || !hasNumber)) {
-      setErrors(prev => ({
-        ...prev, 
-        addPassword: "Password must contain uppercase letters, lowercase letters, and numbers. Alternatively, use 12+ characters with mixed character types."
-      }));
-      return false;
-    }
-    
+    setErrors(prev => ({...prev, addPassword: ""})); // Clear error if validation passes
     return true;
   };
   
@@ -546,44 +493,48 @@ useEffect(() => {
     try {
       console.log("DEBUG: Attempting Google sign-in");
       
-      // Sign in with Google
+      // Special case for account linking - proceed as normal
+      if (showLinkGoogleForm || loginMessage?.type === 'success') {
+        console.log("DEBUG: In account linking flow, proceeding with Google sign-in");
+        const result = await signInWithGoogle();
+        
+        if (result && result.success) {
+          console.log("DEBUG: Google sign-in was part of account linking");
+          setLinkingSuccessful(true);
+          setShouldNavigate(true);
+        }
+        return;
+      }
+      
+      // Call your existing signInWithGoogle function
       const result = await signInWithGoogle();
       console.log("DEBUG: Google sign-in result:", result);
       
-      // Check if there was a linking error
-      if (result && result.error === 'auth/account-exists-with-different-credential') {
-        // Handle case where email exists but with password auth
-        setLoginMessage({
-          type: 'warning',
-          content: `This email already has a password. Please sign in with your password first to link accounts.`
-        });
-        setHighlightPasswordForm(true);
-        setShowLinkGoogleForm(true);
-        setIsSubmitting(false);
+      // Check if this is a new user from the result
+      if (result && result.isNewUser) {
+        console.log("DEBUG: This was a new account creation - not allowed from login page");
         
-        // Prefill the email field
-        if (result.email) {
-          setFormData(prev => ({
-            ...prev,
-            email: result.email
-          }));
+        // If your signInWithGoogle returns the user, use it to delete the user
+        if (result.user) {
+          await result.user.delete();
+        } else {
+          // If not, use the current user
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await currentUser.delete();
+          }
         }
         
-        return; // Don't proceed with redirect
+        // Show inline message with options
+        setShowNoAccountMessage(true);
+        setIsSubmitting(false);
+        return;
       }
       
-      // If we're in a linking scenario, set the linking successful flag
-      if (showLinkGoogleForm || loginMessage?.type === 'success') {
-        console.log("DEBUG: Google sign-in was part of account linking");
-        setLinkingSuccessful(true);
-        // Now it's safe to navigate
-        setShouldNavigate(true);
-      } else {
-        // Standard Google sign-in flow
-        setShouldNavigate(true);
-      }
+      // If we get here, this was a successful sign-in to an existing account
+      console.log("DEBUG: Successful sign-in to existing Google account");
+      setShouldNavigate(true);
       
-      // Redirect will happen automatically via the useEffect when currentUser changes
     } catch (error) {
       console.error("DEBUG: Google sign-in error:", error);
       
@@ -622,7 +573,7 @@ useEffect(() => {
     e.preventDefault();
     
     if (isSubmitting) return;
-    if (!validatePasswordForm()) return;
+    if (!validatePasswordForm()) return; // Uses updated validation
     
     setIsSubmitting(true);
     
@@ -719,149 +670,7 @@ useEffect(() => {
     }
   };
 
-
-/*const handleAddPassword = async (e) => {
-  e.preventDefault();
-  
-  if (isSubmitting) return;
-  if (!validatePasswordForm()) return;
-  
-  setIsSubmitting(true);
-  
-  try {
-    // Verify Google authentication
-    const currentUser = auth.currentUser;
-    const isGoogleAuthenticated = currentUser && 
-                                currentUser.providerData && 
-                                currentUser.providerData.some(p => p.providerId === 'google.com');
-    
-    console.log("DEBUG: Current user in handleAddPassword:", currentUser?.uid);
-    console.log("DEBUG: Is Google authenticated:", isGoogleAuthenticated);
-    
-    // Safety check - don't proceed if not authenticated with Google
-    if (!currentUser || !isGoogleAuthenticated) {
-      throw new Error("You must be authenticated with Google to add a password");
-    }
-    
-    console.log("DEBUG: Proceeding with password linking");
-    
-    // Link password to the account
-    await linkPasswordToGoogleAccount(newPassword);
-    console.log("DEBUG: Password successfully linked to Google account");
-    
-    // Mark linking as successful so we navigate to the appropriate step
-    setLinkingSuccessful(true);
-    
-    // This is just for feedback, but we'll actually navigate away
-    setLoginMessage({
-      type: 'success',
-      content: "Password successfully added to your account. Redirecting to your profile..."
-    });
-    
-    // Reset form fields
-    setNewPassword("");
-    setConfirmPassword("");
-    setShowAddPasswordForm(false);
-    
-    // Now it's safe to navigate
-    setTimeout(() => {
-      setShouldNavigate(true);
-    }, 1500);
-    
-  } catch (error) {
-    console.error("DEBUG: Error adding password:", error);
-    
-    let errorMessage = "Failed to add password. Please try again.";
-    
-    if (error.code === 'auth/requires-recent-login') {
-      errorMessage = "For security reasons, please return to the signup page and try this process again.";
-    } else if (error.code === 'auth/email-already-in-use') {
-      errorMessage = "This email is already in use with another account.";
-    } else if (error.code === 'auth/credential-already-in-use') {
-      errorMessage = "This account already has a password. Please use password reset if you forgot it.";
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    setErrors(prev => ({
-      ...prev, 
-      addPassword: errorMessage
-    }));
-  } finally {
-    setIsSubmitting(false);
-  }
-};*/
-
-
-  // Updated handler for skipping password add
-  /*const handleSkipPasswordAdd = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    
-    try {
-      // Check if already authenticated
-      if (isGoogleAuthenticated) {
-        console.log("DEBUG: Already authenticated with Google, proceeding without re-authentication");
-        
-        // Show a clear message to the user
-        setLoginMessage({
-          type: 'success',
-          content: "Continuing with Google account only. You can add a password later in your settings."
-        });
-        
-        // Allow the message to be seen before navigation
-        setTimeout(() => {
-          // Simply set linking as successful to trigger navigation
-          setLinkingSuccessful(true);
-          setShouldNavigate(true);
-          // The navigation will happen automatically via the useEffect when currentUser changes
-        }, 1000);
-      } else {
-        // Need to authenticate with Google first
-        console.log("DEBUG: Not authenticated with Google yet, signing in");
-        
-        // Make the Google sign-in call and ensure it succeeds
-        const result = await signInWithGoogle();
-        
-        if (!result || !result.success) {
-          throw new Error("Google authentication failed or was canceled");
-        }
-        
-        console.log("DEBUG: Google sign-in successful after skipping password add");
-        
-        // Show success message
-        setLoginMessage({
-          type: 'success',
-          content: "Successfully signed in with Google. Continuing without adding a password."
-        });
-        
-        // Allow the message to be seen before navigation
-        setTimeout(() => {
-          setLinkingSuccessful(true);
-          setShouldNavigate(true);
-        }, 1000);
-      }
-    } catch (error) {
-      console.error("DEBUG: Error during Google sign-in after skip:", error);
-      
-      let errorMessage = "Failed to sign in with Google. Please try again.";
-      
-      if (error.message === 'Sign-in was cancelled') {
-        errorMessage = "Google sign-in was cancelled. You must complete the sign-in to continue.";
-      } else if (error.message && error.message.includes('pop-up')) {
-        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
-      }
-      
-      setErrors(prev => ({
-        ...prev,
-        general: errorMessage
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };*/
-
-  // Updated handler for skipping password add with proper navigation
+// Updated handler for skipping password add with proper navigation
 const handleSkipPasswordAdd = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -1081,11 +890,12 @@ const handleSkipPasswordAdd = async () => {
       // Sign in directly with email and password
       const authResult = await signInWithEmailAndPassword(formData.email, currentPassword);
       
-      if (!authResult || !authResult.success) {
-        throw new Error("Authentication failed");
-      }
+      // signInWithEmailAndPassword from auth.js returns the userCredential on success
+      // or throws an error. So, if it doesn't throw, it's successful.
+      // We don't need to check authResult.success if it's directly from Firebase.
+      // However, if your signInWithEmailAndPassword is a wrapper that returns an object,
+      // then you might need a check like: if (!authResult || !authResult.success)
       
-      // Set a flag indicating successful authentication
       console.log("DEBUG: Password sign-in successful");
       
       // Show a clear message to the user that they're proceeding without linking
@@ -1123,6 +933,8 @@ const handleSkipPasswordAdd = async () => {
     }
   };
   
+// Modify the handleResetPassword function in LoginPage.jsx
+
 const handleResetPassword = async (e) => {
     e.preventDefault();
     
@@ -1141,6 +953,16 @@ const handleResetPassword = async (e) => {
       setLoginMessage({
         type: 'success',
         content: `If an account exists for ${resetEmail}, we've sent a password reset link. Please check your email.`
+      });
+      
+      // Clear any existing error messages
+      setErrors({
+        email: "",
+        password: "",
+        general: "",
+        reset: "",
+        addPassword: "",
+        linkGoogle: ""
       });
       
       // Clear the form and go back to login
@@ -1203,7 +1025,7 @@ const handleLinkGoogle = async (e) => {
       
       let errorMessage = "Failed to authenticate. Please check your password and try again.";
       
-      if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = "Incorrect password. Please check your password and try again.";
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Too many failed attempts. Please try again later or reset your password.";
@@ -1349,6 +1171,24 @@ const handleLinkGoogle = async (e) => {
                   {errors.general}
                 </div>
               )}
+
+                {/* No Account Message - ADD THIS HERE */}
+                {/* No Account Message */}
+                {showNoAccountMessage && (
+                <div className="mb-6 p-4 rounded-md bg-yellow-50 border border-yellow-200">
+                    <p className="font-medium mb-3 text-yellow-800">No account exists with this Google account.</p>
+                    <p className="mb-4 text-yellow-700">Select 'Create New Account' or continue to sign in another way.</p>
+                    <div className="flex justify-center">
+                    <button
+                        onClick={() => navigate('/signup?step=0')}
+                        style={{ backgroundColor: "#172741", color: "white" }}
+                        className="py-2 px-4 rounded hover:opacity-90 w-full"
+                    >
+                        Create New Account
+                    </button>
+                    </div>
+                </div>
+                )}
               
               {/* Standard Login Form - Only show when not in special account linking flows */}
               {showStandardLogin && (
@@ -1373,7 +1213,10 @@ const handleLinkGoogle = async (e) => {
                       <label htmlFor="password" className="block text-gray-800 text-lg font-medium">Password</label>
                       <button 
                         type="button" 
-                        onClick={() => setShowResetForm(true)} 
+                        onClick={() => {
+                            if (formData.email) { setResetEmail(formData.email); }
+                            setShowResetForm(true);
+                        }} 
                         className="text-purple-700 text-sm hover:underline"
                       >
                         Forgot Password?
@@ -1418,20 +1261,20 @@ const handleLinkGoogle = async (e) => {
                 </>
               )}
               
-              {/* Link Google Account Form - WITH SKIP OPTION */}
+              {/* Link Google Account Form - WITH SKIP OPTION & FORGOT PASSWORD */}
               {showLinkGoogleForm && (
                 <div className="mt-2 mb-6">
                   <p className="text-gray-600 mb-4">
-                    Enter your password and click "Sign In & Link with Google" to connect your Google account.
-                    This will allow you to sign in with either Google or email/password in the future.
+                    Enter your current Alcor password to connect your Google account.
+                    This will allow you to sign in with either Google or your email/password in the future.
                   </p>
                   
                   <div className="mb-6">
-                    <label htmlFor="email" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
+                    <label htmlFor="linkEmail" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
                     <input 
                       type="email" 
-                      id="email"
-                      name="email"
+                      id="linkEmail"
+                      name="email" // Keep name as email to align with formData
                       value={formData.email}
                       readOnly
                       className="w-full px-5 py-4 bg-gray-100 border border-gray-300 rounded-md text-gray-800 text-lg cursor-not-allowed"
@@ -1439,16 +1282,28 @@ const handleLinkGoogle = async (e) => {
                   </div>
                   
                   <div className="mb-6">
-                    <label htmlFor="currentPassword" className="block text-gray-700 text-lg font-medium mb-2">
-                      Current Password
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label htmlFor="currentPassword" className="block text-gray-700 text-lg font-medium">
+                        Current Password
+                        </label>
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                if (formData.email) { setResetEmail(formData.email); }
+                                setShowResetForm(true);
+                            }} 
+                            className="text-purple-700 text-sm hover:underline"
+                        >
+                            Forgot Password?
+                        </button>
+                    </div>
                     <input
                       type="password"
                       id="currentPassword"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 text-lg"
-                      placeholder="Enter your current password"
+                      placeholder="Enter your current Alcor password"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -1483,10 +1338,7 @@ const handleLinkGoogle = async (e) => {
                     {/* Skip option for Google linking */}
                     <button
                       type="button"
-                      onClick={() => {
-                        // Submit form to sign in with just password
-                        handleSkipGoogleLinking();
-                      }}
+                      onClick={handleSkipGoogleLinking}
                       disabled={isSubmitting}
                       className="w-full border border-gray-300 text-gray-700 py-4 px-5 rounded-full font-medium text-lg hover:bg-gray-50 disabled:opacity-70"
                     >
@@ -1496,7 +1348,7 @@ const handleLinkGoogle = async (e) => {
                 </div>
               )}
               
-              {/* Add Password Form with Skip Option */}
+              {/* Add Password Form with Skip Option and Enhanced Password Field */}
               {showAddPasswordForm && (
                 <div className="mt-2 mb-6">
                   <p className="text-gray-600 mb-4">
@@ -1505,31 +1357,31 @@ const handleLinkGoogle = async (e) => {
                   </p>
                   
                   <div className="mb-4">
-                    <label htmlFor="email" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
+                    <label htmlFor="addPasswordEmail" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
                     <input 
                       type="email" 
-                      id="email"
-                      name="email"
+                      id="addPasswordEmail"
+                      name="email" // Keep name as email
                       value={formData.email}
                       readOnly
                       className="w-full px-5 py-4 bg-gray-100 border border-gray-300 rounded-md text-gray-800 text-lg cursor-not-allowed"
                     />
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="newPassword" className="block text-gray-700 text-lg font-medium mb-2">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      id="newPassword"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 text-lg"
-                      placeholder="Create a strong password"
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <PasswordField
+                    id="newPassword"
+                    name="newPassword" // Ensure name is passed to handleChange
+                    value={newPassword}
+                    onChange={handleChange} // Use the main handleChange
+                    isSubmitting={isSubmitting}
+                    error={errors.addPassword} // Pass the specific error for this form
+                    label="New Password"
+                    placeholder="Create a strong password"
+                    className="mb-4" // Adjust margin as needed
+                    inputClassName="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 text-lg"
+                    labelClassName="block text-gray-700 text-lg font-medium mb-2"
+                    errorClassName="text-red-500 text-sm mt-1"
+                  />
                   
                   <div className="mb-4">
                     <label htmlFor="confirmPassword" className="block text-gray-700 text-lg font-medium mb-2">
@@ -1538,15 +1390,21 @@ const handleLinkGoogle = async (e) => {
                     <input
                       type="password"
                       id="confirmPassword"
+                      name="confirmPassword" // Ensure name is passed to handleChange
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={handleChange} // Use the main handleChange
                       className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 text-lg"
                       placeholder="Confirm your password"
                       disabled={isSubmitting}
                     />
+                     {/* Display password match error if passwords don't match but no other addPassword error exists */}
+                    {errors.addPassword && errors.addPassword === "Passwords do not match" && (
+                        <p className="text-red-500 text-sm mt-1">{errors.addPassword}</p>
+                    )}
                   </div>
                   
-                  {errors.addPassword && (
+                  {/* Display general addPassword errors not covered by PasswordField or specific match error */}
+                  {errors.addPassword && errors.addPassword !== "Passwords do not match" && (
                     <div className="mb-4 text-red-500 text-sm">{errors.addPassword}</div>
                   )}
                   
@@ -1582,6 +1440,7 @@ const handleLinkGoogle = async (e) => {
                   </div>
                 </div>
               )}
+              
               
               {/* Show the Google Sign-In option except in password-only linking flow */}
               {(!showLinkGoogleForm || loginMessage?.type === 'success') && !showAddPasswordForm && (

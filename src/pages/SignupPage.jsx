@@ -495,47 +495,34 @@ export default function SignupPage() {
           if (result.isExistingUser) {
             console.log("Existing user detected:", formData.email);
             
-            // CRITICAL CHANGE: Always redirect existing users to login page, regardless of auth method
-            console.log("Redirecting existing user to login");
+            // Check if this is a Google-only user (has Google auth but no password)
+            if ((result.authProviders && result.authProviders.includes('google.com') && !result.hasPasswordAuth) || 
+                (result.authProvider === 'google' && !result.hasPasswordAuth)) {
+              console.log("Google-only account detected");
+              
+              // Navigate to login page with parameters for adding password to Google account
+              navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`);
+              setIsSubmitting(false);
+              return;
+            }
+            
+            // Check if this is an email/password-only user (trying to use Google)
+            if ((result.authProviders && result.authProviders.includes('password') && !result.hasGoogleAuth) || 
+                (result.authProvider === 'password' && !result.hasGoogleAuth) ||
+                (result.hasPasswordAuth && !result.hasGoogleAuth)) {
+              console.log("Password-only account detected - need to link Google");
+              
+              // Navigate to login page with parameters for linking Google to password account
+              navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=password&linkAccounts=true`);
+              setIsSubmitting(false);
+              return;
+            }
+            
+            // For users with both auth methods or any other case, redirect to standard login
+            console.log("Redirecting existing user to standard login");
             navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
             setIsSubmitting(false);
             return;
-            
-            // The below code is now unreachable - we're always redirecting existing users to login
-            /*
-            // Check if this is a Google-only user
-            if (result.authProvider === 'google') {
-                console.log("Google account detected");
-                
-                // Navigate to login page with parameters indicating Google account and option to add password
-                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`);
-                setIsSubmitting(false);
-                return;
-            }
-            
-            // Check if this is a password user - redirect to login
-            if (result.authProvider === 'password' || result.hasPasswordAuth === true || 
-                (result.authProviders && result.authProviders.includes('password'))) {
-                console.log("Password account detected - redirecting to login");
-                
-                // Navigate directly to login page with the email
-                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
-                setIsSubmitting(false);
-                return;
-            }
-
-            // If authProvider is "unknown" but we know hasPasswordAuth is true from logs
-            if (result.authProvider === 'unknown' && 
-                (result.hasPasswordAuth === true || 
-                (result.authProviders && result.authProviders.includes('password')))) {
-                console.log("User has password auth - redirecting to login");
-                
-                // Navigate directly to login page with the email
-                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
-                setIsSubmitting(false);
-                return;
-            }
-            */
           }
           
           // Store verification ID for the next step
@@ -771,7 +758,7 @@ export default function SignupPage() {
     }
   };
 
-// In SignupPage.jsx, ensure the handleGoogleSignIn function properly handles conflicts
+// Updated handleGoogleSignIn function that properly resets UI state
 
 const handleGoogleSignIn = async () => {
     if (isSubmitting) return;
@@ -788,9 +775,18 @@ const handleGoogleSignIn = async () => {
       general: ""
     });
     
+    // Setup a timeout to automatically reset the UI state in case of hanging
+    const resetTimeout = setTimeout(() => {
+      console.log("Safety timeout triggered - resetting UI");
+      setIsSubmitting(false);
+    }, 30000); // 30 second safety timeout
+    
     try {
       console.log("Calling signInWithGoogle()");
       const result = await signInWithGoogle();
+      
+      // Clear the safety timeout since we got a response
+      clearTimeout(resetTimeout);
       
       console.log("Google sign-in result:", result);
       
@@ -812,27 +808,41 @@ const handleGoogleSignIn = async () => {
         clearVerificationState();
         console.log("Cleared verification state");
         
-        // Set hasNavigatedRef to true to show success screen
-        hasNavigatedRef.current = true;
-        setAccountCreated(true); // Set account creation state
-        console.log("Set hasNavigatedRef to true and account creation state to true");
-        
-        // After sign-in, wait a moment for auth state to update
-        setTimeout(() => {
-          // Navigate to signup with showSuccess parameter
-          console.log("Navigating to signup with showSuccess parameter");
-          navigate('/signup?step=0&showSuccess=true', { replace: true });
-        }, 500);
+        // Only show success screen for new users
+        if (result.isNewUser === true) {
+          // Set hasNavigatedRef to true to show success screen for new users
+          hasNavigatedRef.current = true;
+          setAccountCreated(true); // Set account creation state
+          console.log("Set hasNavigatedRef to true and account creation state to true");
+          
+          // After sign-in, wait a moment for auth state to update
+          setTimeout(() => {
+            // Navigate to signup with showSuccess parameter
+            console.log("Navigating to signup with showSuccess parameter");
+            navigate('/signup?step=0&showSuccess=true', { replace: true });
+          }, 500);
+        } else {
+          // For existing users, get their current step
+          console.log("Existing user detected, getting current step");
+          
+          // Give Firebase a moment to update auth state
+          setTimeout(() => {
+            // Navigate directly to the next step (default to step 1 if not available)
+            const nextStep = result.signupProgress || 1;
+            console.log(`Navigating to step ${nextStep} for existing user`);
+            navigate(`/signup?step=${nextStep}`, { replace: true });
+          }, 500);
+        }
       } else {
         console.error("Google sign-in did not return success=true");
         
-        // Show error message
-        setErrors(prev => ({
-          ...prev,
-          general: result?.message || "Failed to sign in with Google. Please try again."
-        }));
+        // IMMEDIATELY reset the UI to normal state
+        setIsSubmitting(false);
       }
     } catch (error) {
+      // Clear the safety timeout since we got a response
+      clearTimeout(resetTimeout);
+      
       console.error("Error during Google sign-in:", error);
       
       // Check for different credential error directly from the caught error
@@ -847,27 +857,11 @@ const handleGoogleSignIn = async () => {
         return;
       }
       
-      // Handle other errors
-      let errorMessage = "Failed to sign in with Google. Please try again.";
-      
-      if (error.message === 'Sign-in was cancelled') {
-        errorMessage = "Google sign-in was cancelled. Please try again.";
-      } else if (error.message && error.message.includes('popup')) {
-        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site and try again.";
-      } else if (error.message && error.message.includes('network')) {
-        errorMessage = "Network error. Please check your internet connection.";
-      }
-      
-      setErrors(prev => ({
-        ...prev,
-        general: errorMessage
-      }));
-    } finally {
+      // IMMEDIATELY reset the UI to normal state for any error
       setIsSubmitting(false);
-      console.log("Setting isSubmitting back to false");
     }
   };
-  
+
   const resendVerificationCode = async () => {
     if (isSubmitting) return;
     console.log("Resending verification code");
@@ -1038,15 +1032,14 @@ const handleGoogleSignIn = async () => {
         useGradient={true} // NEW: Use the gradient background for signup page
         textAlignment="center" // Center the text while keeping logo left-aligned
         />
-      
-      {/* Main Content */}
-      <div className="flex-grow p-4 md:p-8 flex justify-center">
-        <div className="w-full max-w-3xl">
-          {/* Step Content with direct component check */}
-            {/* Main Content */}
-            <div className="flex-grow p-4 md:p-8 flex justify-center">
+
+        {/* Main Content */}
+        <div className="flex-grow p-4 md:p-8 flex justify-center">
+        <div className="w-full sm:max-w-[520px] md:max-w-[650px] lg:max-w-[800px] px-4 sm:px-6 md:px-8">
+            {/* Step Content with direct component check */}
+            <div className="flex-grow flex justify-center">
             {activeStep === 0 && (
-                <div className="w-full max-w-xl">
+                <div className="w-full">
                 {currentUser && (signupState?.signupProgress >= 1 || isAccountCreated()) ? (
                     <AccountCreationSuccess 
                     currentUser={currentUser} 
@@ -1066,6 +1059,7 @@ const handleGoogleSignIn = async () => {
                     resendVerificationCode={resendVerificationCode}
                     changeEmail={changeEmail}
                     highlightGoogleButton={highlightGoogleButton}
+
                     />
                 )}
                 </div>
@@ -1079,7 +1073,7 @@ const handleGoogleSignIn = async () => {
             )}
             </div>
         </div>
-      </div>
+        </div>
       
       {/* Help Panel */}
       <HelpPanel 

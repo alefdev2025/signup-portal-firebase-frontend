@@ -58,7 +58,7 @@ const PasswordField = ({
   };
 
   return (
-    <div className={`mb-6 sm:mb-10 mx-auto max-w-md md:max-w-none ${className}`}>
+    <div className={`${className}`}>
       <label htmlFor={id} className={labelClassName || "block text-gray-800 text-base sm:text-lg font-medium mb-2 sm:mb-4"}>
         {label}
       </label>

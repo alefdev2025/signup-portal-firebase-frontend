@@ -1,4 +1,3 @@
-// File: components/signup/AccountCreationForm.jsx
 import React, { useState } from 'react';
 import PasswordField from './PasswordField';
 import navyAlcorLogo from '../../assets/images/navy-a-logo.png';
@@ -16,13 +15,18 @@ const AccountCreationForm = ({
   verificationStep,
   resendVerificationCode,
   changeEmail,
-  highlightGoogleButton
+  highlightGoogleButton,
+  setErrors
 }) => {
   // State for modal control
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null); // 'terms' or 'privacy'
   // Add state to track if resend code is in progress
   const [resendingCode, setResendingCode] = useState(false);
+  // State for Google button error
+  const [googleButtonError, setGoogleButtonError] = useState(false);
+  // Track if Google sign-in is in progress
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   
   console.log("AccountCreationForm rendered with verificationStep:", verificationStep);
   console.log("Form data:", formData);
@@ -125,6 +129,17 @@ const AccountCreationForm = ({
     console.log("Confirm Password state:", confirmPasswordState ? "Confirm Password exists" : "No confirm password");
     handleSubmit(e);
   };
+
+  // Modified change handler to clear Google button error
+  const handleFormChange = (e) => {
+    // Auto-clear Google button error when terms are checked
+    if (e.target.name === 'termsAccepted' && e.target.checked) {
+      setGoogleButtonError(false);
+    }
+
+    // Pass the event up to parent component
+    handleChange(e);
+  };
   
   // Handle resend verification code with state update
   const handleResendCode = async () => {
@@ -132,12 +147,40 @@ const AccountCreationForm = ({
     await resendVerificationCode();
     setResendingCode(false);
   };
+
+  // Wrap Google sign-in to check terms acceptance first - fixed to use local state
+  const handleGoogleSignInWithTermsCheck = () => {
+    // First check if terms are accepted
+    if (!formData.termsAccepted) {
+      // Set error for terms acceptance using local handler
+      if (setErrors) {
+        setErrors(prev => ({
+          ...prev,
+          termsAccepted: "You must accept the Terms of Use and Privacy Policy to continue"
+        }));
+      }
+      
+      // Show inline error for Google button
+      setGoogleButtonError(true);
+      return;
+    }
+
+    // If terms are accepted, proceed with Google sign-in
+    setGoogleButtonError(false);
+    setIsGoogleSigningIn(true); // Just disable the button without changing text
+    
+    // Call the parent handler
+    handleGoogleSignIn().finally(() => {
+      // Always reset the button state
+      setIsGoogleSigningIn(false);
+    });
+  };
   
   // Display verification form if needed
   if (verificationStep === "verification") {
     return (
-      <form onSubmit={onSubmitForm} className="mx-auto max-w-md md:max-w-none pt-16 sm:pt-0 space-y-10 sm:space-y-6">
-        <div className="mb-10 sm:mb-10 mx-auto max-w-md md:max-w-none">
+      <form onSubmit={onSubmitForm} className="w-full pt-16 sm:pt-0 space-y-10 sm:space-y-6">
+        <div className="mb-10 sm:mb-10">
           <label htmlFor="verificationCode" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-4">
             Verification Code
           </label>
@@ -146,7 +189,7 @@ const AccountCreationForm = ({
             id="verificationCode"
             name="verificationCode"
             value={formData.verificationCode}
-            onChange={handleChange}
+            onChange={handleFormChange}
             placeholder="Enter the 6-digit code" 
             className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
             disabled={isSubmitting || resendingCode}
@@ -156,13 +199,13 @@ const AccountCreationForm = ({
           {errors.verificationCode && <p className="text-red-500 text-xs sm:text-sm mt-2 sm:mt-3">{errors.verificationCode}</p>}
         </div>
         
-        <div className="text-sm sm:text-base text-gray-600 mb-12 sm:mb-8 mx-auto max-w-md md:max-w-none">
+        <div className="text-sm sm:text-base text-gray-600 mb-12 sm:mb-8">
           <p>A verification code has been sent to <strong>{formData.email}</strong>.</p>
           <div className="mt-8 sm:mt-4 flex flex-col sm:flex-row sm:space-x-4 space-y-5 sm:space-y-0 sm:justify-between">
             <button 
               type="button" 
               onClick={handleResendCode}
-              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-[calc(50%-0.5rem)]"
+              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
               disabled={isSubmitting || resendingCode}
             >
               {resendingCode ? (
@@ -185,7 +228,7 @@ const AccountCreationForm = ({
             <button 
               type="button" 
               onClick={changeEmail}
-              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-[calc(50%-0.5rem)]"
+              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
               disabled={isSubmitting || resendingCode}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#f39c12]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,7 +239,7 @@ const AccountCreationForm = ({
           </div>
         </div>
         
-        <div className="mx-auto max-w-md md:max-w-none mt-12 sm:mt-0">
+        <div className="mt-12 sm:mt-0">
           <button 
             type="submit"
             disabled={isSubmitting || resendingCode}
@@ -240,38 +283,45 @@ const AccountCreationForm = ({
   // Initial account creation form
   return (
     <>
-      {/* Add mobile-specific styling with responsive classes - mobile first, desktop remains unchanged */}
-      <form onSubmit={onSubmitForm} className="space-y-6 mt-12 sm:mt-0">
-        <div className="mb-6 sm:mb-10 mx-auto max-w-md md:max-w-none">
-          <label htmlFor="email" className="block text-gray-800 text-base sm:text-lg font-medium mb-2 sm:mb-4">Email</label>
+      {/* Form with consistent width for all fields */}
+      <form onSubmit={onSubmitForm} className="w-full space-y-4 mt-8 sm:mt-0">
+        {/* Display general errors at the top if they exist */}
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
+            {errors.general}
+          </div>
+        )}
+        
+        <div className="mb-4 sm:mb-6">
+          <label htmlFor="email" className="block text-gray-800 text-base sm:text-lg font-medium mb-1 sm:mb-2">Email</label>
           <input 
             type="email" 
             id="email"
             name="email"
             value={formData.email}
-            onChange={handleChange}
+            onChange={handleFormChange}
             placeholder="e.g. john.smith@example.com" 
             className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
             disabled={isSubmitting}
           />
-          {errors.email && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-3">{errors.email}</p>}
+          {errors.email && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2">{errors.email}</p>}
         </div>
         
         {/* Enhanced Password Field with visibility toggle and requirements - pass mobile-specific props */}
         <PasswordField
           value={passwordState}
-          onChange={handleChange}
+          onChange={handleFormChange}
           isSubmitting={isSubmitting}
           error={errors.password}
-          className="mb-6 sm:mb-10" 
+          className="mb-4 sm:mb-6" 
           inputClassName="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
-          labelClassName="block text-gray-800 text-base sm:text-lg font-medium mb-2 sm:mb-4"
-          errorClassName="text-red-500 text-xs sm:text-sm mt-1 sm:mt-3"
+          labelClassName="block text-gray-800 text-base sm:text-lg font-medium mb-1 sm:mb-2"
+          errorClassName="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2"
         />
         
         {/* Confirm Password Field with Match Indicator */}
-        <div className="mb-6 sm:mb-10 mx-auto max-w-md md:max-w-none">
-          <label htmlFor="confirmPassword" className="block text-gray-800 text-base sm:text-lg font-medium mb-2 sm:mb-4">
+        <div className="mb-4 sm:mb-6">
+          <label htmlFor="confirmPassword" className="block text-gray-800 text-base sm:text-lg font-medium mb-1 sm:mb-2">
             Confirm Password
           </label>
           <div className="relative">
@@ -280,7 +330,7 @@ const AccountCreationForm = ({
               id="confirmPassword"
               name="confirmPassword"
               value={confirmPasswordState}
-              onChange={handleChange}
+              onChange={handleFormChange}
               placeholder="Re-enter your password" 
               className={`w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-gray-300 sm:border-brand-purple/30'} rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg`}
               disabled={isSubmitting}
@@ -294,19 +344,19 @@ const AccountCreationForm = ({
               </div>
             )}
           </div>
-          {errors.confirmPassword && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-3">{errors.confirmPassword}</p>}
+          {errors.confirmPassword && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2">{errors.confirmPassword}</p>}
           {confirmPasswordState && confirmPasswordState !== passwordState && !errors.confirmPassword && (
-            <p className="text-gray-500 text-xs sm:text-sm mt-1 sm:mt-3">Passwords do not match</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">Passwords do not match</p>
           )}
         </div>
         
-        <div className="mb-6 sm:mb-12 mx-auto max-w-md md:max-w-none">
+        <div className="mb-4 sm:mb-8">
           <label className={`flex items-start sm:items-center ${errors.termsAccepted ? 'text-red-500' : ''}`}>
             <input 
               type="checkbox" 
               name="termsAccepted"
               checked={formData.termsAccepted}
-              onChange={handleChange}
+              onChange={handleFormChange}
               disabled={isSubmitting}
               className={`mt-0.5 sm:mt-0 mr-2 sm:mr-4 h-4 sm:h-5 w-4 sm:w-5 appearance-none checked:bg-[#d39560] border ${errors.termsAccepted ? 'border-red-500' : 'border-gray-300 sm:border-brand-purple/30'} bg-brand-purple/5 rounded focus:ring-1 focus:ring-[#d39560]`}
               style={{ 
@@ -326,19 +376,19 @@ const AccountCreationForm = ({
                 className="text-brand-purple font-medium underline hover:text-purple-800 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
               >Privacy Policy</button>.</span>
           </label>
-          {errors.termsAccepted && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-3 ml-7 sm:ml-10">{errors.termsAccepted}</p>}
+          {errors.termsAccepted && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2 ml-7 sm:ml-10">{errors.termsAccepted}</p>}
         </div>
         
-        <div className="mx-auto max-w-md md:max-w-none">
+        <div>
           {/* Get Started Button */}
           <button 
             type="submit"
             disabled={isSubmitting}
             style={{
-              backgroundColor: "#31314f", /**4c3a57 */
+              backgroundColor: "#31314f", 
               color: "white"
             }}
-            className="w-full py-3 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-2 sm:mb-10 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
+            className="w-full py-3 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-1 sm:mb-4 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
           >
             {isSubmitting ? (
               <>
@@ -358,26 +408,37 @@ const AccountCreationForm = ({
             )}
           </button>
           
-          {/* OR Divider - More compact on mobile */}
-          <div className="flex items-center my-3 sm:my-10">
+          {/* OR Divider - Using more spacing from second file */}
+          <div className="flex items-center my-2 sm:my-4">
             <div className="flex-grow border-t border-gray-300"></div>
             <div className="px-4 sm:px-8 text-gray-500 uppercase text-xs sm:text-sm">OR</div>
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
           
-          {/* Google Sign In Button - Shorter spacing on mobile */}
+          {/* Google Sign In Button with Terms Check feature */}
           <button 
             type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isSubmitting}
-            className="w-full bg-white border border-gray-300 text-gray-700 py-3 sm:py-5 px-6 rounded-full font-medium text-base sm:text-lg mb-6 sm:mb-12 flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
+            onClick={handleGoogleSignInWithTermsCheck}
+            disabled={isGoogleSigningIn || isSubmitting}
+            className="w-full bg-white border border-gray-300 text-gray-700 py-3 sm:py-5 px-6 rounded-full font-medium text-base sm:text-lg mb-3 sm:mb-6 flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
           >
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 sm:h-6 w-5 sm:w-6 mr-2 sm:mr-3" />
+            {isGoogleSigningIn ? (
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 sm:h-6 w-5 sm:w-6 mr-2 sm:mr-3 opacity-50" />
+            ) : (
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 sm:h-6 w-5 sm:w-6 mr-2 sm:mr-3" />
+            )}
             Continue with Google
           </button>
+          
+          {/* Error message for Google sign-in without terms acceptance */}
+          {googleButtonError && (
+            <div className="text-red-500 text-sm mb-4 text-center">
+              You must accept the Terms of Use and Privacy Policy to continue with Google sign-in
+            </div>
+          )}
         </div>
         
-        <div className="text-center mx-auto max-w-md md:max-w-none">
+        <div className="text-center">
           <p className="text-gray-700 text-sm sm:text-base">
             Already an Alcor Member? <a href="/login" className="text-brand-purple">Login here</a>
           </p>
