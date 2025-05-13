@@ -547,7 +547,7 @@ export const resetPassword = async (email) => {
   };
 
 // Updated requestEmailVerification function in auth.js
-export async function requestEmailVerification(email, name) {
+/*export async function requestEmailVerification(email, name) {
     if (isDevelopment) {
       console.log("Starting email verification request...", { email, name });
     }
@@ -700,6 +700,346 @@ export async function requestEmailVerification(email, name) {
       
       throw error;
     }
+}*/
+
+export async function requestEmailVerification(email, name) {
+    console.log("========== START: requestEmailVerification ==========");
+    console.log(`Email: ${email}, Name: ${name}`);
+    
+    try {
+        // Input validation
+        if (!email || !name) {
+            console.log("ERROR: Missing email or name");
+            throw new Error('Email and name are required');
+        }
+        
+        // Normalize email to lowercase
+        email = email.toLowerCase();
+        
+        // First, sign out any existing user to prevent Firestore permission errors
+        try {
+            console.log("Signing out any existing user...");
+            await auth.signOut();
+            console.log("User signed out successfully (or no user was signed in)");
+        } catch (signOutError) {
+            console.log("Error during sign out (or no user to sign out):", signOutError);
+            console.log("Continuing anyway...");
+            // Continue anyway
+        }
+        
+        // Pre-check for Google accounts before sending verification codes
+        console.log("Pre-checking if this email belongs to a Google account...");
+        const checkAuthMethodFn = httpsCallable(functions, 'checkAuthMethod');
+        
+        try {
+            console.log("Calling checkAuthMethod with email:", email);
+            const authMethodResult = await checkAuthMethodFn({ email });
+            
+            console.log("checkAuthMethod raw result:", authMethodResult);
+            
+            if (authMethodResult?.data?.success) {
+                console.log("Pre-check auth result:", JSON.stringify(authMethodResult.data, null, 2));
+                
+                // Extract user authentication details
+                const hasGoogleAuth = authMethodResult.data.hasGoogleAuth === true;
+                const hasPasswordAuth = authMethodResult.data.hasPasswordAuth === true;
+                const authProviders = authMethodResult.data.authProviders || [];
+                const userId = authMethodResult.data.userId;
+                
+                console.log("Auth details from pre-check:");
+                console.log("- hasGoogleAuth:", hasGoogleAuth);
+                console.log("- hasPasswordAuth:", hasPasswordAuth);
+                console.log("- authProviders:", authProviders);
+                console.log("- userId:", userId);
+                
+                // Determine if this is a Google-only user
+                const isGoogleOnlyUser = (
+                    hasGoogleAuth && !hasPasswordAuth ||
+                    (authProviders.includes('google.com') && !authProviders.includes('password'))
+                );
+                
+                console.log("Is Google-only user:", isGoogleOnlyUser);
+                
+                if (isGoogleOnlyUser) {
+                    console.log("DETECTED: Google-only account in pre-check");
+                    console.log("Skipping verification code and redirecting to Google flow");
+                    
+                    // Save verification state for consistent UX
+                    saveVerificationState({
+                        email,
+                        name,
+                        isExistingUser: true,
+                        authProvider: 'google',
+                        isGoogleOnly: true,
+                        userId,
+                        timestamp: Date.now()
+                    });
+                    
+                    // Return Google account info without sending verification code
+                    return {
+                        success: true,
+                        isExistingUser: true,
+                        authProvider: 'google',
+                        isGoogleOnly: true,
+                        skipVerification: true,
+                        userId,
+                        email
+                    };
+                }
+                
+                console.log("Not a Google-only account, continuing with verification...");
+            } else {
+                console.log("Auth method pre-check failed or returned no data");
+                console.log("Continuing with regular verification flow...");
+            }
+        } catch (preCheckError) {
+            console.error("Error in Google account pre-check:", preCheckError);
+            console.log("Error details:", preCheckError.message);
+            console.log("Continuing with standard verification flow...");
+        }
+        
+        // If we get here, it's either a new user or an existing user with password auth
+        // Get the Firebase function for email verification
+        console.log("Getting Firebase function: createEmailVerification");
+        const createEmailVerification = httpsCallable(functions, 'createEmailVerification');
+        
+        // Call the function with a timeout
+        console.log("Calling createEmailVerification with:", { email, name });
+        const result = await Promise.race([
+            createEmailVerification({ email, name }),
+            new Promise((_, reject) => 
+                setTimeout(() => {
+                    console.log("Request timed out after 15 seconds");
+                    reject(new Error('Request timed out'));
+                }, 15000)
+            )
+        ]);
+        
+        // Log the full result for debugging
+        console.log("createEmailVerification raw result:", result);
+        
+        // Check if result exists and has data
+        if (!result || !result.data) {
+            console.log("ERROR: Invalid response - missing result or result.data");
+            throw new Error('Invalid response from server');
+        }
+        
+        console.log("createEmailVerification result.data:", JSON.stringify(result.data, null, 2));
+        
+        // Check for success in the response
+        if (!result.data.success) {
+            console.log("ERROR: Server reported failure:", result.data.error);
+            throw new Error(result.data.error || 'Failed to send verification code');
+        }
+        
+        // Check if this is an existing user
+        if (result.data.isExistingUser) {
+            console.log("DETECTED: Email belongs to an existing user:", email);
+            
+            // Call checkAuthMethod again to get detailed auth info
+            // This is now our second check, but we need it to get complete auth details
+            console.log("Calling checkAuthMethod to get complete auth details...");
+            
+            try {
+                console.log("Sending email to checkAuthMethod:", email);
+                const authMethodResult = await checkAuthMethodFn({ email });
+                
+                console.log("checkAuthMethod raw result:", authMethodResult);
+                
+                if (!authMethodResult || !authMethodResult.data) {
+                    console.log("WARNING: Invalid response from checkAuthMethod");
+                    console.log("Defaulting to password authentication");
+                    
+                    // Default to password if function doesn't give clear answer
+                    saveVerificationState({
+                        email,
+                        name,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider: 'password',
+                        timestamp: Date.now()
+                    });
+                    
+                    return {
+                        success: true,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider: 'password'
+                    };
+                }
+                
+                console.log("checkAuthMethod result.data:", JSON.stringify(authMethodResult.data, null, 2));
+                
+                if (authMethodResult.data && authMethodResult.data.success) {
+                    // Log all auth-related fields for debugging
+                    console.log("Auth provider details:");
+                    console.log("- primaryAuthMethod:", authMethodResult.data.primaryAuthMethod);
+                    console.log("- authProviders:", authMethodResult.data.authProviders);
+                    console.log("- hasGoogleAuth:", authMethodResult.data.hasGoogleAuth);
+                    console.log("- hasPasswordAuth:", authMethodResult.data.hasPasswordAuth);
+                    
+                    // Get auth provider info using any available field
+                    const primaryAuthMethod = authMethodResult.data.primaryAuthMethod || 'unknown';
+                    const authProviders = authMethodResult.data.authProviders || [];
+                    const hasGoogleAuth = authMethodResult.data.hasGoogleAuth === true;
+                    const hasPasswordAuth = authMethodResult.data.hasPasswordAuth === true;
+                    
+                    console.log("Analyzed authentication status:");
+                    console.log("- Primary method:", primaryAuthMethod);
+                    console.log("- Available providers:", authProviders);
+                    console.log("- Has Google auth:", hasGoogleAuth);
+                    console.log("- Has Password auth:", hasPasswordAuth);
+                    
+                    // Double-check if this is a Google-only user (shouldn't happen here, but just in case)
+                    const isGoogleOnlyUser = (
+                        hasGoogleAuth && !hasPasswordAuth ||
+                        primaryAuthMethod === 'google.com' ||
+                        primaryAuthMethod === 'google' ||
+                        (authProviders.includes('google.com') && !authProviders.includes('password'))
+                    );
+                    
+                    console.log("Is Google-only user:", isGoogleOnlyUser);
+                    
+                    if (isGoogleOnlyUser) {
+                        console.log("DETECTED: Google-only account");
+                        
+                        // Save verification state with Google provider info
+                        saveVerificationState({
+                            email,
+                            name,
+                            verificationId: result.data.verificationId,
+                            isExistingUser: true,
+                            authProvider: 'google',
+                            timestamp: Date.now()
+                        });
+                        
+                        console.log("Returning with Google authProvider");
+                        return {
+                            success: true,
+                            verificationId: result.data.verificationId,
+                            isExistingUser: true,
+                            authProvider: 'google',
+                            isGoogleOnly: true
+                        };
+                    }
+                    
+                    // For all other cases, use the primary auth method or default to password
+                    const authProvider = primaryAuthMethod === 'google.com' ? 'google' : (primaryAuthMethod || 'password');
+                    
+                    console.log("Using authProvider:", authProvider);
+                    
+                    // Save verification state
+                    saveVerificationState({
+                        email,
+                        name,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider,
+                        timestamp: Date.now()
+                    });
+                    
+                    return {
+                        success: true,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider
+                    };
+                } else {
+                    console.log("WARNING: checkAuthMethod unsuccessful");
+                    console.log("Error:", authMethodResult.data?.error);
+                    console.log("Defaulting to password authentication");
+                    
+                    // Default to password if function doesn't give clear answer
+                    saveVerificationState({
+                        email,
+                        name,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider: 'password',
+                        timestamp: Date.now()
+                    });
+                    
+                    return {
+                        success: true,
+                        verificationId: result.data.verificationId,
+                        isExistingUser: true,
+                        authProvider: 'password'
+                    };
+                }
+            } catch (authCheckError) {
+                console.error("ERROR checking auth method:", authCheckError);
+                console.log("Stack trace:", authCheckError.stack);
+                console.log("Defaulting to password authentication after error");
+                
+                // Default to password if function fails
+                saveVerificationState({
+                    email,
+                    name,
+                    verificationId: result.data.verificationId,
+                    isExistingUser: true,
+                    authProvider: 'password',
+                    timestamp: Date.now()
+                });
+                
+                return {
+                    success: true,
+                    verificationId: result.data.verificationId,
+                    isExistingUser: true,
+                    authProvider: 'password'
+                };
+            }
+        }
+        
+        // This is a new user
+        console.log("This appears to be a new user");
+        
+        // Save verification state for new user
+        saveVerificationState({
+            email,
+            name,
+            verificationId: result.data.verificationId,
+            isExistingUser: false,
+            timestamp: Date.now()
+        });
+        
+        console.log("Returning success for new user");
+        return {
+            success: true,
+            verificationId: result.data.verificationId,
+            isExistingUser: false
+        };
+        
+    } catch (error) {
+        console.error('ERROR in requestEmailVerification:', error);
+        console.log("Stack trace:", error.stack);
+        
+        // Check for errors that indicate an existing user
+        if (error.code === 'auth/email-already-in-use' || 
+            (error.message && (
+                error.message.toLowerCase().includes('already exists') ||
+                error.message.toLowerCase().includes('already in use')
+            ))) {
+            console.log("DEBUG: Email already exists error detected:", error.message);
+            return {
+                success: false,
+                isExistingUser: true,
+                error: error.message
+            };
+        }
+        
+        // Check for CORS errors and provide more helpful message
+        if (error.message && error.message.includes('NetworkError') || 
+            (error.code && error.code === 'internal') ||
+            (error.message && error.message.includes('CORS'))) {
+            console.error('CORS issue detected.');
+            throw new Error('Network connectivity issue. Please ensure your Firebase configuration allows requests from this application.');
+        }
+        
+        console.log("========== END: requestEmailVerification (with error) ==========");
+        throw error;
+    }
+    
+    console.log("========== END: requestEmailVerification (success) ==========");
 }
 
 // Split verification into two steps for security
