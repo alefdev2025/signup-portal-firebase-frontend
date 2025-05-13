@@ -1042,6 +1042,53 @@ export async function requestEmailVerification(email, name) {
     console.log("========== END: requestEmailVerification (success) ==========");
 }
 
+/**
+ * Checks the user's current step and session status
+ * 
+ * @param {Object} data Object containing userId
+ * @returns {Promise<Object>} Response containing user step information and session status
+ */
+ export const checkUserStep = async (data) => {
+    try {
+      console.log(`Checking user step for userId: ${data.userId}`);
+      
+      // Get the current timestamp to track request start time
+      const requestStartTime = Date.now();
+      
+      // Call the Firebase Cloud Function
+      const checkUserStepFn = httpsCallable(functions, 'checkUserStep');
+      const result = await checkUserStepFn(data);
+      
+      // Log the response time for performance monitoring
+      const responseTime = Date.now() - requestStartTime;
+      console.log(`checkUserStep response time: ${responseTime}ms`);
+      
+      // Return the result
+      const response = result.data;
+      
+      console.log(`User step check result:`, response);
+      
+      // Check for session expiration
+      if (response.isSessionExpired) {
+        console.warn("User session has expired, should redirect to login");
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error checking user step:', error);
+      
+      // Return a standardized error format
+      return {
+        success: false,
+        error: error.message || 'An unknown error occurred while checking user step',
+        step: 0, // Default to step 0 on error
+        stepName: 'account',
+        exists: false,
+        isSessionExpired: false
+      };
+    }
+  }
+
 // Split verification into two steps for security
 // Step 1: Verify the code only (no authentication)
 export async function verifyEmailCodeOnly(verificationId, code) {

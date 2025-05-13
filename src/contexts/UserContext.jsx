@@ -133,6 +133,7 @@ export const initializeFreshSignup = () => {
       localStorage.removeItem(SIGNUP_STATE_KEY);
       localStorage.removeItem(VERIFICATION_STATE_KEY);
       localStorage.removeItem(FORM_DATA_KEY);
+      localStorage.removeItem('account_creation_success'); // Add this line
       
       console.log("Fresh signup initialized");
       return true;

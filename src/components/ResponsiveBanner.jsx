@@ -1,14 +1,16 @@
-// File: components/ResponsiveBanner.jsx - With original background gradient
-import React from "react";
+// File: components/ResponsiveBanner.jsx
+import React, { useState, useEffect } from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import ProgressCircles from "./ProgressCircles";
 import MobileProgressCircles from "./MobileProgressCircles";
+import { checkUserStep } from "../services/auth"; // Import the enhanced function
 
 /**
  * Responsive Banner Component that handles proper navigation and state management
+ * Always consults the backend to determine the user's current step and permissions
  */
 const ResponsiveBanner = ({ 
   logo = alcorWhiteLogo,
@@ -20,12 +22,16 @@ const ResponsiveBanner = ({
   showStar = true,
   showProgressBar = true,
   isWelcomePage = false, // Prop to identify welcome page
-  useGradient = false, // NEW: explicit control over gradient background
-  textAlignment = "default", // New prop: 'default', 'left', 'center'
+  useGradient = false, // Explicit control over gradient background
+  textAlignment = "default", // 'default', 'left', 'center'
 }) => {
   const navigate = useNavigate();
-  const { currentUser, signupState } = useUser() || {};
-  const maxCompletedStep = signupState ? (signupState.signupProgress || 0) : 0;
+  const { currentUser } = useUser() || {};
+  
+  // State to track the max step the user can access (from backend)
+  const [maxCompletedStep, setMaxCompletedStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [backendError, setBackendError] = useState(null);
   
   // Check if this is a signup page (has progress bar)
   const isSignupPage = showProgressBar;
@@ -35,9 +41,58 @@ const ResponsiveBanner = ({
   // Should use gradient background
   const shouldUseGradient = useGradient || isWelcomePage;
   
-  // Navigation logic for progress steps - maintain state when navigating
+  // Fetch the user's step information from backend
+  useEffect(() => {
+    const fetchUserStep = async () => {
+      if (!currentUser || !showProgressBar) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        setBackendError(null);
+        
+        // Call the backend API to check user step
+        const result = await checkUserStep({ userId: currentUser.uid });
+        
+        console.log("Backend user step check result:", result);
+        
+        if (result.success) {
+          setMaxCompletedStep(result.step || 0);
+          
+          // If the user has been logged out due to inactivity, redirect to login
+          if (result.isSessionExpired) {
+            console.log("User session expired, redirecting to login");
+            sessionStorage.setItem('session_expired', 'true');
+            navigate('/login');
+            return;
+          }
+        } else {
+          console.error("Error fetching user step:", result.error);
+          setBackendError(result.error);
+          setMaxCompletedStep(0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user step:", error);
+        setBackendError(error.message);
+        setMaxCompletedStep(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserStep();
+    
+    // Set up polling interval to check regularly (every 5 minutes)
+    const intervalId = setInterval(fetchUserStep, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [currentUser, showProgressBar, navigate]);
+  
+  // Navigation logic - maintain state when navigating
   const handleStepClick = (index) => {
-    if (!showProgressBar) return;
+    if (!showProgressBar || isLoading) return;
     
     // Allow navigation to any previously completed step (including step 0)
     if (index <= maxCompletedStep) {
@@ -45,8 +100,8 @@ const ResponsiveBanner = ({
       
       // Set flag to indicate returning to account page if going to step 0
       if (index === 0 && currentUser) {
-        console.log("Setting returning_to_account flag in sessionStorage");
-        sessionStorage.setItem('returning_to_account', 'true');
+        console.log("Setting account_creation_success flag in localStorage");
+        localStorage.setItem('account_creation_success', 'true');
       }
       
       // Use query parameter to navigate between steps without losing state
@@ -55,7 +110,25 @@ const ResponsiveBanner = ({
       console.log(`Cannot navigate to step ${index}, max completed step is ${maxCompletedStep}`);
     }
   };
-  
+
+  // Handler for back button
+  const handleBackClick = () => {
+    if (activeStep > 0) {
+      // Navigate to previous step
+      const prevStep = activeStep - 1;
+      
+      // Set flag to indicate returning to account page if going to step 0
+      if (prevStep === 0 && currentUser) {
+        sessionStorage.setItem('returning_to_account', 'true');
+      }
+      
+      navigate(`/signup?step=${prevStep}`);
+    } else {
+      // At first step, navigate back to welcome page
+      navigate('/');
+    }
+  };
+
   // Content calculations
   const stepNumber = activeStep + 1;
   const stepName = steps[activeStep];
@@ -216,7 +289,6 @@ const ResponsiveBanner = ({
   // Debug output to help identify issues
   console.log("ResponsiveBanner render:");
   console.log("- currentUser:", currentUser ? "logged in" : "not logged in");
-  console.log("- signupState:", signupState);
   console.log("- activeStep:", activeStep);
   console.log("- maxCompletedStep:", maxCompletedStep);
   console.log("- isWelcomePage:", isWelcomePage);
@@ -239,6 +311,19 @@ const ResponsiveBanner = ({
         >
           {/* Top section with logo and heading */}
           <div className={`flex items-center ${isSignupPage || isLoginPage ? "justify-between" : textAlignment === "center" ? "justify-center flex-col" : "justify-between"} mb-4`}>
+            {/* Back button for signup pages */}
+            {isSignupPage && activeStep > 0 && (
+              <button 
+                onClick={handleBackClick}
+                className="p-2 rounded-full text-white hover:bg-white/10 transition-colors"
+                aria-label="Go Back"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            
             {/* Logo at the left or centered based on page type and textAlignment */}
             <div className="flex items-center">
               <img 
@@ -248,15 +333,20 @@ const ResponsiveBanner = ({
               />
             </div>
             
-            {/* Header text */}
-            <div className={`flex items-center ${textAlignment === "center" && !(isSignupPage || isLoginPage) ? "mt-4" : ""}`}>
-              <h1 className={`flex items-center ${isSignupPage || isLoginPage || textAlignment === "center" ? "justify-center" : ""}`}>
-                <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>
-                  {displayHeading}
-                </span>
-                {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
-              </h1>
-            </div>
+            {/* Placeholder for spacing symmetry if no back button */}
+            {isSignupPage && activeStep === 0 && (
+              <div className="w-6"></div>
+            )}
+          </div>
+          
+          {/* Header text */}
+          <div className={`flex items-center ${textAlignment === "center" && !(isSignupPage || isLoginPage) ? "mt-4" : ""}`}>
+            <h1 className={`flex items-center ${isSignupPage || isLoginPage || textAlignment === "center" ? "justify-center" : ""}`}>
+              <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>
+                {displayHeading}
+              </span>
+              {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
+            </h1>
           </div>
           
           {/* Mobile subtext */}
@@ -269,13 +359,20 @@ const ResponsiveBanner = ({
           )}
           
           {/* Mobile Progress Bar - using the separated component */}
-          {showProgressBar && (
+          {showProgressBar && !isLoading && (
             <MobileProgressCircles 
               steps={steps}
               activeStep={activeStep}
               maxCompletedStep={maxCompletedStep}
               onStepClick={handleStepClick}
             />
+          )}
+          
+          {/* Loading indicator for progress bar */}
+          {showProgressBar && isLoading && (
+            <div className="flex justify-center items-center py-2">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
           )}
         </div>
         
@@ -301,8 +398,22 @@ const ResponsiveBanner = ({
       >
         {/* Main Banner Content - dynamic padding based on page type */}
         <div 
-          className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'}`}
+          className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'} relative`}
         >
+          {/* Back Button - Only show on signup pages when not on first step */}
+          {isSignupPage && activeStep > 0 && (
+            <button 
+              onClick={handleBackClick}
+              className="absolute top-10 left-10 p-2 rounded-full text-white hover:bg-white/10 transition-colors flex items-center"
+              aria-label="Go Back"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Back</span>
+            </button>
+          )}
+          
           {/* Logo at the top with conditional positioning - now using logoSizeClass */}
           <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
             <img 
@@ -336,13 +447,27 @@ const ResponsiveBanner = ({
         </div>
         
         {/* Progress bar section - using the separated component */}
-        {showProgressBar && (
+        {showProgressBar && !isLoading && (
           <ProgressCircles
             steps={steps}
             activeStep={activeStep}
             maxCompletedStep={maxCompletedStep}
             onStepClick={handleStepClick}
           />
+        )}
+        
+        {/* Loading indicator for progress bar */}
+        {showProgressBar && isLoading && (
+          <div className="py-4 px-10 bg-gray-100 flex justify-center items-center">
+            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+        
+        {/* Error message if backend check fails */}
+        {backendError && (
+          <div className="py-2 px-10 bg-red-50 text-red-600 text-sm text-center">
+            Error checking step status. Please refresh the page.
+          </div>
         )}
       </div>
     </div>

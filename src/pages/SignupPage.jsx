@@ -33,6 +33,16 @@ import HelpPanel from "../components/signup/HelpPanel";
 
 const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];
 
+// Function to check if account is created
+const isAccountCreated = () => {
+  return localStorage.getItem('account_creation_success') === 'true';
+}
+
+// Function to set account created
+const setAccountCreated = (value = true) => {
+  localStorage.setItem('account_creation_success', value ? 'true' : 'false');
+}
+
 export default function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -44,12 +54,13 @@ export default function SignupPage() {
   const [verificationStep, setVerificationStep] = useState("initial"); // "initial", "verification"
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   const [isExistingUser, setIsExistingUser] = useState(false);
-  const hasNavigatedRef = useRef(false); // Ref to track if user has completed account creation
+  const hasNavigatedRef = useRef(false); // We'll keep this but use localStorage instead
   const [highlightGoogleButton, setHighlightGoogleButton] = useState(false);
   
   console.log("SignupPage rendered with activeStep:", activeStep);
   console.log("URL params:", Object.fromEntries([...searchParams]));
   console.log("hasNavigatedRef:", hasNavigatedRef.current);
+  console.log("isAccountCreated:", isAccountCreated());
   
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
@@ -90,6 +101,7 @@ export default function SignupPage() {
       // Reset verification step
       setVerificationStep("initial");
       hasNavigatedRef.current = false;
+      setAccountCreated(false); // Reset account creation state
       
       // Reset form data
       setFormData({
@@ -136,6 +148,7 @@ export default function SignupPage() {
     console.log("Current User:", currentUser);
     console.log("Signup State:", signupState);
     console.log("hasNavigatedRef:", hasNavigatedRef.current);
+    console.log("isAccountCreated:", isAccountCreated());
     
     // Parse URL for parameters
     const urlParams = new URLSearchParams(location.search);
@@ -147,6 +160,7 @@ export default function SignupPage() {
     if (showSuccessParam && currentUser) {
       console.log("showSuccess parameter detected, setting hasNavigatedRef to true");
       hasNavigatedRef.current = true;
+      setAccountCreated(true); // Set account creation state
       
       // Clean up the URL by removing the showSuccess parameter
       const newUrl = `/signup?step=0`;
@@ -335,6 +349,7 @@ export default function SignupPage() {
       if (storedProgress >= 1 && activeStep === 0) {
         console.log("Setting hasNavigatedRef to true based on user progress");
         hasNavigatedRef.current = true;
+        setAccountCreated(true); // Set account creation state
       }
       
       // Set active step based on signup progress
@@ -480,6 +495,14 @@ export default function SignupPage() {
           if (result.isExistingUser) {
             console.log("Existing user detected:", formData.email);
             
+            // CRITICAL CHANGE: Always redirect existing users to login page, regardless of auth method
+            console.log("Redirecting existing user to login");
+            navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
+            setIsSubmitting(false);
+            return;
+            
+            // The below code is now unreachable - we're always redirecting existing users to login
+            /*
             // Check if this is a Google-only user
             if (result.authProvider === 'google') {
                 console.log("Google account detected");
@@ -488,7 +511,31 @@ export default function SignupPage() {
                 navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`);
                 setIsSubmitting(false);
                 return;
-              }
+            }
+            
+            // Check if this is a password user - redirect to login
+            if (result.authProvider === 'password' || result.hasPasswordAuth === true || 
+                (result.authProviders && result.authProviders.includes('password'))) {
+                console.log("Password account detected - redirecting to login");
+                
+                // Navigate directly to login page with the email
+                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            // If authProvider is "unknown" but we know hasPasswordAuth is true from logs
+            if (result.authProvider === 'unknown' && 
+                (result.hasPasswordAuth === true || 
+                (result.authProviders && result.authProviders.includes('password')))) {
+                console.log("User has password auth - redirecting to login");
+                
+                // Navigate directly to login page with the email
+                navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
+                setIsSubmitting(false);
+                return;
+            }
+            */
           }
           
           // Store verification ID for the next step
@@ -619,7 +666,8 @@ export default function SignupPage() {
               
               // Set hasNavigatedRef to true to show success screen
               hasNavigatedRef.current = true;
-              console.log("Set hasNavigatedRef to true");
+              setAccountCreated(true); // Set account creation state
+              console.log("Set hasNavigatedRef to true and account creation state to true");
               
               // Reset verification step
               setVerificationStep("initial");
@@ -662,7 +710,8 @@ export default function SignupPage() {
               
               // Set hasNavigatedRef to true to show success screen
               hasNavigatedRef.current = true;
-              console.log("Set hasNavigatedRef to true");
+              setAccountCreated(true); // Set account creation state
+              console.log("Set hasNavigatedRef to true and account creation state to true");
               
               // Update progress in Firebase
               try {
@@ -765,7 +814,8 @@ const handleGoogleSignIn = async () => {
         
         // Set hasNavigatedRef to true to show success screen
         hasNavigatedRef.current = true;
-        console.log("Set hasNavigatedRef to true");
+        setAccountCreated(true); // Set account creation state
+        console.log("Set hasNavigatedRef to true and account creation state to true");
         
         // After sign-in, wait a moment for auth state to update
         setTimeout(() => {
@@ -903,7 +953,8 @@ const handleGoogleSignIn = async () => {
       // Set hasNavigatedRef to true if going back to step 0
       if (prevStep === 0) {
         hasNavigatedRef.current = true;
-        console.log("Setting hasNavigatedRef to true because going back to step 0");
+        setAccountCreated(true); // Set account creation state
+        console.log("Setting hasNavigatedRef to true and account creation state to true because going back to step 0");
       }
       
       setActiveStep(prevStep);
@@ -996,7 +1047,7 @@ const handleGoogleSignIn = async () => {
             <div className="flex-grow p-4 md:p-8 flex justify-center">
             {activeStep === 0 && (
                 <div className="w-full max-w-xl">
-                {currentUser && (signupState?.signupProgress >= 1 || hasNavigatedRef.current) ? (
+                {currentUser && (signupState?.signupProgress >= 1 || isAccountCreated()) ? (
                     <AccountCreationSuccess 
                     currentUser={currentUser} 
                     onNext={handleNext} 
