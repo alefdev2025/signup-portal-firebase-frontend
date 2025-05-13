@@ -1,7 +1,30 @@
 // File: components/signup/HelpPanel.jsx
 import React from 'react';
 
-const HelpPanel = ({ showHelpInfo, toggleHelpInfo }) => {
+const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
+  // Default help content if none provided
+  const defaultHelpItems = [
+    {
+      title: "Account Creation",
+      content: "Creating an account allows you to become a member as well as manage membership and contracts."
+    },
+    {
+      title: "Email Verification",
+      content: "We'll send a 6-digit code to your email to verify your identity and secure your account."
+    },
+    {
+      title: "Need assistance?",
+      content: (
+        <>
+          Contact our support team at <a href="mailto:support@alcor.com" className="text-brand-purple">support@alcor.com</a> or call (800) 555-1234.
+        </>
+      )
+    }
+  ];
+
+  // Use provided help items or default if empty
+  const itemsToDisplay = helpItems.length > 0 ? helpItems : defaultHelpItems;
+
   return (
     <>
       {/* Help icon in the bottom right corner */}
@@ -33,18 +56,14 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo }) => {
             </button>
           </div>
           <div className="p-5">
-            <div className="mb-4">
-              <h4 className="font-medium text-gray-800 mb-1">Account Creation</h4>
-              <p className="text-gray-600 text-sm">Creating an account allows you to become a member as well as manage membership and contracts.</p>
-            </div>
-            <div className="mb-4">
-              <h4 className="font-medium text-gray-800 mb-1">Email Verification</h4>
-              <p className="text-gray-600 text-sm">We'll send a 6-digit code to your email to verify your identity and secure your account.</p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800 mb-1">Need assistance?</h4>
-              <p className="text-gray-600 text-sm">Contact our support team at <a href="mailto:support@alcor.com" className="text-brand-purple">support@alcor.com</a> or call (800) 555-1234.</p>
-            </div>
+            {itemsToDisplay.map((item, index) => (
+              <div key={index} className={index < itemsToDisplay.length - 1 ? "mb-4" : ""}>
+                <h4 className="font-medium text-gray-800 mb-1">{item.title}</h4>
+                <p className="text-gray-600 text-sm">
+                  {item.content}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}

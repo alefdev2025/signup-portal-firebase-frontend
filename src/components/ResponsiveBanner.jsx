@@ -78,7 +78,7 @@ const ResponsiveBanner = ({
     
     switch(activeStep) {
       case 0: return "Sign up process takes on average 5 minutes.";
-      case 1: return "Help us personalize your experience.";
+      case 1: return "Building your membership application.";
       case 2: return "Choose your preferred method of investment.";
       case 3: return "Set up your funding details.";
       case 4: return "Review and confirm your membership details.";

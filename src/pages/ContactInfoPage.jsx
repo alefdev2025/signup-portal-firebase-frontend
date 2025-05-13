@@ -5,74 +5,18 @@ import { updateSignupProgress } from "../services/auth";
 import { saveContactInfo } from "../services/auth";
 import { getStepFormData, saveFormData } from "../contexts/UserContext";
 import { useNavigate } from 'react-router-dom';
+import AddressAutocomplete from "../components/AddressAutocomplete";
+import HelpPanel from "../components/signup/HelpPanel";
 
-// Environment flag - true for development, false for production
-const isDevelopment = import.meta.env.MODE === 'development';
+// Custom styles for input labels
+const LabelWithIcon = ({ label, required = false }) => (
+  <div className="mb-1">
+    <span className="block text-gray-800 text-lg font-medium mb-2">{label} {required && '*'}</span>
+  </div>
+);
 
 // Feature flag for enabling country-specific form localization
 const ENABLE_LOCALIZATION = import.meta.env.VITE_ENABLE_LOCALIZATION === 'true';
-
-// Country-specific form configurations (only used if ENABLE_LOCALIZATION is true)
-const countryConfigs = {
-  "United States": {
-    postalCodeLabel: "ZIP Code",
-    postalCodePlaceholder: "10001",
-    postalCodePattern: "^\\d{5}(-\\d{4})?$",
-    postalCodeError: "Please enter a valid ZIP code (e.g. 12345 or 12345-6789)",
-    regionLabel: "State",
-    regionType: "input"
-  },
-  "Canada": {
-    postalCodeLabel: "Postal Code",
-    postalCodePlaceholder: "A1A 1A1",
-    postalCodePattern: "^[A-Za-z]\\d[A-Za-z][ -]?\\d[A-Za-z]\\d$",
-    postalCodeError: "Please enter a valid postal code (e.g. A1A 1A1)",
-    regionLabel: "Province",
-    regionType: "input"
-  },
-  "United Kingdom": {
-    postalCodeLabel: "Postcode",
-    postalCodePlaceholder: "SW1A 1AA",
-    postalCodePattern: "^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$",
-    postalCodeError: "Please enter a valid UK postcode",
-    regionLabel: "County",
-    regionType: "input"
-  },
-  "Germany": {
-    postalCodeLabel: "PLZ",
-    postalCodePlaceholder: "10115",
-    postalCodePattern: "^\\d{5}$",
-    postalCodeError: "Please enter a valid PLZ (e.g. 10115)",
-    regionLabel: "Bundesland",
-    regionType: "input"
-  },
-  "France": {
-    postalCodeLabel: "Code Postal",
-    postalCodePlaceholder: "75001",
-    postalCodePattern: "^\\d{5}$",
-    postalCodeError: "Please enter a valid code postal (e.g. 75001)",
-    regionLabel: "Région",
-    regionType: "input"
-  },
-  "Australia": {
-    postalCodeLabel: "Postcode",
-    postalCodePlaceholder: "2000",
-    postalCodePattern: "^\\d{4}$",
-    postalCodeError: "Please enter a valid postcode (4 digits)",
-    regionLabel: "State",
-    regionType: "input"
-  }
-};
-
-// Default configuration used when localization is disabled or for countries not specifically defined
-const defaultConfig = {
-  postalCodeLabel: "Zip/Postal Code",
-  postalCodePlaceholder: "Enter postal code",
-  postalCodePattern: "^.+$", // Accept any non-empty value
-  postalCodeError: "Postal code is required",
-  regionLabel: "State/Province",
-  regionType: "input"
-};
 
 // Country list
 const countries = [
@@ -98,9 +42,132 @@ const countries = [
   "Mexico"
 ].sort();
 
+// Country-specific form configurations
+const countryConfigs = {
+  "United States": {
+    postalCodeLabel: "Zip Code",
+    regionLabel: "State",
+  },
+  "Canada": {
+    postalCodeLabel: "Postal Code",
+    regionLabel: "Province",
+  },
+  "United Kingdom": {
+    postalCodeLabel: "Postcode",
+    regionLabel: "County",
+  },
+  // Add more as needed...
+};
+
+// Default configuration
+const defaultConfig = {
+  postalCodeLabel: "Postal/Zip Code",
+  regionLabel: "State/Province",
+};
+
 export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const navigate = useNavigate();
-  const { currentUser, signupState } = useUser();
+  const { currentUser } = useUser();
+  
+  // Help panel state
+  const [showHelpInfo, setShowHelpInfo] = useState(false);
+  
+  // Toggle help panel
+  const toggleHelpInfo = () => {
+    setShowHelpInfo(prev => !prev);
+  };
+  
+  // Define page-specific help content
+  const contactInfoHelpContent = [
+    {
+      title: "Personal Information",
+      content: "Please provide accurate personal details. This information will be used for your member file and communications."
+    },
+    {
+      title: "Address Information",
+      content: "Your residential address is required. If you receive mail at a different location, select 'No' for 'Same Mailing Address' and provide your mailing address."
+    },
+    {
+      title: "Phone Numbers",
+      content: "Please provide at least one phone number where we can reach you. Select your preferred contact method in the dropdown."
+    },
+    {
+      title: "Need assistance?",
+      content: (
+        <>
+          Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        </>
+      )
+    }
+  ];
+  
+  // Debug: Check if API key is available
+  useEffect(() => {
+    console.log("API Key Available:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Yes" : "No");
+    console.log("API Key first 5 chars:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.substring(0, 5) + "...");
+    
+    // Add custom styles to ensure consistent input backgrounds
+    const styleElement = document.createElement('style');
+    styleElement.type = 'text/css';
+    styleElement.innerHTML = `
+      /* Override styles for form inputs */
+      input, select, textarea {
+        background-color: #FFFFFF !important;
+        font-size: 1.125rem !important;
+        height: 3.5rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        border-radius: 0.375rem !important;
+        border-color: rgba(119, 86, 132, 0.3) !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        width: 100% !important;
+      }
+      
+      input:focus, select:focus, textarea:focus {
+        background-color: #FFFFFF !important;
+        --tw-ring-color: rgba(119, 86, 132, 0.5) !important;
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color) !important;
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
+        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important;
+        outline: 2px solid transparent !important;
+        outline-offset: 2px !important;
+        border-color: rgba(119, 86, 132, 0.5) !important;
+      }
+      
+      /* Prevent blue backgrounds on autofill */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus,
+      select:-webkit-autofill,
+      select:-webkit-autofill:hover,
+      select:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+      
+      /* Force consistent height for date inputs */
+      input[type="date"] {
+        height: 3.5rem !important;
+        line-height: 3.5rem !important;
+      }
+      
+      /* Style label text */
+      label, .form-label {
+        color: #1a202c !important; 
+        font-size: 1.125rem !important;
+        font-weight: 500 !important;
+        margin-bottom: 0.5rem !important;
+      }
+    `;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -108,26 +175,24 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     lastName: "",
     sex: "",
     dateOfBirth: "",
-    verifyDateOfBirth: "",
     streetAddress: "",
     city: "",
     region: "",
-    county: "", // Added county field
     postalCode: "",
     country: "United States",
     sameMailingAddress: "",
-    // Mailing address fields
     mailingStreetAddress: "",
     mailingCity: "",
     mailingRegion: "",
-    mailingCounty: "", // Added mailing county field
     mailingPostalCode: "",
     mailingCountry: "United States",
     email: "",
     phoneType: "",
     mobilePhone: "",
     workPhone: "",
-    homePhone: ""
+    homePhone: "",
+    memberDisclosure: "",
+    applyCryopreservation: ""
   });
   
   const [errors, setErrors] = useState({
@@ -135,28 +200,27 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     lastName: "",
     sex: "",
     dateOfBirth: "",
-    verifyDateOfBirth: "",
     streetAddress: "",
     city: "",
     region: "",
-    county: "",
     postalCode: "",
     country: "",
     sameMailingAddress: "",
     mailingStreetAddress: "",
     mailingCity: "",
     mailingRegion: "",
-    mailingCounty: "",
     mailingPostalCode: "",
     mailingCountry: "",
     email: "",
     phoneType: "",
     mobilePhone: "",
     workPhone: "",
-    homePhone: ""
+    homePhone: "",
+    memberDisclosure: "",
+    applyCryopreservation: ""
   });
 
-  // Current country configuration - use default config if localization is disabled
+  // Country configuration
   const [countryConfig, setCountryConfig] = useState(
     ENABLE_LOCALIZATION ? (countryConfigs["United States"] || defaultConfig) : defaultConfig
   );
@@ -169,10 +233,47 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   // Show/hide mailing address section based on "Same Mailing Address" selection
   const showMailingAddress = formData.sameMailingAddress === "No";
 
+  // Load saved form data if available
+  useEffect(() => {
+    const savedData = getStepFormData('contact_info');
+    if (savedData) {
+      setFormData(prev => ({
+        ...prev,
+        ...savedData
+      }));
+    } else if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+
+    // If user is authenticated, pull email from their account
+    if (currentUser && currentUser.email) {
+      setFormData(prev => ({
+        ...prev,
+        email: currentUser.email
+      }));
+    }
+  }, [currentUser, initialData]);
+
+  // Update country configuration when country changes
+  useEffect(() => {
+    if (ENABLE_LOCALIZATION) {
+      setCountryConfig(countryConfigs[formData.country] || defaultConfig);
+    }
+  }, [formData.country]);
+
+  // Update mailing country configuration when mailing country changes
+  useEffect(() => {
+    if (ENABLE_LOCALIZATION) {
+      setMailingCountryConfig(countryConfigs[formData.mailingCountry] || defaultConfig);
+    }
+  }, [formData.mailingCountry]);
+
   // Auto-save form data when leaving the page
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Save form data to localStorage before leaving the page
       saveFormData('contact_info', formData);
     };
 
@@ -180,85 +281,16 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      // Also save when component unmounts
       saveFormData('contact_info', formData);
     };
   }, [formData]);
-  
-  // Update country configs when countries change
-  useEffect(() => {
-    if (ENABLE_LOCALIZATION) {
-      setCountryConfig(countryConfigs[formData.country] || defaultConfig);
-      setMailingCountryConfig(countryConfigs[formData.mailingCountry] || defaultConfig);
-    }
-  }, [formData.country, formData.mailingCountry]);
-  
-  // Load existing data if available
-  useEffect(() => {
-    // First, check for passed initialData prop
-    if (initialData && Object.keys(initialData).length > 0) {
-      if (isDevelopment) {
-        console.log("Loading data from initialData prop:", initialData);
-      }
-      setFormData(prev => ({
-        ...prev,
-        ...initialData
-      }));
-    } 
-    // Then check localStorage
-    else {
-      const savedData = getStepFormData('contact_info');
-      if (savedData && Object.keys(savedData).length > 0) {
-        if (isDevelopment) {
-          console.log("Loading data from localStorage:", savedData);
-        }
-        setFormData(prev => ({
-          ...prev,
-          ...savedData
-        }));
-      }
-      // Finally check signupState
-      else if (signupState && signupState.contactInfo) {
-        if (isDevelopment) {
-          console.log("Loading data from signupState:", signupState.contactInfo);
-        }
-        setFormData(prev => ({
-          ...prev,
-          ...signupState.contactInfo
-        }));
-      }
-    }
-    
-    // If user is already logged in, ensure email is filled
-    if (currentUser && currentUser.email) {
-      setFormData(prev => ({
-        ...prev,
-        email: currentUser.email
-      }));
-    }
-  }, [currentUser, signupState, initialData]);
-  
-  // Copy home address to mailing address when "Same Mailing Address" changes
-  useEffect(() => {
-    if (formData.sameMailingAddress === "Yes") {
-      // Clear any errors for mailing address fields
-      setErrors(prev => ({
-        ...prev,
-        mailingStreetAddress: "",
-        mailingCity: "",
-        mailingRegion: "",
-        mailingPostalCode: "",
-        mailingCountry: ""
-      }));
-    }
-  }, [formData.sameMailingAddress]);
-  
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
     
     // Clear the specific error when user makes changes
@@ -269,667 +301,593 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       }));
     }
     
-    // Special handling for date of birth verification
-    if (name === 'dateOfBirth') {
-      // Clear verifyDateOfBirth error if it exists and the dates now match
-      if (formData.verifyDateOfBirth && formData.verifyDateOfBirth === value) {
-        setErrors(prev => ({
-          ...prev,
-          verifyDateOfBirth: ""
-        }));
-      }
-    }
-    
-    if (name === 'verifyDateOfBirth') {
-      // Clear verifyDateOfBirth error if the dates now match
-      if (formData.dateOfBirth && formData.dateOfBirth === value) {
-        setErrors(prev => ({
-          ...prev,
-          verifyDateOfBirth: ""
-        }));
-      }
-    }
-    
-    // When Same Mailing Address changes to Yes, copy home address to mailing address
+    // Special handling for same mailing address
     if (name === 'sameMailingAddress' && value === "Yes") {
       setFormData(prev => ({
         ...prev,
         mailingStreetAddress: prev.streetAddress,
         mailingCity: prev.city,
         mailingRegion: prev.region,
-        mailingCounty: prev.county,
         mailingPostalCode: prev.postalCode,
         mailingCountry: prev.country
       }));
     }
   };
   
-  const validatePhoneNumber = (phone) => {
-    // Basic international phone number validation
-    return !phone || (phone.length >= 7 && /^[+\d\s()-]+$/.test(phone));
+  // Handler for address selection from autocomplete
+  const handleAddressSelect = (addressData) => {
+    setFormData(prev => ({
+      ...prev,
+      streetAddress: addressData.streetAddress || addressData.formattedAddress,
+      city: addressData.city || "",
+      region: addressData.region || "",
+      postalCode: addressData.postalCode || "",
+      country: addressData.country || "United States"
+    }));
+    
+    // Clear any address-related errors
+    setErrors(prev => ({
+      ...prev,
+      streetAddress: "",
+      city: "",
+      region: "",
+      postalCode: "",
+      country: ""
+    }));
   };
   
-  const validateEmail = (email) => {
+  // Handler for mailing address selection from autocomplete
+  const handleMailingAddressSelect = (addressData) => {
+    setFormData(prev => ({
+      ...prev,
+      mailingStreetAddress: addressData.streetAddress || addressData.formattedAddress,
+      mailingCity: addressData.city || "",
+      mailingRegion: addressData.region || "",
+      mailingPostalCode: addressData.postalCode || "",
+      mailingCountry: addressData.country || "United States"
+    }));
+    
+    // Clear any mailing address-related errors
+    setErrors(prev => ({
+      ...prev,
+      mailingStreetAddress: "",
+      mailingCity: "",
+      mailingRegion: "",
+      mailingPostalCode: "",
+      mailingCountry: ""
+    }));
+  };
+  
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Required fields validation
+    const requiredFields = [
+      'firstName', 'lastName', 'sex', 'dateOfBirth', 
+      'streetAddress', 'city', 'region', 'postalCode', 'country',
+      'sameMailingAddress', 'email', 'phoneType'
+    ];
+    
+    requiredFields.forEach(field => {
+      if (!formData[field]) {
+        newErrors[field] = `This field is required`;
+      }
+    });
+    
+    // Phone number validation based on phone type
+    if (formData.phoneType === 'Mobile' && !formData.mobilePhone) {
+      newErrors.mobilePhone = 'Mobile phone is required';
+    } else if (formData.phoneType === 'Work' && !formData.workPhone) {
+      newErrors.workPhone = 'Work phone is required';
+    } else if (formData.phoneType === 'Home' && !formData.homePhone) {
+      newErrors.homePhone = 'Home phone is required';
+    }
+    
+    // Mailing address validation if not same as home address
+    if (formData.sameMailingAddress === 'No') {
+      const mailingFields = [
+        'mailingStreetAddress', 'mailingCity', 'mailingRegion', 
+        'mailingPostalCode', 'mailingCountry'
+      ];
+      
+      mailingFields.forEach(field => {
+        if (!formData[field]) {
+          newErrors[field] = `This field is required`;
+        }
+      });
+    }
+    
     // Email validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-  };
-  
-  const validatePostalCode = (postalCode, config) => {
-    // Use country-specific pattern for validation
-    const pattern = new RegExp(config.postalCodePattern);
-    return pattern.test(postalCode);
-  };
-  
-  const validateDateOfBirth = (dob) => {
-    // Basic date validation and age check (must be at least 18 years old)
-    if (!dob) return false;
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
     
-    const dobDate = new Date(dob);
-    const today = new Date();
-    const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-    
-    return dobDate instanceof Date && !isNaN(dobDate) && dobDate <= eighteenYearsAgo;
-  };
-  
-  const validateDatesMatch = (date1, date2) => {
-    // Verify that the two dates match
-    return date1 === date2;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Prevent double submission
-    if (isSubmitting) return;
-    
-    // Form validation
-    const newErrors = {
-      firstName: !formData.firstName.trim() ? "First name is required" : "",
-      lastName: !formData.lastName.trim() ? "Last name is required" : "",
-      sex: !formData.sex ? "Sex is required" : "",
-      dateOfBirth: !formData.dateOfBirth 
-        ? "Date of birth is required" 
-        : !validateDateOfBirth(formData.dateOfBirth)
-          ? "You must be at least 18 years old"
-          : "",
-      verifyDateOfBirth: !formData.verifyDateOfBirth 
-        ? "Please verify your date of birth"
-        : !validateDatesMatch(formData.dateOfBirth, formData.verifyDateOfBirth)
-          ? "Dates do not match"
-          : "",
-      streetAddress: !formData.streetAddress.trim() ? "Street address is required" : "",
-      city: !formData.city.trim() ? "City is required" : "",
-      region: !formData.region.trim() ? `${countryConfig.regionLabel} is required` : "",
-      county: "", // County is not required
-      postalCode: !formData.postalCode.trim() 
-        ? `${countryConfig.postalCodeLabel} is required` 
-        : !validatePostalCode(formData.postalCode, countryConfig)
-          ? countryConfig.postalCodeError
-          : "",
-      country: !formData.country ? "Country is required" : "",
-      sameMailingAddress: !formData.sameMailingAddress ? "Please select Yes or No" : "",
-      email: !formData.email.trim() 
-        ? "Email is required" 
-        : !validateEmail(formData.email)
-          ? "Please enter a valid email address"
-          : "",
-      phoneType: !formData.phoneType ? "Please select a phone type" : "",
-      mobilePhone: formData.phoneType === "Mobile" && !formData.mobilePhone.trim()
-        ? "Mobile phone is required"
-        : formData.mobilePhone.trim() && !validatePhoneNumber(formData.mobilePhone)
-          ? "Please enter a valid mobile phone number"
-          : "",
-      workPhone: formData.phoneType === "Work" && !formData.workPhone.trim()
-        ? "Work phone is required" 
-        : formData.workPhone.trim() && !validatePhoneNumber(formData.workPhone)
-          ? "Please enter a valid work phone number"
-          : "",
-      homePhone: formData.phoneType === "Home" && !formData.homePhone.trim()
-        ? "Home phone is required"
-        : formData.homePhone.trim() && !validatePhoneNumber(formData.homePhone)
-          ? "Please enter a valid home phone number"
-          : ""
-    };
-    
-    // Add validation for mailing address fields if "Same Mailing Address" is "No"
-    if (formData.sameMailingAddress === "No") {
-      newErrors.mailingStreetAddress = !formData.mailingStreetAddress.trim() ? "Mailing street address is required" : "";
-      newErrors.mailingCity = !formData.mailingCity.trim() ? "Mailing city is required" : "";
-      newErrors.mailingRegion = !formData.mailingRegion.trim() ? `Mailing ${mailingCountryConfig.regionLabel} is required` : "";
-      newErrors.mailingCounty = ""; // Mailing county is not required
-      newErrors.mailingPostalCode = !formData.mailingPostalCode.trim() 
-        ? `Mailing ${mailingCountryConfig.postalCodeLabel} is required` 
-        : !validatePostalCode(formData.mailingPostalCode, mailingCountryConfig)
-          ? mailingCountryConfig.postalCodeError
-          : "";
-      newErrors.mailingCountry = !formData.mailingCountry ? "Mailing country is required" : "";
-    }
-    
-    setErrors(newErrors);
-    
-    // Check if there are any errors
-    if (Object.values(newErrors).some(error => error)) {
+    if (!validateForm()) {
       // Scroll to the first error
-      const firstErrorField = Object.keys(newErrors).find(key => newErrors[key] !== "");
-      const errorElement = document.getElementById(firstErrorField);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        errorElement.focus();
+      const firstError = document.querySelector('.text-red-500');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       return;
-    }
-    
-    // If "Same Mailing Address" is "Yes", copy home address to mailing address
-    let finalFormData = { ...formData };
-    if (formData.sameMailingAddress === "Yes") {
-      finalFormData = {
-        ...finalFormData,
-        mailingStreetAddress: formData.streetAddress,
-        mailingCity: formData.city,
-        mailingRegion: formData.region,
-        mailingCounty: formData.county,
-        mailingPostalCode: formData.postalCode,
-        mailingCountry: formData.country
-      };
     }
     
     setIsSubmitting(true);
     
     try {
-      if (isDevelopment) {
-        console.log("About to send contact data:", JSON.stringify(finalFormData));
-      }
+      // API call to save data
+      const success = await saveContactInfo(formData);
       
-      // Save to localStorage regardless of API call success
-      saveFormData('contact_info', finalFormData);
-      
-      // Try to update via Firebase function
-      try {
-        // Save the contact information directly to Firestore
-        const success = await saveContactInfo(finalFormData);
-        
-        if (success) {
-          if (isDevelopment) {
-            console.log("Contact information saved successfully");
-          }
-          
-          // Move to next step
-          if (onNext) {
-            onNext(finalFormData);
-          }
-        } else {
-          // Show error message
-          alert("Failed to save contact information. Please try again.");
-          setIsSubmitting(false);
+      if (success) {
+        // Move to next step
+        if (onNext) {
+          onNext(formData);
         }
-      } catch (error) {
-        if (isDevelopment) {
-          console.error('Error saving contact info:', error);
-        }
+      } else {
         alert("Failed to save contact information. Please try again.");
-        setIsSubmitting(false);
       }
     } catch (error) {
-      if (isDevelopment) {
-        console.error('Error updating contact info:', error);
-      }
+      console.error('Error saving contact info:', error);
       alert("Failed to save contact information. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handler for back button that saves data before going back
+  // Handler for back button
   const handleBack = () => {
-    // Save current form data before going back
     saveFormData('contact_info', formData);
     
-    // Check if onBack is a function before calling it
     if (typeof onBack === 'function') {
       onBack();
     } else {
-      // Use React Router's navigate function as fallback
       navigate(-1);
     }
   };
   
+  // Helper function to render the DatePicker with icon
+  const renderDateField = (id, name, label, value, required = false) => (
+    <div className="relative">
+      <LabelWithIcon label={label} required={required} />
+      <div className="relative">
+        <input 
+          type="date" 
+          id={id}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg appearance-none"
+          disabled={isSubmitting}
+          required={required}
+          style={{ colorScheme: 'light' }}
+        />
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+      {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
+    </div>
+  );
+  
   return (
-    <div className="max-w-3xl mx-auto py-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Membership Application</h2>
-      <p className="text-gray-600 mb-8">
-        <strong>INSTRUCTIONS:</strong> The following information is necessary for your Alcor Member File. Please answer all questions completely and accurately.
-      </p>
+    <div className="w-full bg-gray-50 py-8" style={{
+      width: '100vw',
+      marginLeft: 'calc(-50vw + 50%)',
+      marginRight: 'calc(-50vw + 50%)',
+      position: 'relative'
+    }}>
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
+        <form onSubmit={handleSubmit} className="w-full">
+          {/* Personal Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
+            <div className="p-6">
+              <div className="mb-8 flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684] mr-3 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-800">Personal Information</h2>
+                  <p className="text-sm text-gray-500 italic font-light mt-1">
+                    Please provide your personal details for your member file.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                <div>
+                  <LabelWithIcon label="First Name" required={true} />
+                  <input 
+                    type="text" 
+                    id="firstName"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                    disabled={isSubmitting}
+                    required
+                  />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label="Last Name" required={true} />
+                  <input 
+                    type="text" 
+                    id="lastName"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                    disabled={isSubmitting}
+                    required
+                  />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                </div>
+                
+                {/* Sex field */}
+                <div>
+                  <LabelWithIcon label="Sex" required={true} />
+                  <select
+                    id="sex"
+                    name="sex"
+                    value={formData.sex}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  >
+                    <option value="">--Select--</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {errors.sex && <p className="text-red-500 text-sm mt-1">{errors.sex}</p>}
+                </div>
+                
+                {/* Email field */}
+                <div>
+                  <LabelWithIcon label="Email" required={true} />
+                  <input 
+                    type="email" 
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting || (currentUser && currentUser.email)}
+                    required
+                  />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                </div>
+                
+                {/* Date of Birth field with modern styling */}
+                {renderDateField("dateOfBirth", "dateOfBirth", "Date of Birth", formData.dateOfBirth, true)}
+                
+                {/* Phone fields */}
+                <div>
+                  <LabelWithIcon label="Preferred Phone Number" required={true} />
+                  <select
+                    id="phoneType"
+                    name="phoneType"
+                    value={formData.phoneType}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  >
+                    <option value="">--Select--</option>
+                    <option value="Home">Home</option>
+                    <option value="Work">Work</option>
+                    <option value="Mobile">Mobile</option>
+                  </select>
+                  {errors.phoneType && <p className="text-red-500 text-sm mt-1">{errors.phoneType}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label={`Mobile Phone${formData.phoneType === "Mobile" ? " *" : ""}`} required={formData.phoneType === "Mobile"} />
+                  <input 
+                    type="tel" 
+                    id="mobilePhone"
+                    name="mobilePhone"
+                    value={formData.mobilePhone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required={formData.phoneType === "Mobile"}
+                  />
+                  {errors.mobilePhone && <p className="text-red-500 text-sm mt-1">{errors.mobilePhone}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label={`Work Phone${formData.phoneType === "Work" ? " *" : ""}`} required={formData.phoneType === "Work"} />
+                  <input 
+                    type="tel" 
+                    id="workPhone"
+                    name="workPhone"
+                    value={formData.workPhone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required={formData.phoneType === "Work"}
+                  />
+                  {errors.workPhone && <p className="text-red-500 text-sm mt-1">{errors.workPhone}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label={`Home Phone${formData.phoneType === "Home" ? " *" : ""}`} required={formData.phoneType === "Home"} />
+                  <input 
+                    type="tel" 
+                    id="homePhone"
+                    name="homePhone"
+                    value={formData.homePhone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required={formData.phoneType === "Home"}
+                  />
+                  {errors.homePhone && <p className="text-red-500 text-sm mt-1">{errors.homePhone}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Address Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
+            <div className="p-6">
+              <div className="mb-8 flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684] mr-3 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-800">Address Information</h2>
+                  <p className="text-sm text-gray-500 italic font-light mt-1">
+                    Your residential address and optional mailing address.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                {/* Home address with Google Places Autocomplete */}
+                <div className="md:col-span-2">
+                  <AddressAutocomplete
+                    id="streetAddress"
+                    name="streetAddress"
+                    label="Home Address"
+                    defaultValue={formData.streetAddress}
+                    onAddressSelect={handleAddressSelect}
+                    required={true}
+                    disabled={isSubmitting}
+                    errorMessage={errors.streetAddress}
+                    placeholder="Start typing your address..."
+                  />
+                </div>
+                
+                <div>
+                  <LabelWithIcon label="City" required={true} />
+                  <input 
+                    type="text" 
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  />
+                  {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label={countryConfig.regionLabel} required={true} />
+                  <input 
+                    type="text" 
+                    id="region"
+                    name="region"
+                    value={formData.region}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  />
+                  {errors.region && <p className="text-red-500 text-sm mt-1">{errors.region}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label={countryConfig.postalCodeLabel} required={true} />
+                  <input 
+                    type="text" 
+                    id="postalCode"
+                    name="postalCode"
+                    value={formData.postalCode}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  />
+                  {errors.postalCode && <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label="Country" required={true} />
+                  <select
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  >
+                    {countries.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                  {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
+                </div>
+                
+                <div>
+                  <LabelWithIcon label="Same Mailing Address" required={true} />
+                  <select
+                    id="sameMailingAddress"
+                    name="sameMailingAddress"
+                    value={formData.sameMailingAddress}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required
+                  >
+                    <option value="">--Select--</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                  {errors.sameMailingAddress && <p className="text-red-500 text-sm mt-1">{errors.sameMailingAddress}</p>}
+                </div>
+              </div>
+              
+              {/* Mailing address fields - conditionally shown */}
+              {showMailingAddress && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-800 mb-4">Mailing Address</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                    <div className="md:col-span-2">
+                      <AddressAutocomplete
+                        id="mailingStreetAddress"
+                        name="mailingStreetAddress"
+                        label="Mailing Address"
+                        defaultValue={formData.mailingStreetAddress}
+                        onAddressSelect={handleMailingAddressSelect}
+                        required={true}
+                        disabled={isSubmitting}
+                        errorMessage={errors.mailingStreetAddress}
+                        placeholder="Start typing your mailing address..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <LabelWithIcon label="City" required={true} />
+                      <input 
+                        type="text" 
+                        id="mailingCity"
+                        name="mailingCity"
+                        value={formData.mailingCity}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting}
+                        required={showMailingAddress}
+                      />
+                      {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
+                    </div>
+                    
+                    <div>
+                      <LabelWithIcon label={mailingCountryConfig.regionLabel} required={true} />
+                      <input 
+                        type="text" 
+                        id="mailingRegion"
+                        name="mailingRegion"
+                        value={formData.mailingRegion}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting}
+                        required={showMailingAddress}
+                      />
+                      {errors.mailingRegion && <p className="text-red-500 text-sm mt-1">{errors.mailingRegion}</p>}
+                    </div>
+                    
+                    <div>
+                      <LabelWithIcon label={mailingCountryConfig.postalCodeLabel} required={true} />
+                      <input 
+                        type="text" 
+                        id="mailingPostalCode"
+                        name="mailingPostalCode"
+                        value={formData.mailingPostalCode}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting}
+                        required={showMailingAddress}
+                      />
+                      {errors.mailingPostalCode && <p className="text-red-500 text-sm mt-1">{errors.mailingPostalCode}</p>}
+                    </div>
+                    
+                    <div>
+                      <LabelWithIcon label="Country" required={true} />
+                      <select
+                        id="mailingCountry"
+                        name="mailingCountry"
+                        value={formData.mailingCountry}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting}
+                        required={showMailingAddress}
+                      >
+                        {countries.map(country => (
+                          <option key={country} value={country}>{country}</option>
+                        ))}
+                      </select>
+                      {errors.mailingCountry && <p className="text-red-500 text-sm mt-1">{errors.mailingCountry}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Navigation buttons */}
+          <div className="flex justify-between mt-8 mb-6 w-full mx-auto">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+              disabled={isSubmitting}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Back
+            </button>
+            
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className="py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg bg-[#775684] text-white hover:bg-[#664573] disabled:opacity-70"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
       
-      <form onSubmit={handleSubmit}>
-        {/* Personal Information Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8 border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Name</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="firstName" className="block text-gray-700 font-medium mb-2">First Name *</label>
-              <input 
-                type="text" 
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="lastName" className="block text-gray-700 font-medium mb-2">Last Name *</label>
-              <input 
-                type="text" 
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <label htmlFor="sex" className="block text-gray-700 font-medium mb-2">Sex *</label>
-            <select
-              id="sex"
-              name="sex"
-              value={formData.sex}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            >
-              <option value="">--None--</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-            {errors.sex && <p className="text-red-500 text-sm mt-1">{errors.sex}</p>}
-          </div>
-        </div>
-        
-        {/* Date of Birth Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8 border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Date of Birth</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="dateOfBirth" className="block text-gray-700 font-medium mb-2">Date of Birth *</label>
-              <input 
-                type="date" 
-                id="dateOfBirth"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              <span className="text-gray-500 text-sm">Format: Dec 31, 2024</span>
-              {errors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{errors.dateOfBirth}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="verifyDateOfBirth" className="block text-gray-700 font-medium mb-2">Verify Date of Birth *</label>
-              <input 
-                type="date" 
-                id="verifyDateOfBirth"
-                name="verifyDateOfBirth"
-                value={formData.verifyDateOfBirth}
-                onChange={handleChange}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              <span className="text-gray-500 text-sm">Format: Dec 31, 2024</span>
-              {errors.verifyDateOfBirth && <p className="text-red-500 text-sm mt-1">{errors.verifyDateOfBirth}</p>}
-            </div>
-          </div>
-        </div>
-        
-        {/* Home Address Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8 border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Home Address</h3>
-          
-          <div className="mb-6">
-            <label htmlFor="streetAddress" className="block text-gray-700 font-medium mb-2">Home Address - Street *</label>
-            <input 
-              type="text" 
-              id="streetAddress"
-              name="streetAddress"
-              value={formData.streetAddress}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            />
-            {errors.streetAddress && <p className="text-red-500 text-sm mt-1">{errors.streetAddress}</p>}
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="city" className="block text-gray-700 font-medium mb-2">Home Address - City *</label>
-              <input 
-                type="text" 
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="region" className="block text-gray-700 font-medium mb-2">Home Address - {countryConfig.regionLabel} *</label>
-              <input 
-                type="text" 
-                id="region"
-                name="region"
-                value={formData.region}
-                onChange={handleChange} 
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.region && <p className="text-red-500 text-sm mt-1">{errors.region}</p>}
-            </div>
-          </div>
-          
-          {/* Added County field */}
-          <div className="mb-6">
-            <label htmlFor="county" className="block text-gray-700 font-medium mb-2">Home Address - County</label>
-            <input 
-              type="text" 
-              id="county"
-              name="county"
-              value={formData.county}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            />
-            <span className="text-gray-500 text-sm">Optional</span>
-            {errors.county && <p className="text-red-500 text-sm mt-1">{errors.county}</p>}
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="postalCode" className="block text-gray-700 font-medium mb-2">Home Address - {countryConfig.postalCodeLabel} *</label>
-              <input 
-                type="text" 
-                id="postalCode"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleChange}
-                placeholder={countryConfig.postalCodePlaceholder} 
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.postalCode && <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="country" className="block text-gray-700 font-medium mb-2">Home Address - Country *</label>
-              <select
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              >
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
-              {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <label htmlFor="sameMailingAddress" className="block text-gray-700 font-medium mb-2">Same Mailing Address *</label>
-            <select
-              id="sameMailingAddress"
-              name="sameMailingAddress"
-              value={formData.sameMailingAddress}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            >
-              <option value="">--None--</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {errors.sameMailingAddress && <p className="text-red-500 text-sm mt-1">{errors.sameMailingAddress}</p>}
-          </div>
-        </div>
-        
-        {/* Mailing Address Section - Only show if Same Mailing Address is No */}
-        {showMailingAddress && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8 border border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Mailing Address</h3>
-            
-            <div className="mb-6">
-              <label htmlFor="mailingStreetAddress" className="block text-gray-700 font-medium mb-2">Mailing Address - Street *</label>
-              <input 
-                type="text" 
-                id="mailingStreetAddress"
-                name="mailingStreetAddress"
-                value={formData.mailingStreetAddress}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              {errors.mailingStreetAddress && <p className="text-red-500 text-sm mt-1">{errors.mailingStreetAddress}</p>}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label htmlFor="mailingCity" className="block text-gray-700 font-medium mb-2">Mailing Address - City *</label>
-                <input 
-                  type="text" 
-                  id="mailingCity"
-                  name="mailingCity"
-                  value={formData.mailingCity}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                  disabled={isSubmitting}
-                />
-                {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
-              </div>
-              
-              <div>
-                <label htmlFor="mailingRegion" className="block text-gray-700 font-medium mb-2">Mailing Address - {mailingCountryConfig.regionLabel} *</label>
-                <input 
-                  type="text" 
-                  id="mailingRegion"
-                  name="mailingRegion"
-                  value={formData.mailingRegion}
-                  onChange={handleChange} 
-                  className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                  disabled={isSubmitting}
-                />
-                {errors.mailingRegion && <p className="text-red-500 text-sm mt-1">{errors.mailingRegion}</p>}
-              </div>
-            </div>
-            
-            {/* Added Mailing County field */}
-            <div className="mb-6">
-              <label htmlFor="mailingCounty" className="block text-gray-700 font-medium mb-2">Mailing Address - County</label>
-              <input 
-                type="text" 
-                id="mailingCounty"
-                name="mailingCounty"
-                value={formData.mailingCounty}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                disabled={isSubmitting}
-              />
-              <span className="text-gray-500 text-sm">Optional</span>
-              {errors.mailingCounty && <p className="text-red-500 text-sm mt-1">{errors.mailingCounty}</p>}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label htmlFor="mailingPostalCode" className="block text-gray-700 font-medium mb-2">Mailing Address - {mailingCountryConfig.postalCodeLabel} *</label>
-                <input 
-                  type="text" 
-                  id="mailingPostalCode"
-                  name="mailingPostalCode"
-                  value={formData.mailingPostalCode}
-                  onChange={handleChange}
-                  placeholder={mailingCountryConfig.postalCodePlaceholder} 
-                  className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                  disabled={isSubmitting}
-                />
-                {errors.mailingPostalCode && <p className="text-red-500 text-sm mt-1">{errors.mailingPostalCode}</p>}
-              </div>
-              
-              <div>
-                <label htmlFor="mailingCountry" className="block text-gray-700 font-medium mb-2">Mailing Address - Country *</label>
-                <select
-                  id="mailingCountry"
-                  name="mailingCountry"
-                  value={formData.mailingCountry}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-                  disabled={isSubmitting}
-                >
-                  {countries.map(country => (
-                    <option key={country} value={country}>{country}</option>
-                  ))}
-                </select>
-                {errors.mailingCountry && <p className="text-red-500 text-sm mt-1">{errors.mailingCountry}</p>}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Contact Information Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8 border border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Contact Information</h3>
-          
-          <div className="mb-6">
-            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Email *</label>
-            <input 
-              type="email" 
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting || (currentUser && currentUser.email)}
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          
-          <div className="mb-6">
-            <label htmlFor="phoneType" className="block text-gray-700 font-medium mb-2">Preferred Phone Number *</label>
-            <select
-              id="phoneType"
-              name="phoneType"
-              value={formData.phoneType}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            >
-              <option value="">--None--</option>
-              <option value="Home">Home</option>
-              <option value="Work">Work</option>
-              <option value="Mobile">Mobile</option>
-            </select>
-            {errors.phoneType && <p className="text-red-500 text-sm mt-1">{errors.phoneType}</p>}
-          </div>
-          
-          <div className="mb-6">
-            <label htmlFor="mobilePhone" className="block text-gray-700 font-medium mb-2">Mobile Phone {formData.phoneType === "Mobile" && "*"}</label>
-            <input 
-              type="tel" 
-              id="mobilePhone"
-              name="mobilePhone"
-              value={formData.mobilePhone}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            />
-            {errors.mobilePhone && <p className="text-red-500 text-sm mt-1">{errors.mobilePhone}</p>}
-          </div>
-          
-          <div className="mb-6">
-            <label htmlFor="workPhone" className="block text-gray-700 font-medium mb-2">Work Phone {formData.phoneType === "Work" && "*"}</label>
-            <input 
-              type="tel" 
-              id="workPhone"
-              name="workPhone"
-              value={formData.workPhone}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            />
-            {errors.workPhone && <p className="text-red-500 text-sm mt-1">{errors.workPhone}</p>}
-          </div>
-          
-          <div>
-            <label htmlFor="homePhone" className="block text-gray-700 font-medium mb-2">Home Phone {formData.phoneType === "Home" && "*"}</label>
-            <input 
-              type="tel" 
-              id="homePhone"
-              name="homePhone"
-              value={formData.homePhone}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-white border border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-700"
-              disabled={isSubmitting}
-            />
-            {errors.homePhone && <p className="text-red-500 text-sm mt-1">{errors.homePhone}</p>}
-          </div>
-        </div>
-        
-        <div className="flex justify-between mt-10">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="py-4 px-8 border border-gray-300 rounded-full text-gray-600 font-medium flex items-center hover:bg-gray-50"
-            disabled={isSubmitting}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back
-          </button>
-          
-          <button 
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              backgroundColor: "#6f2d74",
-              color: "white"
-            }}
-            className="py-4 px-8 rounded-full font-semibold text-lg flex items-center hover:opacity-90 disabled:opacity-70"
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                Continue
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+      {/* Help Panel Component */}
+      <HelpPanel 
+        showHelpInfo={showHelpInfo} 
+        toggleHelpInfo={toggleHelpInfo} 
+        helpItems={contactInfoHelpContent} 
+      />
     </div>
   );
 }

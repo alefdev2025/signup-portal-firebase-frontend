@@ -992,38 +992,41 @@ const handleGoogleSignIn = async () => {
       <div className="flex-grow p-4 md:p-8 flex justify-center">
         <div className="w-full max-w-3xl">
           {/* Step Content with direct component check */}
-          {activeStep === 0 && (
-            <>
-              {currentUser && (signupState?.signupProgress >= 1 || hasNavigatedRef.current) ? (
-                <AccountCreationSuccess 
-                  currentUser={currentUser} 
-                  onNext={handleNext} 
+            {/* Main Content */}
+            <div className="flex-grow p-4 md:p-8 flex justify-center">
+            {activeStep === 0 && (
+                <div className="w-full max-w-xl">
+                {currentUser && (signupState?.signupProgress >= 1 || hasNavigatedRef.current) ? (
+                    <AccountCreationSuccess 
+                    currentUser={currentUser} 
+                    onNext={handleNext} 
+                    />
+                ) : (
+                    <AccountCreationForm
+                    formData={formData}
+                    passwordState={passwordState}
+                    confirmPasswordState={confirmPasswordState}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                    handleChange={handleChange}
+                    handleSubmit={handleSubmit}
+                    handleGoogleSignIn={handleGoogleSignIn}
+                    verificationStep={verificationStep}
+                    resendVerificationCode={resendVerificationCode}
+                    changeEmail={changeEmail}
+                    highlightGoogleButton={highlightGoogleButton}
+                    />
+                )}
+                </div>
+            )}
+            
+            {activeStep === 1 && (
+                <ContactInfoPage
+                onNext={handleNext}
+                onBack={handleBack}
                 />
-              ) : (
-                <AccountCreationForm
-                formData={formData}
-                passwordState={passwordState}
-                confirmPasswordState={confirmPasswordState}
-                errors={errors}
-                isSubmitting={isSubmitting}
-                handleChange={handleChange}
-                handleSubmit={handleSubmit}
-                handleGoogleSignIn={handleGoogleSignIn}
-                verificationStep={verificationStep}
-                resendVerificationCode={resendVerificationCode}
-                changeEmail={changeEmail}
-                highlightGoogleButton={highlightGoogleButton}
-                />
-              )}
-            </>
-          )}
-          
-          {activeStep === 1 && (
-            <ContactInfoPage
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
+            )}
+            </div>
         </div>
       </div>
       
