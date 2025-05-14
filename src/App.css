@@ -40,3 +40,27 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Fix Chrome's blue autofill background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Make Google Places dropdown text larger */
+.pac-container {
+  font-size: 16px;
+}
+
+.pac-item-query {
+  font-size: 18px !important;
+}
+
+.pac-secondary-text {
+  font-size: 16px !important;
+}

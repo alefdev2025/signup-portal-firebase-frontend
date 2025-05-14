@@ -1212,27 +1212,28 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 <div>
                   <LabelWithIcon label="Country" required={true} />
                   <select
-                    id="country"
-                    name="country"
-                    autoComplete="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    style={{
-                      height: '4rem',
-                      padding: '0.75rem 1rem',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '0.375rem',
-                      fontSize: '1.125rem',
-                      width: '100%',
-                      border: errors.country ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
-                    }}
-                    disabled={isSubmitting}
-                    required
-                  >
-                    {countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
+  id="country"
+  name="country"
+  autoComplete="country"
+  value={formData.country}
+  onChange={handleChange}
+  style={{
+    height: '4rem',
+    padding: '0.75rem 1rem',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '0.375rem',
+    fontSize: '1.125rem',
+    width: '100%',
+    WebkitBoxShadow: '0 0 0px 1000px white inset', // Add this line
+    border: errors.country ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+  }}
+  disabled={isSubmitting}
+  required
+>
+  {countries.map(country => (
+    <option key={country} value={country}>{country}</option>
+  ))}
+</select>
                   {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
                 </div>
                 

@@ -1,5 +1,52 @@
-// AddressAutocompleteV2.jsx
+// AddressAutocompleteV2.jsx with larger dropdown text
 import React, { useState, useEffect, useRef } from 'react';
+
+// Custom styles with larger dropdown text
+const autocompleteStyles = `
+  /* Google Places Autocomplete custom styling */
+  .pac-container {
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(119, 86, 132, 0.3);
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  .pac-item {
+    padding: 12px 14px;
+    font-size: 16px !important;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+  
+  .pac-item:hover {
+    background-color: rgba(243, 244, 246, 1);
+  }
+  
+  .pac-item-selected {
+    background-color: rgba(243, 244, 246, 1);
+  }
+  
+  .pac-icon {
+    margin-top: 3px;
+  }
+  
+  .pac-item-query {
+    font-size: 18px !important;
+    font-weight: 500;
+    color: #333333;
+  }
+  
+  .pac-matched {
+    font-weight: 600;
+    color: #775684 !important;
+  }
+  
+  .pac-secondary-text {
+    font-size: 16px !important;
+    color: rgba(107, 114, 128, 1);
+  }
+`;
 
 const AddressAutocompleteV2 = ({ 
   onAddressSelect, 
@@ -21,6 +68,49 @@ const AddressAutocompleteV2 = ({
   
   // Get API key
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  // Add custom styles to document
+  useEffect(() => {
+    // Add the stylesheet if it doesn't exist
+    if (!document.getElementById('google-places-custom-styles')) {
+      const styleElement = document.createElement('style');
+      styleElement.id = 'google-places-custom-styles';
+      styleElement.innerHTML = autocompleteStyles;
+      document.head.appendChild(styleElement);
+      
+      // Also add Safari-specific fixes
+      const safariStyleElement = document.createElement('style');
+      safariStyleElement.innerHTML = `
+        /* Safari-only selector */
+        @media not all and (min-resolution:.001dpcm) { 
+          @supports (-webkit-appearance:none) {
+            select {
+              -webkit-appearance: none !important;
+              background-color: #FFFFFF !important;
+              -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+              color: #333333 !important;
+            }
+            
+            select option {
+              background-color: #FFFFFF !important;
+              color: #333333 !important;
+            }
+            
+            /* Prevent autofill background */
+            select:-webkit-autofill {
+              -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+              transition-delay: 99999s !important;
+            }
+          }
+        }
+      `;
+      document.head.appendChild(safariStyleElement);
+    }
+    
+    return () => {
+      // Cleanup styles on unmount if needed
+    };
+  }, []);
   
   // Load the Google Maps script
   useEffect(() => {
