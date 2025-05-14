@@ -89,8 +89,9 @@ const ResponsiveBanner = ({
     
     return () => clearInterval(intervalId);
   }, [currentUser, showProgressBar, navigate]);
-// MOST DIRECT SOLUTION: Complete rewrite of handleStepClick in ResponsiveBanner.jsx
-const handleStepClick = (index) => {
+
+  // MOST DIRECT SOLUTION: Complete rewrite of handleStepClick in ResponsiveBanner.jsx
+  const handleStepClick = (index) => {
     if (!showProgressBar || isLoading) return;
     
     // Allow navigation to any previously completed step (including step 0)
@@ -116,23 +117,6 @@ const handleStepClick = (index) => {
       }, 0);
     } else {
       console.log(`Cannot navigate to step ${index}, max completed step is ${maxCompletedStep}`);
-    }
-  };
-  // Handler for back button
-  const handleBackClick = () => {
-    if (activeStep > 0) {
-      // Navigate to previous step
-      const prevStep = activeStep - 1;
-      
-      // Set flag to indicate returning to account page if going to step 0
-      if (prevStep === 0 && currentUser) {
-        sessionStorage.setItem('returning_to_account', 'true');
-      }
-      
-      navigate(`/signup?step=${prevStep}`);
-    } else {
-      // At first step, navigate back to welcome page
-      navigate('/');
     }
   };
 
@@ -316,22 +300,9 @@ const handleStepClick = (index) => {
           className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-8' : isLoginPage ? 'py-6' : 'py-4'} relative overflow-hidden`}
           style={shouldUseGradient ? gradientStyle : {}}
         >
-          {/* Top section with logo and heading */}
-          <div className={`flex items-center ${isSignupPage || isLoginPage ? "justify-between" : textAlignment === "center" ? "justify-center flex-col" : "justify-between"} mb-4`}>
-            {/* Back button for signup pages */}
-            {isSignupPage && activeStep > 0 && (
-              <button 
-                onClick={handleBackClick}
-                className="p-2 rounded-full text-white hover:bg-white/10 transition-colors"
-                aria-label="Go Back"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
-            
-            {/* Logo at the left or centered based on page type and textAlignment */}
+          {/* Top section with logo and heading - FIXED LAYOUT */}
+          <div className="flex items-center justify-between mb-4">
+            {/* Logo at the left */}
             <div className="flex items-center">
               <img 
                 src={logo} 
@@ -340,26 +311,21 @@ const handleStepClick = (index) => {
               />
             </div>
             
-            {/* Placeholder for spacing symmetry if no back button */}
-            {isSignupPage && activeStep === 0 && (
-              <div className="w-6"></div>
-            )}
+            {/* Heading in the top right */}
+            <div className="flex items-center">
+              <h1 className="flex items-center">
+                <span className="text-2xl font-bold">
+                  {displayHeading}
+                </span>
+                {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
+              </h1>
+            </div>
           </div>
           
-          {/* Header text */}
-          <div className={`flex items-center ${textAlignment === "center" && !(isSignupPage || isLoginPage) ? "mt-4" : ""}`}>
-            <h1 className={`flex items-center ${isSignupPage || isLoginPage || textAlignment === "center" ? "justify-center" : ""}`}>
-              <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>
-                {displayHeading}
-              </span>
-              {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
-            </h1>
-          </div>
-          
-          {/* Mobile subtext */}
-          {(isWelcomePage || textAlignment === "center" || (isSignupPage && !showProgressBar) || isLoginPage) && (
+          {/* Subtext below the header layout */}
+          {(isWelcomePage || (isSignupPage && !showProgressBar) || isLoginPage) && (
             <div className="mb-4">
-              <p className={`text-base text-white/80 leading-tight ${isSignupPage || isLoginPage || textAlignment === "center" ? "text-center" : ""}`}>
+              <p className="text-base text-white/80 leading-tight text-center">
                 {displaySubText}
               </p>
             </div>
@@ -407,20 +373,6 @@ const handleStepClick = (index) => {
         <div 
           className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'} relative`}
         >
-          {/* Back Button - Only show on signup pages when not on first step */}
-          {isSignupPage && activeStep > 0 && (
-            <button 
-              onClick={handleBackClick}
-              className="absolute top-10 left-10 p-2 rounded-full text-white hover:bg-white/10 transition-colors flex items-center"
-              aria-label="Go Back"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span>Back</span>
-            </button>
-          )}
-          
           {/* Logo at the top with conditional positioning - now using logoSizeClass */}
           <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
             <img 

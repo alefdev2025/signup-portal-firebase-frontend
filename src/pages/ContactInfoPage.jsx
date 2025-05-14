@@ -11,7 +11,7 @@ import HelpPanel from "../components/signup/HelpPanel";
 // Custom styles for input labels
 const LabelWithIcon = ({ label, required = false }) => (
   <div className="mb-1">
-    <span className="block text-gray-800 text-lg font-medium mb-2">{label} {required && '*'}</span>
+    <span className="block text-gray-800 text-lg md:text-xl font-medium mb-3">{label} {required && '*'}</span>
   </div>
 );
 
@@ -136,16 +136,17 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       input, select, textarea {
         background-color: #FFFFFF !important;
         font-size: 1.125rem !important;
-        height: 3.5rem !important;
+        height: 4rem !important; /* Much taller input fields */
         padding-top: 0 !important;
         padding-bottom: 0 !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-left: 2rem !important; /* More horizontal padding */
+        padding-right: 2rem !important; /* More horizontal padding */
         border-radius: 0.375rem !important;
         border-color: rgba(119, 86, 132, 0.3) !important;
         box-sizing: border-box !important;
         display: block !important;
         width: 100% !important;
+        max-width: 92% !important; /* Make fields shorter in width */
       }
       
       /* Custom select styling to prevent Safari gradient backgrounds */
@@ -218,8 +219,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       
       /* Force consistent height for date inputs */
       input[type="date"] {
-        height: 3.5rem !important;
-        line-height: 3.5rem !important;
+        height: 4rem !important; /* Match other inputs */
+        line-height: 4rem !important;
         appearance: none !important;
         -moz-appearance: none !important;
         -webkit-appearance: none !important;
@@ -257,13 +258,53 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         color: #1a202c !important; 
         font-size: 1.125rem !important;
         font-weight: 500 !important;
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 1rem !important;
       }
       
       /* Force white background for Safari dropdowns */
       select option {
         background-color: #FFFFFF !important;
         color: #333333 !important;
+      }
+      
+      /* Updated section containers padding */
+      .p-12 { 
+        padding: 3rem !important; 
+      }
+      
+      .px-14 {
+        padding-left: 3.5rem !important;
+        padding-right: 3.5rem !important;
+      }
+      
+      /* Adjust vertical spacing between form elements */
+      .gap-y-10 {
+        row-gap: 2.5rem !important;
+      }
+      
+      .gap-x-12 {
+        column-gap: 3rem !important;
+      }
+      
+      /* Adjust spacing for section headers */
+      .mb-14 {
+        margin-bottom: 3.5rem !important;
+      }
+      
+      .pb-8 {
+        padding-bottom: 2.5rem !important;
+      }
+      
+      .pt-4 {
+        padding-top: 1.25rem !important;
+      }
+      
+      .mt-14 {
+        margin-top: 3.5rem !important;
+      }
+      
+      .pt-10 {
+        padding-top: 2.5rem !important;
       }
     `;
     document.head.appendChild(styleElement);
@@ -642,22 +683,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         <form onSubmit={handleSubmit} className="w-full">
           {/* Personal Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-6">
-              <div className="mb-8 flex items-start">
-                <div className="bg-[#775684] p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="p-8 md:p-12 px-10 md:px-14">
+              <div className="mb-10 md:mb-14 flex items-start pt-4">
+                <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <div className="ml-4">
-                  <h2 className="text-2xl font-semibold text-gray-800">Personal Information</h2>
-                  <p className="text-sm text-gray-500 italic font-light mt-1">
+                <div className="ml-4 pt-2 md:pt-3">
+                  <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Personal Information</h2>
+                  <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
                     Please provide your personal details for your member file.
                   </p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                 <div>
                   <LabelWithIcon label="First Name" required={true} />
                   <input 
@@ -666,7 +707,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                     disabled={isSubmitting}
                     required
                   />
@@ -681,7 +722,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                     disabled={isSubmitting}
                     required
                   />
@@ -696,7 +737,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="sex"
                     value={formData.sex}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
                     disabled={isSubmitting}
                     required
                     style={{backgroundColor: "#FFFFFF", color: "#333333"}}
@@ -718,7 +759,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting || (currentUser && currentUser.email)}
                     required
                   />
@@ -733,7 +774,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="phoneType"
                     value={formData.phoneType}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required
                     style={{backgroundColor: "#FFFFFF", color: "#333333"}}
@@ -754,7 +795,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="mobilePhone"
                     value={formData.mobilePhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required={formData.phoneType === "Mobile"}
                   />
@@ -802,7 +843,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthMonth"
                         value={formData.birthMonth || ""}
                         onChange={handleChange}
-                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                         disabled={isSubmitting}
                         required
                       >
@@ -830,7 +871,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthDay"
                         value={formData.birthDay || ""}
                         onChange={handleChange}
-                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                         disabled={isSubmitting}
                         required
                       >
@@ -850,7 +891,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthYear"
                         value={formData.birthYear || ""}
                         onChange={handleChange}
-                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                         disabled={isSubmitting}
                         required
                       >
@@ -880,23 +921,23 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           
           {/* Address Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-6">
-              <div className="mb-8 flex items-start">
-                <div className="bg-[#775684] p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="p-8 md:p-12 px-10 md:px-14">
+              <div className="mb-10 md:mb-14 flex items-start pt-4">
+                <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <div className="ml-4">
-                  <h2 className="text-2xl font-semibold text-gray-800">Address Information</h2>
-                  <p className="text-sm text-gray-500 italic font-light mt-1">
+                <div className="ml-4 pt-2 md:pt-3">
+                  <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Address Information</h2>
+                  <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
                     Your residential address and optional mailing address.
                   </p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                 {/* Home address with Google Places Autocomplete */}
                 <div className="md:col-span-2">
                   <AddressAutocomplete
@@ -1012,22 +1053,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               
               {/* Mailing address fields - conditionally shown */}
               {showMailingAddress && (
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <div className="mb-6 flex items-start">
-                    <div className="bg-[#775684] p-3 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="mt-14 pt-10 border-t border-gray-200">
+                  <div className="mb-12 flex items-start pt-4">
+                    <div className="bg-[#775684] p-3 md:p-4 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="ml-4">
-                      <h3 className="text-xl font-semibold text-gray-800">Mailing Address</h3>
-                      <p className="text-sm text-gray-500 italic font-light mt-1">
+                    <div className="ml-4 pt-2 md:pt-3">
+                      <h3 className="text-xl md:text-2xl font-semibold text-gray-800">Mailing Address</h3>
+                      <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
                         Please provide the address where you would like to receive mail.
                       </p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                     <div className="md:col-span-2">
                       <AddressAutocomplete
                         id="mailingStreetAddress"
