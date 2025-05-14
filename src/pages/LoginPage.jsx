@@ -1,27 +1,32 @@
-// File: pages/LoginPage.jsx - With improved navigation and skip options for both auth flows
-
+// File: pages/LoginPage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import darkLogo from "../assets/images/alcor-white-logo.png";
-import ResponsiveBanner from "../components/ResponsiveBanner";
+
+// Core Firebase services
+import { auth, db, functions } from "../services/firebase";
+import { getDoc, doc, setDoc } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+
+// Auth functions
 import { 
-  auth,
   signInWithEmailAndPassword,
   signInWithGoogle,
   resetPassword,
   logout,
-  db,
   linkPasswordToGoogleAccount,
   linkGoogleToEmailAccount
 } from "../services/auth";
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDoc, doc, setDoc } from "firebase/firestore";
+
+// Context and state
 import { 
   useUser,
   saveSignupState
 } from "../contexts/UserContext";
-import PasswordField from "../components/signup/PasswordField"; // Import PasswordField
 
+// Components and assets
+import darkLogo from "../assets/images/alcor-white-logo.png";
+import ResponsiveBanner from "../components/ResponsiveBanner";
+import PasswordField from "../components/signup/PasswordField";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();

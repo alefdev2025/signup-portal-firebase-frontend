@@ -1,14 +1,20 @@
 // pages/ResetPasswordPage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import darkLogo from "../assets/images/alcor-white-logo.png";
-import ResponsiveBanner from "../components/ResponsiveBanner";
-import PasswordField, { checkPasswordStrength } from "../components/signup/PasswordField";
+
+// Core Firebase service
+import { auth } from "../services/firebase";
+
+// Auth functions
 import { 
-  auth,
   verifyPasswordResetCode,
   confirmPasswordReset
 } from "../services/auth";
+
+// Components and assets
+import darkLogo from "../assets/images/alcor-white-logo.png";
+import ResponsiveBanner from "../components/ResponsiveBanner";
+import PasswordField, { checkPasswordStrength } from "../components/signup/PasswordField";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();

@@ -1,10 +1,15 @@
 // File: pages/ContactInfoPage.jsx
 import React, { useState, useEffect } from "react";
-import { useUser } from "../contexts/UserContext";
-import { updateSignupProgress } from "../services/auth";
-import { saveContactInfo } from "../services/auth";
-import { getStepFormData, saveFormData } from "../contexts/UserContext";
 import { useNavigate } from 'react-router-dom';
+
+// Context
+import { useUser } from "../contexts/UserContext";
+
+// Firebase services
+import { auth } from "../services/firebase";
+import { updateSignupProgress, saveContactInfo, getContactInfo } from "../services/auth";
+
+// Components
 import AddressAutocomplete from "../components/AddressAutocomplete";
 import HelpPanel from "../components/signup/HelpPanel";
 
@@ -344,6 +349,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   }, []);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -354,14 +360,14 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     birthYear: "",
     streetAddress: "",
     city: "",
-    county: "",
+    cnty_hm: "", // Changed from county
     region: "",
     postalCode: "",
     country: "United States",
     sameMailingAddress: "",
     mailingStreetAddress: "",
     mailingCity: "",
-    mailingCounty: "",
+    cnty_ml: "", // Changed from mailingCounty
     mailingRegion: "",
     mailingPostalCode: "",
     mailingCountry: "United States",
@@ -384,14 +390,14 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     birthYear: "",
     streetAddress: "",
     city: "",
-    county: "",
+    cnty_hm: "", // Changed from county
     region: "",
     postalCode: "",
     country: "",
     sameMailingAddress: "",
     mailingStreetAddress: "",
     mailingCity: "",
-    mailingCounty: "",
+    cnty_ml: "", // Changed from mailingCounty
     mailingRegion: "",
     mailingPostalCode: "",
     mailingCountry: "",
@@ -433,28 +439,97 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   };
 
-  // Load saved form data if available
+  // Load data from backend only
   useEffect(() => {
-    const savedData = getStepFormData('contact_info');
-    if (savedData) {
-      setFormData(prev => ({
-        ...prev,
-        ...savedData
-      }));
-    } else if (initialData) {
-      setFormData(prev => ({
-        ...prev,
-        ...initialData
-      }));
-    }
-
-    // If user is authenticated, pull email from their account
-    if (currentUser && currentUser.email) {
-      setFormData(prev => ({
-        ...prev,
-        email: currentUser.email
-      }));
-    }
+    const loadDataFromBackend = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Only attempt to fetch from backend if user is authenticated
+        if (currentUser) {
+          console.log("User authenticated, fetching contact info from backend");
+          
+          try {
+            const response = await getContactInfo();
+            
+            if (response.success && response.contactInfo) {
+              console.log("Successfully retrieved contact info from backend");
+              
+              // Set the form data from backend
+              setFormData(prev => ({
+                ...prev,
+                ...response.contactInfo,
+                // Ensure email from current user is always used
+                email: currentUser.email || response.contactInfo.email || ""
+              }));
+              
+              // Parse date of birth if it exists
+              if (response.contactInfo.dateOfBirth) {
+                const parts = response.contactInfo.dateOfBirth.split('/');
+                if (parts.length === 3) {
+                  setFormData(prev => ({
+                    ...prev,
+                    birthMonth: parts[0],
+                    birthDay: parts[1],
+                    birthYear: parts[2]
+                  }));
+                }
+              }
+            } else {
+              console.log("No contact info found in backend, using default values");
+              
+              // If no data from backend, use initialData if provided
+              if (initialData && Object.keys(initialData).length > 0) {
+                setFormData(prev => ({
+                  ...prev,
+                  ...initialData,
+                  email: currentUser.email || initialData.email || ""
+                }));
+              } else {
+                // Otherwise just set email from current user
+                setFormData(prev => ({
+                  ...prev,
+                  email: currentUser.email || ""
+                }));
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching contact info:", error);
+            
+            // Fall back to initialData if provided
+            if (initialData && Object.keys(initialData).length > 0) {
+              setFormData(prev => ({
+                ...prev,
+                ...initialData,
+                email: currentUser.email || initialData.email || ""
+              }));
+            } else {
+              // Otherwise just set email from current user
+              setFormData(prev => ({
+                ...prev,
+                email: currentUser.email || ""
+              }));
+            }
+          }
+        } else {
+          console.log("User not authenticated, using initialData if available");
+          
+          // Not authenticated, use initialData if provided
+          if (initialData && Object.keys(initialData).length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              ...initialData
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error in loadDataFromBackend:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDataFromBackend();
   }, [currentUser, initialData]);
 
   // Parse existing dateOfBirth into separate fields when loading the component
@@ -486,20 +561,6 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   }, [formData.mailingCountry]);
 
-  // Auto-save form data when leaving the page
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      saveFormData('contact_info', formData);
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      saveFormData('contact_info', formData);
-    };
-  }, [formData]);
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
@@ -522,7 +583,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         ...prev,
         mailingStreetAddress: prev.streetAddress,
         mailingCity: prev.city,
-        mailingCounty: prev.county,
+        cnty_ml: prev.cnty_hm, // Changed from mailingCounty/county
         mailingRegion: prev.region,
         mailingPostalCode: prev.postalCode,
         mailingCountry: prev.country
@@ -551,7 +612,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     };
     
     // Force remove county field
-    delete updatedFormData.county;
+    delete updatedFormData.cnty_hm; // Changed from county
     
     // Now set all the other fields
     updatedFormData.streetAddress = addressData.streetAddress || addressData.formattedAddress;
@@ -560,26 +621,28 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     updatedFormData.postalCode = addressData.postalCode || "";
     updatedFormData.country = addressData.country || "United States";
     
-    // Finally, add back county as empty string
-    updatedFormData.county = "";
+    // Finally, add back county as empty string or use the one from address data
+    updatedFormData.cnty_hm = addressData.cnty_hm || ""; // Changed from county
     
     // Update the state with the modified data
     setFormData(updatedFormData);
     
-    // Manually force county field to be empty if it exists in DOM
-    setTimeout(() => {
-      const countyField = document.getElementById('county');
-      if (countyField) {
-        countyField.value = '';
-      }
-    }, 100);
+    // Manually force county field to be empty if it exists in DOM and no county was provided
+    if (!addressData.cnty_hm) {
+      setTimeout(() => {
+        const countyField = document.getElementById('cnty_hm'); // Changed from county
+        if (countyField) {
+          countyField.value = '';
+        }
+      }, 100);
+    }
     
     // Clear any address-related errors
     setErrors(prev => ({
       ...prev,
       streetAddress: "",
       city: "",
-      county: "",
+      cnty_hm: "", // Changed from county
       region: "",
       postalCode: "",
       country: ""
@@ -596,7 +659,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     };
     
     // Force remove mailing county field
-    delete updatedFormData.mailingCounty;
+    delete updatedFormData.cnty_ml; // Changed from mailingCounty
     
     // Now set all the other fields
     updatedFormData.mailingStreetAddress = addressData.streetAddress || addressData.formattedAddress;
@@ -605,39 +668,39 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     updatedFormData.mailingPostalCode = addressData.postalCode || "";
     updatedFormData.mailingCountry = addressData.country || "United States";
     
-    // Finally, add back county as empty string
-    updatedFormData.mailingCounty = "";
+    // Finally, add back county as empty string or use the one from address data
+    updatedFormData.cnty_ml = addressData.cnty_hm || ""; // Use home county field from address data for mailing county
     
     // Update the state with the modified data
     setFormData(updatedFormData);
     
-    // Manually force mailing county field to be empty if it exists in DOM
-    setTimeout(() => {
-      const mailingCountyField = document.getElementById('mailingCounty');
-      if (mailingCountyField) {
-        mailingCountyField.value = '';
-      }
-    }, 100);
+    // Manually force mailing county field to be empty if it exists in DOM and no county was provided
+    if (!addressData.cnty_hm) {
+      setTimeout(() => {
+        const mailingCountyField = document.getElementById('cnty_ml'); // Changed from mailingCounty
+        if (mailingCountyField) {
+          mailingCountyField.value = '';
+        }
+      }, 100);
+    }
     
     // Clear any mailing address-related errors
     setErrors(prev => ({
       ...prev,
       mailingStreetAddress: "",
       mailingCity: "",
-      mailingCounty: "",
+      cnty_ml: "", // Changed from mailingCounty
       mailingRegion: "",
       mailingPostalCode: "",
       mailingCountry: ""
     }));
   };
   
-  // Validation function with debug logs
+  // Validation function
   const validateForm = () => {
     const newErrors = {};
     
-    alert("Starting form validation");
-    console.log("Starting form validation");
-    console.log("Current form data:", formData);
+    console.log("Validating form data");
     
     // Required fields validation
     const requiredFields = [
@@ -647,31 +710,24 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       'sameMailingAddress', 'email', 'phoneType'
     ];
     
-    console.log("Checking required fields:", requiredFields);
-    
     requiredFields.forEach(field => {
       if (!formData[field]) {
         newErrors[field] = `Required field`;
-        console.log(`Field ${field} is missing`);
       }
     });
     
     // County validation - only required for specific countries
-    if (isCountyRequired && !formData.county) {
-      newErrors.county = 'Required field';
-      console.log("County is required but missing");
+    if (isCountyRequired && !formData.cnty_hm) { // Changed from county
+      newErrors.cnty_hm = 'Required field'; // Changed from county
     }
     
     // Phone number validation based on phone type
     if (formData.phoneType === 'Mobile' && !formData.mobilePhone) {
       newErrors.mobilePhone = 'Required field';
-      console.log("Mobile phone is required but missing");
     } else if (formData.phoneType === 'Work' && !formData.workPhone) {
       newErrors.workPhone = 'Required field';
-      console.log("Work phone is required but missing");
     } else if (formData.phoneType === 'Home' && !formData.homePhone) {
       newErrors.homePhone = 'Required field';
-      console.log("Home phone is required but missing");
     }
     
     // Mailing address validation if not same as home address
@@ -681,56 +737,44 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         'mailingPostalCode', 'mailingCountry'
       ];
       
-      console.log("Checking mailing address fields");
-      
       mailingFields.forEach(field => {
         if (!formData[field]) {
           newErrors[field] = `Required field`;
-          console.log(`Mailing field ${field} is missing`);
         }
       });
       
       // Mailing county validation - only required for specific countries
-      if (isMailingCountyRequired && !formData.mailingCounty) {
-        newErrors.mailingCounty = 'Required field';
-        console.log("Mailing county is required but missing");
+      if (isMailingCountyRequired && !formData.cnty_ml) { // Changed from mailingCounty
+        newErrors.cnty_ml = 'Required field'; // Changed from mailingCounty
       }
     }
     
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
-      console.log("Email format is invalid");
     }
-    
-    console.log("Validation complete. Errors:", newErrors);
-    alert("Validation complete. Error count: " + Object.keys(newErrors).length);
     
     // Set errors state
     setErrors(newErrors);
     
-    // Directly apply styles for visual feedback
+    // Apply visual styling to error fields
     setTimeout(() => {
       Object.keys(newErrors).forEach(fieldId => {
         const element = document.getElementById(fieldId);
         if (element) {
-          alert("Applying style to field: " + fieldId);
           element.style.border = "2px solid #dc2626";
           element.style.backgroundColor = "#fef2f2";
-        } else {
-          alert("Cannot find element with ID: " + fieldId);
         }
       });
-    }, 100);
-    
-    // If there are errors, scroll to the first error
-    if (Object.keys(newErrors).length > 0) {
-      const firstErrorField = document.getElementById(Object.keys(newErrors)[0]);
-      if (firstErrorField) {
-        console.log("Scrolling to first error field:", Object.keys(newErrors)[0]);
-        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Scroll to first error if any
+      if (Object.keys(newErrors).length > 0) {
+        const firstErrorField = document.getElementById(Object.keys(newErrors)[0]);
+        if (firstErrorField) {
+          firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
-    }
+    }, 100);
     
     return Object.keys(newErrors).length === 0;
   };
@@ -738,21 +782,25 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Use HTML5 validation
-    const form = e.target;
-    if (!form.checkValidity()) {
-      // This will trigger the browser's built-in validation UI
-      // No need for custom validation
+    // Validate the form
+    if (!validateForm()) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      // API call to save data
+      console.log("Saving contact info to backend...");
+      
+      // Save to backend
       const success = await saveContactInfo(formData);
       
       if (success) {
+        console.log("Contact info saved successfully");
+        
+        // Update signup progress
+        await updateSignupProgress("contact_info", 1, formData);
+        
         // Move to next step
         if (onNext) {
           onNext(formData);
@@ -770,9 +818,6 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 
   // Handler for back button
   const handleBack = () => {
-    // Save form data first
-    saveFormData('contact_info', formData);
-    
     console.log("ContactInfoPage: Handle back button clicked");
     
     // Use the more reliable force navigation method
@@ -785,6 +830,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       window.location.href = `/signup?step=0&force=true&_=${Date.now()}`;
     }, 0);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
+        <p className="ml-4 text-xl text-gray-700">Loading your information...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full" style={{
@@ -1118,27 +1172,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
                   <input 
                     type="text" 
-                    id="nonstandard_field_county"
-                    name="nonstandard_field_county"
-                    value={formData.county}
-                    onChange={(e) => {
-                      // Custom handler to update the correct field in formData
-                      setFormData(prev => ({
-                        ...prev,
-                        county: e.target.value
-                      }));
-                      
-                      // Clear error if exists
-                      if (errors.county) {
-                        setErrors(prev => ({ ...prev, county: "" }));
-                      }
-                    }}
-                    autoComplete="new-password" // Strongest autofill prevention
+                    id="cnty_hm"
+                    name="cnty_hm"
+                    value={formData.cnty_hm || ""}
+                    onChange={handleChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required={isCountyRequired}
                   />
-                  {errors.county && <p className="text-red-500 text-sm mt-1">{errors.county}</p>}
+                  {errors.cnty_hm && <p className="text-red-500 text-sm mt-1">{errors.cnty_hm}</p>}
                 </div>
                 
                 <div>
@@ -1240,133 +1282,166 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </div>
               </div>
               
-              {/* Mailing address fields - conditionally shown */}
-              {showMailingAddress && (
-                <div className="mt-14 pt-10 border-t border-gray-200">
-                  <div className="mb-12 flex items-start pt-4">
-                    <div className="bg-[#775684] p-3 md:p-4 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4 pt-2 md:pt-3">
-                      <h3 className="text-xl md:text-2xl font-semibold text-gray-800">Mailing Address</h3>
-                      <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
-                        Please provide the address where you would like to receive mail.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
-                    <div className="md:col-span-2">
-                      <div className="address-autocomplete-field">
-                        <AddressAutocomplete
-                          id="mailingStreetAddress"
-                          name="mailingStreetAddress"
-                          label="Mailing Address"
-                          defaultValue={formData.mailingStreetAddress}
-                          onAddressSelect={handleMailingAddressSelect}
-                          required={true}
-                          disabled={isSubmitting}
-                          errorMessage={errors.mailingStreetAddress}
-                          placeholder="Start typing your mailing address..."
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <LabelWithIcon label="City" required={true} />
-                      <input 
-                        type="text" 
-                        id="mailingCity"
-                        name="mailingCity"
-                        value={formData.mailingCity}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                        disabled={isSubmitting}
-                        required={showMailingAddress}
-                      />
-                      {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
-                    </div>
-  
-                    <div>
-                      <LabelWithIcon label={mailingCountryConfig.countyLabel} required={isMailingCountyRequired} />
-                      <input 
-                        type="text" 
-                        id="nonstandard_field_mailing_county"
-                        name="nonstandard_field_mailing_county"
-                        value={formData.mailingCounty}
-                        onChange={(e) => {
-                          // Custom handler to update the correct field in formData
-                          setFormData(prev => ({
-                            ...prev,
-                            mailingCounty: e.target.value
-                          }));
-                          
-                          // Clear error if exists
-                          if (errors.mailingCounty) {
-                            setErrors(prev => ({ ...prev, mailingCounty: "" }));
-                          }
-                        }}
-                        autoComplete="new-password" // Strongest autofill prevention
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                        disabled={isSubmitting}
-                        required={showMailingAddress && isMailingCountyRequired}
-                      />
-                      {errors.mailingCounty && <p className="text-red-500 text-sm mt-1">{errors.mailingCounty}</p>}
-                    </div>
-                    
-                    <div>
-                      <LabelWithIcon label={mailingCountryConfig.regionLabel} required={true} />
-                      <input 
-                        type="text" 
-                        id="mailingRegion"
-                        name="mailingRegion"
-                        value={formData.mailingRegion}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                        disabled={isSubmitting}
-                        required={showMailingAddress}
-                      />
-                      {errors.mailingRegion && <p className="text-red-500 text-sm mt-1">{errors.mailingRegion}</p>}
-                    </div>
-                    
-                    <div>
-                      <LabelWithIcon label={mailingCountryConfig.postalCodeLabel} required={true} />
-                      <input 
-                        type="text" 
-                        id="mailingPostalCode"
-                        name="mailingPostalCode"
-                        value={formData.mailingPostalCode}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                        disabled={isSubmitting}
-                        required={showMailingAddress}
-                      />
-                      {errors.mailingPostalCode && <p className="text-red-500 text-sm mt-1">{errors.mailingPostalCode}</p>}
-                    </div>
-                    
-                    <div>
-                      <LabelWithIcon label="Country" required={true} />
-                      <select
-                        id="mailingCountry"
-                        name="mailingCountry"
-                        value={formData.mailingCountry}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                        disabled={isSubmitting}
-                        required={showMailingAddress}
-                        style={{backgroundColor: "#FFFFFF", color: "#333333"}}
-                      >
-                        {countries.map(country => (
-                          <option key={country} value={country} style={{backgroundColor: "#FFFFFF", color: "#333333"}}>{country}</option>
-                        ))}
-                      </select>
-                      {errors.mailingCountry && <p className="text-red-500 text-sm mt-1">{errors.mailingCountry}</p>}
-                    </div>
-                  </div>
-                </div>
-              )}
+{/* Mailing address fields - conditionally shown */}
+{showMailingAddress && (
+  <div className="mt-14 pt-10 border-t border-gray-200">
+    <div className="mb-12 flex items-start pt-4">
+      <div className="bg-[#775684] p-3 md:p-4 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div className="ml-4 pt-2 md:pt-3">
+        <h3 className="text-xl md:text-2xl font-semibold text-gray-800">Mailing Address</h3>
+        <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
+          Please provide the address where you would like to receive mail.
+        </p>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
+      <div className="md:col-span-2">
+        <div className="address-autocomplete-field">
+          <AddressAutocomplete
+            id="mailingStreetAddress"
+            name="mailingStreetAddress"
+            label="Mailing Address"
+            defaultValue={formData.mailingStreetAddress}
+            onAddressSelect={handleMailingAddressSelect}
+            required={true}
+            disabled={isSubmitting}
+            errorMessage={errors.mailingStreetAddress ? "Required field" : ""}
+            placeholder="Start typing your mailing address..."
+            isError={!!errors.mailingStreetAddress}
+          />
+        </div>
+      </div>
+      
+      <div>
+        <LabelWithIcon label="City" required={true} />
+        <input 
+          type="text" 
+          id="mailingCity"
+          name="mailingCity"
+          value={formData.mailingCity}
+          onChange={handleChange}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+          disabled={isSubmitting}
+          required={showMailingAddress}
+          style={{
+            height: '4rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '0.375rem',
+            fontSize: '1.125rem',
+            width: '100%',
+            border: errors.mailingCity ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+          }}
+        />
+        {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
+      </div>
+
+      <div>
+        <LabelWithIcon label={mailingCountryConfig.countyLabel} required={isMailingCountyRequired} />
+        <input 
+          type="text" 
+          id="cnty_ml"
+          name="cnty_ml"
+          value={formData.cnty_ml || ""}
+          onChange={handleChange}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+          disabled={isSubmitting}
+          required={showMailingAddress && isMailingCountyRequired}
+          style={{
+            height: '4rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '0.375rem',
+            fontSize: '1.125rem',
+            width: '100%',
+            border: errors.cnty_ml ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+          }}
+        />
+        {errors.cnty_ml && <p className="text-red-500 text-sm mt-1">{errors.cnty_ml}</p>}
+      </div>
+      
+      <div>
+        <LabelWithIcon label={mailingCountryConfig.regionLabel} required={true} />
+        <input 
+          type="text" 
+          id="mailingRegion"
+          name="mailingRegion"
+          value={formData.mailingRegion}
+          onChange={handleChange}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+          disabled={isSubmitting}
+          required={showMailingAddress}
+          style={{
+            height: '4rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '0.375rem',
+            fontSize: '1.125rem',
+            width: '100%',
+            border: errors.mailingRegion ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+          }}
+        />
+        {errors.mailingRegion && <p className="text-red-500 text-sm mt-1">{errors.mailingRegion}</p>}
+      </div>
+      
+      <div>
+        <LabelWithIcon label={mailingCountryConfig.postalCodeLabel} required={true} />
+        <input 
+          type="text" 
+          id="mailingPostalCode"
+          name="mailingPostalCode"
+          value={formData.mailingPostalCode}
+          onChange={handleChange}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+          disabled={isSubmitting}
+          required={showMailingAddress}
+          style={{
+            height: '4rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '0.375rem',
+            fontSize: '1.125rem',
+            width: '100%',
+            border: errors.mailingPostalCode ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+          }}
+        />
+        {errors.mailingPostalCode && <p className="text-red-500 text-sm mt-1">{errors.mailingPostalCode}</p>}
+      </div>
+      
+      <div>
+        <LabelWithIcon label="Country" required={true} />
+        <select
+          id="mailingCountry"
+          name="mailingCountry"
+          value={formData.mailingCountry}
+          onChange={handleChange}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+          disabled={isSubmitting}
+          required={showMailingAddress}
+          style={{
+            height: '4rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '0.375rem',
+            fontSize: '1.125rem',
+            width: '100%',
+            border: errors.mailingCountry ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+          }}
+        >
+          {countries.map(country => (
+            <option key={country} value={country} style={{backgroundColor: "#FFFFFF", color: "#333333"}}>{country}</option>
+          ))}
+        </select>
+        {errors.mailingCountry && <p className="text-red-500 text-sm mt-1">{errors.mailingCountry}</p>}
+      </div>
+    </div>
+  </div>
+)}
             </div>
           </div>
           

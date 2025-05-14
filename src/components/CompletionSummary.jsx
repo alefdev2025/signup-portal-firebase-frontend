@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { auth } from '../services/auth';
+import { auth } from '../services/firebase'; // Changed from ../services/auth to ../services/firebase
 
 export default function CompletionSummary() {
   const { currentUser, signupState } = useUser();

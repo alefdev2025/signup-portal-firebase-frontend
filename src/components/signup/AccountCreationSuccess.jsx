@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, updateSignupProgress } from '../../services/auth';
+import { db } from '../../services/firebase';
+import { updateSignupProgress } from '../../services/auth';
 import { saveSignupState } from '../../contexts/UserContext';
 import alcorFullLogo from '../../assets/images/navy-alcor-logo.png';
 

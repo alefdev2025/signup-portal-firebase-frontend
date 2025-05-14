@@ -2,18 +2,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
-// Updated imports
-import ResponsiveBanner from "../components/ResponsiveBanner";
+// Import Firebase services
+import { auth } from "../services/firebase";
+
+// Import auth-related functions
 import { 
   requestEmailVerification, 
   verifyEmailCodeOnly,
   createNewUser,
   signInExistingUser,
   signInWithGoogle,
-  updateSignupProgress,
-  clearVerificationState,
-  auth
+  updateSignupProgress
 } from "../services/auth";
+
+// User context imports (unchanged)
 import { 
   useUser, 
   getVerificationState, 
@@ -23,6 +25,10 @@ import {
   initializeFreshSignup
 } from "../contexts/UserContext";
 
+import { clearVerificationState } from "../services/storage";
+
+// Component imports
+import ResponsiveBanner from "../components/ResponsiveBanner";
 // Import step components
 import ContactInfoPage from "./ContactInfoPage.jsx";
 
