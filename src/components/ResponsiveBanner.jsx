@@ -15,7 +15,7 @@ import { checkUserStep } from "../services/auth"; // Import the enhanced functio
 const ResponsiveBanner = ({ 
   logo = alcorWhiteLogo,
   activeStep = 0,
-  steps = ["Account", "Contact Info", "Method", "Funding", "Membership"],
+  steps = ["Account", "Contact Info", "Package", "Funding", "Membership"],
   heading = null,
   subText = null,
   showSteps = true,
@@ -130,7 +130,7 @@ const ResponsiveBanner = ({
     switch(activeStep) {
       case 0: return "Become a member";
       case 1: return "Contact information";
-      case 2: return "Method selection";
+      case 2: return "Package selection";
       case 3: return "Funding details";
       case 4: return "Membership confirmation";
       default: return "Become a member";
@@ -143,7 +143,7 @@ const ResponsiveBanner = ({
     switch(activeStep) {
       case 0: return "Sign up process takes on average 5 minutes.";
       case 1: return "Building your membership application.";
-      case 2: return "Choose your preferred method of investment.";
+      case 2: return "Choose your cryopreservation package.";
       case 3: return "Set up your funding details.";
       case 4: return "Review and confirm your membership details.";
       default: return "Sign up process takes on average 5 minutes.";
@@ -278,19 +278,19 @@ const ResponsiveBanner = ({
   const topPaddingClass = getTopPaddingClass();
   
   // Debug output to help identify issues
-  console.log("ResponsiveBanner render:");
-  console.log("- currentUser:", currentUser ? "logged in" : "not logged in");
-  console.log("- activeStep:", activeStep);
-  console.log("- maxCompletedStep:", maxCompletedStep);
-  console.log("- isWelcomePage:", isWelcomePage);
-  console.log("- isSignupPage:", isSignupPage);
-  console.log("- isLoginPage:", isLoginPage);
-  console.log("- shouldUseGradient:", shouldUseGradient);
-  console.log("- textAlignment:", textAlignment);
-  console.log("- displayHeading:", displayHeading);
-  console.log("- logoPositioningClass:", logoPositioningClass);
-  console.log("- logoSizeClass:", logoSizeClass);
-  console.log("- topPaddingClass:", topPaddingClass);
+  //console.log("ResponsiveBanner render:");
+  //console.log("- currentUser:", currentUser ? "logged in" : "not logged in");
+  //console.log("- activeStep:", activeStep);
+  //console.log("- maxCompletedStep:", maxCompletedStep);
+  //console.log("- isWelcomePage:", isWelcomePage);
+  //console.log("- isSignupPage:", isSignupPage);
+  //console.log("- isLoginPage:", isLoginPage);
+  //console.log("- shouldUseGradient:", shouldUseGradient);
+  //console.log("- textAlignment:", textAlignment);
+  //console.log("- displayHeading:", displayHeading);
+  //console.log("- logoPositioningClass:", logoPositioningClass);
+  //console.log("- logoSizeClass:", logoSizeClass);
+  //console.log("- topPaddingClass:", topPaddingClass);
 
   return (
     <div className="banner-container">

@@ -7,7 +7,8 @@ import { useUser } from "../contexts/UserContext";
 
 // Firebase services
 import { auth } from "../services/firebase";
-import { updateSignupProgress, saveContactInfo, getContactInfo } from "../services/auth";
+import { updateSignupProgress } from "../services/auth";
+import { saveContactInfo, getContactInfo } from "../services/contact";
 
 // Components
 import AddressAutocomplete from "../components/AddressAutocomplete";
@@ -790,33 +791,54 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     setIsSubmitting(true);
     
     try {
-      console.log("Saving contact info to backend...");
+      console.log("💾 Contact info submission started with fields:", Object.keys(formData).join(", "));
       
-      // Save to backend
-      const success = await saveContactInfo(formData);
+      // Check authentication first
+      if (!currentUser || !currentUser.uid) {
+        console.error("❌ User not authenticated when saving contact info");
+        throw new Error("You must be logged in to save contact information. Please refresh and try again.");
+      }
       
-    if (success) {
-      console.log("⭐ CONTACT: Info saved successfully");
+      // STEP 1: Save contact information first
+      console.log("💾 Saving contact info to backend...");
+      const saveResult = await saveContactInfo(formData);
       
-      // Update signup progress
-      console.log("⭐ CONTACT: Calling updateSignupProgress('contact_info', 1, formData)");
-      await updateSignupProgress("contact_info", 1, formData);
-      console.log("⭐ CONTACT: Progress updated");
+      if (!saveResult) {
+        console.error("❌ Failed to save contact information");
+        throw new Error("Server error while saving contact information.");
+      }
       
-      // Move to next step
-      if (onNext) {
-        console.log("⭐ CONTACT: Calling onNext(formData)");
-        const result = await onNext(formData);
-        console.log("⭐ CONTACT: onNext returned:", result);
+      console.log("✅ Contact info saved successfully!");
+      
+      // STEP 2: Update progress separately
+      console.log("💾 Updating signup progress to step 2 (package)...");
+      const progressResult = await updateSignupProgress("package", 2, {});
+      
+      if (!progressResult || !progressResult.success) {
+        console.error("❌ Failed to update progress:", progressResult);
+        // Don't throw here - contact info is already saved
+        console.warn("Continuing with navigation despite progress update failure");
       } else {
-        console.log("⭐ CONTACT: ERROR - onNext function is undefined!");
+        console.log("✅ Progress updated successfully!");
       }
-    } else {
-        alert("Failed to save contact information. Please try again.");
-      }
+      
+      // STEP 3: Force navigation to the next step
+      console.log("🚀 Navigating to package step...");
+      
+      // Use localStorage emergency override
+      localStorage.setItem('force_active_step', '2'); // Force to Package step
+      localStorage.setItem('force_timestamp', Date.now().toString());
+      
+      // No setActiveStep here as it's not available
+      
+      // Use the browser navigation with force=true
+      console.log("🔄 Executing force navigation to step 2");
+      navigate('/signup?step=2&force=true', { replace: true });
+      
     } catch (error) {
-      console.error('Error saving contact info:', error);
-      alert("Failed to save contact information. Please try again.");
+      console.error('❌ Error saving contact info:', error);
+      console.error('Error details:', error.stack || 'No stack trace available');
+      alert(error.message || "Failed to save contact information. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

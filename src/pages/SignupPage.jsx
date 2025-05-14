@@ -202,39 +202,22 @@ useEffect(() => {
       return;
     }
     
-    // console.log("URL Step Param:", stepParam);
-    // console.log("Force Navigation:", forceParam);
-    
-    // If force=true parameter is present, override verification checks
-    /*if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
-      // console.log("Force parameter detected, setting activeStep to:", stepParam);
-      setActiveStep(stepParam);
-      
-      // Clean up the URL by removing the force parameter
-      const newUrl = `/signup?step=${stepParam}`;
-      navigate(newUrl, { replace: true });
-      return;
-    }*/
+    if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
+        console.log("🚨 FORCE PARAM: Immediately setting activeStep to:", stepParam);
+        
+        // Set active step immediately without any conditions or checks
+        setActiveStep(stepParam);
+        
+        // Don't redirect to stored progress or add any other logic here
+        // Just keep the force parameter for 1 second to prevent immediate overrides
+        setTimeout(() => {
+        navigate(`/signup?step=${stepParam}`, { replace: true });
+        }, 1000);
+        
+        // Early return to skip ALL other routing logic
+        return;
+    }
 
-    // If force=true parameter is present, override verification checks
-if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
-    // console.log("🚨 FORCE PARAM: Emergency setting activeStep to:", stepParam);
-    
-    // Force update with timeout to ensure it happens after everything else
-    setTimeout(() => {
-      setActiveStep(stepParam);
-      
-      // DO NOT clean up the URL right away - wait a moment
-      setTimeout(() => {
-        const newUrl = `/signup?step=${stepParam}`;
-        navigate(newUrl, { replace: true });
-      }, 500);
-    }, 0);
-    
-    // Early exit to prevent other logic from interfering
-    return;
-  }
-    
     // First handle the case where we have a user
     if (currentUser) {
       // console.log("User is logged in - checking step param");
@@ -1018,74 +1001,57 @@ const handleGoogleSignIn = async () => {
   
   const handleNext = async (stepData = {}) => {
     console.log("🔍 handleNext: CALLED with activeStep =", activeStep);
-    console.log("🔍 handleNext: Current steps array =", steps);
-    console.log("🔍 handleNext: Form data received =", stepData);
     
     const nextStep = activeStep + 1;
-    console.log(`🔍 handleNext: Calculating next step: ${activeStep} → ${nextStep} (${steps[nextStep] || 'undefined'})`);
     
     if (nextStep < steps.length) {
       try {
         // Store form data for the current step
         const stepName = steps[activeStep].toLowerCase().replace(' ', '_');
-        console.log(`🔍 handleNext: Saving form data for step: "${stepName}"`);
         saveFormData(stepName, stepData);
         
         // Get the next step name for Firebase
         const nextStepName = steps[nextStep].toLowerCase().replace(' ', '_');
-        console.log(`🔍 handleNext: Next step will be: "${nextStepName}" with progress ${nextStep}`);
         
         // Update progress in Firebase
-        console.log(`🔍 handleNext: Calling updateSignupProgress("${nextStepName}", ${nextStep}, data)`);
         try {
-          const progressResult = await updateSignupProgress(
+          await updateSignupProgress(
             nextStepName, 
             nextStep, 
             stepData
           );
-          console.log("🔍 handleNext: Firebase update result:", progressResult);
         } catch (firebaseError) {
-          console.error("❌ handleNext: Error updating progress in Firebase:", firebaseError);
-          // Continue anyway - we'll just use the local state
+          console.error("Error updating progress in Firebase:", firebaseError);
         }
         
         // Update active step
-        console.log(`🔍 handleNext: Setting activeStep state to ${nextStep}`);
         setActiveStep(nextStep);
         
-        // Update URL to reflect current step without reload
-        const newUrl = `/signup?step=${nextStep}`;
-        console.log(`🔍 handleNext: About to navigate to: "${newUrl}"`);
+        // SOLUTION: Add force=true to bypass progress checks and use force_timestamp
+        localStorage.setItem('force_active_step', nextStep.toString());
+        localStorage.setItem('force_timestamp', Date.now().toString());
         
-        // Force navigation to happen in a separate tick
+        // Force a clean navigation with forced=true parameter
         setTimeout(() => {
-          console.log(`🔍 handleNext: Executing navigation to: "${newUrl}"`);
-          navigate(newUrl, { replace: true });
-          console.log(`🔍 handleNext: Navigation executed`);
+          navigate(`/signup?step=${nextStep}&force=true`, { replace: true });
         }, 0);
         
-        console.log("🔍 handleNext: Returning success = true");
-        return true; // Indicate success
+        return true;
       } catch (error) {
-        console.error("❌ handleNext: Unexpected error:", error);
+        console.error("Error in handleNext:", error);
         
-        // Still move forward even if there are errors
-        console.log(`🔍 handleNext: RECOVERY - Setting activeStep to ${nextStep} despite errors`);
-        setActiveStep(nextStep);
+        // Still try to navigate even if there are errors
+        localStorage.setItem('force_active_step', nextStep.toString());
+        localStorage.setItem('force_timestamp', Date.now().toString());
+        navigate(`/signup?step=${nextStep}&force=true`, { replace: true });
         
-        const newUrl = `/signup?step=${nextStep}`;
-        console.log(`🔍 handleNext: RECOVERY - Navigating to: "${newUrl}"`);
-        navigate(newUrl, { replace: true });
-        
-        console.log("🔍 handleNext: Returning error = false");
-        return false; // Indicate there was an error
+        return false;
       }
     } else {
-      console.log("⚠️ handleNext: Cannot proceed: already at last step");
-      return false; // Cannot proceed further
+      return false;
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Integrated ResponsiveBanner with progress bar */}
