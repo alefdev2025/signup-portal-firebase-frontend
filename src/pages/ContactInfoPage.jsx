@@ -795,17 +795,23 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       // Save to backend
       const success = await saveContactInfo(formData);
       
-      if (success) {
-        console.log("Contact info saved successfully");
-        
-        // Update signup progress
-        await updateSignupProgress("contact_info", 1, formData);
-        
-        // Move to next step
-        if (onNext) {
-          onNext(formData);
-        }
+    if (success) {
+      console.log("⭐ CONTACT: Info saved successfully");
+      
+      // Update signup progress
+      console.log("⭐ CONTACT: Calling updateSignupProgress('contact_info', 1, formData)");
+      await updateSignupProgress("contact_info", 1, formData);
+      console.log("⭐ CONTACT: Progress updated");
+      
+      // Move to next step
+      if (onNext) {
+        console.log("⭐ CONTACT: Calling onNext(formData)");
+        const result = await onNext(formData);
+        console.log("⭐ CONTACT: onNext returned:", result);
       } else {
+        console.log("⭐ CONTACT: ERROR - onNext function is undefined!");
+      }
+    } else {
         alert("Failed to save contact information. Please try again.");
       }
     } catch (error) {

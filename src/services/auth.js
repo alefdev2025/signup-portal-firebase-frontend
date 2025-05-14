@@ -1270,34 +1270,52 @@ export async function signInWithGoogle(options) {
     }
   }
 
-export const updateSignupProgress = async (step, progress, data = {}) => {
+  export const updateSignupProgress = async (step, progress, data = {}) => {
+    console.log(`🔄 PROGRESS: Function called with step="${step}", progress=${progress}`);
+    console.log(`🔄 PROGRESS: Data keys:`, Object.keys(data));
+    
     try {
       const user = auth.currentUser;
       if (!user) {
-        console.error("No authenticated user found when updating progress");
+        console.error("❌ PROGRESS: No authenticated user found when updating progress");
         throw new Error("User must be authenticated to update progress");
       }
       
-      // console.log(`Updating progress for user ${user.uid} to step: ${step}, progress: ${progress}`);
+      console.log(`🔄 PROGRESS: User authenticated: ${user.uid} (${user.email})`);
       
       // Update user document with progress information
       const userRef = doc(db, "users", user.uid);
+      console.log(`🔄 PROGRESS: Getting user document reference: users/${user.uid}`);
       
       // Check if document exists first
+      console.log(`🔄 PROGRESS: Checking if user document exists...`);
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
-        // Update existing document
-        await updateDoc(userRef, {
+        console.log(`🔄 PROGRESS: User document exists, current data:`, userDoc.data());
+        console.log(`🔄 PROGRESS: Current progress: ${userDoc.data().signupProgress}, signupStep: "${userDoc.data().signupStep}"`);
+        
+        // Create update object
+        const updateData = {
           signupStep: step,
           signupProgress: progress,
           lastUpdated: new Date(),
-          [`formData.${step}`]: data, // Store form data for this step
-        });
-        // console.log("Updated existing user document with new progress");
+          [`formData.${step}`]: data
+        };
+        console.log(`🔄 PROGRESS: Updating document with:`, updateData);
+        
+        // Update existing document
+        await updateDoc(userRef, updateData);
+        console.log(`🔄 PROGRESS: Document updated successfully`);
+        
+        // Verify update worked
+        const updatedDoc = await getDoc(userRef);
+        console.log(`🔄 PROGRESS: Verification - Updated progress: ${updatedDoc.data().signupProgress}, step: "${updatedDoc.data().signupStep}"`);
       } else {
-        // Create new document
-        await setDoc(userRef, {
+        console.log(`🔄 PROGRESS: User document doesn't exist, creating new document`);
+        
+        // Create document data
+        const docData = {
           email: user.email,
           displayName: user.displayName || "New Member",
           signupStep: step,
@@ -1306,9 +1324,13 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
           lastUpdated: new Date(),
           formData: {
             [step]: data,
-          },
-        });
-        // console.log("Created new user document with initial progress");
+          }
+        };
+        console.log(`🔄 PROGRESS: Creating document with:`, docData);
+        
+        // Create new document
+        await setDoc(userRef, docData);
+        console.log(`🔄 PROGRESS: New document created successfully`);
       }
       
       // Also update local storage for redundancy
@@ -1321,12 +1343,15 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
         timestamp: Date.now(),
       };
       
+      console.log(`🔄 PROGRESS: Updating local storage with:`, signupState);
       saveSignupState(signupState);
-      // console.log("Updated local signupState:", signupState);
+      console.log(`🔄 PROGRESS: Local storage updated`);
       
+      console.log(`🔄 PROGRESS: Function completed successfully`);
       return { success: true };
     } catch (error) {
-      console.error("Error updating signup progress:", error);
+      console.error(`❌ PROGRESS: Error updating progress:`, error);
+      console.error(`❌ PROGRESS: Error stack:`, error.stack);
       return { success: false, error };
     }
   };

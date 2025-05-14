@@ -31,13 +31,14 @@ import { clearVerificationState } from "../services/storage";
 import ResponsiveBanner from "../components/ResponsiveBanner";
 // Import step components
 import ContactInfoPage from "./ContactInfoPage.jsx";
+import PackagePage from "./PackagePage.jsx";
 
 // Import decomposed components
 import AccountCreationForm from "../components/signup/AccountCreationForm";
 import AccountCreationSuccess from "../components/signup/AccountCreationSuccess";
 import HelpPanel from "../components/signup/HelpPanel";
 
-const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];
+const steps = ["Account", "Contact Info", "Package", "Funding", "Membership"];
 
 // Function to check if account is created
 const isAccountCreated = () => {
@@ -1015,59 +1016,72 @@ const handleGoogleSignIn = async () => {
     }
   };
   
-  // Enhanced handleNext function with form data persistence
   const handleNext = async (stepData = {}) => {
-    // console.log("handleNext called with step data:", stepData);
+    console.log("🔍 handleNext: CALLED with activeStep =", activeStep);
+    console.log("🔍 handleNext: Current steps array =", steps);
+    console.log("🔍 handleNext: Form data received =", stepData);
     
     const nextStep = activeStep + 1;
-    // console.log(`Current step: ${activeStep}, Next step: ${nextStep}`);
+    console.log(`🔍 handleNext: Calculating next step: ${activeStep} → ${nextStep} (${steps[nextStep] || 'undefined'})`);
     
     if (nextStep < steps.length) {
       try {
         // Store form data for the current step
         const stepName = steps[activeStep].toLowerCase().replace(' ', '_');
-        // console.log(`Saving form data for step: ${stepName}`);
+        console.log(`🔍 handleNext: Saving form data for step: "${stepName}"`);
         saveFormData(stepName, stepData);
         
+        // Get the next step name for Firebase
+        const nextStepName = steps[nextStep].toLowerCase().replace(' ', '_');
+        console.log(`🔍 handleNext: Next step will be: "${nextStepName}" with progress ${nextStep}`);
+        
         // Update progress in Firebase
-        // console.log(`Updating progress in Firebase: Step ${nextStep} (${steps[nextStep].toLowerCase().replace(' ', '_')})`);
+        console.log(`🔍 handleNext: Calling updateSignupProgress("${nextStepName}", ${nextStep}, data)`);
         try {
-          await updateSignupProgress(
-            steps[nextStep].toLowerCase().replace(' ', '_'), 
+          const progressResult = await updateSignupProgress(
+            nextStepName, 
             nextStep, 
             stepData
           );
-          // console.log("Firebase update successful");
+          console.log("🔍 handleNext: Firebase update result:", progressResult);
         } catch (firebaseError) {
-          console.error("Error updating progress in Firebase:", firebaseError);
+          console.error("❌ handleNext: Error updating progress in Firebase:", firebaseError);
           // Continue anyway - we'll just use the local state
         }
         
         // Update active step
-        // console.log(`Setting active step to ${nextStep}`);
+        console.log(`🔍 handleNext: Setting activeStep state to ${nextStep}`);
         setActiveStep(nextStep);
         
         // Update URL to reflect current step without reload
         const newUrl = `/signup?step=${nextStep}`;
-        // console.log(`Navigating to: ${newUrl}`);
-        navigate(newUrl, { replace: true });
+        console.log(`🔍 handleNext: About to navigate to: "${newUrl}"`);
         
+        // Force navigation to happen in a separate tick
+        setTimeout(() => {
+          console.log(`🔍 handleNext: Executing navigation to: "${newUrl}"`);
+          navigate(newUrl, { replace: true });
+          console.log(`🔍 handleNext: Navigation executed`);
+        }, 0);
+        
+        console.log("🔍 handleNext: Returning success = true");
         return true; // Indicate success
       } catch (error) {
-        console.error("Error in handleNext:", error);
+        console.error("❌ handleNext: Unexpected error:", error);
         
         // Still move forward even if there are errors
-        // console.log(`Setting active step to ${nextStep} despite errors`);
+        console.log(`🔍 handleNext: RECOVERY - Setting activeStep to ${nextStep} despite errors`);
         setActiveStep(nextStep);
         
         const newUrl = `/signup?step=${nextStep}`;
-        // console.log(`Navigating to: ${newUrl}`);
+        console.log(`🔍 handleNext: RECOVERY - Navigating to: "${newUrl}"`);
         navigate(newUrl, { replace: true });
         
+        console.log("🔍 handleNext: Returning error = false");
         return false; // Indicate there was an error
       }
     } else {
-      // console.log("Cannot proceed: already at last step");
+      console.log("⚠️ handleNext: Cannot proceed: already at last step");
       return false; // Cannot proceed further
     }
   };
@@ -1122,6 +1136,12 @@ const handleGoogleSignIn = async () => {
                 onNext={handleNext}
                 onBack={handleBack}
                 />
+            )}
+            {activeStep === 2 && (
+            <PackagePage
+                onNext={handleNext}
+                onBack={handleBack}
+            />
             )}
             </div>
         </div>
