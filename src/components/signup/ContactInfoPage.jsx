@@ -128,6 +128,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       )
     }
   ];
+
   
   // Debug: Check if API key is available
   useEffect(() => {
@@ -440,6 +441,23 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   };
 
+  // Add to ContactInfoPage.jsx
+useEffect(() => {
+  // If region and county contain the same data, clear the county
+  if (formData.region && formData.cnty_hm === formData.region) {
+    setFormData(prev => ({
+      ...prev,
+      cnty_hm: ""
+    }));
+    
+    // Also force update the DOM element if it exists
+    const countyField = document.getElementById('cnty_hm');
+    if (countyField) {
+      countyField.value = '';
+    }
+  }
+}, [formData.region, formData.cnty_hm]);
+
   // Load data from backend only
   useEffect(() => {
     const loadDataFromBackend = async () => {
@@ -622,21 +640,19 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     updatedFormData.postalCode = addressData.postalCode || "";
     updatedFormData.country = addressData.country || "United States";
     
-    // Finally, add back county as empty string or use the one from address data
-    updatedFormData.cnty_hm = addressData.cnty_hm || ""; // Changed from county
+    // Always set county to empty string to prevent autocomplete from filling it
+    updatedFormData.cnty_hm = ""; // Force empty string
     
     // Update the state with the modified data
     setFormData(updatedFormData);
     
-    // Manually force county field to be empty if it exists in DOM and no county was provided
-    if (!addressData.cnty_hm) {
-      setTimeout(() => {
-        const countyField = document.getElementById('cnty_hm'); // Changed from county
-        if (countyField) {
-          countyField.value = '';
-        }
-      }, 100);
-    }
+    // Manually force county field to be empty if it exists in DOM
+    setTimeout(() => {
+      const countyField = document.getElementById('cnty_hm'); // Changed from county
+      if (countyField) {
+        countyField.value = '';
+      }
+    }, 100);
     
     // Clear any address-related errors
     setErrors(prev => ({
@@ -669,21 +685,19 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     updatedFormData.mailingPostalCode = addressData.postalCode || "";
     updatedFormData.mailingCountry = addressData.country || "United States";
     
-    // Finally, add back county as empty string or use the one from address data
-    updatedFormData.cnty_ml = addressData.cnty_hm || ""; // Use home county field from address data for mailing county
+    // Always set mailing county to empty string to prevent autocomplete from filling it
+    updatedFormData.cnty_ml = ""; // Force empty string
     
     // Update the state with the modified data
     setFormData(updatedFormData);
     
-    // Manually force mailing county field to be empty if it exists in DOM and no county was provided
-    if (!addressData.cnty_hm) {
-      setTimeout(() => {
-        const mailingCountyField = document.getElementById('cnty_ml'); // Changed from mailingCounty
-        if (mailingCountyField) {
-          mailingCountyField.value = '';
-        }
-      }, 100);
-    }
+    // Manually force mailing county field to be empty if it exists in DOM
+    setTimeout(() => {
+      const mailingCountyField = document.getElementById('cnty_ml'); // Changed from mailingCounty
+      if (mailingCountyField) {
+        mailingCountyField.value = '';
+      }
+    }, 100);
     
     // Clear any mailing address-related errors
     setErrors(prev => ({
@@ -1187,21 +1201,6 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   />
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                 </div>
-  
-                <div>
-                  <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
-                  <input 
-                    type="text" 
-                    id="cnty_hm"
-                    name="cnty_hm"
-                    value={formData.cnty_hm || ""}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                    disabled={isSubmitting}
-                    required={isCountyRequired}
-                  />
-                  {errors.cnty_hm && <p className="text-red-500 text-sm mt-1">{errors.cnty_hm}</p>}
-                </div>
                 
                 <div>
                   <LabelWithIcon label={countryConfig.regionLabel} required={true} />
@@ -1224,6 +1223,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     required
                   />
                   {errors.region && <p className="text-red-500 text-sm mt-1">{errors.region}</p>}
+                </div>
+
+                <div>
+                  <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
+                  <input 
+                    type="text" 
+                    id="cnty_hm"
+                    name="cnty_hm"
+                    value={formData.cnty_hm || ""}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required={isCountyRequired}
+                  />
+                  {errors.cnty_hm && <p className="text-red-500 text-sm mt-1">{errors.cnty_hm}</p>}
                 </div>
                 
                 <div>

@@ -413,12 +413,16 @@ const AccountCreationStep = () => {
             // 5. Set force navigation to bypass route guards
             setForceNavigation(1); // 1 = success step
             
-            console.log("All flags set, executing hard redirect to success page");
+            // FIXED: Remove direct navigation and let auth state change handle it
+            console.log("All flags set, waiting for auth state change to handle navigation");
             
-            // 6. Use window.location for a hard redirect instead of navigate
-            // This ensures a clean slate and prevents loops
-            window.location.href = '/signup/success';
-            return; // Important! Stop execution to prevent further code from running
+            // Show success message while auth system processes the change
+            setErrors(prev => ({
+              ...prev,
+              general: "Account verified successfully! Redirecting..." 
+            }));
+            
+            // No return statement here, let the component finish rendering
           } else {
             console.error("Authentication result indicated failure:", authResult);
             setErrors(prev => ({
