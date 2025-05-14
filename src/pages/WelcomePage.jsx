@@ -18,7 +18,7 @@ const WelcomePage = () => {
   useEffect(() => {
     const clearAllState = async () => {
       try {
-        console.log("WelcomePage: Clearing all state");
+        // console.log("WelcomePage: Clearing all state");
         // Clear all localStorage items
         localStorage.removeItem('alcor_signup_state');
         localStorage.removeItem('alcor_verification_state');
@@ -29,15 +29,15 @@ const WelcomePage = () => {
         
         // Sign out user if they're logged in
         try {
-          console.log("WelcomePage: Attempting to log out user");
+          // console.log("WelcomePage: Attempting to log out user");
           await logout();
-          console.log("User logged out on Welcome page");
+          // console.log("User logged out on Welcome page");
         } catch (logoutError) {
           console.error("Logout error (non-critical):", logoutError);
           // Continue anyway - we've cleared the localStorage
         }
         
-        console.log("All state cleared on Welcome page load");
+        // console.log("All state cleared on Welcome page load");
       } catch (error) {
         console.error("Error clearing state:", error);
       }
@@ -48,11 +48,11 @@ const WelcomePage = () => {
 
   // Handle direct navigation to signup or login
   const goToSignup = () => {
-    console.log("Get Started button clicked");
+    // console.log("Get Started button clicked");
     
     // Make sure localStorage is cleared before navigating
     try {
-      console.log("Clearing state before signup navigation");
+      // console.log("Clearing state before signup navigation");
       // Clear all localStorage items related to signup process
       localStorage.removeItem('alcor_signup_state');
       localStorage.removeItem('alcor_verification_state');
@@ -61,14 +61,14 @@ const WelcomePage = () => {
       
       // Add a flag to indicate a fresh start
       localStorage.setItem('fresh_signup', 'true');
-      console.log("Set fresh_signup flag to true");
+      // console.log("Set fresh_signup flag to true");
       
-      console.log("All state cleared before signup navigation");
+      // console.log("All state cleared before signup navigation");
     } catch (error) {
       console.error("Error clearing state:", error);
     }
     
-    console.log("Navigating to /signup?step=0");
+    // console.log("Navigating to /signup?step=0");
     // Direct navigation using window.location for reliability
     window.location.href = '/signup?step=0';
   };

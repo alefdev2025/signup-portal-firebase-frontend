@@ -61,11 +61,11 @@ const functions = getFunctions(app, FIREBASE_REGION);
 
 // Log environment for debugging
 if (isDevelopment) {
-  console.log('Running in development environment');
-  console.log('Firebase config:', {
-    projectId: firebaseConfig.projectId,
-    region: FIREBASE_REGION
-  });
+  // console.log('Running in development environment');
+  // console.log('Firebase config:', {
+  //  projectId: firebaseConfig.projectId,
+  //  region: FIREBASE_REGION
+  //});
 }
 
 // Function to clear verification state from localStorage
@@ -75,36 +75,36 @@ export const clearVerificationState = () => {
 
 // Simplified sign in function with better credential error handling
 export const signInWithEmailAndPassword = async (email, password) => {
-    console.log("DEBUG: Starting simplified signInWithEmailAndPassword process");
+    // console.log("DEBUG: Starting simplified signInWithEmailAndPassword process");
     
     try {
       // Input validation
       if (!email || !password) {
-        console.log("DEBUG: Email or password missing");
+        // console.log("DEBUG: Email or password missing");
         throw new Error('Email and password are required');
       }
       
       // First, sign out any existing user
-      console.log("DEBUG: Signing out any current user");
+      // console.log("DEBUG: Signing out any current user");
       try {
         await auth.signOut();
-        console.log("DEBUG: Sign out successful or no user was logged in");
+        // console.log("DEBUG: Sign out successful or no user was logged in");
       } catch (signOutError) {
         console.error("DEBUG: Error during sign out:", signOutError);
         // Continue anyway
       }
       
-      console.log("DEBUG: Attempting to sign in with Firebase");
-      console.log(`DEBUG: Using email: ${email}, password length: ${password.length}`);
+      // console.log("DEBUG: Attempting to sign in with Firebase");
+      // console.log(`DEBUG: Using email: ${email}, password length: ${password.length}`);
       
       // Use a try-catch specifically for the sign-in operation
       try {
         // Sign in with Firebase - this is the core authentication
         const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
-        console.log("DEBUG: Sign in successful, user:", userCredential.user.uid);
+        // console.log("DEBUG: Sign in successful, user:", userCredential.user.uid);
         
         // Save minimal signup state to localStorage without trying to access Firestore
-        console.log("DEBUG: Saving minimal signup state to localStorage");
+        // console.log("DEBUG: Saving minimal signup state to localStorage");
         saveSignupState({
           userId: userCredential.user.uid,
           email: userCredential.user.email,
@@ -114,7 +114,7 @@ export const signInWithEmailAndPassword = async (email, password) => {
           signupStep: "account",
           timestamp: Date.now()
         });
-        console.log("DEBUG: Saved minimal signup state to localStorage");
+        // console.log("DEBUG: Saved minimal signup state to localStorage");
         
         return {
           success: true,
@@ -145,7 +145,7 @@ export const signInWithEmailAndPassword = async (email, password) => {
 // Updated handleGoogleSignIn with better navigation
 const handleGoogleSignIn = async () => {
     if (isSubmitting) return;
-    console.log("Starting Google sign-in process");
+    // console.log("Starting Google sign-in process");
     
     setIsSubmitting(true);
     setErrors({
@@ -159,17 +159,17 @@ const handleGoogleSignIn = async () => {
     });
     
     try {
-      console.log("Calling signInWithGoogle()");
+      // console.log("Calling signInWithGoogle()");
       const result = await signInWithGoogle();
       
-      console.log("Google sign-in result:", result);
+      // console.log("Google sign-in result:", result);
       
       // Check specifically for account conflict
       if (result && result.accountConflict === true) {
-        console.log(`Account conflict detected for email: ${result.existingEmail}`);
+        // console.log(`Account conflict detected for email: ${result.existingEmail}`);
         
         // Navigate directly to login page for account linking
-        console.log(`Redirecting to login for account linking`);
+        // console.log(`Redirecting to login for account linking`);
         
         const email = result.existingEmail || "";
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
@@ -178,7 +178,7 @@ const handleGoogleSignIn = async () => {
       
       // Also check for the error code directly
       if (result && result.error === 'auth/account-exists-with-different-credential') {
-        console.log(`Account conflict detected from error code`);
+        // console.log(`Account conflict detected from error code`);
         
         const email = result.email || "";
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
@@ -188,16 +188,16 @@ const handleGoogleSignIn = async () => {
       if (result && result.success) {
         // Clear verification state since we're now authenticated
         clearVerificationState();
-        console.log("Cleared verification state");
+        // console.log("Cleared verification state");
         
         // Set hasNavigatedRef to true to show success screen
         hasNavigatedRef.current = true;
-        console.log("Set hasNavigatedRef to true");
+        // console.log("Set hasNavigatedRef to true");
         
         // After sign-in, wait a moment for auth state to update
         setTimeout(() => {
           // Navigate to signup with showSuccess parameter
-          console.log("Navigating to signup with showSuccess parameter");
+          // console.log("Navigating to signup with showSuccess parameter");
           navigate('/signup?step=0&showSuccess=true', { replace: true });
         }, 500);
       } else {
@@ -214,7 +214,7 @@ const handleGoogleSignIn = async () => {
       
       // Check for specific error that indicates a conflict
       if (error.code === 'auth/account-exists-with-different-credential') {
-        console.log("Caught auth/account-exists-with-different-credential error");
+        // console.log("Caught auth/account-exists-with-different-credential error");
         
         const email = error.customData?.email || "";
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
@@ -238,13 +238,13 @@ const handleGoogleSignIn = async () => {
       }));
     } finally {
       setIsSubmitting(false);
-      console.log("Setting isSubmitting back to false");
+      // console.log("Setting isSubmitting back to false");
     }
   };
 
   export const linkGoogleToEmailAccount = async () => {
     try {
-      console.log("DEBUG: Linking Google account to password-based account");
+      // console.log("DEBUG: Linking Google account to password-based account");
       
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -253,7 +253,7 @@ const handleGoogleSignIn = async () => {
       
       // Store the current user's email
       const userEmail = currentUser.email;
-      console.log(`DEBUG: Current user email: ${userEmail}`);
+      // console.log(`DEBUG: Current user email: ${userEmail}`);
       
       // Create Google auth provider
       const googleProvider = new GoogleAuthProvider();
@@ -266,7 +266,7 @@ const handleGoogleSignIn = async () => {
       // Link the Google account to the current user
       try {
         const result = await linkWithPopup(currentUser, googleProvider);
-        console.log("DEBUG: Successfully linked Google account");
+        // console.log("DEBUG: Successfully linked Google account");
         
         // Update user document to reflect multiple auth methods
         try {
@@ -277,7 +277,7 @@ const handleGoogleSignIn = async () => {
             authProviders: arrayUnion("google.com"),
             lastUpdated: new Date()
           });
-          console.log("DEBUG: Updated user document with Google auth info");
+          // console.log("DEBUG: Updated user document with Google auth info");
         } catch (firestoreError) {
           console.error("DEBUG: Error updating user document:", firestoreError);
           // Continue despite error - the Google account is still linked
@@ -291,7 +291,7 @@ const handleGoogleSignIn = async () => {
         console.error("DEBUG: Linking error:", linkError);
         
         if (linkError.code === 'auth/credential-already-in-use') {
-          console.log("DEBUG: Detected credential already in use");
+          // console.log("DEBUG: Detected credential already in use");
           
           // This means a Google account with this email already exists separately
           // Let the user know they need to use their password account
@@ -313,7 +313,7 @@ const handleGoogleSignIn = async () => {
 
   export const linkPasswordToGoogleAccount = async (password) => {
     try {
-      console.log("DEBUG: Linking password to Google account");
+      // console.log("DEBUG: Linking password to Google account");
       
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -330,7 +330,7 @@ const handleGoogleSignIn = async () => {
       // Check if the user already has password auth
       const hasPasswordAuth = currentUser.providerData.some(p => p.providerId === 'password');
       if (hasPasswordAuth) {
-        console.log("DEBUG: User already has password auth");
+        // console.log("DEBUG: User already has password auth");
         throw new Error("This account already has a password");
       }
       
@@ -342,7 +342,7 @@ const handleGoogleSignIn = async () => {
       
       // Link the credential to the current user
       await linkWithCredential(currentUser, emailCredential);
-      console.log("DEBUG: Successfully linked password to Google account");
+      // console.log("DEBUG: Successfully linked password to Google account");
       
       // Update user document to reflect multiple auth methods
       try {
@@ -373,7 +373,7 @@ const handleGoogleSignIn = async () => {
           });
         }
         
-        console.log("DEBUG: Updated user document with password auth info");
+        // console.log("DEBUG: Updated user document with password auth info");
       } catch (firestoreError) {
         console.error("DEBUG: Error updating user document:", firestoreError);
         // Continue despite error - the password is still linked
@@ -388,7 +388,7 @@ const handleGoogleSignIn = async () => {
 
   /*export const linkPasswordToGoogleAccount = async (password) => {
     try {
-      console.log("DEBUG: Linking password to Google account");
+      // console.log("DEBUG: Linking password to Google account");
       
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -403,7 +403,7 @@ const handleGoogleSignIn = async () => {
       }
       
       // Log full provider data for debugging
-      console.log("DEBUG: User provider data:", currentUser.providerData);
+      // console.log("DEBUG: User provider data:", currentUser.providerData);
       
       // Check if already has password provider
       const hasPasswordProvider = currentUser.providerData.some(
@@ -411,7 +411,7 @@ const handleGoogleSignIn = async () => {
       );
       
       if (hasPasswordProvider) {
-        console.log("DEBUG: User already has password auth");
+        // console.log("DEBUG: User already has password auth");
         throw new Error("This account already has a password");
       }
       
@@ -424,7 +424,7 @@ const handleGoogleSignIn = async () => {
       // Link the credential to the current user
       try {
         await linkWithCredential(currentUser, emailCredential);
-        console.log("DEBUG: Successfully linked password to Google account");
+        // console.log("DEBUG: Successfully linked password to Google account");
       } catch (linkError) {
         console.error("DEBUG: Error linking credentials:", linkError);
         throw linkError;
@@ -453,7 +453,7 @@ const handleGoogleSignIn = async () => {
 
 export const linkGoogleToEmailAccount = async () => {
     try {
-      console.log("DEBUG: Linking Google account to password-based account");
+      // console.log("DEBUG: Linking Google account to password-based account");
       
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -475,7 +475,7 @@ export const linkGoogleToEmailAccount = async () => {
       try {
         const result = await linkWithPopup(currentUser, googleProvider);
         
-        console.log("DEBUG: Successfully linked Google account");
+        // console.log("DEBUG: Successfully linked Google account");
         
         // Update user document to reflect multiple auth methods
         try {
@@ -498,7 +498,7 @@ export const linkGoogleToEmailAccount = async () => {
         console.error("DEBUG: Linking error:", linkError);
         
         if (linkError.code === 'auth/credential-already-in-use') {
-          console.log("DEBUG: Detected credential already in use");
+          // console.log("DEBUG: Detected credential already in use");
           
           // This means a Google account with this email already exists separately
           // Let's tell the user to just continue with their password account for now
@@ -533,7 +533,7 @@ export const resetPassword = async (email) => {
       const result = await sendPasswordResetLinkFn({ email });
       
       // Always return success for security reasons
-      console.log("Password reset email sent for:", email);
+      // console.log("Password reset email sent for:", email);
       
       return {
         success: true
@@ -549,7 +549,7 @@ export const resetPassword = async (email) => {
 // Updated requestEmailVerification function in auth.js
 /*export async function requestEmailVerification(email, name) {
     if (isDevelopment) {
-      console.log("Starting email verification request...", { email, name });
+      // console.log("Starting email verification request...", { email, name });
     }
     
     try {
@@ -561,9 +561,9 @@ export const resetPassword = async (email) => {
       // First, sign out any existing user to prevent Firestore permission errors
       try {
         await auth.signOut();
-        console.log("DEBUG: User signed out before verification request");
+        // console.log("DEBUG: User signed out before verification request");
       } catch (signOutError) {
-        console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
+        // console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
         // Continue anyway
       }
       
@@ -590,7 +590,7 @@ export const resetPassword = async (email) => {
       
       // Check if this is an existing user
       if (result.data.isExistingUser) {
-        console.log("DEBUG: Email belongs to an existing user:", email);
+        // console.log("DEBUG: Email belongs to an existing user:", email);
         
         // Call a server function to check auth method (need to create this)
         const checkAuthMethodFn = httpsCallable(functions, 'checkAuthMethod');
@@ -682,7 +682,7 @@ export const resetPassword = async (email) => {
             error.message.toLowerCase().includes('already exists') ||
             error.message.toLowerCase().includes('already in use')
           ))) {
-        console.log("DEBUG: Email already exists error detected:", error.message);
+        // console.log("DEBUG: Email already exists error detected:", error.message);
         return {
           success: false,
           isExistingUser: true,
@@ -703,13 +703,13 @@ export const resetPassword = async (email) => {
 }*/
 
 export async function requestEmailVerification(email, name) {
-    console.log("========== START: requestEmailVerification ==========");
-    console.log(`Email: ${email}, Name: ${name}`);
+    // console.log("========== START: requestEmailVerification ==========");
+    // console.log(`Email: ${email}, Name: ${name}`);
     
     try {
         // Input validation
         if (!email || !name) {
-            console.log("ERROR: Missing email or name");
+            // console.log("ERROR: Missing email or name");
             throw new Error('Email and name are required');
         }
         
@@ -718,27 +718,27 @@ export async function requestEmailVerification(email, name) {
         
         // First, sign out any existing user to prevent Firestore permission errors
         try {
-            console.log("Signing out any existing user...");
+            // console.log("Signing out any existing user...");
             await auth.signOut();
-            console.log("User signed out successfully (or no user was signed in)");
+            // console.log("User signed out successfully (or no user was signed in)");
         } catch (signOutError) {
-            console.log("Error during sign out (or no user to sign out):", signOutError);
-            console.log("Continuing anyway...");
+            // console.log("Error during sign out (or no user to sign out):", signOutError);
+            // console.log("Continuing anyway...");
             // Continue anyway
         }
         
         // Pre-check for Google accounts before sending verification codes
-        console.log("Pre-checking if this email belongs to a Google account...");
+        // console.log("Pre-checking if this email belongs to a Google account...");
         const checkAuthMethodFn = httpsCallable(functions, 'checkAuthMethod');
         
         try {
-            console.log("Calling checkAuthMethod with email:", email);
+            // console.log("Calling checkAuthMethod with email:", email);
             const authMethodResult = await checkAuthMethodFn({ email });
             
-            console.log("checkAuthMethod raw result:", authMethodResult);
+            // console.log("checkAuthMethod raw result:", authMethodResult);
             
             if (authMethodResult?.data?.success) {
-                console.log("Pre-check auth result:", JSON.stringify(authMethodResult.data, null, 2));
+                // console.log("Pre-check auth result:", JSON.stringify(authMethodResult.data, null, 2));
                 
                 // Extract user authentication details
                 const hasGoogleAuth = authMethodResult.data.hasGoogleAuth === true;
@@ -746,11 +746,11 @@ export async function requestEmailVerification(email, name) {
                 const authProviders = authMethodResult.data.authProviders || [];
                 const userId = authMethodResult.data.userId;
                 
-                console.log("Auth details from pre-check:");
-                console.log("- hasGoogleAuth:", hasGoogleAuth);
-                console.log("- hasPasswordAuth:", hasPasswordAuth);
-                console.log("- authProviders:", authProviders);
-                console.log("- userId:", userId);
+                // console.log("Auth details from pre-check:");
+                // console.log("- hasGoogleAuth:", hasGoogleAuth);
+                // console.log("- hasPasswordAuth:", hasPasswordAuth);
+                // console.log("- authProviders:", authProviders);
+                // console.log("- userId:", userId);
                 
                 // Determine if this is a Google-only user
                 const isGoogleOnlyUser = (
@@ -758,11 +758,11 @@ export async function requestEmailVerification(email, name) {
                     (authProviders.includes('google.com') && !authProviders.includes('password'))
                 );
                 
-                console.log("Is Google-only user:", isGoogleOnlyUser);
+                // console.log("Is Google-only user:", isGoogleOnlyUser);
                 
                 if (isGoogleOnlyUser) {
-                    console.log("DETECTED: Google-only account in pre-check");
-                    console.log("Skipping verification code and redirecting to Google flow");
+                    // console.log("DETECTED: Google-only account in pre-check");
+                    // console.log("Skipping verification code and redirecting to Google flow");
                     
                     // Save verification state for consistent UX
                     saveVerificationState({
@@ -787,68 +787,68 @@ export async function requestEmailVerification(email, name) {
                     };
                 }
                 
-                console.log("Not a Google-only account, continuing with verification...");
+                // console.log("Not a Google-only account, continuing with verification...");
             } else {
-                console.log("Auth method pre-check failed or returned no data");
-                console.log("Continuing with regular verification flow...");
+                // console.log("Auth method pre-check failed or returned no data");
+                // console.log("Continuing with regular verification flow...");
             }
         } catch (preCheckError) {
             console.error("Error in Google account pre-check:", preCheckError);
-            console.log("Error details:", preCheckError.message);
-            console.log("Continuing with standard verification flow...");
+            // console.log("Error details:", preCheckError.message);
+            // console.log("Continuing with standard verification flow...");
         }
         
         // If we get here, it's either a new user or an existing user with password auth
         // Get the Firebase function for email verification
-        console.log("Getting Firebase function: createEmailVerification");
+        // console.log("Getting Firebase function: createEmailVerification");
         const createEmailVerification = httpsCallable(functions, 'createEmailVerification');
         
         // Call the function with a timeout
-        console.log("Calling createEmailVerification with:", { email, name });
+        // console.log("Calling createEmailVerification with:", { email, name });
         const result = await Promise.race([
             createEmailVerification({ email, name }),
             new Promise((_, reject) => 
                 setTimeout(() => {
-                    console.log("Request timed out after 15 seconds");
+                    // console.log("Request timed out after 15 seconds");
                     reject(new Error('Request timed out'));
                 }, 15000)
             )
         ]);
         
         // Log the full result for debugging
-        console.log("createEmailVerification raw result:", result);
+        // console.log("createEmailVerification raw result:", result);
         
         // Check if result exists and has data
         if (!result || !result.data) {
-            console.log("ERROR: Invalid response - missing result or result.data");
+            // console.log("ERROR: Invalid response - missing result or result.data");
             throw new Error('Invalid response from server');
         }
         
-        console.log("createEmailVerification result.data:", JSON.stringify(result.data, null, 2));
+        // console.log("createEmailVerification result.data:", JSON.stringify(result.data, null, 2));
         
         // Check for success in the response
         if (!result.data.success) {
-            console.log("ERROR: Server reported failure:", result.data.error);
+            // console.log("ERROR: Server reported failure:", result.data.error);
             throw new Error(result.data.error || 'Failed to send verification code');
         }
         
         // Check if this is an existing user
         if (result.data.isExistingUser) {
-            console.log("DETECTED: Email belongs to an existing user:", email);
+            // console.log("DETECTED: Email belongs to an existing user:", email);
             
             // Call checkAuthMethod again to get detailed auth info
             // This is now our second check, but we need it to get complete auth details
-            console.log("Calling checkAuthMethod to get complete auth details...");
+            // console.log("Calling checkAuthMethod to get complete auth details...");
             
             try {
-                console.log("Sending email to checkAuthMethod:", email);
+                // console.log("Sending email to checkAuthMethod:", email);
                 const authMethodResult = await checkAuthMethodFn({ email });
                 
-                console.log("checkAuthMethod raw result:", authMethodResult);
+                // console.log("checkAuthMethod raw result:", authMethodResult);
                 
                 if (!authMethodResult || !authMethodResult.data) {
-                    console.log("WARNING: Invalid response from checkAuthMethod");
-                    console.log("Defaulting to password authentication");
+                    // console.log("WARNING: Invalid response from checkAuthMethod");
+                    // console.log("Defaulting to password authentication");
                     
                     // Default to password if function doesn't give clear answer
                     saveVerificationState({
@@ -868,15 +868,15 @@ export async function requestEmailVerification(email, name) {
                     };
                 }
                 
-                console.log("checkAuthMethod result.data:", JSON.stringify(authMethodResult.data, null, 2));
+                // console.log("checkAuthMethod result.data:", JSON.stringify(authMethodResult.data, null, 2));
                 
                 if (authMethodResult.data && authMethodResult.data.success) {
                     // Log all auth-related fields for debugging
-                    console.log("Auth provider details:");
-                    console.log("- primaryAuthMethod:", authMethodResult.data.primaryAuthMethod);
-                    console.log("- authProviders:", authMethodResult.data.authProviders);
-                    console.log("- hasGoogleAuth:", authMethodResult.data.hasGoogleAuth);
-                    console.log("- hasPasswordAuth:", authMethodResult.data.hasPasswordAuth);
+                    // console.log("Auth provider details:");
+                    // console.log("- primaryAuthMethod:", authMethodResult.data.primaryAuthMethod);
+                    // console.log("- authProviders:", authMethodResult.data.authProviders);
+                    // console.log("- hasGoogleAuth:", authMethodResult.data.hasGoogleAuth);
+                    // console.log("- hasPasswordAuth:", authMethodResult.data.hasPasswordAuth);
                     
                     // Get auth provider info using any available field
                     const primaryAuthMethod = authMethodResult.data.primaryAuthMethod || 'unknown';
@@ -884,11 +884,11 @@ export async function requestEmailVerification(email, name) {
                     const hasGoogleAuth = authMethodResult.data.hasGoogleAuth === true;
                     const hasPasswordAuth = authMethodResult.data.hasPasswordAuth === true;
                     
-                    console.log("Analyzed authentication status:");
-                    console.log("- Primary method:", primaryAuthMethod);
-                    console.log("- Available providers:", authProviders);
-                    console.log("- Has Google auth:", hasGoogleAuth);
-                    console.log("- Has Password auth:", hasPasswordAuth);
+                    // console.log("Analyzed authentication status:");
+                    // console.log("- Primary method:", primaryAuthMethod);
+                    // console.log("- Available providers:", authProviders);
+                    // console.log("- Has Google auth:", hasGoogleAuth);
+                    // console.log("- Has Password auth:", hasPasswordAuth);
                     
                     // Double-check if this is a Google-only user (shouldn't happen here, but just in case)
                     const isGoogleOnlyUser = (
@@ -898,10 +898,10 @@ export async function requestEmailVerification(email, name) {
                         (authProviders.includes('google.com') && !authProviders.includes('password'))
                     );
                     
-                    console.log("Is Google-only user:", isGoogleOnlyUser);
+                    // console.log("Is Google-only user:", isGoogleOnlyUser);
                     
                     if (isGoogleOnlyUser) {
-                        console.log("DETECTED: Google-only account");
+                        // console.log("DETECTED: Google-only account");
                         
                         // Save verification state with Google provider info
                         saveVerificationState({
@@ -913,7 +913,7 @@ export async function requestEmailVerification(email, name) {
                             timestamp: Date.now()
                         });
                         
-                        console.log("Returning with Google authProvider");
+                        // console.log("Returning with Google authProvider");
                         return {
                             success: true,
                             verificationId: result.data.verificationId,
@@ -926,7 +926,7 @@ export async function requestEmailVerification(email, name) {
                     // For all other cases, use the primary auth method or default to password
                     const authProvider = primaryAuthMethod === 'google.com' ? 'google' : (primaryAuthMethod || 'password');
                     
-                    console.log("Using authProvider:", authProvider);
+                    // console.log("Using authProvider:", authProvider);
                     
                     // Save verification state
                     saveVerificationState({
@@ -945,9 +945,9 @@ export async function requestEmailVerification(email, name) {
                         authProvider
                     };
                 } else {
-                    console.log("WARNING: checkAuthMethod unsuccessful");
-                    console.log("Error:", authMethodResult.data?.error);
-                    console.log("Defaulting to password authentication");
+                    // console.log("WARNING: checkAuthMethod unsuccessful");
+                    // console.log("Error:", authMethodResult.data?.error);
+                    // console.log("Defaulting to password authentication");
                     
                     // Default to password if function doesn't give clear answer
                     saveVerificationState({
@@ -968,8 +968,8 @@ export async function requestEmailVerification(email, name) {
                 }
             } catch (authCheckError) {
                 console.error("ERROR checking auth method:", authCheckError);
-                console.log("Stack trace:", authCheckError.stack);
-                console.log("Defaulting to password authentication after error");
+                // console.log("Stack trace:", authCheckError.stack);
+                // console.log("Defaulting to password authentication after error");
                 
                 // Default to password if function fails
                 saveVerificationState({
@@ -991,7 +991,7 @@ export async function requestEmailVerification(email, name) {
         }
         
         // This is a new user
-        console.log("This appears to be a new user");
+        // console.log("This appears to be a new user");
         
         // Save verification state for new user
         saveVerificationState({
@@ -1002,7 +1002,7 @@ export async function requestEmailVerification(email, name) {
             timestamp: Date.now()
         });
         
-        console.log("Returning success for new user");
+        // console.log("Returning success for new user");
         return {
             success: true,
             verificationId: result.data.verificationId,
@@ -1011,7 +1011,7 @@ export async function requestEmailVerification(email, name) {
         
     } catch (error) {
         console.error('ERROR in requestEmailVerification:', error);
-        console.log("Stack trace:", error.stack);
+        // console.log("Stack trace:", error.stack);
         
         // Check for errors that indicate an existing user
         if (error.code === 'auth/email-already-in-use' || 
@@ -1019,7 +1019,7 @@ export async function requestEmailVerification(email, name) {
                 error.message.toLowerCase().includes('already exists') ||
                 error.message.toLowerCase().includes('already in use')
             ))) {
-            console.log("DEBUG: Email already exists error detected:", error.message);
+            // console.log("DEBUG: Email already exists error detected:", error.message);
             return {
                 success: false,
                 isExistingUser: true,
@@ -1035,11 +1035,11 @@ export async function requestEmailVerification(email, name) {
             throw new Error('Network connectivity issue. Please ensure your Firebase configuration allows requests from this application.');
         }
         
-        console.log("========== END: requestEmailVerification (with error) ==========");
+        // console.log("========== END: requestEmailVerification (with error) ==========");
         throw error;
     }
     
-    console.log("========== END: requestEmailVerification (success) ==========");
+    // console.log("========== END: requestEmailVerification (success) ==========");
 }
 
 /**
@@ -1050,7 +1050,7 @@ export async function requestEmailVerification(email, name) {
  */
  export const checkUserStep = async (data) => {
     try {
-      console.log(`Checking user step for userId: ${data.userId}`);
+      // console.log(`Checking user step for userId: ${data.userId}`);
       
       // Get the current timestamp to track request start time
       const requestStartTime = Date.now();
@@ -1061,12 +1061,12 @@ export async function requestEmailVerification(email, name) {
       
       // Log the response time for performance monitoring
       const responseTime = Date.now() - requestStartTime;
-      console.log(`checkUserStep response time: ${responseTime}ms`);
+      // console.log(`checkUserStep response time: ${responseTime}ms`);
       
       // Return the result
       const response = result.data;
       
-      console.log(`User step check result:`, response);
+      // console.log(`User step check result:`, response);
       
       // Check for session expiration
       if (response.isSessionExpired) {
@@ -1151,14 +1151,14 @@ export async function createNewUser(verificationResult, email, name, password) {
       // Sign out any existing user first 
       try {
         await auth.signOut();
-        console.log("DEBUG: User signed out before creating new user");
+        // console.log("DEBUG: User signed out before creating new user");
       } catch (signOutError) {
-        console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
+        // console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
         // Continue anyway
       }
       
       // Call the Firebase function to create a new user
-      console.log("DEBUG: Calling createNewUser cloud function");
+      // console.log("DEBUG: Calling createNewUser cloud function");
       const createNewUserFn = httpsCallable(functions, 'createNewUser');
       
       const result = await createNewUserFn({
@@ -1173,22 +1173,22 @@ export async function createNewUser(verificationResult, email, name, password) {
         throw new Error(result.data?.error || 'Failed to create new user');
       }
       
-      console.log("DEBUG: Cloud function createNewUser succeeded");
+      // console.log("DEBUG: Cloud function createNewUser succeeded");
       
       // Now sign in with the new credentials
-      console.log("DEBUG: Signing in with new credentials");
+      // console.log("DEBUG: Signing in with new credentials");
       try {
         const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
-        console.log("DEBUG: Sign in successful with new user");
+        // console.log("DEBUG: Sign in successful with new user");
         
         // Try to create the user document directly as a fallback
         try {
-          console.log("DEBUG: Checking if user document exists in Firestore");
+          // console.log("DEBUG: Checking if user document exists in Firestore");
           const userRef = doc(db, "users", userCredential.user.uid);
           const userDoc = await getDoc(userRef);
           
           if (!userDoc.exists()) {
-            console.log("DEBUG: User document doesn't exist, creating one directly");
+            // console.log("DEBUG: User document doesn't exist, creating one directly");
             await setDoc(userRef, {
               email: email,
               name: name,
@@ -1200,9 +1200,9 @@ export async function createNewUser(verificationResult, email, name, password) {
               authProviders: ["password"],
               lastSignIn: new Date()
             });
-            console.log("DEBUG: User document created directly");
+            // console.log("DEBUG: User document created directly");
           } else {
-            console.log("DEBUG: User document already exists");
+            // console.log("DEBUG: User document already exists");
           }
         } catch (firestoreError) {
           console.error("DEBUG: Error checking/creating user document:", firestoreError);
@@ -1250,20 +1250,20 @@ export async function createNewUser(verificationResult, email, name, password) {
       // Sign out any existing user first 
       try {
         await auth.signOut();
-        console.log("DEBUG: User signed out before signing in existing user");
+        // console.log("DEBUG: User signed out before signing in existing user");
       } catch (signOutError) {
-        console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
+        // console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
         // Continue anyway
       }
       
       // First attempt to sign in with Firebase Auth
-      console.log("DEBUG: Signing in with Firebase Auth");
+      // console.log("DEBUG: Signing in with Firebase Auth");
       try {
         const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
-        console.log("DEBUG: Sign in successful with existing user");
+        // console.log("DEBUG: Sign in successful with existing user");
         
         // Call the cloud function to update records and get user state
-        console.log("DEBUG: Calling signInExistingUser cloud function");
+        // console.log("DEBUG: Calling signInExistingUser cloud function");
         try {
           const signInExistingUserFn = httpsCallable(functions, 'signInExistingUser');
           
@@ -1277,16 +1277,16 @@ export async function createNewUser(verificationResult, email, name, password) {
             console.warn("DEBUG: Cloud function signInExistingUser warning:", result.data);
             // Don't throw here - we already authenticated with Firebase Auth
           } else {
-            console.log("DEBUG: Cloud function signInExistingUser succeeded");
+            // console.log("DEBUG: Cloud function signInExistingUser succeeded");
             
             // Check if document exists in Firestore (double-check)
             try {
-              console.log("DEBUG: Checking if user document exists in Firestore");
+              // console.log("DEBUG: Checking if user document exists in Firestore");
               const userRef = doc(db, "users", userCredential.user.uid);
               const userDoc = await getDoc(userRef);
               
               if (!userDoc.exists()) {
-                console.log("DEBUG: User document doesn't exist, creating one directly");
+                // console.log("DEBUG: User document doesn't exist, creating one directly");
                 await setDoc(userRef, {
                   email: email,
                   name: userCredential.user.displayName || "Existing User",
@@ -1298,9 +1298,9 @@ export async function createNewUser(verificationResult, email, name, password) {
                   authProviders: ["password"],
                   lastSignIn: new Date()
                 });
-                console.log("DEBUG: User document created directly");
+                // console.log("DEBUG: User document created directly");
               } else {
-                console.log("DEBUG: User document already exists");
+                // console.log("DEBUG: User document already exists");
               }
             } catch (firestoreError) {
               console.error("DEBUG: Error checking/creating user document:", firestoreError);
@@ -1357,10 +1357,10 @@ export async function createNewUser(verificationResult, email, name, password) {
       
       // Check if this is an existing user
       if (verificationResult.isExistingUser) {
-        console.log("DEBUG: Routing to signInExistingUser");
+        // console.log("DEBUG: Routing to signInExistingUser");
         return signInExistingUser(verificationResult, email, password);
       } else {
-        console.log("DEBUG: Routing to createNewUser");
+        // console.log("DEBUG: Routing to createNewUser");
         return createNewUser(verificationResult, email, name, password);
       }
     } catch (error) {
@@ -1415,32 +1415,32 @@ export async function signInWithGoogle(options) {
     // Handle options in a backward-compatible way
     const keepExistingUser = options && options.maintainSession === true;
     
-    console.log("DEBUG: Starting Google sign-in process", { keepExistingUser });
+    // console.log("DEBUG: Starting Google sign-in process", { keepExistingUser });
     
     try {
       // Only sign out if not keeping the existing user
       if (!keepExistingUser) {
-        console.log("DEBUG: Signing out any current user");
+        // console.log("DEBUG: Signing out any current user");
         try {
           await auth.signOut();
-          console.log("DEBUG: Sign out successful or no user was logged in");
+          // console.log("DEBUG: Sign out successful or no user was logged in");
         } catch (signOutError) {
           console.error("DEBUG: Error during sign out:", signOutError);
           // Continue anyway
         }
       } else {
-        console.log("DEBUG: Maintaining current session, not signing out");
+        // console.log("DEBUG: Maintaining current session, not signing out");
       }
       
       // Create Google auth provider
       const googleProvider = new GoogleAuthProvider();
       
       // Authenticate with Google
-      console.log("DEBUG: Authenticating with Google");
+      // console.log("DEBUG: Authenticating with Google");
       const tempResult = await signInWithPopup(auth, googleProvider);
       const user = tempResult.user;
       const email = user.email;
-      console.log(`DEBUG: Google account email: ${email}`);
+      // console.log(`DEBUG: Google account email: ${email}`);
       
       // Check for existing email with password auth
       const usersRef = collection(db, "users");
@@ -1449,24 +1449,24 @@ export async function signInWithGoogle(options) {
       
       // Check if any users were found with password auth
       if (!querySnapshot.empty) {
-        console.log(`DEBUG: Found ${querySnapshot.size} existing user(s) in Firestore with email: ${email}`);
+        // console.log(`DEBUG: Found ${querySnapshot.size} existing user(s) in Firestore with email: ${email}`);
         
         let hasPasswordUser = false;
         
         querySnapshot.forEach((doc) => {
           const userData = doc.data();
-          console.log(`DEBUG: User data for ${doc.id}:`, userData);
+          // console.log(`DEBUG: User data for ${doc.id}:`, userData);
           
           if (userData.authProvider === "email" || 
               userData.authProvider === "password" ||
               (userData.authProviders && userData.authProviders.includes("password"))) {
-            console.log(`DEBUG: User ${doc.id} has password auth`);
+            // console.log(`DEBUG: User ${doc.id} has password auth`);
             hasPasswordUser = true;
           }
         });
         
         if (hasPasswordUser) {
-          console.log(`DEBUG: Email ${email} exists with password auth, signing out user`);
+          // console.log(`DEBUG: Email ${email} exists with password auth, signing out user`);
           
           // Sign out the temporary user
           await auth.signOut();
@@ -1479,11 +1479,11 @@ export async function signInWithGoogle(options) {
           };
         }
       } else {
-        console.log(`DEBUG: No existing users found in Firestore with email: ${email}`);
+        // console.log(`DEBUG: No existing users found in Firestore with email: ${email}`);
       }
       
       // User can safely continue with Google sign-in
-      console.log(`DEBUG: Email ${email} can safely use Google sign-in`);
+      // console.log(`DEBUG: Email ${email} can safely use Google sign-in`);
       
       // Check if this user already exists in Firestore
       try {
@@ -1492,11 +1492,11 @@ export async function signInWithGoogle(options) {
         
         // Determine if this is a new user based on document existence
         const isNewUser = !userDoc.exists();
-        console.log(`DEBUG: Is new user: ${isNewUser}`);
+        // console.log(`DEBUG: Is new user: ${isNewUser}`);
         
         if (isNewUser) {
           // Create new user document
-          console.log(`DEBUG: Creating new user document for ${user.uid}`);
+          // console.log(`DEBUG: Creating new user document for ${user.uid}`);
           await setDoc(userRef, {
             email: user.email,
             name: user.displayName || "New Member",
@@ -1510,7 +1510,7 @@ export async function signInWithGoogle(options) {
           });
         } else {
           // Update existing document
-          console.log(`DEBUG: Updating existing user document for ${user.uid}`);
+          // console.log(`DEBUG: Updating existing user document for ${user.uid}`);
           await updateDoc(userRef, {
             lastSignIn: new Date(),
             hasGoogleAuth: true
@@ -1549,7 +1549,7 @@ export async function signInWithGoogle(options) {
         // Even with Firestore errors, we need to determine if this is actually a new user
         // For safety, we'll use Firebase's additionalUserInfo
         const isNewUser = tempResult.additionalUserInfo?.isNewUser || false;
-        console.log(`DEBUG: Falling back to Firebase isNewUser flag: ${isNewUser}`);
+        // console.log(`DEBUG: Falling back to Firebase isNewUser flag: ${isNewUser}`);
         
         // Update local storage with best-effort information
         saveSignupState({
@@ -1598,7 +1598,7 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
         throw new Error("User must be authenticated to update progress");
       }
       
-      console.log(`Updating progress for user ${user.uid} to step: ${step}, progress: ${progress}`);
+      // console.log(`Updating progress for user ${user.uid} to step: ${step}, progress: ${progress}`);
       
       // Update user document with progress information
       const userRef = doc(db, "users", user.uid);
@@ -1614,7 +1614,7 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
           lastUpdated: new Date(),
           [`formData.${step}`]: data, // Store form data for this step
         });
-        console.log("Updated existing user document with new progress");
+        // console.log("Updated existing user document with new progress");
       } else {
         // Create new document
         await setDoc(userRef, {
@@ -1628,7 +1628,7 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
             [step]: data,
           },
         });
-        console.log("Created new user document with initial progress");
+        // console.log("Created new user document with initial progress");
       }
       
       // Also update local storage for redundancy
@@ -1642,7 +1642,7 @@ export const updateSignupProgress = async (step, progress, data = {}) => {
       };
       
       saveSignupState(signupState);
-      console.log("Updated local signupState:", signupState);
+      // console.log("Updated local signupState:", signupState);
       
       return { success: true };
     } catch (error) {
@@ -1661,7 +1661,7 @@ export async function saveContactInfo(formData) {
     }
     
     try {
-      console.log("DEBUG: Attempting to update contact info in Firestore");
+      // console.log("DEBUG: Attempting to update contact info in Firestore");
       const userRef = doc(db, "users", currentUser.uid);
       
       await updateDoc(userRef, {
@@ -1671,13 +1671,13 @@ export async function saveContactInfo(formData) {
         }
       });
       
-      console.log("DEBUG: Contact info updated in Firestore");
+      // console.log("DEBUG: Contact info updated in Firestore");
     } catch (firestoreError) {
       console.error("DEBUG: Error updating contact info in Firestore:", firestoreError);
       
       // Try to create the document if it doesn't exist
       try {
-        console.log("DEBUG: Attempting to create user document with contact info");
+        // console.log("DEBUG: Attempting to create user document with contact info");
         const userRef = doc(db, "users", currentUser.uid);
         
         await setDoc(userRef, {
@@ -1690,7 +1690,7 @@ export async function saveContactInfo(formData) {
           createdAt: new Date()
         });
         
-        console.log("DEBUG: Successfully created user document with contact info");
+        // console.log("DEBUG: Successfully created user document with contact info");
       } catch (createError) {
         console.error("DEBUG: Failed to create document:", createError);
         // At this point, we've tried everything and it's still failing
@@ -1718,7 +1718,7 @@ export async function saveStepData(stepName, stepData) {
     }
     
     try {
-      console.log(`DEBUG: Attempting to save ${stepName} data to Firestore`);
+      // console.log(`DEBUG: Attempting to save ${stepName} data to Firestore`);
       const userRef = doc(db, "users", currentUser.uid);
       
       await updateDoc(userRef, {
@@ -1728,13 +1728,13 @@ export async function saveStepData(stepName, stepData) {
         }
       });
       
-      console.log(`DEBUG: ${stepName} data saved to Firestore`);
+      // console.log(`DEBUG: ${stepName} data saved to Firestore`);
     } catch (firestoreError) {
       console.error(`DEBUG: Error saving ${stepName} data to Firestore:`, firestoreError);
       
       // Try to create the document if it doesn't exist
       try {
-        console.log(`DEBUG: Attempting to create user document with ${stepName} data`);
+        // console.log(`DEBUG: Attempting to create user document with ${stepName} data`);
         const userRef = doc(db, "users", currentUser.uid);
         
         await setDoc(userRef, {
@@ -1749,7 +1749,7 @@ export async function saveStepData(stepName, stepData) {
           createdAt: new Date()
         });
         
-        console.log(`DEBUG: Successfully created user document with ${stepName} data`);
+        // console.log(`DEBUG: Successfully created user document with ${stepName} data`);
       } catch (createError) {
         console.error(`DEBUG: Failed to create document for ${stepName}:`, createError);
         // At this point we've tried everything and it's still failing
@@ -1768,16 +1768,16 @@ export async function saveStepData(stepName, stepData) {
 
 // Enhanced logout function
 export const logout = async () => {
-  console.log("DEBUG: Starting logout process");
+  // console.log("DEBUG: Starting logout process");
   
   try {
     const currentUser = auth.currentUser;
     if (currentUser) {
-      console.log("DEBUG: Current user found, signing out", currentUser.uid);
+      // console.log("DEBUG: Current user found, signing out", currentUser.uid);
       await auth.signOut();
-      console.log("DEBUG: User signed out successfully");
+      // console.log("DEBUG: User signed out successfully");
     } else {
-      console.log("DEBUG: No user to sign out");
+      // console.log("DEBUG: No user to sign out");
     }
     
     return { success: true };
@@ -1790,7 +1790,7 @@ export const logout = async () => {
 export async function checkEmailExists(email) {
     if (!email) return { exists: false };
     
-    console.log(`DEBUG: Checking if email exists: ${email}`);
+    // console.log(`DEBUG: Checking if email exists: ${email}`);
     
     try {
       // First attempt to fetch sign-in methods for the email

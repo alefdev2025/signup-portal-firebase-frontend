@@ -121,7 +121,7 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
         <div className="flex justify-between items-center bg-[#0C2340]/5 rounded-xl p-5 mb-8">
           <p className="text-gray-600 text-sm pr-4">
             You can continue with your membership application below.
-            Password reset and account settings will be available after completing your signup.
+            Once you've completed your signup, you can enable multi-factor authentication.
           </p>
           <img src={alcorFullLogo} alt="Alcor Logo" className="h-12 hidden sm:block" />
         </div>

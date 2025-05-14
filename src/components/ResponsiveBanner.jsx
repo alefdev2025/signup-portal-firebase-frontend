@@ -300,9 +300,9 @@ const ResponsiveBanner = ({
           className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-8' : isLoginPage ? 'py-6' : 'py-4'} relative overflow-hidden`}
           style={shouldUseGradient ? gradientStyle : {}}
         >
-          {/* Top section with logo and heading */}
-          <div className={`flex items-center ${isSignupPage || isLoginPage ? "justify-between" : textAlignment === "center" ? "justify-center flex-col" : "justify-between"} mb-4`}>
-            {/* Logo at the left or centered based on page type and textAlignment */}
+          {/* Top section with logo and heading - FIXED LAYOUT */}
+          <div className="flex items-center justify-between mb-4">
+            {/* Logo at the left */}
             <div className="flex items-center">
               <img 
                 src={logo} 
@@ -311,24 +311,21 @@ const ResponsiveBanner = ({
               />
             </div>
             
-            {/* Placeholder for spacing symmetry */}
-            <div className="w-6"></div>
+            {/* Heading in the top right */}
+            <div className="flex items-center">
+              <h1 className="flex items-center">
+                <span className="text-2xl font-bold">
+                  {displayHeading}
+                </span>
+                {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
+              </h1>
+            </div>
           </div>
           
-          {/* Header text */}
-          <div className={`flex items-center ${textAlignment === "center" && !(isSignupPage || isLoginPage) ? "mt-4" : ""}`}>
-            <h1 className={`flex items-center ${isSignupPage || isLoginPage || textAlignment === "center" ? "justify-center" : ""}`}>
-              <span className={`${isWelcomePage ? "text-2xl" : "text-2xl"} font-bold`}>
-                {displayHeading}
-              </span>
-              {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
-            </h1>
-          </div>
-          
-          {/* Mobile subtext */}
-          {(isWelcomePage || textAlignment === "center" || (isSignupPage && !showProgressBar) || isLoginPage) && (
+          {/* Subtext below the header layout */}
+          {(isWelcomePage || (isSignupPage && !showProgressBar) || isLoginPage) && (
             <div className="mb-4">
-              <p className={`text-base text-white/80 leading-tight ${isSignupPage || isLoginPage || textAlignment === "center" ? "text-center" : ""}`}>
+              <p className="text-base text-white/80 leading-tight text-center">
                 {displaySubText}
               </p>
             </div>

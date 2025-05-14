@@ -12,37 +12,53 @@ const ProgressCircles = ({
   maxCompletedStep = 0,
   onStepClick = () => {},
 }) => {
-  // Define color constants
-  const startColor = "#715087"; // New purple start color
-  const endColor = "#dac150";   // Yellow end color
+  // Define exact colors for each step
+  const stepExactColors = [
+    "#5c3a6f", // Step 1: dark purple
+    "#816283", // Step 2: lighter purple
+    "#9d6980", // Step 3: mauve/pink
+    "#b88069", // Step 4: salmon/light brown
+    "#d09f53"  // Step 5: gold/yellow
+  ];
 
   return (
     <div className="progress-section py-5 pb-8">
       <div className="flex justify-between w-full max-w-5xl relative mx-auto px-8">
         {/* Create a centered container for circles and lines */}
         <div className="flex items-center w-full relative" style={{ height: '44px' }}>
-          {/* Base connector line - Straight through the center */}
-          <div 
-            className="absolute bg-white/5" 
-            style={{ 
-              left: '10%', 
-              right: '10%',
-              height: '2px',
-              top: 'calc(50% - 7px)',
-            }}
-          ></div>
+          {/* Base connector lines - one between each pair of steps */}
+          {Array.from({ length: steps.length - 1 }, (_, i) => (
+            <div 
+              key={`base-connector-${i}`}
+              className="absolute bg-white/5" 
+              style={{ 
+                left: `${10 + (i * 80 / (steps.length - 1))}%`,
+                width: `${80 / (steps.length - 1)}%`,
+                height: '1px', 
+                top: 'calc(50% - 7px)',
+              }}
+            ></div>
+          ))}
 
-          {/* Active connector line - with new start color */}
-          <div 
-            className="absolute transition-all duration-700"
-            style={{ 
-              left: '10%',
-              width: `${activeStep === 0 ? 0 : (activeStep / (steps.length - 1)) * 80}%`,
-              height: '2px',
-              top: 'calc(50% - 7px)',
-              background: `linear-gradient(90deg, ${startColor} 0%, ${endColor} 100%)`
-            }}
-          ></div>
+          {/* Active connector lines - one for each completed segment */}
+          {Array.from({ length: activeStep }, (_, i) => {
+            const startColor = stepExactColors[i];
+            const endColor = stepExactColors[i + 1];
+            
+            return (
+              <div 
+                key={`active-connector-${i}`}
+                className="absolute transition-all duration-700"
+                style={{ 
+                  left: `${10 + (i * 80 / (steps.length - 1))}%`,
+                  width: `${80 / (steps.length - 1)}%`,
+                  height: '1px', 
+                  top: 'calc(50% - 7px)',
+                  background: `linear-gradient(90deg, ${startColor} 0%, ${endColor} 100%)`
+                }}
+              ></div>
+            );
+          })}
 
           {/* Step circles */}
           {steps.map((step, index) => {
@@ -50,62 +66,32 @@ const ProgressCircles = ({
             const isCompleted = index < activeStep;
             // Step 0 is always clickable if we've completed any steps
             const isClickable = (index === 0 && maxCompletedStep > 0) || (index <= maxCompletedStep);
-
+            
+            // Get the exact color for this step
+            const baseColor = stepExactColors[index];
+            
+            // Extract the RGB values from the hex color
+            const r = parseInt(baseColor.substring(1, 3), 16);
+            const g = parseInt(baseColor.substring(3, 5), 16);
+            const b = parseInt(baseColor.substring(5, 7), 16);
+            
+            // Define active, inactive, and glow colors
+            const activeColor = `rgba(${r}, ${g}, ${b}, 0.7)`;
+            const inactiveColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
+            
+            // Make a lighter version for the glow (increase RGB values but cap at 255)
+            const r2 = Math.min(255, r + 60);
+            const g2 = Math.min(255, g + 60);
+            const b2 = Math.min(255, b + 40);
+            
+            const activeGlowColor = `rgba(${r2}, ${g2}, ${b2}, 0.8)`;
+            const inactiveGlowColor = `rgba(${r2}, ${g2}, ${b2}, 0.6)`;
+            
             let containerClasses = "w-6 h-6 md:w-8 md:h-8 sm:w-6 sm:h-6 xs:w-5 xs:h-5 rounded-full flex items-center justify-center";
             
-            // Calculate gradient position based on index
-            const gradientPosition = index / (steps.length - 1);
+            const bgColor = isActive || isCompleted ? activeColor : inactiveColor;
+            const glowColor = isActive || isCompleted ? activeGlowColor : inactiveGlowColor;
             
-            // Generate colors based on gradient position
-            let bgColor;
-            let glowColor;
-            
-            if (isActive || isCompleted) {
-              // For active/completed steps, blend from start to end color
-              if (index === 0) {
-                bgColor = "rgba(113, 80, 135, 0.7)"; // startColor at 70% opacity
-                glowColor = "rgba(173, 140, 195, 0.8)"; // Much lighter version for glow (60 points higher, 80% opacity)
-              } else if (index === steps.length - 1) {
-                bgColor = "rgba(218, 193, 80, 0.7)"; // endColor at 70% opacity
-                glowColor = "rgba(255, 233, 120, 0.8)"; // Much lighter version for glow (40 points higher, 80% opacity)
-              } else {
-                // Calculate intermediate colors for the gradient
-                const step = index / (steps.length - 1);
-                const r = Math.round(113 + (218 - 113) * step);
-                const g = Math.round(80 + (193 - 80) * step);
-                const b = Math.round(135 + (80 - 135) * step);
-                bgColor = `rgba(${r}, ${g}, ${b}, 0.7)`;
-                
-                // Much lighter version for glow (60 points higher, 80% opacity)
-                const r2 = Math.min(255, r + 60);
-                const g2 = Math.min(255, g + 60);
-                const b2 = Math.min(255, b + 40); // Less brightening for blue to maintain color characteristics
-                glowColor = `rgba(${r2}, ${g2}, ${b2}, 0.8)`;
-              }
-            } else {
-              // For inactive steps, use the same color but with lower opacity
-              if (index === 0) {
-                bgColor = "rgba(113, 80, 135, 0.15)"; // startColor at 15% opacity
-                glowColor = "rgba(173, 140, 195, 0.6)"; // Much lighter version for glow (60 points higher, 60% opacity)
-              } else if (index === steps.length - 1) {
-                bgColor = "rgba(218, 193, 80, 0.15)"; // endColor at 15% opacity
-                glowColor = "rgba(255, 233, 120, 0.6)"; // Much lighter version for glow (40 points higher, 60% opacity)
-              } else {
-                // Calculate intermediate colors for the gradient
-                const step = index / (steps.length - 1);
-                const r = Math.round(113 + (218 - 113) * step);
-                const g = Math.round(80 + (193 - 80) * step);
-                const b = Math.round(135 + (80 - 135) * step);
-                bgColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
-                
-                // Much lighter version for glow (60 points higher, 60% opacity)
-                const r2 = Math.min(255, r + 60);
-                const g2 = Math.min(255, g + 60);
-                const b2 = Math.min(255, b + 40); // Less brightening for blue to maintain color characteristics
-                glowColor = `rgba(${r2}, ${g2}, ${b2}, 0.6)`;
-              }
-            }
-
             const opacity = isActive || isCompleted ? 1 : 0.5; // Lower opacity for inactive steps
             if (isActive) containerClasses += ` circle-glow circle-glow-${index}`;
             if (isClickable) containerClasses += " cursor-pointer";

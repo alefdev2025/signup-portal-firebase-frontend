@@ -57,10 +57,10 @@ export default function SignupPage() {
   const hasNavigatedRef = useRef(false); // We'll keep this but use localStorage instead
   const [highlightGoogleButton, setHighlightGoogleButton] = useState(false);
   
-  console.log("SignupPage rendered with activeStep:", activeStep);
-  console.log("URL params:", Object.fromEntries([...searchParams]));
-  console.log("hasNavigatedRef:", hasNavigatedRef.current);
-  console.log("isAccountCreated:", isAccountCreated());
+  // console.log("SignupPage rendered with activeStep:", activeStep);
+  // console.log("URL params:", Object.fromEntries([...searchParams]));
+  // console.log("hasNavigatedRef:", hasNavigatedRef.current);
+  // console.log("isAccountCreated:", isAccountCreated());
   
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
@@ -104,7 +104,7 @@ useEffect(() => {
       const isRecent = (now - timestamp) < 5000; // 5 seconds
       
       if (!isNaN(stepNumber) && isRecent) {
-        console.log(`🚨 EMERGENCY OVERRIDE: Force setting step to ${stepNumber}`);
+        // console.log(`🚨 EMERGENCY OVERRIDE: Force setting step to ${stepNumber}`);
         
         // Force update the step
         setActiveStep(stepNumber);
@@ -118,10 +118,10 @@ useEffect(() => {
   
   // Check for fresh signup flag on component mount
   useEffect(() => {
-    console.log("Checking for fresh signup flag");
+    // console.log("Checking for fresh signup flag");
     // Check for fresh signup flag
     const isFreshSignup = initializeFreshSignup();
-    console.log("Fresh signup?", isFreshSignup);
+    // console.log("Fresh signup?", isFreshSignup);
     
     if (isFreshSignup) {
       // Reset verification step
@@ -148,7 +148,7 @@ useEffect(() => {
         verificationCode: "",
       });
       
-      console.log("SignupPage reset for fresh signup");
+      // console.log("SignupPage reset for fresh signup");
     }
   }, []);
   
@@ -156,26 +156,26 @@ useEffect(() => {
   useEffect(() => {
     // Add current path to navigation history
     const currentPath = location.pathname + location.search;
-    console.log("Adding path to navigation history:", currentPath);
+    // console.log("Adding path to navigation history:", currentPath);
     
     // Store in localStorage (a simplified version)
     const history = JSON.parse(localStorage.getItem('navigation_history') || '[]');
     if (history.length === 0 || history[history.length - 1] !== currentPath) {
       const newHistory = [...history, currentPath].slice(-20); // Keep last 20 entries
       localStorage.setItem('navigation_history', JSON.stringify(newHistory));
-      console.log("Updated navigation history:", newHistory);
+      // console.log("Updated navigation history:", newHistory);
     }
   }, [location]);
   
   
   // URL-based routing and step management
   useEffect(() => {
-    console.log("--- Navigation Debug ---");
-    console.log("URL Params:", new URLSearchParams(location.search).get('step'));
-    console.log("Current User:", currentUser);
-    console.log("Signup State:", signupState);
-    console.log("hasNavigatedRef:", hasNavigatedRef.current);
-    console.log("isAccountCreated:", isAccountCreated());
+    // console.log("--- Navigation Debug ---");
+    // console.log("URL Params:", new URLSearchParams(location.search).get('step'));
+    // console.log("Current User:", currentUser);
+    // console.log("Signup State:", signupState);
+    // console.log("hasNavigatedRef:", hasNavigatedRef.current);
+    // console.log("isAccountCreated:", isAccountCreated());
     
     // Parse URL for parameters
     const urlParams = new URLSearchParams(location.search);
@@ -185,7 +185,7 @@ useEffect(() => {
     
     // Check for showSuccess parameter
     if (showSuccessParam && currentUser) {
-      console.log("showSuccess parameter detected, setting hasNavigatedRef to true");
+      // console.log("showSuccess parameter detected, setting hasNavigatedRef to true");
       hasNavigatedRef.current = true;
       setAccountCreated(true); // Set account creation state
       
@@ -195,12 +195,12 @@ useEffect(() => {
       return;
     }
     
-    console.log("URL Step Param:", stepParam);
-    console.log("Force Navigation:", forceParam);
+    // console.log("URL Step Param:", stepParam);
+    // console.log("Force Navigation:", forceParam);
     
     // If force=true parameter is present, override verification checks
     /*if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
-      console.log("Force parameter detected, setting activeStep to:", stepParam);
+      // console.log("Force parameter detected, setting activeStep to:", stepParam);
       setActiveStep(stepParam);
       
       // Clean up the URL by removing the force parameter
@@ -211,7 +211,7 @@ useEffect(() => {
 
     // If force=true parameter is present, override verification checks
 if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
-    console.log("🚨 FORCE PARAM: Emergency setting activeStep to:", stepParam);
+    // console.log("🚨 FORCE PARAM: Emergency setting activeStep to:", stepParam);
     
     // Force update with timeout to ensure it happens after everything else
     setTimeout(() => {
@@ -230,35 +230,35 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
     
     // First handle the case where we have a user
     if (currentUser) {
-      console.log("User is logged in - checking step param");
+      // console.log("User is logged in - checking step param");
       
       // User is authenticated - we should allow progression
       // Get the progress from signupState if available
       let storedProgress = 0;
       if (signupState) {
         storedProgress = Math.min(signupState.signupProgress || 0, steps.length - 1);
-        console.log("Using progress from signupState:", storedProgress);
+        // console.log("Using progress from signupState:", storedProgress);
       } else {
         // No signupState available, but user is authenticated
         // We'll let them proceed but will set activeStep to 0 if no valid step param
-        console.log("No signupState available, but user is authenticated");
+        // console.log("No signupState available, but user is authenticated");
       }
       
       // If valid step in URL and not greater than stored progress + 1, allow it
       // (we allow current progress + 1 to let users move forward one step)
       if (!isNaN(stepParam) && stepParam >= 0 && stepParam <= Math.max(1, storedProgress + 1)) {
-        console.log("Setting activeStep to URL param:", stepParam);
+        // console.log("Setting activeStep to URL param:", stepParam);
         setActiveStep(stepParam);
       } else if (!isNaN(stepParam) && stepParam > storedProgress + 1) {
         // If trying to access a step too far ahead, redirect to highest allowed
         const allowedStep = Math.max(storedProgress, 1); // Allow at least step 1 for authenticated users
-        console.log(`Step ${stepParam} is too far ahead. Redirecting to allowed step:`, allowedStep);
+        // console.log(`Step ${stepParam} is too far ahead. Redirecting to allowed step:`, allowedStep);
         setActiveStep(allowedStep);
         navigate(`/signup?step=${allowedStep}`, { replace: true });
       } else {
         // If no valid param, set to stored progress or 0
         const defaultStep = Math.max(storedProgress, 0);
-        console.log("No valid step param, setting activeStep to:", defaultStep);
+        // console.log("No valid step param, setting activeStep to:", defaultStep);
         setActiveStep(defaultStep);
         
         // Update URL if needed
@@ -266,7 +266,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       }
     } else {
       // For non-authenticated users
-      console.log("No user, URL Step Param:", stepParam);
+      // console.log("No user, URL Step Param:", stepParam);
       
       // If valid step in URL, set active step with some validation
       if (!isNaN(stepParam) && stepParam >= 0 && stepParam < steps.length) {
@@ -275,27 +275,27 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
           // Check if verification is valid
           const verificationState = getVerificationState();
           const isValid = verificationState && (Date.now() - verificationState.timestamp < 15 * 60 * 1000);
-          console.log("Verification state:", verificationState);
-          console.log("Verification valid:", isValid);
+          // console.log("Verification state:", verificationState);
+          // console.log("Verification valid:", isValid);
           
           if (!isValid) {
             // If not valid, redirect to step 0
-            console.log("Invalid verification, redirecting to step 0");
+            // console.log("Invalid verification, redirecting to step 0");
             navigate('/signup?step=0', { replace: true });
             setActiveStep(0);
           } else {
-            console.log("Setting activeStep to:", stepParam);
+            // console.log("Setting activeStep to:", stepParam);
             setActiveStep(stepParam);
           }
         } else {
           // For step 0, always allow access
-          console.log("Setting activeStep to:", stepParam);
+          // console.log("Setting activeStep to:", stepParam);
           setActiveStep(stepParam);
         }
       } else {
         // Handle the case where step param is invalid or missing
         // This is the key fix - ensure we default to step 0
-        console.log("Invalid or missing step param, defaulting to 0");
+        // console.log("Invalid or missing step param, defaulting to 0");
         setActiveStep(0);
         
         // Only update URL if it's not already set to step=0
@@ -308,20 +308,20 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
   
   // Check for one-time email links
   useEffect(() => {
-    console.log("Checking for email verification links");
+    // console.log("Checking for email verification links");
     // Check if this is an email verification link
     if (auth.isSignInWithEmailLink && auth.isSignInWithEmailLink(window.location.href)) {
-      console.log("This is an email verification link");
+      // console.log("This is an email verification link");
       const email = localStorage.getItem('emailForSignIn');
       
       if (email) {
-        console.log("Found email in localStorage:", email);
+        // console.log("Found email in localStorage:", email);
         // Sign in the user with the email link
         auth.signInWithEmailLink(email, window.location.href)
           .then((result) => {
             // Clear email from localStorage
             localStorage.removeItem('emailForSignIn');
-            console.log("Email sign-in successful");
+            // console.log("Email sign-in successful");
             
             // Redirect to appropriate step
             if (result.user) {
@@ -341,7 +341,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
   
   // Check for existing verification and user state on component mount
   useEffect(() => {
-    console.log("--- Verification State Debug ---");
+    // console.log("--- Verification State Debug ---");
     
     // Clear any form errors on mount
     setErrors({
@@ -355,19 +355,19 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
     
     // Check if there's a saved verification state
     const savedVerificationState = getVerificationState();
-    console.log("Saved verification state:", savedVerificationState);
+    // console.log("Saved verification state:", savedVerificationState);
     
     if (savedVerificationState) {
       // Check if verification state is stale (older than 15 minutes)
       const now = Date.now();
       const stateAge = now - (savedVerificationState.timestamp || 0);
       const maxAge = 15 * 60 * 1000; // 15 minutes in milliseconds
-      console.log("Verification age (ms):", stateAge);
-      console.log("Max age (ms):", maxAge);
-      console.log("Is verification stale:", stateAge >= maxAge);
+      // console.log("Verification age (ms):", stateAge);
+      // console.log("Max age (ms):", maxAge);
+      // console.log("Is verification stale:", stateAge >= maxAge);
       
       if (stateAge < maxAge) {
-        console.log("Using saved verification state");
+        // console.log("Using saved verification state");
         setFormData(prevData => ({
           ...prevData,
           email: savedVerificationState.email || "",
@@ -383,7 +383,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
         }
       } else {
         // Verification state is stale, clear it
-        console.log("Verification state is stale, clearing it");
+        // console.log("Verification state is stale, clearing it");
         clearVerificationState();
       }
     }
@@ -393,7 +393,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       // Check if we should set hasNavigated based on progress
       const storedProgress = signupState.signupProgress || 0;
       if (storedProgress >= 1 && activeStep === 0) {
-        console.log("Setting hasNavigatedRef to true based on user progress");
+        // console.log("Setting hasNavigatedRef to true based on user progress");
         hasNavigatedRef.current = true;
         setAccountCreated(true); // Set account creation state
       }
@@ -401,12 +401,12 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       // Set active step based on signup progress
       const stepIndex = Math.min(signupState.signupProgress || 0, steps.length - 1);
       setActiveStep(stepIndex);
-      console.log("User is logged in, setting activeStep to:", stepIndex);
+      // console.log("User is logged in, setting activeStep to:", stepIndex);
     }
     
     // User state debug
-    console.log("Current user:", currentUser);
-    console.log("Signup state:", signupState);
+    // console.log("Current user:", currentUser);
+    // console.log("Signup state:", signupState);
   }, [currentUser, signupState, steps.length, activeStep]);
 
   const handleChange = (e) => {
@@ -475,21 +475,21 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("=== FORM SUBMISSION STARTED ===");
-    console.log("Form submission event object type:", e.type);
-    console.log("verificationStep:", verificationStep);
-    console.log("Form data being submitted:", formData);
-    console.log("Password state exists:", !!passwordState);
-    console.log("Terms accepted:", formData.termsAccepted);
+    // console.log("=== FORM SUBMISSION STARTED ===");
+    // console.log("Form submission event object type:", e.type);
+    // console.log("verificationStep:", verificationStep);
+    // console.log("Form data being submitted:", formData);
+    // console.log("Password state exists:", !!passwordState);
+    // console.log("Terms accepted:", formData.termsAccepted);
     
     // Prevent double submission
     if (isSubmitting) {
-      console.log("Form already submitting, preventing double submission");
+      // console.log("Form already submitting, preventing double submission");
       return;
     }
     
     if (verificationStep === "initial") {
-      console.log("Handling initial email/password form submission");
+      // console.log("Handling initial email/password form submission");
       // Email, Name & Password Form Submission
       const newErrors = {
         email: !formData.email.trim() 
@@ -515,36 +515,36 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       };
       
       setErrors(newErrors);
-      console.log("Form validation errors:", newErrors);
+      // console.log("Form validation errors:", newErrors);
       
       // Check if there are any errors
       const hasErrors = Object.values(newErrors).some(error => error);
-      console.log("Form has validation errors:", hasErrors);
+      // console.log("Form has validation errors:", hasErrors);
       
       if (hasErrors) {
-        console.log("Stopping submission due to validation errors");
+        // console.log("Stopping submission due to validation errors");
         return;
       }
       
       setIsSubmitting(true);
-      console.log("Setting isSubmitting to true");
+      // console.log("Setting isSubmitting to true");
       
       try {
         // Call Firebase function to create email verification
-        console.log("Requesting email verification for:", formData.email);
+        // console.log("Requesting email verification for:", formData.email);
         const result = await requestEmailVerification(formData.email, formData.name || "New Member");
         
-        console.log("Verification request result:", result);
+        // console.log("Verification request result:", result);
         
         if (result.success) {
           // Check if this is an existing user - based on the backend response
           if (result.isExistingUser) {
-            console.log("Existing user detected:", formData.email);
+            // console.log("Existing user detected:", formData.email);
             
             // Check if this is a Google-only user (has Google auth but no password)
             if ((result.authProviders && result.authProviders.includes('google.com') && !result.hasPasswordAuth) || 
                 (result.authProvider === 'google' && !result.hasPasswordAuth)) {
-              console.log("Google-only account detected");
+              // console.log("Google-only account detected");
               
               // Navigate to login page with parameters for adding password to Google account
               navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`);
@@ -556,7 +556,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             if ((result.authProviders && result.authProviders.includes('password') && !result.hasGoogleAuth) || 
                 (result.authProvider === 'password' && !result.hasGoogleAuth) ||
                 (result.hasPasswordAuth && !result.hasGoogleAuth)) {
-              console.log("Password-only account detected - need to link Google");
+              // console.log("Password-only account detected - need to link Google");
               
               // Navigate to login page with parameters for linking Google to password account
               navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=password&linkAccounts=true`);
@@ -565,7 +565,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             }
             
             // For users with both auth methods or any other case, redirect to standard login
-            console.log("Redirecting existing user to standard login");
+            // console.log("Redirecting existing user to standard login");
             navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
             setIsSubmitting(false);
             return;
@@ -577,7 +577,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             verificationId: result.verificationId,
             verificationCode: "" // Clear any previous code
           }));
-          console.log("Updated formData with verificationId:", result.verificationId);
+          // console.log("Updated formData with verificationId:", result.verificationId);
           
           // Store verification state WITHOUT password
           saveVerificationState({
@@ -587,11 +587,11 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             isExistingUser: false, // Not an existing user since we're proceeding
             timestamp: Date.now()
           });
-          console.log("Saved verification state to localStorage");
+          // console.log("Saved verification state to localStorage");
           
           // Move to verification step
           setVerificationStep("verification");
-          console.log("Set verificationStep to 'verification'");
+          // console.log("Set verificationStep to 'verification'");
         } else {
           // This should never happen due to error handling in the service
           console.error("Verification request returned success:false");
@@ -613,7 +613,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
              error.message && error.message.toLowerCase().includes('already in use'))) {
           
           // Navigate directly to login page with the email
-          console.log("Email already in use, redirecting to login");
+          // console.log("Email already in use, redirecting to login");
           navigate(`/login?email=${encodeURIComponent(formData.email)}&continue=signup`);
           return;
         } else {
@@ -624,16 +624,16 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
         }
       } finally {
         setIsSubmitting(false);
-        console.log("Setting isSubmitting back to false");
-        console.log("=== FORM SUBMISSION COMPLETED ===");
+        // console.log("Setting isSubmitting back to false");
+        // console.log("=== FORM SUBMISSION COMPLETED ===");
       }
     } else if (verificationStep === "verification") {
-      console.log("Handling verification code submission");
+      // console.log("Handling verification code submission");
       // Verify Code Submission
       
       // Validate verification code format
       if (!formData.verificationCode.trim()) {
-        console.log("Verification code is empty");
+        // console.log("Verification code is empty");
         setErrors(prev => ({
           ...prev,
           verificationCode: "Verification code is required"
@@ -642,7 +642,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       }
       
       if (formData.verificationCode.length !== 6 || !/^\d{6}$/.test(formData.verificationCode)) {
-        console.log("Invalid verification code format");
+        // console.log("Invalid verification code format");
         setErrors(prev => ({
           ...prev,
           verificationCode: "Please enter a valid 6-digit code"
@@ -652,7 +652,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       
       // Ensure we have a verification ID
       if (!formData.verificationId) {
-        console.log("Missing verificationId");
+        // console.log("Missing verificationId");
         setErrors(prev => ({
           ...prev,
           verificationCode: "Verification session expired. Please request a new code."
@@ -661,25 +661,25 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
       }
       
       setIsSubmitting(true);
-      console.log("Setting isSubmitting to true");
+      // console.log("Setting isSubmitting to true");
       
       try {
         // First, verify the code only (no authentication attempt yet)
-        console.log("Verifying code:", formData.verificationCode);
+        // console.log("Verifying code:", formData.verificationCode);
         const verificationResult = await verifyEmailCodeOnly(
           formData.verificationId, 
           formData.verificationCode
         );
         
         if (verificationResult.success) {
-          console.log("Code verification successful");
+          // console.log("Code verification successful");
           
           // Check if this is an existing user from the verification result
           if (verificationResult.isExistingUser) {
-            console.log("Verification indicates an existing user");
+            // console.log("Verification indicates an existing user");
             
             // Use signInExistingUser for existing users
-            console.log("Signing in existing user");
+            // console.log("Signing in existing user");
             const authResult = await signInExistingUser(
               verificationResult,
               formData.email,
@@ -689,22 +689,22 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             // Clear password from memory immediately
             setPasswordState('');
             setConfirmPasswordState('');
-            console.log("Cleared password from memory");
+            // console.log("Cleared password from memory");
             
             if (authResult.success) {
-              console.log("Existing user sign in successful");
+              // console.log("Existing user sign in successful");
               // Clear verification state
               clearVerificationState();
-              console.log("Cleared verification state from localStorage");
+              // console.log("Cleared verification state from localStorage");
               
               // Set hasNavigatedRef to true to show success screen
               hasNavigatedRef.current = true;
               setAccountCreated(true); // Set account creation state
-              console.log("Set hasNavigatedRef to true and account creation state to true");
+              // console.log("Set hasNavigatedRef to true and account creation state to true");
               
               // Reset verification step
               setVerificationStep("initial");
-              console.log("Reset verificationStep to 'initial'");
+              // console.log("Reset verificationStep to 'initial'");
               
               // Clear verification code
               setFormData(prev => ({
@@ -712,14 +712,14 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
                 verificationCode: "",
                 verificationId: ""
               }));
-              console.log("Cleared verification code and ID from formData");
+              // console.log("Cleared verification code and ID from formData");
               
               // Navigate to signup with showSuccess parameter
               navigate('/signup?step=0&showSuccess=true', { replace: true });
             }
           } else {
             // Use createNewUser for new users
-            console.log("Creating new user account");
+            // console.log("Creating new user account");
             const authResult = await createNewUser(
               {
                 ...verificationResult,
@@ -733,23 +733,23 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
             // Clear password from memory immediately
             setPasswordState('');
             setConfirmPasswordState('');
-            console.log("Cleared password from memory");
+            // console.log("Cleared password from memory");
             
             if (authResult.success) {
-              console.log("New user creation successful");
+              // console.log("New user creation successful");
               // Clear verification state
               clearVerificationState();
-              console.log("Cleared verification state from localStorage");
+              // console.log("Cleared verification state from localStorage");
               
               // Set hasNavigatedRef to true to show success screen
               hasNavigatedRef.current = true;
               setAccountCreated(true); // Set account creation state
-              console.log("Set hasNavigatedRef to true and account creation state to true");
+              // console.log("Set hasNavigatedRef to true and account creation state to true");
               
               // Update progress in Firebase
               try {
                 await updateSignupProgress("contact_info", 1, {});
-                console.log("Firebase progress updated to step 1");
+                // console.log("Firebase progress updated to step 1");
               } catch (progressError) {
                 console.error("Error updating progress:", progressError);
                 // Continue anyway
@@ -757,7 +757,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
               
               // Reset verification step
               setVerificationStep("initial");
-              console.log("Reset verificationStep to 'initial'");
+              // console.log("Reset verificationStep to 'initial'");
               
               // Clear verification code
               setFormData(prev => ({
@@ -765,7 +765,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
                 verificationCode: "",
                 verificationId: ""
               }));
-              console.log("Cleared verification code and ID from formData");
+              // console.log("Cleared verification code and ID from formData");
               
               // Navigate to signup with showSuccess parameter
               navigate('/signup?step=0&showSuccess=true', { replace: true });
@@ -798,8 +798,8 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
         }
       } finally {
         setIsSubmitting(false);
-        console.log("Setting isSubmitting back to false");
-        console.log("=== FORM SUBMISSION COMPLETED ===");
+        // console.log("Setting isSubmitting back to false");
+        // console.log("=== FORM SUBMISSION COMPLETED ===");
       }
     }
   };
@@ -808,7 +808,7 @@ if (forceParam && !isNaN(stepParam) && stepParam >= 0 && stepParam < steps.lengt
 
 const handleGoogleSignIn = async () => {
     if (isSubmitting) return;
-    console.log("Starting Google sign-in process");
+    // console.log("Starting Google sign-in process");
     
     setIsSubmitting(true);
     setErrors({
@@ -823,26 +823,26 @@ const handleGoogleSignIn = async () => {
     
     // Setup a timeout to automatically reset the UI state in case of hanging
     const resetTimeout = setTimeout(() => {
-      console.log("Safety timeout triggered - resetting UI");
+      // console.log("Safety timeout triggered - resetting UI");
       setIsSubmitting(false);
     }, 30000); // 30 second safety timeout
     
     try {
-      console.log("Calling signInWithGoogle()");
+      // console.log("Calling signInWithGoogle()");
       const result = await signInWithGoogle();
       
       // Clear the safety timeout since we got a response
       clearTimeout(resetTimeout);
       
-      console.log("Google sign-in result:", result);
+      // console.log("Google sign-in result:", result);
       
       // Check specifically for account-exists-with-different-credential error
       if (result && result.error === 'auth/account-exists-with-different-credential') {
-        console.log("Account conflict detected");
+        // console.log("Account conflict detected");
         
         // Get the email from the result
         const email = result.email || '';
-        console.log(`Redirecting to login for account linking with email: ${email}`);
+        // console.log(`Redirecting to login for account linking with email: ${email}`);
         
         // Navigate to login page with parameters to trigger account linking
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
@@ -852,30 +852,30 @@ const handleGoogleSignIn = async () => {
       if (result && result.success) {
         // Clear verification state since we're now authenticated
         clearVerificationState();
-        console.log("Cleared verification state");
+        // console.log("Cleared verification state");
         
         // Only show success screen for new users
         if (result.isNewUser === true) {
           // Set hasNavigatedRef to true to show success screen for new users
           hasNavigatedRef.current = true;
           setAccountCreated(true); // Set account creation state
-          console.log("Set hasNavigatedRef to true and account creation state to true");
+          // console.log("Set hasNavigatedRef to true and account creation state to true");
           
           // After sign-in, wait a moment for auth state to update
           setTimeout(() => {
             // Navigate to signup with showSuccess parameter
-            console.log("Navigating to signup with showSuccess parameter");
+            // console.log("Navigating to signup with showSuccess parameter");
             navigate('/signup?step=0&showSuccess=true', { replace: true });
           }, 500);
         } else {
           // For existing users, get their current step
-          console.log("Existing user detected, getting current step");
+          // console.log("Existing user detected, getting current step");
           
           // Give Firebase a moment to update auth state
           setTimeout(() => {
             // Navigate directly to the next step (default to step 1 if not available)
             const nextStep = result.signupProgress || 1;
-            console.log(`Navigating to step ${nextStep} for existing user`);
+            // console.log(`Navigating to step ${nextStep} for existing user`);
             navigate(`/signup?step=${nextStep}`, { replace: true });
           }, 500);
         }
@@ -893,7 +893,7 @@ const handleGoogleSignIn = async () => {
       
       // Check for different credential error directly from the caught error
       if (error.code === 'auth/account-exists-with-different-credential') {
-        console.log("Caught auth/account-exists-with-different-credential error");
+        // console.log("Caught auth/account-exists-with-different-credential error");
         
         // Get the email from the error if available
         const email = error.customData?.email || '';
@@ -910,17 +910,17 @@ const handleGoogleSignIn = async () => {
 
   const resendVerificationCode = async () => {
     if (isSubmitting) return;
-    console.log("Resending verification code");
+    // console.log("Resending verification code");
     setIsSubmitting(true);
     
     try {
       // Call Firebase function to resend verification code
       // Note: Password is kept in memory and not sent to the backend
-      console.log("Requesting new verification code for:", formData.email);
+      // console.log("Requesting new verification code for:", formData.email);
       const result = await requestEmailVerification(formData.email, formData.name || "New Member");
       
       if (result.success) {
-        console.log("Verification code sent successfully");
+        // console.log("Verification code sent successfully");
         // Update verification ID
         setFormData(prev => ({
           ...prev,
@@ -949,7 +949,7 @@ const handleGoogleSignIn = async () => {
   };
   
   const changeEmail = () => {
-    console.log("Changing email");
+    // console.log("Changing email");
     // Clear verification state in localStorage
     clearVerificationState();
     
@@ -976,25 +976,25 @@ const handleGoogleSignIn = async () => {
       verificationCode: "",
     });
     
-    console.log("Email change complete");
+    // console.log("Email change complete");
   };
 
   const toggleHelpInfo = () => {
     setShowHelpInfo(!showHelpInfo);
-    console.log("Toggled help info:", !showHelpInfo);
+    // console.log("Toggled help info:", !showHelpInfo);
   };
   
   const handleBack = () => {
-    console.log("Handling back button");
+    // console.log("Handling back button");
     if (activeStep > 0) {
       const prevStep = activeStep - 1;
-      console.log("Going back to step:", prevStep);
+      // console.log("Going back to step:", prevStep);
       
       // Set hasNavigatedRef to true if going back to step 0
       if (prevStep === 0) {
         hasNavigatedRef.current = true;
         setAccountCreated(true); // Set account creation state
-        console.log("Setting hasNavigatedRef to true and account creation state to true because going back to step 0");
+        // console.log("Setting hasNavigatedRef to true and account creation state to true because going back to step 0");
       }
       
       setActiveStep(prevStep);
@@ -1004,46 +1004,46 @@ const handleGoogleSignIn = async () => {
     } else {
       // If at first step and user wants to go back, use navigation history
       const prevPath = getPreviousPath();
-      console.log("Going back to previous path:", prevPath);
+      // console.log("Going back to previous path:", prevPath);
       navigate(prevPath);
     }
   };
   
   // Enhanced handleNext function with form data persistence
   const handleNext = async (stepData = {}) => {
-    console.log("handleNext called with step data:", stepData);
+    // console.log("handleNext called with step data:", stepData);
     
     const nextStep = activeStep + 1;
-    console.log(`Current step: ${activeStep}, Next step: ${nextStep}`);
+    // console.log(`Current step: ${activeStep}, Next step: ${nextStep}`);
     
     if (nextStep < steps.length) {
       try {
         // Store form data for the current step
         const stepName = steps[activeStep].toLowerCase().replace(' ', '_');
-        console.log(`Saving form data for step: ${stepName}`);
+        // console.log(`Saving form data for step: ${stepName}`);
         saveFormData(stepName, stepData);
         
         // Update progress in Firebase
-        console.log(`Updating progress in Firebase: Step ${nextStep} (${steps[nextStep].toLowerCase().replace(' ', '_')})`);
+        // console.log(`Updating progress in Firebase: Step ${nextStep} (${steps[nextStep].toLowerCase().replace(' ', '_')})`);
         try {
           await updateSignupProgress(
             steps[nextStep].toLowerCase().replace(' ', '_'), 
             nextStep, 
             stepData
           );
-          console.log("Firebase update successful");
+          // console.log("Firebase update successful");
         } catch (firebaseError) {
           console.error("Error updating progress in Firebase:", firebaseError);
           // Continue anyway - we'll just use the local state
         }
         
         // Update active step
-        console.log(`Setting active step to ${nextStep}`);
+        // console.log(`Setting active step to ${nextStep}`);
         setActiveStep(nextStep);
         
         // Update URL to reflect current step without reload
         const newUrl = `/signup?step=${nextStep}`;
-        console.log(`Navigating to: ${newUrl}`);
+        // console.log(`Navigating to: ${newUrl}`);
         navigate(newUrl, { replace: true });
         
         return true; // Indicate success
@@ -1051,17 +1051,17 @@ const handleGoogleSignIn = async () => {
         console.error("Error in handleNext:", error);
         
         // Still move forward even if there are errors
-        console.log(`Setting active step to ${nextStep} despite errors`);
+        // console.log(`Setting active step to ${nextStep} despite errors`);
         setActiveStep(nextStep);
         
         const newUrl = `/signup?step=${nextStep}`;
-        console.log(`Navigating to: ${newUrl}`);
+        // console.log(`Navigating to: ${newUrl}`);
         navigate(newUrl, { replace: true });
         
         return false; // Indicate there was an error
       }
     } else {
-      console.log("Cannot proceed: already at last step");
+      // console.log("Cannot proceed: already at last step");
       return false; // Cannot proceed further
     }
   };
