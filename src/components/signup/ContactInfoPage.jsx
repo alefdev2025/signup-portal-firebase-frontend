@@ -12,6 +12,7 @@ import { saveContactInfo, getContactInfo } from "../../services/contact";
 
 // Components
 import AddressAutocomplete from "../AddressAutocomplete";
+import AddressAutocompleteV2 from '../AddressAutocompleteV2';
 import HelpPanel from "./HelpPanel";
 
 // Custom styles for input labels
@@ -93,9 +94,16 @@ const defaultConfig = {
   countyRequired: false
 };
 
+// Detect if browser is Safari
+const isSafari = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.indexOf('safari') !== -1 && userAgent.indexOf('chrome') === -1;
+};
+
 export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const navigate = useNavigate();
   const { currentUser } = useUser();
+  const [isSafariBrowser, setIsSafariBrowser] = useState(false);
   
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
@@ -129,17 +137,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   ];
 
+  // Detect Safari browser on initial render
+  useEffect(() => {
+    setIsSafariBrowser(isSafari());
+  }, []);
   
   // Debug: Check if API key is available
   useEffect(() => {
     console.log("API Key Available:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Yes" : "No");
     console.log("API Key first 5 chars:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.substring(0, 5) + "...");
+    console.log("Browser detected as Safari:", isSafariBrowser);
     
     // Add custom styles to ensure consistent input backgrounds
     const styleElement = document.createElement('style');
     styleElement.type = 'text/css';
     styleElement.innerHTML = `
-      /* Override styles for form inputs */
+      /* Override styles for form inputs - Simplified for better autofill compatibility */
       input, select, textarea {
         background-color: #FFFFFF !important;
         font-size: 1.125rem !important;
@@ -185,170 +198,68 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         max-width: 100%;
       }
       
-      /* Custom select styling to prevent Safari gradient backgrounds */
+      /* Custom select styling - simplified for better Safari compatibility */
       select {
-        -webkit-appearance: none !important;
-        -moz-appearance: none !important;
-        appearance: none !important;
-        background-color: #FFFFFF !important;
-        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
-        background-position: right 0.75rem center !important;
-        background-repeat: no-repeat !important;
-        background-size: 1.5em 1.5em !important;
-        color: #333333 !important;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-color: #FFFFFF;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        color: #333333;
       }
       
-      /* Override Safari's default styling for selects */
-      @media screen and (-webkit-min-device-pixel-ratio:0) {
-        select,
-        select:focus,
-        select option,
-        select::-ms-expand {
-          background-color: #FFFFFF !important;
-          color: #333333 !important;
-          -webkit-appearance: none !important;
-          appearance: none !important;
-        }
-        
-        select option {
-          background-color: #FFFFFF !important;
-          color: #333333 !important;
-        }
-      }
-      
-      /* Target Safari specifically */
-      @supports (-webkit-hyphens:none) {
-        select {
-          background-color: #FFFFFF !important;
-          color: #333333 !important;
-          -webkit-appearance: none !important;
-          appearance: none !important;
-        }
-        
-        select option {
-          background-color: #FFFFFF !important;
-          color: #333333 !important;
-        }
+      /* Force white background for Safari dropdowns - simplified */
+      select option {
+        background-color: #FFFFFF;
+        color: #333333;
       }
       
       input:focus, select:focus, textarea:focus {
-        background-color: #FFFFFF !important;
-        --tw-ring-color: rgba(119, 86, 132, 0.5) !important;
-        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color) !important;
-        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
-        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important;
-        outline: 2px solid transparent !important;
-        outline-offset: 2px !important;
-        border-color: rgba(119, 86, 132, 0.5) !important;
+        outline: 2px solid rgba(119, 86, 132, 0.5);
+        border-color: rgba(119, 86, 132, 0.5);
       }
       
-      /* Prevent blue backgrounds on autofill */
-      input:-webkit-autofill,
-      input:-webkit-autofill:hover, 
-      input:-webkit-autofill:focus,
-      select:-webkit-autofill,
-      select:-webkit-autofill:hover,
-      select:-webkit-autofill:focus {
-        -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+      /* Prevent blue backgrounds on autofill - simplified */
+      input:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px white inset;
         transition: background-color 5000s ease-in-out 0s;
       }
       
       /* Force consistent height for date inputs */
       input[type="date"] {
-        height: 4rem !important; /* Match other inputs */
-        line-height: 4rem !important;
-        appearance: none !important;
-        -moz-appearance: none !important;
-        -webkit-appearance: none !important;
-        position: relative !important;
-      }
-      
-      /* Hide calendar icon in Chrome, Safari, Edge, Opera */
-      input[type="date"]::-webkit-calendar-picker-indicator {
-        display: none !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        -webkit-appearance: none !important;
-        appearance: none !important;
-      }
-      
-      /* Hide clear button in Edge and IE */
-      input[type="date"]::-ms-clear,
-      input[type="date"]::-ms-reveal {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-      }
-      
-      input[type="date"]::-webkit-inner-spin-button,
-      input[type="date"]::-webkit-outer-spin-button {
-        -webkit-appearance: none !important;
-        appearance: none !important;
-        margin: 0 !important;
+        height: 4rem; /* Match other inputs */
+        line-height: 4rem;
+        appearance: none;
       }
       
       /* Style label text */
       label, .form-label {
-        color: #1a202c !important; 
-        font-size: 1.125rem !important;
-        font-weight: 500 !important;
-        margin-bottom: 1rem !important;
+        color: #1a202c; 
+        font-size: 1.125rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
       }
       
-      /* Force white background for Safari dropdowns */
-      select option {
-        background-color: #FFFFFF !important;
-        color: #333333 !important;
-      }
-      
-      /* Updated section containers padding */
-      .p-12 { 
-        padding: 3rem !important; 
-      }
-      
-      .px-14 {
-        padding-left: 3.5rem !important;
-        padding-right: 3.5rem !important;
-      }
-      
-      /* Adjust vertical spacing between form elements */
-      .gap-y-10 {
-        row-gap: 2.5rem !important;
-      }
-      
-      .gap-x-12 {
-        column-gap: 3rem !important;
-      }
-      
-      /* Adjust spacing for section headers */
-      .mb-14 {
-        margin-bottom: 3.5rem !important;
-      }
-      
-      .pb-8 {
-        padding-bottom: 2.5rem !important;
-      }
-      
-      .pt-4 {
-        padding-top: 1.25rem !important;
-      }
-      
-      .mt-14 {
-        margin-top: 3.5rem !important;
-      }
-      
-      .pt-10 {
-        padding-top: 2.5rem !important;
-      }
+      /* Spacing classes */
+      .p-12 { padding: 3rem; }
+      .px-14 { padding-left: 3.5rem; padding-right: 3.5rem; }
+      .gap-y-10 { row-gap: 2.5rem; }
+      .gap-x-12 { column-gap: 3rem; }
+      .mb-14 { margin-bottom: 3.5rem; }
+      .pb-8 { padding-bottom: 2.5rem; }
+      .pt-4 { padding-top: 1.25rem; }
+      .mt-14 { margin-top: 3.5rem; }
+      .pt-10 { padding-top: 2.5rem; }
     `;
     document.head.appendChild(styleElement);
     
     return () => {
       document.head.removeChild(styleElement);
     };
-  }, []);
+  }, [isSafariBrowser]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -441,22 +352,35 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   };
 
-  // Add to ContactInfoPage.jsx
-useEffect(() => {
-  // If region and county contain the same data, clear the county
-  if (formData.region && formData.cnty_hm === formData.region) {
-    setFormData(prev => ({
-      ...prev,
-      cnty_hm: ""
-    }));
-    
-    // Also force update the DOM element if it exists
-    const countyField = document.getElementById('cnty_hm');
-    if (countyField) {
-      countyField.value = '';
+  // Fix for Chrome autofill putting state in county field
+  useEffect(() => {
+    // If region and county contain the same data, clear the county
+    if (formData.region && formData.cnty_hm === formData.region) {
+      setFormData(prev => ({
+        ...prev,
+        cnty_hm: ""
+      }));
+      
+      // Also force update the DOM element if it exists
+      const countyField = document.getElementById('cnty_hm');
+      if (countyField) {
+        countyField.value = '';
+      }
     }
-  }
-}, [formData.region, formData.cnty_hm]);
+    
+    // Same check for mailing address
+    if (formData.mailingRegion && formData.cnty_ml === formData.mailingRegion) {
+      setFormData(prev => ({
+        ...prev,
+        cnty_ml: ""
+      }));
+      
+      const mailingCountyField = document.getElementById('cnty_ml');
+      if (mailingCountyField) {
+        mailingCountyField.value = '';
+      }
+    }
+  }, [formData.region, formData.cnty_hm, formData.mailingRegion, formData.cnty_ml]);
 
   // Load data from backend only
   useEffect(() => {
@@ -882,7 +806,7 @@ useEffect(() => {
       position: 'relative'
     }}>
       <div className="w-full mx-auto px-2 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
-        <form onSubmit={handleSubmit} className="w-full">
+        <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
           {/* Personal Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
             <div className="p-4 md:p-12 px-6 md:px-14">
@@ -907,6 +831,7 @@ useEffect(() => {
                         type="text" 
                         id="firstName"
                         name="firstName"
+                        autoComplete="given-name"
                         value={formData.firstName}
                         onChange={handleChange}
                         className={`w-full h-16 pl-2 pr-3 py-3 bg-white border rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg ${errors.firstName ? 'error-field' : ''}`}
@@ -923,6 +848,7 @@ useEffect(() => {
                         type="text" 
                         id="lastName"
                         name="lastName"
+                        autoComplete="family-name"
                         value={formData.lastName}
                         onChange={handleChange}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
@@ -937,6 +863,7 @@ useEffect(() => {
                       <select
                         id="sex"
                         name="sex"
+                        autoComplete="sex"
                         value={formData.sex}
                         onChange={handleChange}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
@@ -957,6 +884,7 @@ useEffect(() => {
                         type="email" 
                         id="email"
                         name="email"
+                        autoComplete="email"
                         value={formData.email}
                         onChange={handleChange}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
@@ -971,6 +899,7 @@ useEffect(() => {
                   <select
                     id="phoneType"
                     name="phoneType"
+                    autoComplete="tel-type"
                     value={formData.phoneType}
                     onChange={handleChange}
                     className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.phoneType ? 'error-field' : ''}`}
@@ -992,6 +921,7 @@ useEffect(() => {
                     type="tel" 
                     id="mobilePhone"
                     name="mobilePhone"
+                    autoComplete="tel-mobile"
                     value={formData.mobilePhone}
                     onChange={handleChange}
                     className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.mobilePhone ? 'error-field' : ''}`}
@@ -1007,6 +937,7 @@ useEffect(() => {
                     type="tel" 
                     id="workPhone"
                     name="workPhone"
+                    autoComplete="tel-work"
                     value={formData.workPhone}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.workPhone ? 'error-field' : ''}`}
@@ -1022,6 +953,7 @@ useEffect(() => {
                     type="tel" 
                     id="homePhone"
                     name="homePhone"
+                    autoComplete="tel-home"
                     value={formData.homePhone}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.homePhone ? 'error-field' : ''}`}
@@ -1040,6 +972,7 @@ useEffect(() => {
                       <select
                         id="birthMonth"
                         name="birthMonth"
+                        autoComplete="bday-month"
                         value={formData.birthMonth || ""}
                         onChange={handleChange}
                         style={{
@@ -1076,6 +1009,7 @@ useEffect(() => {
                       <select
                         id="birthDay"
                         name="birthDay"
+                        autoComplete="bday-day"
                         value={formData.birthDay || ""}
                         onChange={handleChange}
                         style={{
@@ -1104,6 +1038,7 @@ useEffect(() => {
                       <select
                         id="birthYear"
                         name="birthYear"
+                        autoComplete="bday-year"
                         value={formData.birthYear || ""}
                         onChange={handleChange}
                         style={{
@@ -1164,18 +1099,18 @@ useEffect(() => {
                 {/* Home address with Google Places Autocomplete - full width for this field */}
                 <div className="md:col-span-2">
                   <div className="address-autocomplete-field">
-                    <AddressAutocomplete
-                      id="streetAddress"
-                      name="streetAddress"
-                      label="Home Address"
-                      defaultValue={formData.streetAddress}
-                      onAddressSelect={handleAddressSelect}
-                      required={true}
-                      disabled={isSubmitting}
-                      errorMessage={errors.streetAddress ? "Required field" : ""}
-                      placeholder="Start typing your address..."
-                      isError={!!errors.streetAddress}
-                    />
+                  <AddressAutocompleteV2
+                    id="streetAddress"
+                    name="streetAddress"
+                    label="Home Address"
+                    defaultValue={formData.streetAddress}
+                    onAddressSelect={handleAddressSelect}
+                    required={true}
+                    disabled={isSubmitting}
+                    errorMessage={errors.streetAddress ? "Required field" : ""}
+                    placeholder="Start typing your address..."
+                    isError={!!errors.streetAddress}
+                  />
                   </div>
                 </div>
                 
@@ -1185,6 +1120,7 @@ useEffect(() => {
                     type="text" 
                     id="city"
                     name="city"
+                    autoComplete="address-level2"
                     value={formData.city}
                     onChange={handleChange}
                     style={{
@@ -1208,6 +1144,7 @@ useEffect(() => {
                     type="text" 
                     id="region"
                     name="region"
+                    autoComplete="address-level1"
                     value={formData.region}
                     onChange={handleChange}
                     style={{
@@ -1231,11 +1168,19 @@ useEffect(() => {
                     type="text" 
                     id="cnty_hm"
                     name="cnty_hm"
+                    autoComplete="off"
                     value={formData.cnty_hm || ""}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required={isCountyRequired}
+                    onFocus={() => {
+                      // Check on focus if county equals state and clear if needed
+                      if (formData.cnty_hm === formData.region) {
+                        document.getElementById('cnty_hm').value = '';
+                        setFormData(prev => ({...prev, cnty_hm: ""}));
+                      }
+                    }}
                   />
                   {errors.cnty_hm && <p className="text-red-500 text-sm mt-1">{errors.cnty_hm}</p>}
                 </div>
@@ -1246,6 +1191,7 @@ useEffect(() => {
                     type="text" 
                     id="postalCode"
                     name="postalCode"
+                    autoComplete="postal-code"
                     value={formData.postalCode}
                     onChange={handleChange}
                     style={{
@@ -1268,6 +1214,7 @@ useEffect(() => {
                   <select
                     id="country"
                     name="country"
+                    autoComplete="country"
                     value={formData.country}
                     onChange={handleChange}
                     style={{
@@ -1357,6 +1304,7 @@ useEffect(() => {
           type="text" 
           id="mailingCity"
           name="mailingCity"
+          autoComplete="shipping address-level2"
           value={formData.mailingCity}
           onChange={handleChange}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
@@ -1381,6 +1329,7 @@ useEffect(() => {
           type="text" 
           id="cnty_ml"
           name="cnty_ml"
+          autoComplete="off"
           value={formData.cnty_ml || ""}
           onChange={handleChange}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
@@ -1395,6 +1344,13 @@ useEffect(() => {
             width: '100%',
             border: errors.cnty_ml ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
           }}
+          onFocus={() => {
+            // Check on focus if county equals state and clear if needed
+            if (formData.cnty_ml === formData.mailingRegion) {
+              document.getElementById('cnty_ml').value = '';
+              setFormData(prev => ({...prev, cnty_ml: ""}));
+            }
+          }}
         />
         {errors.cnty_ml && <p className="text-red-500 text-sm mt-1">{errors.cnty_ml}</p>}
       </div>
@@ -1405,6 +1361,7 @@ useEffect(() => {
           type="text" 
           id="mailingRegion"
           name="mailingRegion"
+          autoComplete="shipping address-level1"
           value={formData.mailingRegion}
           onChange={handleChange}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
@@ -1429,6 +1386,7 @@ useEffect(() => {
           type="text" 
           id="mailingPostalCode"
           name="mailingPostalCode"
+          autoComplete="shipping postal-code"
           value={formData.mailingPostalCode}
           onChange={handleChange}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
@@ -1452,6 +1410,7 @@ useEffect(() => {
         <select
           id="mailingCountry"
           name="mailingCountry"
+          autoComplete="shipping country"
           value={formData.mailingCountry}
           onChange={handleChange}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
