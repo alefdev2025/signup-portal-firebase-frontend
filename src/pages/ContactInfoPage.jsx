@@ -279,6 +279,9 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     lastName: "",
     sex: "",
     dateOfBirth: "",
+    birthMonth: "",
+    birthDay: "",
+    birthYear: "",
     streetAddress: "",
     city: "",
     county: "",
@@ -306,6 +309,9 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     lastName: "",
     sex: "",
     dateOfBirth: "",
+    birthMonth: "",
+    birthDay: "",
+    birthYear: "",
     streetAddress: "",
     city: "",
     county: "",
@@ -345,6 +351,18 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const isCountyRequired = countryConfig.countyRequired || countiesRequiredCountries.includes(formData.country);
   const isMailingCountyRequired = mailingCountryConfig.countyRequired || countiesRequiredCountries.includes(formData.mailingCountry);
 
+  // Function to update the combined date field
+  const updateCombinedDateOfBirth = (month, day, year) => {
+    // Only combine if all parts are present
+    if (month && day && year) {
+      const formattedDate = `${month}/${day}/${year}`;
+      setFormData(prev => ({
+        ...prev,
+        dateOfBirth: formattedDate
+      }));
+    }
+  };
+
   // Load saved form data if available
   useEffect(() => {
     const savedData = getStepFormData('contact_info');
@@ -368,6 +386,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       }));
     }
   }, [currentUser, initialData]);
+
+  // Parse existing dateOfBirth into separate fields when loading the component
+  useEffect(() => {
+    if (formData.dateOfBirth && !formData.birthMonth) {
+      const parts = formData.dateOfBirth.split('/');
+      if (parts.length === 3) {
+        setFormData(prev => ({
+          ...prev,
+          birthMonth: parts[0],
+          birthDay: parts[1],
+          birthYear: parts[2]
+        }));
+      }
+    }
+  }, [formData.dateOfBirth]);
 
   // Update country configuration when country changes
   useEffect(() => {
@@ -425,6 +458,17 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         mailingCountry: prev.country
       }));
     }
+    
+    // Special handling for date of birth fields
+    if (name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
+      if (name === 'birthMonth') {
+        updateCombinedDateOfBirth(value, formData.birthDay, formData.birthYear);
+      } else if (name === 'birthDay') {
+        updateCombinedDateOfBirth(formData.birthMonth, value, formData.birthYear);
+      } else if (name === 'birthYear') {
+        updateCombinedDateOfBirth(formData.birthMonth, formData.birthDay, value);
+      }
+    }
   };
   
   // Handler for address selection from autocomplete
@@ -481,7 +525,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     
     // Required fields validation
     const requiredFields = [
-      'firstName', 'lastName', 'sex', 'dateOfBirth', 
+      'firstName', 'lastName', 'sex', 
+      'birthMonth', 'birthDay', 'birthYear',
       'streetAddress', 'city', 'region', 'postalCode', 'country',
       'sameMailingAddress', 'email', 'phoneType'
     ];
@@ -586,59 +631,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }, 0);
   };
 
-  // Helper function to render the DatePicker with icon - Using a simpler approach
-  const renderDateField = (id, name, label, value, required = false) => (
-    <div className="relative">
-      <LabelWithIcon label={label} required={required} />
-      <div className="relative">
-        {/* Use a regular text input that looks like a date input */}
-        <input 
-          type="text" 
-          id={id}
-          name={name}
-          value={value ? new Date(value).toLocaleDateString() : ""}
-          onChange={(e) => {
-            // Parse the date and convert to YYYY-MM-DD format
-            const dateValue = e.target.value;
-            try {
-              const date = new Date(dateValue);
-              if (!isNaN(date.getTime())) {
-                const formattedDate = date.toISOString().split('T')[0];
-                handleChange({
-                  target: {
-                    name: name,
-                    value: formattedDate
-                  }
-                });
-              }
-            } catch (error) {
-              // Invalid date format, just use the raw value
-              handleChange({
-                target: {
-                  name: name,
-                  value: dateValue
-                }
-              });
-            }
-          }}
-          placeholder="MM/DD/YYYY"
-          className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
-          disabled={isSubmitting}
-          required={required}
-        />
-        {/* Calendar icon */}
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-      </div>
-      {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
-    </div>
-  );
-  
   return (
-    <div className="w-full bg-gray-50 py-8" style={{
+    <div className="w-full" style={{
       width: '100vw',
       marginLeft: 'calc(-50vw + 50%)',
       marginRight: 'calc(-50vw + 50%)',
@@ -731,9 +725,6 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                 
-                {/* Date of Birth field with modern styling - FIXED: Custom calendar icon */}
-                {renderDateField("dateOfBirth", "dateOfBirth", "Date of Birth", formData.dateOfBirth, true)}
-                
                 {/* Phone fields */}
                 <div>
                   <LabelWithIcon label="Preferred Phone Number" required={true} />
@@ -756,7 +747,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </div>
                 
                 <div>
-                  <LabelWithIcon label={`Mobile Phone${formData.phoneType === "Mobile" ? " *" : ""}`} required={formData.phoneType === "Mobile"} />
+                  <LabelWithIcon label="Mobile Phone" required={formData.phoneType === "Mobile"} />
                   <input 
                     type="tel" 
                     id="mobilePhone"
@@ -771,7 +762,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </div>
                 
                 <div>
-                  <LabelWithIcon label={`Work Phone${formData.phoneType === "Work" ? " *" : ""}`} required={formData.phoneType === "Work"} />
+                  <LabelWithIcon label="Work Phone" required={formData.phoneType === "Work"} />
                   <input 
                     type="tel" 
                     id="workPhone"
@@ -786,7 +777,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </div>
                 
                 <div>
-                  <LabelWithIcon label={`Home Phone${formData.phoneType === "Home" ? " *" : ""}`} required={formData.phoneType === "Home"} />
+                  <LabelWithIcon label="Home Phone" required={formData.phoneType === "Home"} />
                   <input 
                     type="tel" 
                     id="homePhone"
@@ -798,6 +789,90 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     required={formData.phoneType === "Home"}
                   />
                   {errors.homePhone && <p className="text-red-500 text-sm mt-1">{errors.homePhone}</p>}
+                </div>
+                
+                {/* Date of Birth - Three side-by-side dropdowns */}
+                <div>
+                  <LabelWithIcon label="Date of Birth" required={true} />
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Month dropdown */}
+                    <div>
+                      <select
+                        id="birthMonth"
+                        name="birthMonth"
+                        value={formData.birthMonth || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        disabled={isSubmitting}
+                        required
+                      >
+                        <option value="" disabled>Month</option>
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                      </select>
+                      {errors.birthMonth && <p className="text-red-500 text-sm mt-1">{errors.birthMonth}</p>}
+                    </div>
+                    
+                    {/* Day dropdown */}
+                    <div>
+                      <select
+                        id="birthDay"
+                        name="birthDay"
+                        value={formData.birthDay || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        disabled={isSubmitting}
+                        required
+                      >
+                        <option value="" disabled>Day</option>
+                        {Array.from({ length: 31 }, (_, i) => {
+                          const day = (i + 1).toString().padStart(2, '0');
+                          return <option key={day} value={day}>{day}</option>;
+                        })}
+                      </select>
+                      {errors.birthDay && <p className="text-red-500 text-sm mt-1">{errors.birthDay}</p>}
+                    </div>
+                    
+                    {/* Year dropdown */}
+                    <div>
+                      <select
+                        id="birthYear"
+                        name="birthYear"
+                        value={formData.birthYear || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        disabled={isSubmitting}
+                        required
+                      >
+                        <option value="" disabled>Year</option>
+                        {Array.from({ length: 100 }, (_, i) => {
+                          const year = (new Date().getFullYear() - i);
+                          return <option key={year} value={year}>{year}</option>;
+                        })}
+                      </select>
+                      {errors.birthYear && <p className="text-red-500 text-sm mt-1">{errors.birthYear}</p>}
+                    </div>
+                  </div>
+                  
+                  {/* Hidden field to store the combined date in MM/DD/YYYY format for form submission */}
+                  <input 
+                    type="hidden" 
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth || ""}
+                  />
+                  
+                  {errors.dateOfBirth && <p className="text-red-500 text-sm mt-1">{errors.dateOfBirth}</p>}
                 </div>
               </div>
             </div>
@@ -851,7 +926,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   />
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                 </div>
-
+  
                 <div>
                   <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
                   <input 
@@ -935,7 +1010,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </div>
               </div>
               
-              {/* Mailing address fields - conditionally shown - FIXED: Removed duplicate "Mailing Address" text */}
+              {/* Mailing address fields - conditionally shown */}
               {showMailingAddress && (
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="mb-6 flex items-start">
@@ -981,7 +1056,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                       />
                       {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
                     </div>
-
+  
                     <div>
                       <LabelWithIcon label={mailingCountryConfig.countyLabel} required={isMailingCountyRequired} />
                       <input 
