@@ -42,6 +42,33 @@ import {
 // Environment flag - true for development, false for production
 const isDevelopment = import.meta.env.MODE === 'development';
 
+// Define step mappings to match backend structure
+export const SIGNUP_STEPS = {
+  ACCOUNT: 0,        // Initial account creation - /signup
+  SUCCESS: 1,        // Account success page - /signup/success
+  CONTACT_INFO: 2,   // Contact information - /signup/contact
+  PACKAGE: 3,        // Package selection - /signup/package
+  FUNDING: 4,        // Funding information - /signup/funding
+  MEMBERSHIP: 5      // Membership details - /signup/membership
+};
+
+export const STEP_NAMES = {
+  0: "account",
+  1: "success",
+  2: "contact_info",
+  3: "package",
+  4: "funding",
+  5: "membership"
+};
+
+export const getStepName = (step) => STEP_NAMES[step] || "account";
+export const getStepNumber = (stepName) => {
+  for (const [key, value] of Object.entries(STEP_NAMES)) {
+    if (value === stepName) return parseInt(key);
+  }
+  return 0; // Default to account step
+};
+
 // Simplified sign in function with better credential error handling
 export const signInWithEmailAndPassword = async (email, password) => {
     // console.log("DEBUG: Starting simplified signInWithEmailAndPassword process");
@@ -79,7 +106,7 @@ export const signInWithEmailAndPassword = async (email, password) => {
           email: userCredential.user.email,
           displayName: userCredential.user.displayName || "New Member",
           isExistingUser: true, // Assume existing user since they're able to log in
-          signupProgress: 0, // Default to 0, will be updated when navigating to signup
+          signupProgress: SIGNUP_STEPS.ACCOUNT, // Default to account step
           signupStep: "account",
           timestamp: Date.now()
         });
@@ -167,7 +194,7 @@ const handleGoogleSignIn = async () => {
         setTimeout(() => {
           // Navigate to signup with showSuccess parameter
           // console.log("Navigating to signup with showSuccess parameter");
-          navigate('/signup?step=0&showSuccess=true', { replace: true });
+          navigate('/signup?step=1&showSuccess=true', { replace: true });
         }, 500);
       } else {
         console.error("Google sign-in did not return success=true");
@@ -335,7 +362,7 @@ const handleGoogleSignIn = async () => {
             hasGoogleAuth: true,
             authProvider: "multiple",
             authProviders: ["google.com", "password"],
-            signupProgress: 1, // Default to step 1
+            signupProgress: SIGNUP_STEPS.CONTACT_INFO, // Default to contact_info step
             signupStep: "contact_info",
             createdAt: new Date(),
             lastUpdated: new Date()
@@ -762,7 +789,7 @@ export async function requestEmailVerification(email, name) {
       return {
         success: false,
         error: error.message || 'An unknown error occurred while checking user step',
-        step: 0, // Default to step 0 on error
+        step: SIGNUP_STEPS.ACCOUNT, // Default to account step on error
         stepName: 'account',
         exists: false,
         isSessionExpired: false
@@ -810,7 +837,7 @@ export async function verifyEmailCodeOnly(verificationId, code) {
       userId: result.data.userId,
       email: result.data.email,
       isExistingUser: result.data.isExistingUser || false,
-      signupProgress: result.data.signupProgress || 1,
+      signupProgress: result.data.signupProgress || SIGNUP_STEPS.CONTACT_INFO,
       signupStep: result.data.signupStep || "contact_info"
     };
   } catch (error) {
@@ -873,8 +900,8 @@ export async function createNewUser(verificationResult, email, name, password) {
             await setDoc(userRef, {
               email: email,
               name: name,
-              signupProgress: 1,
-              signupStep: "contact_info",
+              signupProgress: SIGNUP_STEPS.SUCCESS, // Using new step structure (1 = success)
+              signupStep: "success",
               createdAt: new Date(),
               authProvider: "email",
               hasPasswordAuth: true,
@@ -896,16 +923,16 @@ export async function createNewUser(verificationResult, email, name, password) {
           email: userCredential.user.email,
           displayName: userCredential.user.displayName || name,
           isExistingUser: false,
-          signupProgress: 1,
-          signupStep: "contact_info",
+          signupProgress: SIGNUP_STEPS.SUCCESS, // Using new step structure (1 = success)
+          signupStep: "success",
           timestamp: Date.now()
         });
         
         return {
           success: true,
           isExistingUser: false,
-          signupProgress: 1,
-          signupStep: "contact_info"
+          signupProgress: SIGNUP_STEPS.SUCCESS,
+          signupStep: "success"
         };
       } catch (signInError) {
         console.error("DEBUG: Error signing in after creating user:", signInError);
@@ -917,138 +944,138 @@ export async function createNewUser(verificationResult, email, name, password) {
     }
   }
   
-  // Function to sign in an existing user
-  export async function signInExistingUser(verificationResult, email, password) {
+// Function to sign in an existing user
+export async function signInExistingUser(verificationResult, email, password) {
+  try {
+    if (!verificationResult || !verificationResult.success) {
+      throw new Error('Verification must be completed successfully before signing in');
+    }
+    
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+    
+    // Sign out any existing user first 
     try {
-      if (!verificationResult || !verificationResult.success) {
-        throw new Error('Verification must be completed successfully before signing in');
-      }
+      await auth.signOut();
+      // console.log("DEBUG: User signed out before signing in existing user");
+    } catch (signOutError) {
+      // console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
+      // Continue anyway
+    }
+    
+    // First attempt to sign in with Firebase Auth
+    // console.log("DEBUG: Signing in with Firebase Auth");
+    try {
+      const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
+      // console.log("DEBUG: Sign in successful with existing user");
       
-      if (!email || !password) {
-        throw new Error('Email and password are required');
-      }
-      
-      // Sign out any existing user first 
+      // Call the cloud function to update records and get user state
+      // console.log("DEBUG: Calling signInExistingUser cloud function");
       try {
-        await auth.signOut();
-        // console.log("DEBUG: User signed out before signing in existing user");
-      } catch (signOutError) {
-        // console.log("DEBUG: Error signing out or no user to sign out:", signOutError);
-        // Continue anyway
-      }
-      
-      // First attempt to sign in with Firebase Auth
-      // console.log("DEBUG: Signing in with Firebase Auth");
-      try {
-        const userCredential = await firebaseSignInWithEmailAndPassword(auth, email, password);
-        // console.log("DEBUG: Sign in successful with existing user");
+        const signInExistingUserFn = httpsCallable(functions, 'signInExistingUser');
         
-        // Call the cloud function to update records and get user state
-        // console.log("DEBUG: Calling signInExistingUser cloud function");
-        try {
-          const signInExistingUserFn = httpsCallable(functions, 'signInExistingUser');
-          
-          const result = await signInExistingUserFn({
-            email,
-            password, // The function won't use this but maintains API consistency
-            verificationId: verificationResult.verificationId
-          });
-          
-          if (!result.data || !result.data.success) {
-            console.warn("DEBUG: Cloud function signInExistingUser warning:", result.data);
-            // Don't throw here - we already authenticated with Firebase Auth
-          } else {
-            // console.log("DEBUG: Cloud function signInExistingUser succeeded");
-            
-            // Check if document exists in Firestore (double-check)
-            try {
-              // console.log("DEBUG: Checking if user document exists in Firestore");
-              const userRef = doc(db, "users", userCredential.user.uid);
-              const userDoc = await getDoc(userRef);
-              
-              if (!userDoc.exists()) {
-                // console.log("DEBUG: User document doesn't exist, creating one directly");
-                await setDoc(userRef, {
-                  email: email,
-                  name: userCredential.user.displayName || "Existing User",
-                  signupProgress: result.data.signupProgress || 0,
-                  signupStep: result.data.signupStep || "account",
-                  createdAt: new Date(),
-                  authProvider: "email",
-                  hasPasswordAuth: true,
-                  authProviders: ["password"],
-                  lastSignIn: new Date()
-                });
-                // console.log("DEBUG: User document created directly");
-              } else {
-                // console.log("DEBUG: User document already exists");
-              }
-            } catch (firestoreError) {
-              console.error("DEBUG: Error checking/creating user document:", firestoreError);
-              // Continue anyway - we'll rely on localStorage
-            }
-          }
-        } catch (functionError) {
-          console.error("DEBUG: Error calling signInExistingUser function:", functionError);
-          // Continue anyway - we already authenticated with Firebase Auth
-        }
-        
-        // Save signup state
-        saveSignupState({
-          userId: userCredential.user.uid,
-          email: userCredential.user.email,
-          displayName: userCredential.user.displayName || "Existing User",
-          isExistingUser: true,
-          signupProgress: verificationResult.signupProgress || 0,
-          signupStep: verificationResult.signupStep || "account",
-          timestamp: Date.now()
+        const result = await signInExistingUserFn({
+          email,
+          password, // The function won't use this but maintains API consistency
+          verificationId: verificationResult.verificationId
         });
         
-        return {
-          success: true,
-          isExistingUser: true,
-          signupProgress: verificationResult.signupProgress || 0,
-          signupStep: verificationResult.signupStep || "account"
-        };
-      } catch (signInError) {
-        console.error("DEBUG: Error signing in with Firebase Auth:", signInError);
-        
-        if (signInError.code === 'auth/wrong-password') {
-          throw new Error('Incorrect password for existing account');
+        if (!result.data || !result.data.success) {
+          console.warn("DEBUG: Cloud function signInExistingUser warning:", result.data);
+          // Don't throw here - we already authenticated with Firebase Auth
         } else {
-          throw signInError;
+          // console.log("DEBUG: Cloud function signInExistingUser succeeded");
+          
+          // Check if document exists in Firestore (double-check)
+          try {
+            // console.log("DEBUG: Checking if user document exists in Firestore");
+            const userRef = doc(db, "users", userCredential.user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            if (!userDoc.exists()) {
+              // console.log("DEBUG: User document doesn't exist, creating one directly");
+              await setDoc(userRef, {
+                email: email,
+                name: userCredential.user.displayName || "Existing User",
+                signupProgress: result.data.signupProgress || SIGNUP_STEPS.ACCOUNT,
+                signupStep: result.data.signupStep || "account",
+                createdAt: new Date(),
+                authProvider: "email",
+                hasPasswordAuth: true,
+                authProviders: ["password"],
+                lastSignIn: new Date()
+              });
+              // console.log("DEBUG: User document created directly");
+            } else {
+              // console.log("DEBUG: User document already exists");
+            }
+          } catch (firestoreError) {
+            console.error("DEBUG: Error checking/creating user document:", firestoreError);
+            // Continue anyway - we'll rely on localStorage
+          }
         }
-      }
-    } catch (error) {
-      console.error('Error signing in existing user:', error);
-      throw error;
-    }
-  }
-  
-  // Update the createOrSignInUser function to use the new separate functions
-  export async function createOrSignInUser(verificationResult, email, name, password) {
-    try {
-      if (!verificationResult || !verificationResult.success) {
-        throw new Error('Verification must be completed successfully');
+      } catch (functionError) {
+        console.error("DEBUG: Error calling signInExistingUser function:", functionError);
+        // Continue anyway - we already authenticated with Firebase Auth
       }
       
-      if (!email || !password) {
-        throw new Error('Email and password are required');
-      }
+      // Save signup state
+      saveSignupState({
+        userId: userCredential.user.uid,
+        email: userCredential.user.email,
+        displayName: userCredential.user.displayName || "Existing User",
+        isExistingUser: true,
+        signupProgress: verificationResult.signupProgress || SIGNUP_STEPS.ACCOUNT,
+        signupStep: verificationResult.signupStep || "account",
+        timestamp: Date.now()
+      });
       
-      // Check if this is an existing user
-      if (verificationResult.isExistingUser) {
-        // console.log("DEBUG: Routing to signInExistingUser");
-        return signInExistingUser(verificationResult, email, password);
+      return {
+        success: true,
+        isExistingUser: true,
+        signupProgress: verificationResult.signupProgress || SIGNUP_STEPS.ACCOUNT,
+        signupStep: verificationResult.signupStep || "account"
+      };
+    } catch (signInError) {
+      console.error("DEBUG: Error signing in with Firebase Auth:", signInError);
+      
+      if (signInError.code === 'auth/wrong-password') {
+        throw new Error('Incorrect password for existing account');
       } else {
-        // console.log("DEBUG: Routing to createNewUser");
-        return createNewUser(verificationResult, email, name, password);
+        throw signInError;
       }
-    } catch (error) {
-      console.error('Error in createOrSignInUser:', error);
-      throw error;
     }
+  } catch (error) {
+    console.error('Error signing in existing user:', error);
+    throw error;
   }
+}
+  
+// Update the createOrSignInUser function to use the new separate functions
+export async function createOrSignInUser(verificationResult, email, name, password) {
+  try {
+    if (!verificationResult || !verificationResult.success) {
+      throw new Error('Verification must be completed successfully');
+    }
+    
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+    
+    // Check if this is an existing user
+    if (verificationResult.isExistingUser) {
+      // console.log("DEBUG: Routing to signInExistingUser");
+      return signInExistingUser(verificationResult, email, password);
+    } else {
+      // console.log("DEBUG: Routing to createNewUser");
+      return createNewUser(verificationResult, email, name, password);
+    }
+  } catch (error) {
+    console.error('Error in createOrSignInUser:', error);
+    throw error;
+  }
+}
 
 // Legacy function for compatibility - will be phased out
 export async function verifyEmailCode(verificationId, code, password) {
@@ -1181,8 +1208,8 @@ export async function signInWithGoogle(options) {
           await setDoc(userRef, {
             email: user.email,
             name: user.displayName || "New Member",
-            signupProgress: 1,
-            signupStep: "contact_info",
+            signupProgress: SIGNUP_STEPS.SUCCESS, // Using new step structure (1 = success)
+            signupStep: "success",
             createdAt: new Date(),
             authProvider: "google",
             hasGoogleAuth: true,
@@ -1208,8 +1235,8 @@ export async function signInWithGoogle(options) {
           email: user.email,
           displayName: user.displayName || "New Member",
           isExistingUser: !isNewUser,
-          signupProgress: userData ? (userData.signupProgress || 1) : 1,
-          signupStep: userData ? (userData.signupStep || "contact_info") : "contact_info",
+          signupProgress: userData ? (userData.signupProgress || SIGNUP_STEPS.SUCCESS) : SIGNUP_STEPS.SUCCESS,
+          signupStep: userData ? (userData.signupStep || "success") : "success",
           timestamp: Date.now()
         });
         
@@ -1238,8 +1265,8 @@ export async function signInWithGoogle(options) {
           email: user.email,
           displayName: user.displayName || "New Member",
           isExistingUser: !isNewUser,
-          signupProgress: 1,
-          signupStep: "contact_info",
+          signupProgress: SIGNUP_STEPS.SUCCESS, // Using new step structure (1 = success)
+          signupStep: "success",
           timestamp: Date.now()
         });
         
@@ -1302,122 +1329,98 @@ export const getAndNavigateToCurrentStep = async (navigate) => {
     }
   };
 
-  // Add this to auth.js
-export const getUserProgress = async () => {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        console.error("No authenticated user when checking progress");
-        return { success: false, maxStep: 0, currentStep: 0 };
-      }
-      
-      // Call the backend function
-      const checkUserStepFn = httpsCallable(functions, 'checkUserStep');
-      const result = await checkUserStepFn({ userId: user.uid });
-      
-      if (result.data && result.data.success) {
-        console.log(`Backend reports user progress is step ${result.data.step}`);
-        return {
-          success: true,
-          maxStep: result.data.step || 0, // The furthest step the user has reached
-          currentStep: result.data.step || 0, // The current recommended step
-          stepName: result.data.stepName || 'account'
-        };
-      } else {
-        console.error("Failed to get progress from backend:", result.data?.error);
-        return { success: false, maxStep: 0, currentStep: 0 };
-      }
-    } catch (error) {
-      console.error("Error getting user progress:", error);
-      return { success: false, maxStep: 0, currentStep: 0 };
+export const getUserProgress = async (userId) => {
+  try {
+    if (!userId) {
+      console.error("getUserProgress: Missing userId");
+      throw new Error('User ID is required');
     }
-  };
-
-export const updateSignupProgress = async (step, progress, data = {}) => {
-    console.log(`🔄 PROGRESS: Function called with step="${step}", progress=${progress}`);
-    console.log(`🔄 PROGRESS: Data keys:`, Object.keys(data));
     
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        console.error("❌ PROGRESS: No authenticated user found when updating progress");
-        throw new Error("User must be authenticated to update progress");
-      }
-      
-      console.log(`🔄 PROGRESS: User authenticated: ${user.uid} (${user.email})`);
-      
-      // Update user document with progress information
-      const userRef = doc(db, "users", user.uid);
-      console.log(`🔄 PROGRESS: Getting user document reference: users/${user.uid}`);
-      
-      // Check if document exists first
-      console.log(`🔄 PROGRESS: Checking if user document exists...`);
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists()) {
-        console.log(`🔄 PROGRESS: User document exists, current data:`, userDoc.data());
-        console.log(`🔄 PROGRESS: Current progress: ${userDoc.data().signupProgress}, signupStep: "${userDoc.data().signupStep}"`);
-        
-        // Create update object
-        const updateData = {
-          signupStep: step,
-          signupProgress: progress,
-          lastUpdated: new Date(),
-          [`formData.${step}`]: data
-        };
-        console.log(`🔄 PROGRESS: Updating document with:`, updateData);
-        
-        // Update existing document
-        await updateDoc(userRef, updateData);
-        console.log(`🔄 PROGRESS: Document updated successfully`);
-        
-        // Verify update worked
-        const updatedDoc = await getDoc(userRef);
-        console.log(`🔄 PROGRESS: Verification - Updated progress: ${updatedDoc.data().signupProgress}, step: "${updatedDoc.data().signupStep}"`);
-      } else {
-        console.log(`🔄 PROGRESS: User document doesn't exist, creating new document`);
-        
-        // Create document data
-        const docData = {
-          email: user.email,
-          displayName: user.displayName || "New Member",
-          signupStep: step,
-          signupProgress: progress,
-          createdAt: new Date(),
-          lastUpdated: new Date(),
-          formData: {
-            [step]: data,
-          }
-        };
-        console.log(`🔄 PROGRESS: Creating document with:`, docData);
-        
-        // Create new document
-        await setDoc(userRef, docData);
-        console.log(`🔄 PROGRESS: New document created successfully`);
-      }
-      
-      // Also update local storage for redundancy
-      const signupState = {
-        userId: user.uid,
+    // Use the existing checkUserStep function instead of fetch
+    const result = await checkUserStep({ userId });
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch user progress');
+    }
+    
+    return {
+      maxStep: result.step || SIGNUP_STEPS.ACCOUNT,
+      currentStep: result.step || SIGNUP_STEPS.ACCOUNT,
+      completed: result.completed || false,
+      stepName: result.stepName || 'account'
+    };
+  } catch (error) {
+    console.error('Error fetching user progress:', error);
+    
+    // Return default values instead of throwing
+    return {
+      maxStep: SIGNUP_STEPS.ACCOUNT,
+      currentStep: SIGNUP_STEPS.ACCOUNT,
+      completed: false,
+      stepName: 'account'
+    };
+  }
+};
+
+export const updateSignupProgress = async (stepName, stepIndex, stepData = {}) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error("No authenticated user found when updating progress");
+      throw new Error("User must be authenticated to update progress");
+    }
+    
+    console.log(`Updating progress for user ${user.uid} to step: ${stepName}, progress: ${stepIndex}`);
+    
+    // Update user document with progress information
+    const userRef = doc(db, "users", user.uid);
+    
+    // Check if document exists first
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      // Update existing document
+      await updateDoc(userRef, {
+        signupStep: stepName,
+        signupProgress: stepIndex,
+        lastUpdated: new Date(),
+        [`formData.${stepName}`]: stepData, // Store form data for this step
+      });
+      console.log("Updated existing user document with new progress");
+    } else {
+      // Create new document
+      await setDoc(userRef, {
         email: user.email,
         displayName: user.displayName || "New Member",
-        signupStep: step,
-        signupProgress: progress,
-        timestamp: Date.now(),
-      };
-      
-      console.log(`🔄 PROGRESS: Updating local storage with:`, signupState);
-      saveSignupState(signupState);
-      console.log(`🔄 PROGRESS: Local storage updated`);
-      
-      console.log(`🔄 PROGRESS: Function completed successfully`);
-      return { success: true };
-    } catch (error) {
-      console.error(`❌ PROGRESS: Error updating progress:`, error);
-      console.error(`❌ PROGRESS: Error stack:`, error.stack);
-      return { success: false, error };
+        signupStep: stepName,
+        signupProgress: stepIndex,
+        createdAt: new Date(),
+        lastUpdated: new Date(),
+        formData: {
+          [stepName]: stepData,
+        },
+      });
+      console.log("Created new user document with initial progress");
     }
-  };
+    
+    // Also update local storage for redundancy
+    const signupState = {
+      userId: user.uid,
+      email: user.email,
+      displayName: user.displayName || "New Member",
+      signupStep: stepName,
+      signupProgress: stepIndex,
+      timestamp: Date.now(),
+    };
+    
+    saveSignupState(signupState);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating signup progress:", error);
+    return { success: false, error };
+  }
+};
 
 // Enhanced logout function
 export const logout = async () => {
@@ -1441,40 +1444,40 @@ export const logout = async () => {
 };
 
 export async function checkEmailExists(email) {
-    if (!email) return { exists: false };
+  if (!email) return { exists: false };
+  
+  // console.log(`DEBUG: Checking if email exists: ${email}`);
+  
+  try {
+    // First attempt to fetch sign-in methods for the email
+    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+    console.log(`DEBUG: Sign in methods for ${email}:`, signInMethods);
     
-    // console.log(`DEBUG: Checking if email exists: ${email}`);
+    // Check if email/password is one of the methods
+    const hasPasswordProvider = signInMethods.includes('password');
+    const hasGoogleProvider = signInMethods.includes('google.com');
     
-    try {
-      // First attempt to fetch sign-in methods for the email
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      console.log(`DEBUG: Sign in methods for ${email}:`, signInMethods);
-      
-      // Check if email/password is one of the methods
-      const hasPasswordProvider = signInMethods.includes('password');
-      const hasGoogleProvider = signInMethods.includes('google.com');
-      
-      return { 
-        exists: signInMethods.length > 0,
-        hasPasswordProvider,
-        hasGoogleProvider,
-        signInMethods
-      };
-    } catch (error) {
-      console.error(`DEBUG: Error checking if email exists:`, error);
-      // If there's an error, assume the email doesn't exist
-      return { exists: false, error: error.message };
-    }
+    return { 
+      exists: signInMethods.length > 0,
+      hasPasswordProvider,
+      hasGoogleProvider,
+      signInMethods
+    };
+  } catch (error) {
+    console.error(`DEBUG: Error checking if email exists:`, error);
+    // If there's an error, assume the email doesn't exist
+    return { exists: false, error: error.message };
   }
+}
 
 export { 
-    EmailAuthProvider,
-    GoogleAuthProvider,
-    linkWithCredential,
-    reauthenticateWithCredential,
-    reauthenticateWithPopup,
-    linkWithPopup,
-    verifyPasswordResetCode,
-    confirmPasswordReset,
-    db
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  linkWithCredential,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  linkWithPopup,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  db
 };

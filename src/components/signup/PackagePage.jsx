@@ -1,7 +1,8 @@
 // File: pages/PackagePage.jsx
 import React, { useState, useEffect } from "react";
-import { updateSignupProgress } from "../services/auth";
-import { getMembershipCost } from "../services/pricing";
+import { useNavigate } from "react-router-dom"; // Added import for navigation
+import { updateSignupProgress } from "../../services/auth";
+import { getMembershipCost } from "../../services/pricing";
 
 // Update help content for export
 export const packageHelpContent = [
@@ -25,6 +26,7 @@ export const packageHelpContent = [
 
 // Rename component and simplify to content-only
 export default function PackagePage({ onNext, onBack }) {
+  const navigate = useNavigate(); // Added navigate hook
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [membershipCost, setMembershipCost] = useState(null);
   const [membershipAge, setMembershipAge] = useState(null);
@@ -58,22 +60,19 @@ export default function PackagePage({ onNext, onBack }) {
     fetchMembershipCost();
   }, []);
   
-  // Direct approach for back button - matching ContactInfoPage implementation
+  // FIXED: Direct approach for back button with proper navigation
   const handleBackClick = () => {
     console.log("PackagePage: Handle back button clicked");
     
     // Use the more reliable force navigation method
-    localStorage.setItem('force_active_step', '1'); // Force to step 1 (Contact Info)
+    localStorage.setItem('force_active_step', '2'); // Force to step 2 (Contact Info)
     localStorage.setItem('force_timestamp', Date.now().toString());
     
-    // Use setTimeout to ensure this happens after current event loop
-    setTimeout(() => {
-      // Then force a page reload to clear any stale state
-      window.location.href = `/signup?step=1&force=true&_=${Date.now()}`;
-    }, 0);
+    // Use direct path navigation to contact page
+    navigate('/signup/contact', { replace: true });
   };
   
-  // Handler for next button - uses props from parent
+  // FIXED: Handler for next button with proper step numbering
   const handleNext = async () => {
     setIsSubmitting(true);
     
@@ -87,7 +86,8 @@ export default function PackagePage({ onNext, onBack }) {
       }
       
       // Update progress in Firebase with package selection data
-      await updateSignupProgress("funding", 3, {
+      // FIXED: Changed step from 3 to 4 for "funding"
+      await updateSignupProgress("funding", 4, {
         selectedPackage,
         packageCost: finalPrice,
         calculatedAt: new Date().toISOString(),
@@ -101,6 +101,12 @@ export default function PackagePage({ onNext, onBack }) {
           cost: finalPrice
         });
       }
+      
+      // ADDED: Fallback direct navigation if onNext not provided
+      console.log("🚀 Navigating to funding step...");
+      localStorage.setItem('force_active_step', '4'); // Force to Funding step (4)
+      localStorage.setItem('force_timestamp', Date.now().toString());
+      navigate('/signup/funding', { replace: true });
       
       return true;
     } catch (error) {

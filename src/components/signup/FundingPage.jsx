@@ -1,10 +1,10 @@
 // File: pages/FundingPage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import ResponsiveBanner from "../components/ResponsiveBanner";
-import { useUser } from "../contexts/UserContext";
-import { updateSignupProgress } from "../services/auth";
-import HelpPanel from "../components/signup/HelpPanel";
+import ResponsiveBanner from "../ResponsiveBanner";
+import { useUser } from "../../contexts/UserContext";
+import { updateSignupProgress } from "../../services/auth";
+import HelpPanel from "./HelpPanel";
 
 // Define the steps array for the banner
 const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];

@@ -33,6 +33,39 @@ const ResponsiveBanner = ({
   const [isLoading, setIsLoading] = useState(true);
   const [backendError, setBackendError] = useState(null);
   
+  // Step paths for route-based navigation (6 paths for 5 progress steps)
+  const stepPaths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
+  
+  // Map between progress UI index and actual step index
+  // This is needed because step 0 and 1 are both part of the first progress dot ("Account")
+  const progressToStepMap = {
+    0: 0, // First progress dot -> Account (step path 0 or 1)
+    1: 2, // Second progress dot -> Contact (step path 2)
+    2: 3, // Third progress dot -> Package (step path 3)
+    3: 4, // Fourth progress dot -> Funding (step path 4)
+    4: 5  // Fifth progress dot -> Membership (step path 5)
+  };
+  
+  // Reverse mapping - from step path index to progress index
+  const stepToProgressMap = {
+    0: 0, // Account creation step -> First progress dot
+    1: 0, // Account success step -> First progress dot (both go under "Account")
+    2: 1, // Contact step -> Second progress dot
+    3: 2, // Package step -> Third progress dot
+    4: 3, // Funding step -> Fourth progress dot
+    5: 4  // Membership step -> Fifth progress dot
+  };
+  
+  // Function to determine which progress dot should be active based on current step
+  const getProgressIndexFromStep = (stepIndex) => {
+    return stepToProgressMap[stepIndex] || 0;
+  };
+  
+  // Function to get step path index from progress dot index
+  const getStepPathFromProgressIndex = (progressIndex) => {
+    return progressToStepMap[progressIndex] || 0;
+  };
+  
   // Check if this is a signup page (has progress bar)
   const isSignupPage = showProgressBar;
   // Check if this is a login page (not a signup page, and text is centered)
@@ -90,62 +123,62 @@ const ResponsiveBanner = ({
     return () => clearInterval(intervalId);
   }, [currentUser, showProgressBar, navigate]);
 
-  // MOST DIRECT SOLUTION: Complete rewrite of handleStepClick in ResponsiveBanner.jsx
-  const handleStepClick = (index) => {
+  // FIXED: handleStepClick to correctly map between progress circles and step paths
+  const handleStepClick = (progressIndex) => {
     if (!showProgressBar || isLoading) return;
     
-    // Allow navigation to any previously completed step (including step 0)
-    if (index <= maxCompletedStep) {
-      console.log(`EMERGENCY DIRECT NAVIGATION: Force to step ${index}`);
+    // Map from progress dot index to actual path index
+    const pathIndex = getStepPathFromProgressIndex(progressIndex);
+    
+    // Special case: If clicking first progress dot (Account), always go to success page
+    // unless the user hasn't completed account creation yet
+    const targetPathIndex = progressIndex === 0 && maxCompletedStep >= 1 ? 1 : pathIndex;
+    
+    // Allow navigation to any previously completed step
+    if (targetPathIndex <= maxCompletedStep) {
+      console.log(`Navigating from progress index ${progressIndex} to path ${stepPaths[targetPathIndex]}`);
       
-      // Set account creation flag if going to step 0
-      if (index === 0 && currentUser) {
-        localStorage.setItem('account_creation_success', 'true');
-      }
-      
-      // Force update the parent's active step directly
-      // This bypasses the URL system entirely
-      
-      // First update local storage to ensure state persists after reload
-      localStorage.setItem('force_active_step', index.toString());
-      localStorage.setItem('force_timestamp', Date.now().toString());
-      
-      // Use setTimeout to ensure this happens after current event loop
-      setTimeout(() => {
-        // Then force a page reload to clear any stale state
-        window.location.href = `/signup?step=${index}&force=true&_=${Date.now()}`;
-      }, 0);
+      // Use React Router for navigation
+      navigate(`/signup${stepPaths[targetPathIndex]}`, { replace: true });
     } else {
-      console.log(`Cannot navigate to step ${index}, max completed step is ${maxCompletedStep}`);
+      console.log(`Cannot navigate to step ${targetPathIndex}, max completed step is ${maxCompletedStep}`);
     }
   };
 
   // Content calculations
-  const stepNumber = activeStep + 1;
-  const stepName = steps[activeStep];
+  // Adjust stepNumber calculation to account for special mapping
+  // If we're on account creation (0) or success page (1), show as Step 1
+  const stepNumber = activeStep <= 1 ? 1 : activeStep;
   
+  // Get appropriate step name based on activeStep
+  const stepName = activeStep <= 1 ? steps[0] : steps[stepToProgressMap[activeStep]];
+  
+  // UPDATED: getHeading to account for new step mapping
   const getHeading = () => {
     if (heading) return heading;
     
     switch(activeStep) {
-      case 0: return "Become a member";
-      case 1: return "Contact information";
-      case 2: return "Package selection";
-      case 3: return "Funding details";
-      case 4: return "Membership confirmation";
+      case 0: return "Become a member"; // Account creation
+      case 1: return "Account created!"; // Success page
+      case 2: return "Contact information"; // Contact info
+      case 3: return "Package selection"; // Package
+      case 4: return "Funding details"; // Funding
+      case 5: return "Membership confirmation"; // Membership
       default: return "Become a member";
     }
   };
   
+  // UPDATED: getSubText to account for new step mapping
   const getSubText = () => {
     if (subText) return subText;
     
     switch(activeStep) {
-      case 0: return "Sign up process takes on average 5 minutes.";
-      case 1: return "Building your membership application.";
-      case 2: return "Choose your cryopreservation package.";
-      case 3: return "Set up your funding details.";
-      case 4: return "Review and confirm your membership details.";
+      case 0: return "Sign up process takes on average 5 minutes."; // Account creation
+      case 1: return "Your account has been successfully created."; // Success page
+      case 2: return "Building your membership application."; // Contact info
+      case 3: return "Choose your cryopreservation package."; // Package
+      case 4: return "Set up your funding details."; // Funding
+      case 5: return "Review and confirm your membership details."; // Membership
       default: return "Sign up process takes on average 5 minutes.";
     }
   };
@@ -278,19 +311,14 @@ const ResponsiveBanner = ({
   const topPaddingClass = getTopPaddingClass();
   
   // Debug output to help identify issues
-  //console.log("ResponsiveBanner render:");
-  //console.log("- currentUser:", currentUser ? "logged in" : "not logged in");
-  //console.log("- activeStep:", activeStep);
-  //console.log("- maxCompletedStep:", maxCompletedStep);
-  //console.log("- isWelcomePage:", isWelcomePage);
-  //console.log("- isSignupPage:", isSignupPage);
-  //console.log("- isLoginPage:", isLoginPage);
-  //console.log("- shouldUseGradient:", shouldUseGradient);
-  //console.log("- textAlignment:", textAlignment);
-  //console.log("- displayHeading:", displayHeading);
-  //console.log("- logoPositioningClass:", logoPositioningClass);
-  //console.log("- logoSizeClass:", logoSizeClass);
-  //console.log("- topPaddingClass:", topPaddingClass);
+  console.log("- maxCompletedStep:", maxCompletedStep);
+  console.log("- activeStep:", activeStep);
+  console.log("- progressIndex:", getProgressIndexFromStep(activeStep));
+
+  // Convert backend max step to progress dots max step
+  const maxCompletedProgressDot = stepToProgressMap[maxCompletedStep] || 0;
+  // Calculate which progress dot should be active
+  const activeProgressDot = getProgressIndexFromStep(activeStep);
 
   return (
     <div className="banner-container">
@@ -331,12 +359,12 @@ const ResponsiveBanner = ({
             </div>
           )}
           
-          {/* Mobile Progress Bar - using the separated component */}
+          {/* Mobile Progress Bar - using the separated component with corrected step mapping */}
           {showProgressBar && !isLoading && (
             <MobileProgressCircles 
               steps={steps}
-              activeStep={activeStep}
-              maxCompletedStep={maxCompletedStep}
+              activeStep={activeProgressDot}
+              maxCompletedStep={maxCompletedProgressDot}
               onStepClick={handleStepClick}
             />
           )}
@@ -405,12 +433,12 @@ const ResponsiveBanner = ({
           </div>
         </div>
         
-        {/* Progress bar section - using the separated component */}
+        {/* Progress bar section - using the separated component with corrected step mapping */}
         {showProgressBar && !isLoading && (
           <ProgressCircles
             steps={steps}
-            activeStep={activeStep}
-            maxCompletedStep={maxCompletedStep}
+            activeStep={activeProgressDot}
+            maxCompletedStep={maxCompletedProgressDot}
             onStepClick={handleStepClick}
           />
         )}

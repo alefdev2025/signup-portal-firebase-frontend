@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveBanner from "../components/ResponsiveBanner";
 import darkLogo from "../assets/images/alcor-white-logo.png";
-import yellowStar from "../assets/images/alcor-yellow-star.png"; // Import yellow star image
+import yellowStar from "../assets/images/alcor-yellow-star.png";
 
 // Import from auth service
 import { logout } from "../services/auth";
@@ -17,8 +17,8 @@ const WelcomePage = () => {
   // Clear ALL state when the Welcome page loads
   useEffect(() => {
     const clearAllState = async () => {
+      console.log("Clearing all state on WelcomePage mount");
       try {
-        // console.log("WelcomePage: Clearing all state");
         // Clear all localStorage items
         localStorage.removeItem('alcor_signup_state');
         localStorage.removeItem('alcor_verification_state');
@@ -27,17 +27,25 @@ const WelcomePage = () => {
         localStorage.removeItem('emailForSignIn');
         localStorage.removeItem('fresh_signup');
         
+        // EXPLICITLY clear account_creation_success flag
+        localStorage.removeItem('account_creation_success');
+        localStorage.removeItem('force_active_step');
+        localStorage.removeItem('force_timestamp');
+        
+        // Clear verification flags
+        localStorage.removeItem('just_verified');
+        localStorage.removeItem('verification_timestamp');
+        
+        // Clear any other stray flags
+        localStorage.removeItem('has_navigated');
+        
         // Sign out user if they're logged in
         try {
-          // console.log("WelcomePage: Attempting to log out user");
           await logout();
-          // console.log("User logged out on Welcome page");
         } catch (logoutError) {
           console.error("Logout error (non-critical):", logoutError);
           // Continue anyway - we've cleared the localStorage
         }
-        
-        // console.log("All state cleared on Welcome page load");
       } catch (error) {
         console.error("Error clearing state:", error);
       }
@@ -46,31 +54,37 @@ const WelcomePage = () => {
     clearAllState();
   }, []);
 
-  // Handle direct navigation to signup or login
-  const goToSignup = () => {
-    // console.log("Get Started button clicked");
-    
-    // Make sure localStorage is cleared before navigating
+  const goToSignup = async () => {  // Make this async
     try {
-      // console.log("Clearing state before signup navigation");
-      // Clear all localStorage items related to signup process
+      console.log("Get Started button clicked, clearing state and redirecting");
+      // Clear all localStorage items
       localStorage.removeItem('alcor_signup_state');
       localStorage.removeItem('alcor_verification_state');
       localStorage.removeItem('alcor_form_data');
       localStorage.removeItem('emailForSignIn');
+      localStorage.removeItem('account_creation_success');
+      localStorage.removeItem('force_active_step');
+      localStorage.removeItem('force_timestamp');
+      localStorage.removeItem('just_verified');
+      localStorage.removeItem('verification_timestamp');
+      
+      // Set hasNavigatedRef to false explicitly via localStorage
+      localStorage.setItem('has_navigated', 'false');
+      
+      // First, ensure the user is fully logged out and wait for completion
+      await logout();
       
       // Add a flag to indicate a fresh start
       localStorage.setItem('fresh_signup', 'true');
-      // console.log("Set fresh_signup flag to true");
       
-      // console.log("All state cleared before signup navigation");
+      // Force a hard reload to ensure all React state is cleared
+      // This is important to reset the auth state completely
+      window.location.href = '/signup?fresh=true';
     } catch (error) {
-      console.error("Error clearing state:", error);
+      console.error("Error in goToSignup:", error);
+      // Still try to navigate even if there's an error
+      window.location.href = '/signup?fresh=true';
     }
-    
-    // console.log("Navigating to /signup?step=0");
-    // Direct navigation using window.location for reliability
-    window.location.href = '/signup?step=0';
   };
   
   const goToLogin = (continueSignup = false) => {
@@ -190,7 +204,7 @@ const WelcomePage = () => {
                 
                 {/* Card Content */}
                 <div className="p-5 sm:p-8 flex-1">
-                  <div className="w-14 sm:w-20 h-14 sm:h-20 rounded-full flex items-center justify-center mb-5 bg-white shadow-sm border ${card.borderColor} mx-auto">
+                  <div className={`w-14 sm:w-20 h-14 sm:h-20 rounded-full flex items-center justify-center mb-5 bg-white shadow-sm border ${card.borderColor} mx-auto`}>
                     {card.iconPath}
                   </div>
                   <h3 className="text-xl sm:text-2xl font-bold text-[#0C2340] mb-4 flex items-center justify-center">

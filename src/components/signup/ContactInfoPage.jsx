@@ -3,16 +3,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 
 // Context
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../contexts/UserContext";
 
 // Firebase services
-import { auth } from "../services/firebase";
-import { updateSignupProgress } from "../services/auth";
-import { saveContactInfo, getContactInfo } from "../services/contact";
+import { auth } from "../../services/firebase";
+import { updateSignupProgress } from "../../services/auth";
+import { saveContactInfo, getContactInfo } from "../../services/contact";
 
 // Components
-import AddressAutocomplete from "../components/AddressAutocomplete";
-import HelpPanel from "../components/signup/HelpPanel";
+import AddressAutocomplete from "../AddressAutocomplete";
+import HelpPanel from "./HelpPanel";
 
 // Custom styles for input labels
 const LabelWithIcon = ({ label, required = false }) => (
@@ -810,9 +810,9 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       
       console.log("✅ Contact info saved successfully!");
       
-      // STEP 2: Update progress separately
-      console.log("💾 Updating signup progress to step 2 (package)...");
-      const progressResult = await updateSignupProgress("package", 2, {});
+      // STEP 2: Update progress separately - FIXED: using correct step number 3
+      console.log("💾 Updating signup progress to step 3 (package)...");
+      const progressResult = await updateSignupProgress("package", 3, {}); // FIXED: changed from 2 to 3
       
       if (!progressResult || !progressResult.success) {
         console.error("❌ Failed to update progress:", progressResult);
@@ -825,15 +825,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       // STEP 3: Force navigation to the next step
       console.log("🚀 Navigating to package step...");
       
-      // Use localStorage emergency override
-      localStorage.setItem('force_active_step', '2'); // Force to Package step
+      // Use localStorage emergency override - FIXED: using correct step number 3
+      localStorage.setItem('force_active_step', '3'); // FIXED: changed from 2 to 3
       localStorage.setItem('force_timestamp', Date.now().toString());
       
       // No setActiveStep here as it's not available
       
-      // Use the browser navigation with force=true
-      console.log("🔄 Executing force navigation to step 2");
-      navigate('/signup?step=2&force=true', { replace: true });
+      // Use direct path navigation instead of query parameters - FIXED: using proper path
+      console.log("🔄 Executing direct navigation to package step");
+      navigate('/signup/package', { replace: true }); // FIXED: changed from query params to direct path
       
     } catch (error) {
       console.error('❌ Error saving contact info:', error);
@@ -844,19 +844,11 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   };
 
-  // Handler for back button
   const handleBack = () => {
     console.log("ContactInfoPage: Handle back button clicked");
     
-    // Use the more reliable force navigation method
-    localStorage.setItem('force_active_step', '0'); // Force to step 0
-    localStorage.setItem('force_timestamp', Date.now().toString());
-    
-    // Use setTimeout to ensure this happens after current event loop
-    setTimeout(() => {
-      // Then force a page reload to clear any stale state
-      window.location.href = `/signup?step=0&force=true&_=${Date.now()}`;
-    }, 0);
+    // Simply navigate to the previous step
+    navigate('/signup/success', { replace: true });
   };
 
   if (isLoading) {

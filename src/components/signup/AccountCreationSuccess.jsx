@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { updateSignupProgress } from '../../services/auth';
-import { saveSignupState } from '../../contexts/UserContext';
+import { saveSignupState } from '../../services/storage';
 import alcorFullLogo from '../../assets/images/navy-alcor-logo.png';
 
 const AccountCreationSuccess = ({ currentUser, onNext }) => {
@@ -68,7 +67,11 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
   
   const handleContinue = () => {
     console.log("Continue button clicked");
-    updateBackendAndNavigate();
+    // Don't call updateBackendAndNavigate() here
+    // Instead, use the onNext prop
+    if (onNext) {
+      onNext();
+    }
   };
   
   return (

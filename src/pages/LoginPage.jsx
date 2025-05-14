@@ -19,9 +19,12 @@ import {
 
 // Context and state
 import { 
-  useUser,
-  saveSignupState
+  useUser
 } from "../contexts/UserContext";
+
+import {
+    saveSignupState
+} from "../services/storage";
 
 // Components and assets
 import darkLogo from "../assets/images/alcor-white-logo.png";
@@ -173,23 +176,22 @@ useEffect(() => {
     checkAuthAndSetup();
   }, [emailParam, isContinueSignup, provider, addPasswordParam, linkAccountsParam]);
 
-  // Modified redirect when user becomes authenticated
-  useEffect(() => {
+// Modified redirect when user becomes authenticated
+useEffect(() => {
     // Only proceed with navigation if we should navigate
-    // This helps prevent premature navigation during linking flows
     if (currentUser && shouldNavigate) {
       console.log("DEBUG: User authenticated and shouldNavigate=true, getting step from backend");
       console.log("DEBUG: Current user:", currentUser.uid, currentUser.email);
       setIsLoading(true);
       
+      // CRITICAL: Clear account_creation_success flag to prevent success page
+      localStorage.removeItem('account_creation_success');
+      localStorage.setItem('has_navigated', 'false');
+      
       // Process user and get step from backend
       const processUser = async () => {
         try {
-          // Set up Firebase functions
-          const functions = getFunctions();
-          
           // Direct approach - call the specific getUserStep function
-          // This function will handle all the logic for determining the right step
           console.log("DEBUG: Calling getUserStep Cloud Function");
           const getUserStepFn = httpsCallable(functions, 'getUserStep');
           
@@ -216,11 +218,18 @@ useEffect(() => {
               signupStep: stepName,
               timestamp: Date.now()
             });
+  
+            // IMPORTANT: Force navigation to clear any lingering state
+            // Use force parameter to ensure proper step loading
+            console.log(`DEBUG: Updated local state, forcing navigation to step ${step}`);
             
-            console.log(`DEBUG: Updated local state, navigating to step ${step}`);
+            // Set force navigation flags
+            localStorage.setItem('force_active_step', step.toString());
+            localStorage.setItem('force_timestamp', Date.now().toString());
             
-            // Navigate to the correct step
-            navigate(`/signup?step=${step}`);
+            // Navigate to the correct step with force parameter
+            const stepPaths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
+            window.location.href = `/signup${stepPaths[step]}?force=true`;
           } else {
             throw new Error("Backend returned error or unsuccessful response");
           }
@@ -244,7 +253,12 @@ useEffect(() => {
             timestamp: Date.now()
           });
           
-          navigate(`/signup?step=${fallbackStep}`);
+          // Set force navigation flags
+          localStorage.setItem('force_active_step', fallbackStep.toString());
+          localStorage.setItem('force_timestamp', Date.now().toString());
+          
+          // Force navigation for fallback too
+          window.location.href = `/signup?step=${fallbackStep}&force=true`;
         } finally {
           setIsLoading(false);
           setShouldNavigate(false); // Reset flag after navigation
@@ -268,12 +282,11 @@ useEffect(() => {
   const getStepName = (step) => {
     const stepMap = {
       0: "account",
-      1: "contact_info",
-      2: "personal_info",
-      3: "payment",
-      4: "documents",
-      5: "review",
-      // Add more steps as needed
+      1: "success",
+      2: "contact_info",
+      3: "package",
+      4: "funding",
+      5: "membership"
     };
     
     return stepMap[step] || "account";
@@ -761,7 +774,8 @@ const handleSkipPasswordAdd = async () => {
           // Navigate after delay
           setTimeout(() => {
             setIsLoading(false);
-            navigate(`/signup?step=${fallbackStep}`);
+            const stepPaths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
+            navigate(`/signup${stepPaths[step]}`);
           }, 1500);
         }
       } else {
@@ -1062,7 +1076,7 @@ const handleLinkGoogle = async (e) => {
   // Function to register for testing
   const handleRegisterForTesting = () => {
     console.log("Navigating to signup for testing");
-    navigate('/signup?step=0');
+    navigate('/signup');
   };
 
   // Determine what forms to show based on context
