@@ -146,7 +146,36 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         box-sizing: border-box !important;
         display: block !important;
         width: 100% !important;
-        max-width: 92% !important; /* Make fields shorter in width */
+        max-width: 100% !important; /* Full width on mobile */
+      }
+      
+      @media (min-width: 768px) {
+        input, select, textarea {
+          max-width: 100% !important; /* Full width fields on desktop */
+        }
+      }
+      
+      /* Make address autocomplete field have same width as other fields */
+      .address-autocomplete-field {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      
+      @media (min-width: 768px) {
+        .address-autocomplete-field {
+          max-width: 100% !important; /* Full width address fields */
+        }
+      }
+      
+      /* Make birthday dropdowns full width */
+      .date-select {
+        flex: 1;
+        min-width: 0;
+      }
+      
+      .date-container {
+        width: 100%;
+        max-width: 100%;
       }
       
       /* Custom select styling to prevent Safari gradient backgrounds */
@@ -679,12 +708,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       marginRight: 'calc(-50vw + 50%)',
       position: 'relative'
     }}>
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
+      <div className="w-full mx-auto px-2 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
         <form onSubmit={handleSubmit} className="w-full">
           {/* Personal Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-8 md:p-12 px-10 md:px-14">
-              <div className="mb-10 md:mb-14 flex items-start pt-4">
+            <div className="p-4 md:p-12 px-6 md:px-14">
+              <div className="mb-6 md:mb-14 flex items-start pt-2 md:pt-4">
                 <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -832,12 +861,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   {errors.homePhone && <p className="text-red-500 text-sm mt-1">{errors.homePhone}</p>}
                 </div>
                 
-                {/* Date of Birth - Three side-by-side dropdowns */}
+                {/* Date of Birth - Three side-by-side dropdowns with narrower width */}
                 <div>
                   <LabelWithIcon label="Date of Birth" required={true} />
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2 date-container">
                     {/* Month dropdown */}
-                    <div>
+                    <div className="date-select">
                       <select
                         id="birthMonth"
                         name="birthMonth"
@@ -865,7 +894,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     </div>
                     
                     {/* Day dropdown */}
-                    <div>
+                    <div className="date-select">
                       <select
                         id="birthDay"
                         name="birthDay"
@@ -885,7 +914,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     </div>
                     
                     {/* Year dropdown */}
-                    <div>
+                    <div className="date-select">
                       <select
                         id="birthYear"
                         name="birthYear"
@@ -921,8 +950,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           
           {/* Address Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-8 md:p-12 px-10 md:px-14">
-              <div className="mb-10 md:mb-14 flex items-start pt-4">
+            <div className="p-4 md:p-12 px-6 md:px-14">
+              <div className="mb-6 md:mb-14 flex items-start pt-2 md:pt-4">
                 <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -938,19 +967,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
-                {/* Home address with Google Places Autocomplete */}
+                {/* Home address with Google Places Autocomplete - full width for this field */}
                 <div className="md:col-span-2">
-                  <AddressAutocomplete
-                    id="streetAddress"
-                    name="streetAddress"
-                    label="Home Address"
-                    defaultValue={formData.streetAddress}
-                    onAddressSelect={handleAddressSelect}
-                    required={true}
-                    disabled={isSubmitting}
-                    errorMessage={errors.streetAddress}
-                    placeholder="Start typing your address..."
-                  />
+                  <div className="address-autocomplete-field">
+                    <AddressAutocomplete
+                      id="streetAddress"
+                      name="streetAddress"
+                      label="Home Address"
+                      defaultValue={formData.streetAddress}
+                      onAddressSelect={handleAddressSelect}
+                      required={true}
+                      disabled={isSubmitting}
+                      errorMessage={errors.streetAddress}
+                      placeholder="Start typing your address..."
+                    />
+                  </div>
                 </div>
                 
                 <div>
@@ -1070,17 +1101,19 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                     <div className="md:col-span-2">
-                      <AddressAutocomplete
-                        id="mailingStreetAddress"
-                        name="mailingStreetAddress"
-                        label="Mailing Address"
-                        defaultValue={formData.mailingStreetAddress}
-                        onAddressSelect={handleMailingAddressSelect}
-                        required={true}
-                        disabled={isSubmitting}
-                        errorMessage={errors.mailingStreetAddress}
-                        placeholder="Start typing your mailing address..."
-                      />
+                      <div className="address-autocomplete-field">
+                        <AddressAutocomplete
+                          id="mailingStreetAddress"
+                          name="mailingStreetAddress"
+                          label="Mailing Address"
+                          defaultValue={formData.mailingStreetAddress}
+                          onAddressSelect={handleMailingAddressSelect}
+                          required={true}
+                          disabled={isSubmitting}
+                          errorMessage={errors.mailingStreetAddress}
+                          placeholder="Start typing your mailing address..."
+                        />
+                      </div>
                     </div>
                     
                     <div>
