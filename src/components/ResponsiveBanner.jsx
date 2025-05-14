@@ -297,17 +297,17 @@ const ResponsiveBanner = ({
       {/* Mobile Banner (compact version) */}
       <div className="md:hidden">
         <div 
-          className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-8' : isLoginPage ? 'py-6' : 'py-4'} relative overflow-hidden`}
+          className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'py-8' : 'py-8'} relative overflow-hidden`}
           style={shouldUseGradient ? gradientStyle : {}}
         >
           {/* Top section with logo and heading - FIXED LAYOUT */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6 pt-4">
             {/* Logo at the left */}
             <div className="flex items-center">
               <img 
                 src={logo} 
                 alt="Alcor Logo" 
-                className={isWelcomePage && !isLoginPage ? "h-10" : "h-12"}
+                className={isWelcomePage && !isLoginPage ? "h-12" : "h-14"}
               />
             </div>
             
@@ -324,7 +324,7 @@ const ResponsiveBanner = ({
           
           {/* Subtext below the header layout */}
           {(isWelcomePage || (isSignupPage && !showProgressBar) || isLoginPage) && (
-            <div className="mb-4">
+            <div className="mb-6">
               <p className="text-base text-white/80 leading-tight text-center">
                 {displaySubText}
               </p>
@@ -343,15 +343,15 @@ const ResponsiveBanner = ({
           
           {/* Loading indicator for progress bar */}
           {showProgressBar && isLoading && (
-            <div className="flex justify-center items-center py-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex justify-center items-center py-4">
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             </div>
           )}
         </div>
         
         {/* Transparent section with Sign up text - NEW SECTION */}
         {showSteps && !isWelcomePage && (
-          <div className="bg-transparent text-black px-4 pt-8 pb-5 flex flex-col items-center text-center">
+          <div className="bg-transparent text-black px-4 pt-10 pb-6 flex flex-col items-center text-center">
             <div className="flex items-center justify-center mb-3">
               <span className="text-2xl font-semibold">Sign up → Step {stepNumber}:</span>
               <span className="flex items-center ml-2">

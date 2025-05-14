@@ -22,10 +22,10 @@ const MobileProgressCircles = ({
   ];
 
   return (
-    <div className="py-3 pb-6">
+    <div className="py-3 pb-3">
       <div className="flex justify-between w-full">
         {/* Create a centered container for circles and lines */}
-        <div className="flex items-center w-full relative">
+        <div className="flex items-center w-full relative" style={{ height: '60px' }}>
           {/* Base connector lines - one between each pair of steps */}
           {Array.from({ length: steps.length - 1 }, (_, i) => (
             <div 
@@ -34,8 +34,8 @@ const MobileProgressCircles = ({
               style={{ 
                 left: `${10 + (i * 80 / (steps.length - 1))}%`,
                 width: `${80 / (steps.length - 1)}%`,
-                height: '1px', 
-                top: 'calc(50% - 7px)',
+                height: '2px', 
+                top: 'calc(50% - 10px)',
               }}
             ></div>
           ))}
@@ -52,8 +52,8 @@ const MobileProgressCircles = ({
                 style={{ 
                   left: `${10 + (i * 80 / (steps.length - 1))}%`,
                   width: `${80 / (steps.length - 1)}%`,
-                  height: '1px', 
-                  top: 'calc(50% - 7px)',
+                  height: '2px', 
+                  top: 'calc(50% - 10px)',
                   background: `linear-gradient(90deg, ${startColor} 0%, ${endColor} 100%)`
                 }}
               ></div>
@@ -67,7 +67,7 @@ const MobileProgressCircles = ({
             // Step 0 is always clickable if we've completed any steps
             const isClickable = (index === 0 && maxCompletedStep > 0) || (index <= maxCompletedStep);
 
-            let containerClasses = "w-5 h-5 rounded-full flex items-center justify-center relative";
+            let containerClasses = "w-7 h-7 rounded-full flex items-center justify-center relative";
             
             // Get the exact color for this step
             const baseColor = stepExactColors[index];
@@ -116,20 +116,20 @@ const MobileProgressCircles = ({
                   }}
                 >
                   {isCompleted ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
                     <img 
                       src={yellowStar} 
                       alt={`Step ${index + 1}`}
-                      className="w-4.5 h-4.5"
+                      className="w-5 h-5"
                     />
                   )}
                 </div>
                 {/* Text labels with WHITE color */}
                 <div
-                  className={`mt-1 text-xs text-center ${
+                  className={`mt-2 text-sm text-center ${
                     isActive ? "text-white font-medium" : 
                     isCompleted ? "text-white" : 
                     "text-white/70"
@@ -154,13 +154,13 @@ const MobileProgressCircles = ({
             box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
           }
           2.5% { /* Same timing pattern as desktop version */
-            box-shadow: 0 0 14px 6px var(--glow-color); /* Slightly smaller for mobile */
+            box-shadow: 0 0 16px 8px var(--glow-color); /* Increased glow size */
           }
           5% {
             box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
           }
           7.5% {
-            box-shadow: 0 0 14px 6px var(--glow-color); /* Slightly smaller for mobile */
+            box-shadow: 0 0 16px 8px var(--glow-color); /* Increased glow size */
           }
           10% {
             box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
