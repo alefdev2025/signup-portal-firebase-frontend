@@ -543,15 +543,36 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   
   // Handler for address selection from autocomplete
   const handleAddressSelect = (addressData) => {
-    setFormData(prev => ({
-      ...prev,
-      streetAddress: addressData.streetAddress || addressData.formattedAddress,
-      city: addressData.city || "",
-      county: addressData.county || "",
-      region: addressData.region || "",
-      postalCode: addressData.postalCode || "",
-      country: addressData.country || "United States"
-    }));
+    console.log("Address selected in parent component:", addressData);
+    
+    // First, delete any existing county data
+    const updatedFormData = {
+      ...formData
+    };
+    
+    // Force remove county field
+    delete updatedFormData.county;
+    
+    // Now set all the other fields
+    updatedFormData.streetAddress = addressData.streetAddress || addressData.formattedAddress;
+    updatedFormData.city = addressData.city || "";
+    updatedFormData.region = addressData.region || addressData.regionShort || "";
+    updatedFormData.postalCode = addressData.postalCode || "";
+    updatedFormData.country = addressData.country || "United States";
+    
+    // Finally, add back county as empty string
+    updatedFormData.county = "";
+    
+    // Update the state with the modified data
+    setFormData(updatedFormData);
+    
+    // Manually force county field to be empty if it exists in DOM
+    setTimeout(() => {
+      const countyField = document.getElementById('county');
+      if (countyField) {
+        countyField.value = '';
+      }
+    }, 100);
     
     // Clear any address-related errors
     setErrors(prev => ({
@@ -567,15 +588,36 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   
   // Handler for mailing address selection from autocomplete
   const handleMailingAddressSelect = (addressData) => {
-    setFormData(prev => ({
-      ...prev,
-      mailingStreetAddress: addressData.streetAddress || addressData.formattedAddress,
-      mailingCity: addressData.city || "",
-      mailingCounty: addressData.county || "",
-      mailingRegion: addressData.region || "",
-      mailingPostalCode: addressData.postalCode || "",
-      mailingCountry: addressData.country || "United States"
-    }));
+    console.log("Mailing address selected in parent component:", addressData);
+    
+    // First, delete any existing county data
+    const updatedFormData = {
+      ...formData
+    };
+    
+    // Force remove mailing county field
+    delete updatedFormData.mailingCounty;
+    
+    // Now set all the other fields
+    updatedFormData.mailingStreetAddress = addressData.streetAddress || addressData.formattedAddress;
+    updatedFormData.mailingCity = addressData.city || "";
+    updatedFormData.mailingRegion = addressData.region || addressData.regionShort || "";
+    updatedFormData.mailingPostalCode = addressData.postalCode || "";
+    updatedFormData.mailingCountry = addressData.country || "United States";
+    
+    // Finally, add back county as empty string
+    updatedFormData.mailingCounty = "";
+    
+    // Update the state with the modified data
+    setFormData(updatedFormData);
+    
+    // Manually force mailing county field to be empty if it exists in DOM
+    setTimeout(() => {
+      const mailingCountyField = document.getElementById('mailingCounty');
+      if (mailingCountyField) {
+        mailingCountyField.value = '';
+      }
+    }, 100);
     
     // Clear any mailing address-related errors
     setErrors(prev => ({
@@ -589,9 +631,13 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }));
   };
   
-  // Validation function
+  // Validation function with debug logs
   const validateForm = () => {
     const newErrors = {};
+    
+    alert("Starting form validation");
+    console.log("Starting form validation");
+    console.log("Current form data:", formData);
     
     // Required fields validation
     const requiredFields = [
@@ -601,24 +647,31 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       'sameMailingAddress', 'email', 'phoneType'
     ];
     
+    console.log("Checking required fields:", requiredFields);
+    
     requiredFields.forEach(field => {
       if (!formData[field]) {
-        newErrors[field] = `This field is required`;
+        newErrors[field] = `Required field`;
+        console.log(`Field ${field} is missing`);
       }
     });
     
     // County validation - only required for specific countries
     if (isCountyRequired && !formData.county) {
-      newErrors.county = 'County is required for your selected country';
+      newErrors.county = 'Required field';
+      console.log("County is required but missing");
     }
     
     // Phone number validation based on phone type
     if (formData.phoneType === 'Mobile' && !formData.mobilePhone) {
-      newErrors.mobilePhone = 'Mobile phone is required';
+      newErrors.mobilePhone = 'Required field';
+      console.log("Mobile phone is required but missing");
     } else if (formData.phoneType === 'Work' && !formData.workPhone) {
-      newErrors.workPhone = 'Work phone is required';
+      newErrors.workPhone = 'Required field';
+      console.log("Work phone is required but missing");
     } else if (formData.phoneType === 'Home' && !formData.homePhone) {
-      newErrors.homePhone = 'Home phone is required';
+      newErrors.homePhone = 'Required field';
+      console.log("Home phone is required but missing");
     }
     
     // Mailing address validation if not same as home address
@@ -628,36 +681,68 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         'mailingPostalCode', 'mailingCountry'
       ];
       
+      console.log("Checking mailing address fields");
+      
       mailingFields.forEach(field => {
         if (!formData[field]) {
-          newErrors[field] = `This field is required`;
+          newErrors[field] = `Required field`;
+          console.log(`Mailing field ${field} is missing`);
         }
       });
       
       // Mailing county validation - only required for specific countries
       if (isMailingCountyRequired && !formData.mailingCounty) {
-        newErrors.mailingCounty = 'County is required for your selected country';
+        newErrors.mailingCounty = 'Required field';
+        console.log("Mailing county is required but missing");
       }
     }
     
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
+      console.log("Email format is invalid");
     }
     
+    console.log("Validation complete. Errors:", newErrors);
+    alert("Validation complete. Error count: " + Object.keys(newErrors).length);
+    
+    // Set errors state
     setErrors(newErrors);
+    
+    // Directly apply styles for visual feedback
+    setTimeout(() => {
+      Object.keys(newErrors).forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+          alert("Applying style to field: " + fieldId);
+          element.style.border = "2px solid #dc2626";
+          element.style.backgroundColor = "#fef2f2";
+        } else {
+          alert("Cannot find element with ID: " + fieldId);
+        }
+      });
+    }, 100);
+    
+    // If there are errors, scroll to the first error
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorField = document.getElementById(Object.keys(newErrors)[0]);
+      if (firstErrorField) {
+        console.log("Scrolling to first error field:", Object.keys(newErrors)[0]);
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      // Scroll to the first error
-      const firstError = document.querySelector('.text-red-500');
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    // Use HTML5 validation
+    const form = e.target;
+    if (!form.checkValidity()) {
+      // This will trigger the browser's built-in validation UI
+      // No need for custom validation
       return;
     }
     
@@ -730,70 +815,67 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                 <div>
                   <LabelWithIcon label="First Name" required={true} />
-                  <input 
-                    type="text" 
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
-                    disabled={isSubmitting}
-                    required
-                  />
-                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                      <input 
+                        type="text" 
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className={`w-full h-16 pl-2 pr-3 py-3 bg-white border rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg ${errors.firstName ? 'error-field' : ''}`}
+                        style={errors.firstName ? {border: '2px solid #dc2626'} : {borderColor: 'rgba(119, 86, 132, 0.3)'}}
+                        disabled={isSubmitting}
+                        required
+                      />
+                      {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
                 
-                <div>
-                  <LabelWithIcon label="Last Name" required={true} />
-                  <input 
-                    type="text" 
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
-                    disabled={isSubmitting}
-                    required
-                  />
-                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-                </div>
+                    <div>
+                      <LabelWithIcon label="Last Name" required={true} />
+                      <input 
+                        type="text" 
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        disabled={isSubmitting}
+                        required
+                      />
+                    </div>
                 
                 {/* Sex field */}
-                <div>
-                  <LabelWithIcon label="Sex" required={true} />
-                  <select
-                    id="sex"
-                    name="sex"
-                    value={formData.sex}
-                    onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
-                    disabled={isSubmitting}
-                    required
-                    style={{backgroundColor: "#FFFFFF", color: "#333333"}}
-                  >
-                    <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
-                    <option value="Male" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Male</option>
-                    <option value="Female" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Female</option>
-                    <option value="Other" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Other</option>
-                  </select>
-                  {errors.sex && <p className="text-red-500 text-sm mt-1">{errors.sex}</p>}
-                </div>
+                    <div>
+                      <LabelWithIcon label="Sex" required={true} />
+                      <select
+                        id="sex"
+                        name="sex"
+                        value={formData.sex}
+                        onChange={handleChange}
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
+                        disabled={isSubmitting}
+                        required
+                      >
+                        <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
+                        <option value="Male" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Male</option>
+                        <option value="Female" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Female</option>
+                        <option value="Other" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Other</option>
+                      </select>
+                    </div>
                 
                 {/* Email field */}
-                <div>
-                  <LabelWithIcon label="Email" required={true} />
-                  <input 
-                    type="email" 
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                    disabled={isSubmitting || (currentUser && currentUser.email)}
-                    required
-                  />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                </div>
+                    <div>
+                      <LabelWithIcon label="Email" required={true} />
+                      <input 
+                        type="email" 
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting || (currentUser && currentUser.email)}
+                        required
+                      />
+                    </div>
                 
                 {/* Phone fields */}
                 <div>
@@ -803,7 +885,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="phoneType"
                     value={formData.phoneType}
                     onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.phoneType ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required
                     style={{backgroundColor: "#FFFFFF", color: "#333333"}}
@@ -824,7 +906,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="mobilePhone"
                     value={formData.mobilePhone}
                     onChange={handleChange}
-                    className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.mobilePhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Mobile"}
                   />
@@ -839,7 +921,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="workPhone"
                     value={formData.workPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.workPhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Work"}
                   />
@@ -854,7 +936,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="homePhone"
                     value={formData.homePhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.homePhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Home"}
                   />
@@ -872,7 +954,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthMonth"
                         value={formData.birthMonth || ""}
                         onChange={handleChange}
-                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        style={{
+                          height: '4rem',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '0.375rem',
+                          fontSize: '1.125rem',
+                          width: '100%',
+                          border: errors.birthMonth ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                        }}
                         disabled={isSubmitting}
                         required
                       >
@@ -900,7 +990,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthDay"
                         value={formData.birthDay || ""}
                         onChange={handleChange}
-                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        style={{
+                          height: '4rem',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '0.375rem',
+                          fontSize: '1.125rem',
+                          width: '100%',
+                          border: errors.birthDay ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                        }}
                         disabled={isSubmitting}
                         required
                       >
@@ -920,7 +1018,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         name="birthYear"
                         value={formData.birthYear || ""}
                         onChange={handleChange}
-                        className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
+                        style={{
+                          height: '4rem',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '0.375rem',
+                          fontSize: '1.125rem',
+                          width: '100%',
+                          border: errors.birthYear ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                        }}
                         disabled={isSubmitting}
                         required
                       >
@@ -978,8 +1084,9 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                       onAddressSelect={handleAddressSelect}
                       required={true}
                       disabled={isSubmitting}
-                      errorMessage={errors.streetAddress}
+                      errorMessage={errors.streetAddress ? "Required field" : ""}
                       placeholder="Start typing your address..."
+                      isError={!!errors.streetAddress}
                     />
                   </div>
                 </div>
@@ -992,7 +1099,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    style={{
+                      height: '4rem',
+                      padding: '0.75rem 1rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '1.125rem',
+                      width: '100%',
+                      border: errors.city ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                    }}
                     disabled={isSubmitting}
                     required
                   />
@@ -1003,10 +1118,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
                   <input 
                     type="text" 
-                    id="county"
-                    name="county"
+                    id="nonstandard_field_county"
+                    name="nonstandard_field_county"
                     value={formData.county}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      // Custom handler to update the correct field in formData
+                      setFormData(prev => ({
+                        ...prev,
+                        county: e.target.value
+                      }));
+                      
+                      // Clear error if exists
+                      if (errors.county) {
+                        setErrors(prev => ({ ...prev, county: "" }));
+                      }
+                    }}
+                    autoComplete="new-password" // Strongest autofill prevention
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required={isCountyRequired}
@@ -1022,7 +1149,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    style={{
+                      height: '4rem',
+                      padding: '0.75rem 1rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '1.125rem',
+                      width: '100%',
+                      border: errors.region ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                    }}
                     disabled={isSubmitting}
                     required
                   />
@@ -1037,7 +1172,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    style={{
+                      height: '4rem',
+                      padding: '0.75rem 1rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '1.125rem',
+                      width: '100%',
+                      border: errors.postalCode ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                    }}
                     disabled={isSubmitting}
                     required
                   />
@@ -1051,7 +1194,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    style={{
+                      height: '4rem',
+                      padding: '0.75rem 1rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '1.125rem',
+                      width: '100%',
+                      border: errors.country ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                    }}
                     disabled={isSubmitting}
                     required
                   >
@@ -1069,10 +1220,17 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="sameMailingAddress"
                     value={formData.sameMailingAddress}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    style={{
+                      height: '4rem',
+                      padding: '0.75rem 1rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '1.125rem',
+                      width: '100%',
+                      border: errors.sameMailingAddress ? '2px solid #dc2626' : '1px solid rgba(119, 86, 132, 0.3)'
+                    }}
                     disabled={isSubmitting}
                     required
-                    style={{backgroundColor: "#FFFFFF", color: "#333333"}}
                   >
                     <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
                     <option value="Yes" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Yes</option>
@@ -1135,10 +1293,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                       <LabelWithIcon label={mailingCountryConfig.countyLabel} required={isMailingCountyRequired} />
                       <input 
                         type="text" 
-                        id="mailingCounty"
-                        name="mailingCounty"
+                        id="nonstandard_field_mailing_county"
+                        name="nonstandard_field_mailing_county"
                         value={formData.mailingCounty}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          // Custom handler to update the correct field in formData
+                          setFormData(prev => ({
+                            ...prev,
+                            mailingCounty: e.target.value
+                          }));
+                          
+                          // Clear error if exists
+                          if (errors.mailingCounty) {
+                            setErrors(prev => ({ ...prev, mailingCounty: "" }));
+                          }
+                        }}
+                        autoComplete="new-password" // Strongest autofill prevention
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                         disabled={isSubmitting}
                         required={showMailingAddress && isMailingCountyRequired}

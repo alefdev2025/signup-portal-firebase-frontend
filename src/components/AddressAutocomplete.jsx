@@ -1,4 +1,4 @@
-// Updated component with fixes for the map icon
+// Updated component with fixed address mapping
 // File: components/AddressAutocomplete.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useLoadScript } from '@react-google-maps/api';
@@ -15,13 +15,15 @@ const autocompleteStyles = `
     border: 1px solid rgba(229, 231, 235, 1) !important;
     background-color: white;
     font-family: inherit;
+    padding: 8px 0;
   }
   
   .pac-item {
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 10px 12px;
+    font-size: 16px;
     cursor: pointer;
     border-top: 1px solid rgba(229, 231, 235, 0.7) !important;
+    line-height: 1.5;
   }
   
   .pac-item:hover {
@@ -29,8 +31,9 @@ const autocompleteStyles = `
   }
   
   .pac-item-query {
-    font-size: 14px;
+    font-size: 16px;
     color: rgba(17, 24, 39, 1);
+    font-weight: 500;
   }
   
   .pac-icon {
@@ -48,7 +51,7 @@ const autocompleteStyles = `
   
   .pac-matched {
     font-weight: 600;
-    color: rgba(79, 70, 229, 1);
+    color: #775684 !important; /* Updated to purple color */
   }
 `;
 
@@ -111,7 +114,7 @@ const AddressAutocomplete = ({
       componentRestrictions: { country: ['us', 'ca'] }, // Restrict to US and Canada - remove or modify as needed
     });
     
-    // Add listener for place selection
+          // Add listener for place selection
     autocompleteRef.current.addListener('place_changed', () => {
       const place = autocompleteRef.current.getPlace();
       
@@ -125,39 +128,127 @@ const AddressAutocomplete = ({
       // Extract address components
       const addressComponents = {};
       
+      // Debug log to see all components
+      console.log("All address components:", place.address_components);
+      
+      // Log each component with its types for debugging
       place.address_components.forEach(component => {
-        const type = component.types[0];
+        console.log(`Component "${component.long_name}" has types:`, component.types);
+      });
+      
+      // First get all the components we need
+      let streetNumber = null;
+      let route = null;
+      let locality = null; 
+      let sublocality = null;
+      let neighborhood = null;
+      let county = null;
+      let state = null;
+      let country = null;
+      let postalCode = null;
+      
+      // Categorize each component
+      place.address_components.forEach(component => {
+        const types = component.types;
         
-        // Map address components to our form fields
-        switch (type) {
-          case 'street_number':
-            addressComponents.streetNumber = component.long_name;
-            break;
-          case 'route':
-            addressComponents.street = component.long_name;
-            break;
-          case 'locality':
-            addressComponents.city = component.long_name;
-            break;
-          case 'administrative_area_level_1':
-            addressComponents.region = component.long_name;
-            addressComponents.regionShort = component.short_name;
-            break;
-          case 'country':
-            addressComponents.country = component.long_name;
-            break;
-          case 'postal_code':
-            addressComponents.postalCode = component.long_name;
-            break;
-          default:
-            break;
+        if (types.includes('street_number')) {
+          streetNumber = component;
+          console.log("Found street number:", component.long_name);
+        }
+        
+        if (types.includes('route')) {
+          route = component;
+          console.log("Found route:", component.long_name);
+        }
+        
+        if (types.includes('locality')) {
+          locality = component;
+          console.log("Found locality:", component.long_name);
+        }
+        
+        if (types.includes('sublocality')) {
+          sublocality = component;
+          console.log("Found sublocality:", component.long_name);
+        }
+        
+        if (types.includes('neighborhood')) {
+          neighborhood = component;
+          console.log("Found neighborhood:", component.long_name);
+        }
+        
+        if (types.includes('administrative_area_level_2')) {
+          county = component;
+          console.log("Found county (administrative_area_level_2):", component.long_name);
+        }
+        
+        if (types.includes('administrative_area_level_1')) {
+          state = component;
+          console.log("Found state (administrative_area_level_1):", component.long_name);
+        }
+        
+        if (types.includes('country')) {
+          country = component;
+          console.log("Found country:", component.long_name);
+        }
+        
+        if (types.includes('postal_code')) {
+          postalCode = component;
+          console.log("Found postal code:", component.long_name);
         }
       });
       
-      // Create a formatted street address if both parts are available
-      if (addressComponents.streetNumber && addressComponents.street) {
-        addressComponents.streetAddress = `${addressComponents.streetNumber} ${addressComponents.street}`;
+      // Now build the addressComponents object
+      if (streetNumber) {
+        addressComponents.streetNumber = streetNumber.long_name;
       }
+      
+      if (route) {
+        addressComponents.street = route.long_name;
+      }
+      
+      // City - try locality first, then sublocality, then neighborhood
+      if (locality) {
+        addressComponents.city = locality.long_name;
+      } else if (sublocality) {
+        addressComponents.city = sublocality.long_name;
+      } else if (neighborhood) {
+        addressComponents.city = neighborhood.long_name;
+      }
+      
+      // County - administrative_area_level_2
+      if (county) {
+        addressComponents.county = county.long_name;
+      } else {
+        // If no county was found, explicitly set it to empty
+        addressComponents.county = '';
+        console.log("No county component found");
+      }
+      
+      // State/Province/Region - administrative_area_level_1
+      if (state) {
+        addressComponents.region = state.long_name;
+        addressComponents.regionShort = state.short_name;
+      }
+      
+      // Country
+      if (country) {
+        addressComponents.country = country.long_name;
+      }
+      
+      // Postal code
+      if (postalCode) {
+        addressComponents.postalCode = postalCode.long_name;
+      }
+      
+      // Create a formatted street address if both parts are available
+      if (streetNumber && route) {
+        addressComponents.streetAddress = `${streetNumber.long_name} ${route.long_name}`;
+      } else if (place.formatted_address) {
+        // Fallback to formatted_address if components aren't available
+        addressComponents.streetAddress = place.formatted_address;
+      }
+      
+      console.log("Final processed address components:", addressComponents);
       
       // Pass the selected address data to the parent component
       onAddressSelect({
