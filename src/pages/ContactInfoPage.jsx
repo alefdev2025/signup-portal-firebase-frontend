@@ -18,43 +18,63 @@ const LabelWithIcon = ({ label, required = false }) => (
 // Feature flag for enabling country-specific form localization
 const ENABLE_LOCALIZATION = import.meta.env.VITE_ENABLE_LOCALIZATION === 'true';
 
-// Country list
+// Country list - UPDATED: Complete list of all countries
 const countries = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Germany",
-  "France",
-  "Australia",
-  "Switzerland",
-  "Italy",
-  "Spain",
-  "Netherlands",
-  "Belgium",
-  "Sweden",
-  "Norway",
-  "Denmark",
-  "Finland",
-  "Japan",
-  "China",
-  "India",
-  "Brazil",
-  "Mexico"
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+  "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia",
+  "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
+  "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt",
+  "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon",
+  "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+  "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
+  "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea, North", "Korea, South", "Kosovo",
+  "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+  "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia",
+  "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman",
+  "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+  "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia",
+  "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan",
+  "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
+  "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City",
+  "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ].sort();
+
+// Countries where county is required
+const countiesRequiredCountries = [
+  "United States",
+  "United Kingdom",
+  "Ireland"
+  // Add other countries where county is required
+];
 
 // Country-specific form configurations
 const countryConfigs = {
   "United States": {
     postalCodeLabel: "Zip Code",
     regionLabel: "State",
+    countyLabel: "County",
+    countyRequired: true
   },
   "Canada": {
     postalCodeLabel: "Postal Code",
     regionLabel: "Province",
+    countyLabel: "County",
+    countyRequired: false
   },
   "United Kingdom": {
     postalCodeLabel: "Postcode",
     regionLabel: "County",
+    countyLabel: "County",
+    countyRequired: true
+  },
+  "Ireland": {
+    postalCodeLabel: "Eircode",
+    regionLabel: "Province",
+    countyLabel: "County",
+    countyRequired: true
   },
   // Add more as needed...
 };
@@ -63,6 +83,8 @@ const countryConfigs = {
 const defaultConfig = {
   postalCodeLabel: "Postal/Zip Code",
   regionLabel: "State/Province",
+  countyLabel: "County",
+  countyRequired: false
 };
 
 export default function ContactInfoPage({ onNext, onBack, initialData }) {
@@ -126,6 +148,52 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         width: 100% !important;
       }
       
+      /* Custom select styling to prevent Safari gradient backgrounds */
+      select {
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+        background-color: #FFFFFF !important;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
+        background-position: right 0.75rem center !important;
+        background-repeat: no-repeat !important;
+        background-size: 1.5em 1.5em !important;
+        color: #333333 !important;
+      }
+      
+      /* Override Safari's default styling for selects */
+      @media screen and (-webkit-min-device-pixel-ratio:0) {
+        select,
+        select:focus,
+        select option,
+        select::-ms-expand {
+          background-color: #FFFFFF !important;
+          color: #333333 !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+        }
+        
+        select option {
+          background-color: #FFFFFF !important;
+          color: #333333 !important;
+        }
+      }
+      
+      /* Target Safari specifically */
+      @supports (-webkit-hyphens:none) {
+        select {
+          background-color: #FFFFFF !important;
+          color: #333333 !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+        }
+        
+        select option {
+          background-color: #FFFFFF !important;
+          color: #333333 !important;
+        }
+      }
+      
       input:focus, select:focus, textarea:focus {
         background-color: #FFFFFF !important;
         --tw-ring-color: rgba(119, 86, 132, 0.5) !important;
@@ -152,6 +220,36 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       input[type="date"] {
         height: 3.5rem !important;
         line-height: 3.5rem !important;
+        appearance: none !important;
+        -moz-appearance: none !important;
+        -webkit-appearance: none !important;
+        position: relative !important;
+      }
+      
+      /* Hide calendar icon in Chrome, Safari, Edge, Opera */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+      }
+      
+      /* Hide clear button in Edge and IE */
+      input[type="date"]::-ms-clear,
+      input[type="date"]::-ms-reveal {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      
+      input[type="date"]::-webkit-inner-spin-button,
+      input[type="date"]::-webkit-outer-spin-button {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        margin: 0 !important;
       }
       
       /* Style label text */
@@ -160,6 +258,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         font-size: 1.125rem !important;
         font-weight: 500 !important;
         margin-bottom: 0.5rem !important;
+      }
+      
+      /* Force white background for Safari dropdowns */
+      select option {
+        background-color: #FFFFFF !important;
+        color: #333333 !important;
       }
     `;
     document.head.appendChild(styleElement);
@@ -177,12 +281,14 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     dateOfBirth: "",
     streetAddress: "",
     city: "",
+    county: "",
     region: "",
     postalCode: "",
     country: "United States",
     sameMailingAddress: "",
     mailingStreetAddress: "",
     mailingCity: "",
+    mailingCounty: "",
     mailingRegion: "",
     mailingPostalCode: "",
     mailingCountry: "United States",
@@ -202,12 +308,14 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     dateOfBirth: "",
     streetAddress: "",
     city: "",
+    county: "",
     region: "",
     postalCode: "",
     country: "",
     sameMailingAddress: "",
     mailingStreetAddress: "",
     mailingCity: "",
+    mailingCounty: "",
     mailingRegion: "",
     mailingPostalCode: "",
     mailingCountry: "",
@@ -232,6 +340,10 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 
   // Show/hide mailing address section based on "Same Mailing Address" selection
   const showMailingAddress = formData.sameMailingAddress === "No";
+  
+  // Determine if county is required based on the selected country
+  const isCountyRequired = countryConfig.countyRequired || countiesRequiredCountries.includes(formData.country);
+  const isMailingCountyRequired = mailingCountryConfig.countyRequired || countiesRequiredCountries.includes(formData.mailingCountry);
 
   // Load saved form data if available
   useEffect(() => {
@@ -307,6 +419,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         ...prev,
         mailingStreetAddress: prev.streetAddress,
         mailingCity: prev.city,
+        mailingCounty: prev.county,
         mailingRegion: prev.region,
         mailingPostalCode: prev.postalCode,
         mailingCountry: prev.country
@@ -320,6 +433,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       ...prev,
       streetAddress: addressData.streetAddress || addressData.formattedAddress,
       city: addressData.city || "",
+      county: addressData.county || "",
       region: addressData.region || "",
       postalCode: addressData.postalCode || "",
       country: addressData.country || "United States"
@@ -330,6 +444,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       ...prev,
       streetAddress: "",
       city: "",
+      county: "",
       region: "",
       postalCode: "",
       country: ""
@@ -342,6 +457,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       ...prev,
       mailingStreetAddress: addressData.streetAddress || addressData.formattedAddress,
       mailingCity: addressData.city || "",
+      mailingCounty: addressData.county || "",
       mailingRegion: addressData.region || "",
       mailingPostalCode: addressData.postalCode || "",
       mailingCountry: addressData.country || "United States"
@@ -352,6 +468,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       ...prev,
       mailingStreetAddress: "",
       mailingCity: "",
+      mailingCounty: "",
       mailingRegion: "",
       mailingPostalCode: "",
       mailingCountry: ""
@@ -375,6 +492,11 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       }
     });
     
+    // County validation - only required for specific countries
+    if (isCountyRequired && !formData.county) {
+      newErrors.county = 'County is required for your selected country';
+    }
+    
     // Phone number validation based on phone type
     if (formData.phoneType === 'Mobile' && !formData.mobilePhone) {
       newErrors.mobilePhone = 'Mobile phone is required';
@@ -396,6 +518,11 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           newErrors[field] = `This field is required`;
         }
       });
+      
+      // Mailing county validation - only required for specific countries
+      if (isMailingCountyRequired && !formData.mailingCounty) {
+        newErrors.mailingCounty = 'County is required for your selected country';
+      }
     }
     
     // Email validation
@@ -458,22 +585,48 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       window.location.href = `/signup?step=0&force=true&_=${Date.now()}`;
     }, 0);
   };
-  // Helper function to render the DatePicker with icon
+
+  // Helper function to render the DatePicker with icon - Using a simpler approach
   const renderDateField = (id, name, label, value, required = false) => (
     <div className="relative">
       <LabelWithIcon label={label} required={required} />
       <div className="relative">
+        {/* Use a regular text input that looks like a date input */}
         <input 
-          type="date" 
+          type="text" 
           id={id}
           name={name}
-          value={value}
-          onChange={handleChange}
-          className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg appearance-none"
+          value={value ? new Date(value).toLocaleDateString() : ""}
+          onChange={(e) => {
+            // Parse the date and convert to YYYY-MM-DD format
+            const dateValue = e.target.value;
+            try {
+              const date = new Date(dateValue);
+              if (!isNaN(date.getTime())) {
+                const formattedDate = date.toISOString().split('T')[0];
+                handleChange({
+                  target: {
+                    name: name,
+                    value: formattedDate
+                  }
+                });
+              }
+            } catch (error) {
+              // Invalid date format, just use the raw value
+              handleChange({
+                target: {
+                  name: name,
+                  value: dateValue
+                }
+              });
+            }
+          }}
+          placeholder="MM/DD/YYYY"
+          className="w-full px-4 py-5 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
           disabled={isSubmitting}
           required={required}
-          style={{ colorScheme: 'light' }}
         />
+        {/* Calendar icon */}
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -497,10 +650,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
             <div className="p-6">
               <div className="mb-8 flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684] mr-3 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <div>
+                <div className="bg-[#775684] p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
                   <h2 className="text-2xl font-semibold text-gray-800">Personal Information</h2>
                   <p className="text-sm text-gray-500 italic font-light mt-1">
                     Please provide your personal details for your member file.
@@ -550,11 +705,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
                     disabled={isSubmitting}
                     required
+                    style={{backgroundColor: "#FFFFFF", color: "#333333"}}
                   >
-                    <option value="">--Select--</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
+                    <option value="Male" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Male</option>
+                    <option value="Female" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Female</option>
+                    <option value="Other" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Other</option>
                   </select>
                   {errors.sex && <p className="text-red-500 text-sm mt-1">{errors.sex}</p>}
                 </div>
@@ -575,7 +731,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                 
-                {/* Date of Birth field with modern styling */}
+                {/* Date of Birth field with modern styling - FIXED: Custom calendar icon */}
                 {renderDateField("dateOfBirth", "dateOfBirth", "Date of Birth", formData.dateOfBirth, true)}
                 
                 {/* Phone fields */}
@@ -589,11 +745,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required
+                    style={{backgroundColor: "#FFFFFF", color: "#333333"}}
                   >
-                    <option value="">--Select--</option>
-                    <option value="Home">Home</option>
-                    <option value="Work">Work</option>
-                    <option value="Mobile">Mobile</option>
+                    <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
+                    <option value="Home" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Home</option>
+                    <option value="Work" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Work</option>
+                    <option value="Mobile" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Mobile</option>
                   </select>
                   {errors.phoneType && <p className="text-red-500 text-sm mt-1">{errors.phoneType}</p>}
                 </div>
@@ -650,11 +807,13 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
             <div className="p-6">
               <div className="mb-8 flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684] mr-3 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div>
+                <div className="bg-[#775684] p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
                   <h2 className="text-2xl font-semibold text-gray-800">Address Information</h2>
                   <p className="text-sm text-gray-500 italic font-light mt-1">
                     Your residential address and optional mailing address.
@@ -691,6 +850,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     required
                   />
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                </div>
+
+                <div>
+                  <LabelWithIcon label={countryConfig.countyLabel} required={isCountyRequired} />
+                  <input 
+                    type="text" 
+                    id="county"
+                    name="county"
+                    value={formData.county}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                    disabled={isSubmitting}
+                    required={isCountyRequired}
+                  />
+                  {errors.county && <p className="text-red-500 text-sm mt-1">{errors.county}</p>}
                 </div>
                 
                 <div>
@@ -751,19 +925,32 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required
+                    style={{backgroundColor: "#FFFFFF", color: "#333333"}}
                   >
-                    <option value="">--Select--</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
+                    <option value="" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>--Select--</option>
+                    <option value="Yes" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>Yes</option>
+                    <option value="No" style={{backgroundColor: "#FFFFFF", color: "#333333"}}>No</option>
                   </select>
                   {errors.sameMailingAddress && <p className="text-red-500 text-sm mt-1">{errors.sameMailingAddress}</p>}
                 </div>
               </div>
               
-              {/* Mailing address fields - conditionally shown */}
+              {/* Mailing address fields - conditionally shown - FIXED: Removed duplicate "Mailing Address" text */}
               {showMailingAddress && (
                 <div className="mt-8 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-800 mb-4">Mailing Address</h3>
+                  <div className="mb-6 flex items-start">
+                    <div className="bg-[#775684] p-3 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-xl font-semibold text-gray-800">Mailing Address</h3>
+                      <p className="text-sm text-gray-500 italic font-light mt-1">
+                        Please provide the address where you would like to receive mail.
+                      </p>
+                    </div>
+                  </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
                     <div className="md:col-span-2">
@@ -793,6 +980,21 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         required={showMailingAddress}
                       />
                       {errors.mailingCity && <p className="text-red-500 text-sm mt-1">{errors.mailingCity}</p>}
+                    </div>
+
+                    <div>
+                      <LabelWithIcon label={mailingCountryConfig.countyLabel} required={isMailingCountyRequired} />
+                      <input 
+                        type="text" 
+                        id="mailingCounty"
+                        name="mailingCounty"
+                        value={formData.mailingCounty}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+                        disabled={isSubmitting}
+                        required={showMailingAddress && isMailingCountyRequired}
+                      />
+                      {errors.mailingCounty && <p className="text-red-500 text-sm mt-1">{errors.mailingCounty}</p>}
                     </div>
                     
                     <div>
@@ -835,9 +1037,10 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                         disabled={isSubmitting}
                         required={showMailingAddress}
+                        style={{backgroundColor: "#FFFFFF", color: "#333333"}}
                       >
                         {countries.map(country => (
-                          <option key={country} value={country}>{country}</option>
+                          <option key={country} value={country} style={{backgroundColor: "#FFFFFF", color: "#333333"}}>{country}</option>
                         ))}
                       </select>
                       {errors.mailingCountry && <p className="text-red-500 text-sm mt-1">{errors.mailingCountry}</p>}
