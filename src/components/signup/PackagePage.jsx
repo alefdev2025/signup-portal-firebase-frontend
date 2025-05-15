@@ -1,14 +1,15 @@
 // File: pages/PackagePage.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Added import for navigation
+import { useNavigate } from "react-router-dom";
 import { updateSignupProgress } from "../../services/auth";
 import { getMembershipCost } from "../../services/pricing";
+import alcorStar from "../../assets/images/alcor-star.png";
 
 // Update help content for export
 export const packageHelpContent = [
   {
     title: "Preservation Package",
-    content: "Select your preferred preservation package. Each option provides different benefits and considerations."
+    content: "Select your preferred preservation package and type. Each option provides different benefits and considerations."
   },
   {
     title: "Package Selection",
@@ -24,15 +25,58 @@ export const packageHelpContent = [
   }
 ];
 
-// Rename component and simplify to content-only
 export default function PackagePage({ onNext, onBack }) {
-  const navigate = useNavigate(); // Added navigate hook
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [membershipCost, setMembershipCost] = useState(null);
   const [membershipAge, setMembershipAge] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState("standard");
+  
+  // Plan options and descriptions
+  const planOptions = {
+    neuro: {
+      title: "Membership + Neuropreservation",
+      short: "Preservation of the brain and supporting structures",
+      long: "Neuropreservation focuses on the brain and neural structures, preserving the critical elements that contain your memories, personality, and consciousness. This option requires less resources and offers a more affordable approach to cryopreservation.",
+      baseEstimate: 80000,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      )
+    },
+    wholebody: {
+      title: "Membership + Whole Body Preservation",
+      short: "Complete preservation of the entire human body",
+      long: "Whole Body preservation involves cryopreserving your entire body, maintaining all organs and systems intact. This comprehensive approach preserves not only neural structures but all biological systems, offering the possibility of complete restoration in the future.",
+      baseEstimate: 200000,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    basic: {
+      title: "Basic Membership Only",
+      short: "Become a member now, decide on cryopreservation later",
+      long: "Basic membership gives you priority access to our services and locks in today's rates for future preservation options. You can add a cryopreservation contract at any time in the future when you're ready.",
+      baseEstimate: 0,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+        </svg>
+      )
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedOption && !isLoading) {
+      setSelectedOption("neuro");
+    }
+  }, [isLoading, selectedOption]);
   
   // Fetch membership cost when component mounts
   useEffect(() => {
@@ -60,7 +104,6 @@ export default function PackagePage({ onNext, onBack }) {
     fetchMembershipCost();
   }, []);
   
-  // FIXED: Direct approach for back button with proper navigation
   const handleBackClick = () => {
     console.log("PackagePage: Handle back button clicked");
     
@@ -72,12 +115,13 @@ export default function PackagePage({ onNext, onBack }) {
     navigate('/signup/contact', { replace: true });
   };
   
-  // FIXED: Handler for next button with proper step numbering
   const handleNext = async () => {
+    if (!selectedOption) return;
+    
     setIsSubmitting(true);
     
     try {
-      // Calculate the final price based on selected package
+      // Calculate the final membership price based on selected package
       let finalPrice = membershipCost;
       if (selectedPackage === "basic") {
         finalPrice = membershipCost * 0.8;
@@ -85,24 +129,30 @@ export default function PackagePage({ onNext, onBack }) {
         finalPrice = membershipCost * 1.5;
       }
       
-      // Update progress in Firebase with package selection data
-      // FIXED: Changed step from 3 to 4 for "funding"
+      // Calculate estimated preservation cost (if applicable)
+      const preservationEstimate = selectedOption === "basic" ? null : calculatePreservationEstimate(selectedOption);
+      
+      // Update progress in Firebase with selection data
       await updateSignupProgress("funding", 4, {
         selectedPackage,
         packageCost: finalPrice,
         calculatedAt: new Date().toISOString(),
-        basePrice: membershipCost
+        basePrice: membershipCost,
+        preservationType: selectedOption,
+        estimatedPreservationCost: preservationEstimate
       });
       
       // Use onNext prop instead of direct navigation
       if (onNext) {
         return await onNext({
           packageType: selectedPackage,
-          cost: finalPrice
+          cost: finalPrice,
+          preservationType: selectedOption,
+          preservationEstimate: preservationEstimate
         });
       }
       
-      // ADDED: Fallback direct navigation if onNext not provided
+      // Fallback direct navigation if onNext not provided
       console.log("🚀 Navigating to funding step...");
       localStorage.setItem('force_active_step', '4'); // Force to Funding step (4)
       localStorage.setItem('force_timestamp', Date.now().toString());
@@ -117,205 +167,324 @@ export default function PackagePage({ onNext, onBack }) {
     }
   };
   
+  const selectOption = (option) => {
+    setSelectedOption(option);
+  };
+  
   const selectPackage = (packageType) => {
     setSelectedPackage(packageType);
   };
   
+  // Calculate estimated preservation cost based on age and type
+  const calculatePreservationEstimate = (optionType) => {
+    if (!optionType || !membershipAge || optionType === "basic") return null;
+    
+    const baseEstimate = planOptions[optionType].baseEstimate;
+    // Simple age-based factor: older = more expensive (example formula)
+    const ageFactor = Math.min(1.5, Math.max(1.0, 1 + (membershipAge - 30) / 100));
+    
+    return Math.round(baseEstimate * ageFactor);
+  };
+  
+  // Get package price with selected options
+  const getPackagePrice = (packageType) => {
+    if (!membershipCost) return null;
+    
+    let price = membershipCost;
+    if (packageType === "basic") {
+      price = membershipCost * 0.8;
+    } else if (packageType === "premium") {
+      price = membershipCost * 1.5;
+    }
+    
+    return price.toFixed(2);
+  };
+  
+  // Star icon for the checklist
+  const StarIcon = () => (
+    <img src={alcorStar} alt="Alcor Star" className="w-5 h-5 mr-2 flex-shrink-0" />
+  );
+  
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full mx-auto">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Select Preservation Package</h2>
-      
-      {isLoading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#775684]"></div>
-          <p className="mt-3 text-gray-600">Calculating your personalized pricing...</p>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-700">{error}</p>
-          <p className="text-sm text-red-600 mt-1">Please try refreshing the page or contact support if this issue persists.</p>
-        </div>
-      ) : (
-        <div className="mb-8">
-          {membershipAge && (
-            <div className="mb-4 p-4 bg-purple-50 border border-purple-100 rounded-md">
-              <p className="text-gray-700">Based on your age ({membershipAge}), we've calculated your personalized membership pricing:</p>
-            </div>
-          )}
-          
-          <div className="my-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Basic Package */}
-            <div className={`border ${selectedPackage === "basic" ? "border-2 border-[#775684]" : "border-gray-200"} 
-                            rounded-lg p-6 ${selectedPackage === "basic" ? "shadow-md" : "hover:shadow-md"} transition-all`}>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Basic Package</h3>
-              <p className="text-3xl font-bold text-[#775684] mb-2">
-                ${membershipCost ? (membershipCost * 0.8).toFixed(2) : "---"}<span className="text-sm text-gray-500 font-normal">/year</span>
-              </p>
-              <p className="text-gray-600 mb-4">Essential preservation services with standard care.</p>
-              <ul className="text-sm text-gray-600 mb-4 space-y-2">
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Standard preservation protocol
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Basic monitoring
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Annual status updates
-                </li>
-              </ul>
-              <button 
-                onClick={() => selectPackage("basic")} 
-                className={`w-full py-2 rounded-md transition-colors ${
-                  selectedPackage === "basic" 
-                    ? "bg-[#775684] text-white" 
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
-              >
-                {selectedPackage === "basic" ? "Selected" : "Select Basic"}
-              </button>
-            </div>
-            
-            {/* Standard Package */}
-            <div className={`border ${selectedPackage === "standard" ? "border-2 border-[#775684]" : "border-gray-200"} 
-                            rounded-lg p-6 ${selectedPackage === "standard" ? "shadow-md" : "hover:shadow-md"} transition-all relative`}>
-              <div className="absolute top-0 right-0 bg-[#775684] text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
-                RECOMMENDED
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Standard Package</h3>
-              <p className="text-3xl font-bold text-[#775684] mb-2">
-                ${membershipCost ? membershipCost.toFixed(2) : "---"}<span className="text-sm text-gray-500 font-normal">/year</span>
-              </p>
-              <p className="text-gray-600 mb-4">Enhanced preservation with premium care and monitoring.</p>
-              <ul className="text-sm text-gray-600 mb-4 space-y-2">
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Advanced preservation protocol
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  24/7 monitoring
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Quarterly status updates
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Priority support
-                </li>
-              </ul>
-              <button 
-                onClick={() => selectPackage("standard")} 
-                className={`w-full py-2 rounded-md transition-colors ${
-                  selectedPackage === "standard" 
-                    ? "bg-[#775684] text-white" 
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
-              >
-                {selectedPackage === "standard" ? "Selected" : "Select Standard"}
-              </button>
-            </div>
-            
-            {/* Premium Package */}
-            <div className={`border ${selectedPackage === "premium" ? "border-2 border-[#775684]" : "border-gray-200"} 
-                            rounded-lg p-6 ${selectedPackage === "premium" ? "shadow-md" : "hover:shadow-md"} transition-all`}>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Premium Package</h3>
-              <p className="text-3xl font-bold text-[#775684] mb-2">
-                ${membershipCost ? (membershipCost * 1.5).toFixed(2) : "---"}<span className="text-sm text-gray-500 font-normal">/year</span>
-              </p>
-              <p className="text-gray-600 mb-4">Elite preservation with personalized care and exclusive benefits.</p>
-              <ul className="text-sm text-gray-600 mb-4 space-y-2">
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Elite preservation protocol
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Advanced 24/7 monitoring
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Monthly detailed reports
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Dedicated account manager
-                </li>
-                <li className="flex items-start">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  VIP support access
-                </li>
-              </ul>
-              <button 
-                onClick={() => selectPackage("premium")} 
-                className={`w-full py-2 rounded-md transition-colors ${
-                  selectedPackage === "premium" 
-                    ? "bg-[#775684] text-white" 
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
-              >
-                {selectedPackage === "premium" ? "Selected" : "Select Premium"}
-              </button>
-            </div>
-          </div>
-          
-          <p className="text-sm text-gray-500 italic">
-            * Pricing is personalized based on your age and may be subject to change. All packages include our standard preservation guarantee.
-          </p>
-        </div>
-      )}
-      
-      {/* Navigation buttons */}
-      <div className="flex justify-between mt-8">
-        <button
-          type="button"
-          onClick={handleBackClick}
-          className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-          Back
-        </button>
+    <div className="w-full bg-gray-100" style={{
+      width: '100vw',
+      marginLeft: 'calc(-50vw + 50%)',
+      marginRight: 'calc(-50vw + 50%)',
+      position: 'relative'
+    }}>
+      <div className="w-full mx-auto px-4 py-8" style={{ maxWidth: "1200px" }}>
         
-        <button 
-          type="button"
-          onClick={handleNext}
-          disabled={isSubmitting || isLoading}
-          className="py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg bg-[#775684] text-white hover:bg-[#664573] disabled:opacity-70"
-        >
-          {isSubmitting ? "Processing..." : "Continue"}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
+            <p className="mt-4 text-xl text-gray-600">Calculating pricing...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-md p-6 mb-8">
+            <p className="text-red-700 text-lg">{error}</p>
+            <p className="text-red-600 mt-2">Please try refreshing the page or contact support if this issue persists.</p>
+          </div>
+        ) : (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* NEURO OPTION */}
+              <div onClick={() => selectOption("neuro")} className={`cursor-pointer h-full`}>
+                <div className={`rounded-lg overflow-hidden h-full flex flex-col border-2 ${selectedOption === "neuro" ? "border-[#65417c]" : "border-transparent"}`}>
+                  {/* SELECTED indicator that is always there but only visible when selected */}
+                  <div className="h-12 w-full bg-white flex items-center justify-center">
+                    <span className={`font-bold text-sm tracking-widest ${selectedOption === "neuro" ? "text-[#65417c]" : "text-transparent"}`}>
+                      SELECTED
+                    </span>
+                  </div>
+                  
+                  <div className="text-white flex-1 flex flex-col" style={{
+                    background: 'radial-gradient(circle at bottom center, #c88c68 5%, #65417c 30%, #323053 70%)'
+                  }}>
+                    <div className="p-6 border-b border-white border-opacity-20 flex-1">
+                      <div className="flex justify-between items-start mb-8">
+                        <h3 className="text-2xl font-semibold">Neuropreservation</h3>
+                        <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      <p className="text-white text-opacity-90 mb-8 h-16 text-lg">
+                        Preserves brain and neural structures at a lower cost.
+                      </p>
+                      
+                      <div className="border-t border-white border-opacity-20 pt-6 mt-auto">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-white text-opacity-70 text-lg">Preservation:</span>
+                          <span className="text-white font-bold text-lg">${calculatePreservationEstimate("neuro")?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-opacity-70 text-lg">Membership:</span>
+                          <span className="text-white font-bold text-lg">${getPackagePrice("standard")}/year</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* What's Included Section - Now White with Star List and Explanations */}
+                    <div className="bg-white p-8 text-gray-800">
+                      <h4 className="font-semibold text-lg mb-6 text-gray-800">What's Included:</h4>
+                      
+                      <ul className="mb-8 space-y-4">
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Standby Service</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Neural Cryopreservation</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Long-Term Storage</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Revival Research</span>
+                        </li>
+                      </ul>
+                      
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <p className="text-gray-600">
+                          Preserves the brain's neural connections that define your identity.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* WHOLE BODY OPTION */}
+              <div onClick={() => selectOption("wholebody")} className={`cursor-pointer h-full`}>
+                <div className={`rounded-lg overflow-hidden h-full flex flex-col border-2 ${selectedOption === "wholebody" ? "border-[#323053]" : "border-transparent"}`}>
+                  {/* SELECTED indicator that is always there but only visible when selected */}
+                  <div className="h-12 w-full bg-white flex items-center justify-center">
+                    <span className={`font-bold text-sm tracking-widest ${selectedOption === "wholebody" ? "text-[#323053]" : "text-transparent"}`}>
+                      SELECTED
+                    </span>
+                  </div>
+                  
+                  <div className="text-white flex-1 flex flex-col" style={{
+                    background: 'radial-gradient(circle at bottom center, #82617f 5%, #323053 40%, #11243a 90%)'
+                  }}>
+                    <div className="p-6 border-b border-white border-opacity-20 flex-1">
+                      <div className="flex justify-between items-start mb-8">
+                        <h3 className="text-2xl font-semibold">Whole Body</h3>
+                        <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      <p className="text-white text-opacity-90 mb-8 h-16 text-lg">
+                        Preserves your entire body for complete restoration.
+                      </p>
+                      
+                      <div className="border-t border-white border-opacity-20 pt-6 mt-auto">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-white text-opacity-70 text-lg">Preservation:</span>
+                          <span className="text-white font-bold text-lg">${calculatePreservationEstimate("wholebody")?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-opacity-70 text-lg">Membership:</span>
+                          <span className="text-white font-bold text-lg">${getPackagePrice("standard")}/year</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* What's Included Section - Now White with Star List and Explanations */}
+                    <div className="bg-white p-8 text-gray-800">
+                      <h4 className="font-semibold text-lg mb-6 text-gray-800">What's Included:</h4>
+                      
+                      <ul className="mb-8 space-y-4">
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Standby Service</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Full Body Cryopreservation</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Long-Term Storage</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Revival Research</span>
+                        </li>
+                      </ul>
+                      
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <p className="text-gray-600">
+                          Complete body preservation for potential full restoration.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* BASIC OPTION */}
+              <div onClick={() => selectOption("basic")} className={`cursor-pointer h-full`}>
+                <div className={`rounded-lg overflow-hidden h-full flex flex-col border-2 ${selectedOption === "basic" ? "border-[#11243a]" : "border-transparent"}`}>
+                  {/* SELECTED indicator that is always there but only visible when selected */}
+                  <div className="h-12 w-full bg-white flex items-center justify-center">
+                    <span className={`font-bold text-sm tracking-widest ${selectedOption === "basic" ? "text-[#11243a]" : "text-transparent"}`}>
+                      SELECTED
+                    </span>
+                  </div>
+                  
+                  <div className="text-white flex-1 flex flex-col" style={{
+                    background: 'radial-gradient(circle at bottom center, #65417c 5%, #11243a 50%, #11243a 95%)'
+                  }}>
+                    <div className="p-6 border-b border-white border-opacity-20 flex-1">
+                      <div className="flex justify-between items-start mb-8">
+                        <h3 className="text-2xl font-semibold">Basic Membership</h3>
+                        <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      <p className="text-white text-opacity-90 mb-8 h-16 text-lg">
+                        Join now, decide on preservation later.
+                      </p>
+                      
+                      <div className="border-t border-white border-opacity-20 pt-6 mt-auto">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-white text-opacity-70 text-lg">Annual Cost:</span>
+                          <span className="text-white font-bold text-lg">${getPackagePrice("standard")}/year</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-opacity-70 text-lg">Preservation:</span>
+                          <span className="text-white font-bold text-lg">Not required</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* What's Included Section - Now White with Star List and Explanations */}
+                    <div className="bg-white p-8 text-gray-800">
+                      <h4 className="font-semibold text-lg mb-6 text-gray-800">What's Included:</h4>
+                      
+                      <ul className="mb-8 space-y-4">
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Member Events & Resources</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Rate Protection</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Priority Status</span>
+                        </li>
+                        <li className="flex items-center">
+                          <StarIcon />
+                          <span className="text-gray-800 text-lg">Consultation Services</span>
+                        </li>
+                      </ul>
+                      
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <p className="text-gray-600">
+                          Lock in current rates while deferring your decision.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+              <div className="bg-white rounded-lg p-8 mt-8 shadow-sm">
+                <div className="flex items-center mb-2">
+                  <svg className="w-5 h-5 text-[#323053] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p className="text-gray-700 font-medium">Important Information</p>
+                </div>
+                <p className="text-gray-600">
+                  Your membership pricing is personalized based on your current age ({membershipAge} years). Most members fund their cryopreservation through life insurance policies with manageable monthly premiums. We'll discuss insurance options on the next page.
+                </p>
+              </div>
+          </div>
+        )}
+        
+        {/* Navigation buttons */}
+        <div className="flex justify-between mt-8">
+          <button
+            type="button"
+            onClick={handleBackClick}
+            className="py-3 px-6 border border-gray-300 rounded-md text-gray-700 font-medium flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Back
+          </button>
+          
+          <button 
+            type="button"
+            onClick={handleNext}
+            disabled={isSubmitting || isLoading || !selectedOption}
+            className={`py-3 px-6 rounded-md font-medium flex items-center ${
+              selectedOption ? "bg-[#323053] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {isSubmitting ? "Processing..." : "Continue"}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
