@@ -26,6 +26,11 @@ import {
     saveSignupState
 } from "../services/storage";
 
+import { 
+    GoogleAuthProvider, 
+    signInWithPopup 
+  } from "firebase/auth";
+
 // Components and assets
 import darkLogo from "../assets/images/alcor-white-logo.png";
 import ResponsiveBanner from "../components/ResponsiveBanner";
@@ -497,21 +502,12 @@ const handleChange = (e) => {
   
   const handleGoogleSignIn = async () => {
     if (isSubmitting) return;
-    
     setIsSubmitting(true);
-    setErrors({
-      email: "",
-      password: "",
-      general: "",
-      reset: "",
-      addPassword: "",
-      linkGoogle: ""
-    });
     
     try {
       console.log("DEBUG: Attempting Google sign-in");
       
-      // Special case for account linking - proceed as normal
+      // Special case for account linking - keep as is
       if (showLinkGoogleForm || loginMessage?.type === 'success') {
         console.log("DEBUG: In account linking flow, proceeding with Google sign-in");
         const result = await signInWithGoogle();
@@ -524,64 +520,40 @@ const handleChange = (e) => {
         return;
       }
       
-      // Call your existing signInWithGoogle function
+      // SIMPLE APPROACH: Just sign in with Google directly
       const result = await signInWithGoogle();
       console.log("DEBUG: Google sign-in result:", result);
       
-      // Check if this is a new user from the result
-      if (result && result.isNewUser) {
-        console.log("DEBUG: This was a new account creation - not allowed from login page");
+      // Check if user is new based on the result
+      if (result.isNewUser) {
+        console.log("DEBUG: New user detected - showing signup message");
         
-        // If your signInWithGoogle returns the user, use it to delete the user
-        if (result.user) {
-          await result.user.delete();
-        } else {
-          // If not, use the current user
-          const currentUser = auth.currentUser;
-          if (currentUser) {
-            await currentUser.delete();
-          }
-        }
+        // Sign them out
+        await auth.signOut();
         
-        // Show inline message with options
+        // Show the message
         setShowNoAccountMessage(true);
-        setIsSubmitting(false);
-        return;
+      } else {
+        // This is a genuine existing user
+        console.log("DEBUG: Existing user - proceeding with navigation");
+        setShouldNavigate(true);
       }
-      
-      // If we get here, this was a successful sign-in to an existing account
-      console.log("DEBUG: Successful sign-in to existing Google account");
-      setShouldNavigate(true);
       
     } catch (error) {
       console.error("DEBUG: Google sign-in error:", error);
       
-      let errorMessage = "Failed to sign in with Google. Please try again.";
-      
-      if (error.message === 'Sign-in was cancelled') {
-        errorMessage = "Google sign-in was cancelled.";
-      } else if (error.message && error.message.includes('pop-up')) {
-        errorMessage = "Pop-up was blocked. Please enable pop-ups for this site.";
-      } else if (error.message && error.message.includes('network')) {
-        errorMessage = "Network error. Please check your internet connection.";
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = "This email is already registered with a password. Please sign in with your password first to link accounts.";
-        setHighlightPasswordForm(true);
-        setShowLinkGoogleForm(true);
-        
-        // Prefill the email field if we can extract it from the error
-        if (error.email) {
-          setFormData(prev => ({
-            ...prev,
-            email: error.email
-          }));
-        }
+      // Error handling
+      if (error.code === 'auth/popup-closed-by-user') {
+        setErrors(prev => ({
+          ...prev,
+          general: "Google sign-in was cancelled."
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: error.message || "An error occurred during sign in. Please try again."
+        }));
       }
-      
-      setErrors(prev => ({
-        ...prev,
-        general: errorMessage
-      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -1191,7 +1163,6 @@ const handleLinkGoogle = async (e) => {
                 </div>
               )}
 
-                {/* No Account Message - ADD THIS HERE */}
                 {/* No Account Message */}
                 {showNoAccountMessage && (
                 <div className="mb-6 p-4 rounded-md bg-yellow-50 border border-yellow-200">

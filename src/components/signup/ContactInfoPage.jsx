@@ -544,6 +544,34 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       }
     }
   };
+
+  // Fix for autofill - Add this handler
+  const handleInput = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear the specific error when user makes changes
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
+    
+    // Special handling for date of birth fields
+    if (name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
+      if (name === 'birthMonth') {
+        updateCombinedDateOfBirth(value, formData.birthDay, formData.birthYear);
+      } else if (name === 'birthDay') {
+        updateCombinedDateOfBirth(formData.birthMonth, value, formData.birthYear);
+      } else if (name === 'birthYear') {
+        updateCombinedDateOfBirth(formData.birthMonth, formData.birthDay, value);
+      }
+    }
+  };
   
   // Handler for address selection from autocomplete
   const handleAddressSelect = (addressData) => {
@@ -717,67 +745,124 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     
     return Object.keys(newErrors).length === 0;
   };
-  
+
+  const syncFormDataBeforeSubmit = () => {
+    // Force read all form fields' values from the DOM
+    const form = document.querySelector('form');
+    const formElements = form.elements;
+    const updatedData = {...formData};
+    
+    // Update formData with actual DOM values
+    for (let i = 0; i < formElements.length; i++) {
+      const element = formElements[i];
+      if (element.name && element.value) {
+        updatedData[element.name] = element.value;
+      }
+    }
+    
+    // Update the React state with DOM values
+    setFormData(updatedData);
+    return updatedData;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate the form
-    if (!validateForm()) {
+    // Force sync form data immediately from the DOM
+    const form = document.querySelector('form');
+    const updatedData = {...formData};
+    
+    // Get all form inputs
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      if (input.name && input.value) {
+        updatedData[input.name] = input.value;
+      }
+    });
+    
+    // Direct validation with updated data
+    const errors = {};
+    
+    // Required fields validation
+    const requiredFields = [
+      'firstName', 'lastName', 'sex', 
+      'birthMonth', 'birthDay', 'birthYear',
+      'streetAddress', 'city', 'region', 'postalCode', 'country',
+      'sameMailingAddress', 'email', 'phoneType'
+    ];
+    
+    requiredFields.forEach(field => {
+      if (!updatedData[field]) {
+        errors[field] = `Required field`;
+      }
+    });
+    
+    // County validation - only check if necessary
+    const isCountyRequired = (countryConfigs[updatedData.country]?.countyRequired || 
+      countiesRequiredCountries.includes(updatedData.country));
+      
+    if (isCountyRequired && !updatedData.cnty_hm) {
+      errors.cnty_hm = 'Required field';
+    }
+    
+    // Phone validation based on type
+    if (updatedData.phoneType === 'Mobile' && !updatedData.mobilePhone) {
+      errors.mobilePhone = 'Required field';
+    } else if (updatedData.phoneType === 'Work' && !updatedData.workPhone) {
+      errors.workPhone = 'Required field';
+    } else if (updatedData.phoneType === 'Home' && !updatedData.homePhone) {
+      errors.homePhone = 'Required field';
+    }
+    
+    // Stop if any errors found
+    if (Object.keys(errors).length > 0) {
+      // Update error state
+      setErrors(errors);
+      
+      // Highlight first error field
+      const firstErrorField = Object.keys(errors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.style.border = "2px solid #dc2626";
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      console.error("Form validation failed with errors:", errors);
       return;
     }
     
+    // If validation passes, continue with submission
     setIsSubmitting(true);
     
     try {
-      console.log("💾 Contact info submission started with fields:", Object.keys(formData).join(", "));
+      console.log("💾 Contact info submission started with fields:", Object.keys(updatedData).join(", "));
       
-      // Check authentication first
+      // Check authentication
       if (!currentUser || !currentUser.uid) {
-        console.error("❌ User not authenticated when saving contact info");
         throw new Error("You must be logged in to save contact information. Please refresh and try again.");
       }
       
-      // STEP 1: Save contact information first
-      console.log("💾 Saving contact info to backend...");
-      const saveResult = await saveContactInfo(formData);
+      // Save form data (use updated data directly)
+      const saveResult = await saveContactInfo(updatedData);
       
       if (!saveResult) {
-        console.error("❌ Failed to save contact information");
         throw new Error("Server error while saving contact information.");
       }
       
       console.log("✅ Contact info saved successfully!");
       
-      // STEP 2: Update progress separately - FIXED: using correct step number 3
-      console.log("💾 Updating signup progress to step 3 (package)...");
-      const progressResult = await updateSignupProgress("package", 3, {}); // FIXED: changed from 2 to 3
+      // Update progress
+      const progressResult = await updateSignupProgress("package", 3, {});
       
-      if (!progressResult || !progressResult.success) {
-        console.error("❌ Failed to update progress:", progressResult);
-        // Don't throw here - contact info is already saved
-        console.warn("Continuing with navigation despite progress update failure");
-      } else {
-        console.log("✅ Progress updated successfully!");
-      }
-      
-      // STEP 3: Force navigation to the next step
-      console.log("🚀 Navigating to package step...");
-      
-      // Use localStorage emergency override - FIXED: using correct step number 3
-      localStorage.setItem('force_active_step', '3'); // FIXED: changed from 2 to 3
+      // Force navigation
+      localStorage.setItem('force_active_step', '3');
       localStorage.setItem('force_timestamp', Date.now().toString());
       
-      // No setActiveStep here as it's not available
-      
-      // Use direct path navigation instead of query parameters - FIXED: using proper path
-      console.log("🔄 Executing direct navigation to package step");
-      navigate('/signup/package', { replace: true }); // FIXED: changed from query params to direct path
+      navigate('/signup/package', { replace: true });
       
     } catch (error) {
       console.error('❌ Error saving contact info:', error);
-      console.error('Error details:', error.stack || 'No stack trace available');
       alert(error.message || "Failed to save contact information. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -834,6 +919,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="given-name"
                         value={formData.firstName}
                         onChange={handleChange}
+                        onInput={handleInput}
                         className={`w-full h-16 pl-2 pr-3 py-3 bg-white border rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg ${errors.firstName ? 'error-field' : ''}`}
                         style={errors.firstName ? {border: '2px solid #dc2626'} : {borderColor: 'rgba(119, 86, 132, 0.3)'}}
                         disabled={isSubmitting}
@@ -851,6 +937,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="family-name"
                         value={formData.lastName}
                         onChange={handleChange}
+                        onInput={handleInput}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-1 focus:ring-[#775684] text-gray-800 text-lg"
                         disabled={isSubmitting}
                         required
@@ -866,6 +953,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="sex"
                         value={formData.sex}
                         onChange={handleChange}
+                        onInput={handleInput}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#775684] text-gray-700"
                         disabled={isSubmitting}
                         required
@@ -887,6 +975,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="email"
                         value={formData.email}
                         onChange={handleChange}
+                        onInput={handleInput}
                         className="w-full h-16 pl-2 pr-3 py-3 bg-white border border-[#775684]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                         disabled={isSubmitting || (currentUser && currentUser.email)}
                         required
@@ -902,6 +991,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="tel-type"
                     value={formData.phoneType}
                     onChange={handleChange}
+                    onInput={handleInput}
                     className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.phoneType ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required
@@ -924,6 +1014,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="tel-mobile"
                     value={formData.mobilePhone}
                     onChange={handleChange}
+                    onInput={handleInput}
                     className={`w-full h-16 pl-2 pr-3 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.mobilePhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Mobile"}
@@ -940,6 +1031,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="tel-work"
                     value={formData.workPhone}
                     onChange={handleChange}
+                    onInput={handleInput}
                     className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.workPhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Work"}
@@ -956,6 +1048,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="tel-home"
                     value={formData.homePhone}
                     onChange={handleChange}
+                    onInput={handleInput}
                     className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 ${errors.homePhone ? 'error-field' : ''}`}
                     disabled={isSubmitting}
                     required={formData.phoneType === "Home"}
@@ -975,6 +1068,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="bday-month"
                         value={formData.birthMonth || ""}
                         onChange={handleChange}
+                        onInput={handleInput}
                         style={{
                           height: '4rem',
                           padding: '0.75rem 1rem',
@@ -1012,6 +1106,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="bday-day"
                         value={formData.birthDay || ""}
                         onChange={handleChange}
+                        onInput={handleInput}
                         style={{
                           height: '4rem',
                           padding: '0.75rem 1rem',
@@ -1041,6 +1136,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                         autoComplete="bday-year"
                         value={formData.birthYear || ""}
                         onChange={handleChange}
+                        onInput={handleInput}
                         style={{
                           height: '4rem',
                           padding: '0.75rem 1rem',
@@ -1123,6 +1219,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="address-level2"
                     value={formData.city}
                     onChange={handleChange}
+                    onInput={handleInput}
                     style={{
                       height: '4rem',
                       padding: '0.75rem 1rem',
@@ -1147,6 +1244,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="address-level1"
                     value={formData.region}
                     onChange={handleChange}
+                    onInput={handleInput}
                     style={{
                       height: '4rem',
                       padding: '0.75rem 1rem',
@@ -1171,6 +1269,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="off"
                     value={formData.cnty_hm || ""}
                     onChange={handleChange}
+                    onInput={handleInput}
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
                     disabled={isSubmitting}
                     required={isCountyRequired}
@@ -1194,6 +1293,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     autoComplete="postal-code"
                     value={formData.postalCode}
                     onChange={handleChange}
+                    onInput={handleInput}
                     style={{
                       height: '4rem',
                       padding: '0.75rem 1rem',
@@ -1217,6 +1317,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   autoComplete="country"
   value={formData.country}
   onChange={handleChange}
+  onInput={handleInput}
   style={{
     height: '4rem',
     padding: '0.75rem 1rem',
@@ -1244,6 +1345,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                     name="sameMailingAddress"
                     value={formData.sameMailingAddress}
                     onChange={handleChange}
+                    onInput={handleInput}
                     style={{
                       height: '4rem',
                       padding: '0.75rem 1rem',
@@ -1308,6 +1410,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           autoComplete="shipping address-level2"
           value={formData.mailingCity}
           onChange={handleChange}
+          onInput={handleInput}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
           disabled={isSubmitting}
           required={showMailingAddress}
@@ -1333,6 +1436,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           autoComplete="off"
           value={formData.cnty_ml || ""}
           onChange={handleChange}
+          onInput={handleInput}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
           disabled={isSubmitting}
           required={showMailingAddress && isMailingCountyRequired}
@@ -1365,6 +1469,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           autoComplete="shipping address-level1"
           value={formData.mailingRegion}
           onChange={handleChange}
+          onInput={handleInput}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
           disabled={isSubmitting}
           required={showMailingAddress}
@@ -1390,6 +1495,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           autoComplete="shipping postal-code"
           value={formData.mailingPostalCode}
           onChange={handleChange}
+          onInput={handleInput}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
           disabled={isSubmitting}
           required={showMailingAddress}
@@ -1414,6 +1520,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           autoComplete="shipping country"
           value={formData.mailingCountry}
           onChange={handleChange}
+          onInput={handleInput}
           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
           disabled={isSubmitting}
           required={showMailingAddress}
