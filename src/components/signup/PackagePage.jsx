@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { updateSignupProgress } from "../../services/auth";
 import { getMembershipCost } from "../../services/pricing";
 import alcorStar from "../../assets/images/alcor-star.png";
+import HelpPanel from "./HelpPanel";
 
 // Update help content for export
 export const packageHelpContent = [
@@ -35,6 +36,14 @@ export default function PackagePage({ onNext, onBack }) {
   const [selectedOption, setSelectedOption] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState("standard");
   
+  // Help panel state
+  const [showHelpInfo, setShowHelpInfo] = useState(false);
+  
+  // Toggle help panel
+  const toggleHelpInfo = () => {
+    setShowHelpInfo(prev => !prev);
+  };
+  
   // Plan options and descriptions
   const planOptions = {
     neuro: {
@@ -52,7 +61,7 @@ export default function PackagePage({ onNext, onBack }) {
       title: "Membership + Whole Body Preservation",
       short: "Complete preservation of the entire human body",
       long: "Whole Body preservation involves cryopreserving your entire body, maintaining all organs and systems intact. This comprehensive approach preserves not only neural structures but all biological systems, offering the possibility of complete restoration in the future.",
-      baseEstimate: 200000,
+      baseEstimate: 220000,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-[#775684]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -177,13 +186,10 @@ export default function PackagePage({ onNext, onBack }) {
   
   // Calculate estimated preservation cost based on age and type
   const calculatePreservationEstimate = (optionType) => {
-    if (!optionType || !membershipAge || optionType === "basic") return null;
+    if (!optionType || optionType === "basic") return null;
     
-    const baseEstimate = planOptions[optionType].baseEstimate;
-    // Simple age-based factor: older = more expensive (example formula)
-    const ageFactor = Math.min(1.5, Math.max(1.0, 1 + (membershipAge - 30) / 100));
-    
-    return Math.round(baseEstimate * ageFactor);
+    // Return fixed amount directly from baseEstimate without age factor
+    return planOptions[optionType].baseEstimate;
   };
   
   // Get package price with selected options
@@ -242,7 +248,10 @@ export default function PackagePage({ onNext, onBack }) {
                   }}>
                     <div className="p-6 border-b border-white border-opacity-20 flex-1">
                       <div className="flex justify-between items-start mb-8">
-                        <h3 className="text-2xl font-semibold">Neuropreservation</h3>
+                        <div className="flex items-center">
+                          <img src={alcorStar} alt="Alcor Star" className="w-6 h-6 mr-3" />
+                          <h3 className="text-2xl font-semibold">Neuropreservation</h3>
+                        </div>
                         <div className="bg-white bg-opacity-20 p-2 rounded-full">
                           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -285,7 +294,7 @@ export default function PackagePage({ onNext, onBack }) {
                         </li>
                         <li className="flex items-center">
                           <StarIcon />
-                          <span className="text-gray-800 text-lg">Revival Research</span>
+                          <span className="text-gray-800 text-lg">Possible Revival</span>
                         </li>
                       </ul>
                       
@@ -314,7 +323,10 @@ export default function PackagePage({ onNext, onBack }) {
                   }}>
                     <div className="p-6 border-b border-white border-opacity-20 flex-1">
                       <div className="flex justify-between items-start mb-8">
-                        <h3 className="text-2xl font-semibold">Whole Body</h3>
+                        <div className="flex items-center">
+                          <img src={alcorStar} alt="Alcor Star" className="w-6 h-6 mr-3" />
+                          <h3 className="text-2xl font-semibold">Whole Body</h3>
+                        </div>
                         <div className="bg-white bg-opacity-20 p-2 rounded-full">
                           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -357,7 +369,7 @@ export default function PackagePage({ onNext, onBack }) {
                         </li>
                         <li className="flex items-center">
                           <StarIcon />
-                          <span className="text-gray-800 text-lg">Revival Research</span>
+                          <span className="text-gray-800 text-lg">Possible Revival</span>
                         </li>
                       </ul>
                       
@@ -386,7 +398,10 @@ export default function PackagePage({ onNext, onBack }) {
                   }}>
                     <div className="p-6 border-b border-white border-opacity-20 flex-1">
                       <div className="flex justify-between items-start mb-8">
-                        <h3 className="text-2xl font-semibold">Basic Membership</h3>
+                        <div className="flex items-center">
+                          <img src={alcorStar} alt="Alcor Star" className="w-6 h-6 mr-3" />
+                          <h3 className="text-2xl font-semibold">Basic Membership</h3>
+                        </div>
                         <div className="bg-white bg-opacity-20 p-2 rounded-full">
                           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
@@ -421,11 +436,11 @@ export default function PackagePage({ onNext, onBack }) {
                         </li>
                         <li className="flex items-center">
                           <StarIcon />
-                          <span className="text-gray-800 text-lg">Rate Protection</span>
+                          <span className="text-gray-800 text-lg">Pet Preservation Options</span>
                         </li>
                         <li className="flex items-center">
                           <StarIcon />
-                          <span className="text-gray-800 text-lg">Priority Status</span>
+                          <span className="text-gray-800 text-lg">Add on Cryopreservation Anytime</span>
                         </li>
                         <li className="flex items-center">
                           <StarIcon />
@@ -435,7 +450,7 @@ export default function PackagePage({ onNext, onBack }) {
                       
                       <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-gray-600">
-                          Lock in current rates while deferring your decision.
+                          Basic membership with flexibility to upgrade later.
                         </p>
                       </div>
                     </div>
@@ -458,12 +473,13 @@ export default function PackagePage({ onNext, onBack }) {
           </div>
         )}
         
-        {/* Navigation buttons */}
-        <div className="flex justify-between mt-8">
+        {/* Navigation buttons - Updated to match ContactInfoPage styling */}
+        <div className="flex justify-between mt-8 mb-6">
           <button
             type="button"
             onClick={handleBackClick}
-            className="py-3 px-6 border border-gray-300 rounded-md text-gray-700 font-medium flex items-center"
+            className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+            disabled={isSubmitting}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -475,17 +491,36 @@ export default function PackagePage({ onNext, onBack }) {
             type="button"
             onClick={handleNext}
             disabled={isSubmitting || isLoading || !selectedOption}
-            className={`py-3 px-6 rounded-md font-medium flex items-center ${
-              selectedOption ? "bg-[#323053] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+            className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
+              selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            } disabled:opacity-70`}
           >
-            {isSubmitting ? "Processing..." : "Continue"}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                Continue
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </>
+            )}
           </button>
         </div>
       </div>
+      
+      {/* Help Panel Component */}
+      <HelpPanel 
+        showHelpInfo={showHelpInfo} 
+        toggleHelpInfo={toggleHelpInfo} 
+        helpItems={packageHelpContent} 
+      />
     </div>
   );
 }

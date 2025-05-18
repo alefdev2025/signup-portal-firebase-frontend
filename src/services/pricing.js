@@ -1,54 +1,71 @@
-// src/services/membership.js
-import { auth, functions } from './firebase';
-import { httpsCallable } from 'firebase/functions';
+// File: services/pricing.js
+import { auth } from './firebase';
 
 /**
- * Get the calculated membership cost based on user's age
- * @returns {Promise<Object>} Calculated membership cost details
+ * Get membership cost information from the backend
+ * @returns {Promise<object>} Membership cost details based on user age
  */
 export const getMembershipCost = async () => {
-    try {
-      console.log("=== getMembershipCost: Starting function ===");
-      const currentUser = auth.currentUser;
-      
-      if (!currentUser) {
-        console.error("getMembershipCost: No authenticated user found");
-        return { success: false, error: "User not authenticated" };
-      }
-      
-      console.log("getMembershipCost: Calling Cloud Function");
-      
-      // Track the start time for performance monitoring
-      const startTime = Date.now();
-      
-      // Call the Cloud Function to calculate membership cost
-      const getMembershipCostFn = httpsCallable(functions, 'getMembershipCost');
-      
-      // Add the userId explicitly to resolve any potential issues
-      const result = await getMembershipCostFn({ userId: currentUser.uid });
-      
-      // Log timing information
-      console.log(`getMembershipCost: Cloud Function call completed in ${Date.now() - startTime}ms`);
-      
-      if (result.data.success) {
-        console.log("getMembershipCost: Successfully retrieved membership cost");
-        return result.data;
-      } else {
-        console.error("getMembershipCost: Failed to get membership cost:", result.data.error);
-        return {
-          success: false,
-          error: result.data.error || "Unable to calculate membership cost"
-        };
-      }
-    } catch (error) {
-      console.error("getMembershipCost: Error in function:", error);
-      console.error("getMembershipCost: Error stack:", error.stack);
-      
-      return { 
-        success: false, 
-        error: error.message || "Unknown error calculating membership cost" 
-      };
-    } finally {
-      console.log("=== getMembershipCost: Function completed ===");
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error("No authenticated user found");
+      throw new Error("User must be authenticated to get membership cost");
     }
-  };
+    
+    // Get the Firebase ID token for authentication
+    const token = await user.getIdToken();
+    
+    console.log("Fetching membership cost from API");
+    
+    // Call the VM endpoint with a timeout
+    const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/pricing/membership-cost`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Apply timeout
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), 15000)
+      )
+    ]);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    // Check for success in the response
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to calculate membership cost');
+    }
+    
+    return {
+      success: true,
+      membershipCost: result.membershipCost,
+      monthlyDues: result.monthlyDues,
+      annualDues: result.annualDues,
+      duesMultiplier: result.duesMultiplier,
+      currency: result.currency,
+      calculatedAt: result.calculatedAt,
+      age: result.age
+    };
+  } catch (error) {
+    console.error("Error calculating membership cost via API:", error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
+export default {
+  getMembershipCost
+};

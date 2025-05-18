@@ -750,13 +750,88 @@ export async function requestEmailVerification(email, name) {
     // console.log("========== END: requestEmailVerification (success) ==========");
 }
 
+
+// Update this function in services/auth.js to call the VM API
+export const checkUserStep = async (data) => {
+    try {
+      const userId = data.userId || (auth.currentUser && auth.currentUser.uid);
+      
+      if (!userId) {
+        console.error('checkUserStep: No user ID provided');
+        return { 
+          success: false, 
+          error: 'User ID is required',
+          step: SIGNUP_STEPS.ACCOUNT,
+          stepName: "account",
+          isSessionExpired: false
+        };
+      }
+      
+      console.log(`Checking user step for userId: ${userId}`);
+      
+      // Get the Firebase ID token for authentication
+      const token = await auth.currentUser.getIdToken();
+      
+      // Call the VM endpoint with a timeout
+      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Apply timeout
+      const response = await Promise.race([
+        fetchPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 15000)
+        )
+      ]);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Check for success in the response
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get user step');
+      }
+      
+      return {
+        success: true,
+        step: result.step || SIGNUP_STEPS.ACCOUNT,
+        stepName: result.stepName || "account",
+        isSessionExpired: result.isSessionExpired || false,
+        isNewUser: result.isNewUser || false
+      };
+    } catch (error) {
+      console.error('Error checking user step:', error);
+      
+      // Return a standardized error format
+      return {
+        success: false,
+        error: error.message || 'An unknown error occurred while checking user step',
+        step: SIGNUP_STEPS.ACCOUNT, // Default to account step on error
+        stepName: 'account',
+        isSessionExpired: false
+      };
+    }
+  };
+
+
+
+/// Firebase function version, phasing out
 /**
  * Checks the user's current step and session status
  * 
  * @param {Object} data Object containing userId
  * @returns {Promise<Object>} Response containing user step information and session status
  */
- export const checkUserStep = async (data) => {
+ /*export const checkUserStep = async (data) => {
     try {
       // console.log(`Checking user step for userId: ${data.userId}`);
       
@@ -795,11 +870,129 @@ export async function requestEmailVerification(email, name) {
         isSessionExpired: false
       };
     }
+  }*/
+
+// Add this function to auth.js
+
+// In services/auth.js
+export const updateSignupProgressAPI = async (step, progress) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("No authenticated user found when updating progress");
+        throw new Error("User must be authenticated to update progress");
+      }
+      
+      // Get the Firebase ID token for authentication
+      const token = await user.getIdToken();
+      
+      console.log(`Calling VM API to update progress: step=${step}, progress=${progress}`);
+      
+      // Call the VM endpoint with a timeout
+      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          step, 
+          progress 
+        })
+      });
+      
+      // Apply timeout
+      const response = await Promise.race([
+        fetchPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 15000)
+        )
+      ]);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Check for success in the response
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update signup progress');
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating signup progress via API:", error);
+      return { success: false, error };
+    }
+  };
+
+
+// Updated to call VM directly instead of Firebase Function
+export async function verifyEmailCodeOnly(verificationId, code) {
+    try {
+      // Input validation
+      if (!verificationId) {
+        throw new Error('Verification ID is missing');
+      }
+      
+      if (!code || code.length !== 6) {
+        throw new Error('Invalid verification code');
+      }
+      
+      // Call the VM endpoint with a timeout
+      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/verification/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ verificationId, code })
+      });
+      
+      // Apply timeout
+      const response = await Promise.race([
+        fetchPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 15000)
+        )
+      ]);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Check for success in the response
+      if (!result.success) {
+        throw new Error(result.error || 'Invalid verification code');
+      }
+      
+      // Return success with user details
+      return {
+        success: true,
+        userId: result.userId,
+        email: result.email,
+        isExistingUser: result.isExistingUser || false,
+        signupProgress: result.signupProgress || SIGNUP_STEPS.CONTACT_INFO,
+        signupStep: result.signupStep || "contact_info"
+      };
+    } catch (error) {
+      console.error('Error verifying email code:', error);
+      throw error;
+    }
   }
 
+
+
+
+
+// Start conversion away from fireabse functions   
 // Split verification into two steps for security
 // Step 1: Verify the code only (no authentication)
-export async function verifyEmailCodeOnly(verificationId, code) {
+/*export async function verifyEmailCodeOnly(verificationId, code) {
   try {
     // Input validation
     if (!verificationId) {
@@ -844,7 +1037,7 @@ export async function verifyEmailCodeOnly(verificationId, code) {
     console.error('Error verifying email code:', error);
     throw error;
   }
-}
+}*/
 
 export async function createNewUser(verificationResult, email, name, password) {
     try {
@@ -1142,6 +1335,11 @@ export async function signInWithGoogle(options) {
       
       // Create Google auth provider
       const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        login_hint: 'nh4olson@gmail.com',
+        prompt: 'select_account'
+      });
+      
       
       // Authenticate with Google
       // console.log("DEBUG: Authenticating with Google");
@@ -1326,6 +1524,68 @@ export const getAndNavigateToCurrentStep = async (navigate) => {
     } catch (error) {
       console.error("Error navigating to current step:", error);
       return false;
+    }
+  };
+
+
+export const getUserProgressAPI = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("No authenticated user found when fetching user progress");
+        throw new Error("User must be authenticated to fetch progress");
+      }
+      
+      // Get user ID from current user
+      const userId = user.uid;
+      
+      // Get the Firebase ID token for authentication
+      const token = await user.getIdToken();
+      
+      // Call the VM endpoint with a timeout
+      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Apply timeout
+      const response = await Promise.race([
+        fetchPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 15000)
+        )
+      ]);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Check for success in the response
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch user progress');
+      }
+      
+      return {
+        success: true,
+        step: result.step || SIGNUP_STEPS.ACCOUNT,
+        stepName: result.stepName || 'account',
+        completed: result.completed || false
+      };
+    } catch (error) {
+      console.error("Error fetching user progress via API:", error);
+      return { 
+        success: false, 
+        error: error.message,
+        step: SIGNUP_STEPS.ACCOUNT,
+        stepName: 'account',
+        completed: false
+      };
     }
   };
 
