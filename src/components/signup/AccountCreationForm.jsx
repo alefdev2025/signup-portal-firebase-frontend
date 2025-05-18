@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PasswordField from './PasswordField';
 import navyAlcorLogo from '../../assets/images/navy-a-logo.png';
 import TermsPrivacyModal from '../modals/TermsPrivacyModal';
+import HelpPanel from "./HelpPanel"; // Import HelpPanel component
 
 const AccountCreationForm = ({ 
   formData, 
@@ -27,6 +28,37 @@ const AccountCreationForm = ({
   const [googleButtonError, setGoogleButtonError] = useState(false);
   // Track if Google sign-in is in progress
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
+  // Help panel state
+  const [showHelpInfo, setShowHelpInfo] = useState(false);
+  
+  // Toggle help panel
+  const toggleHelpInfo = () => {
+    setShowHelpInfo(prev => !prev);
+  };
+  
+  // Define page-specific help content
+  const accountCreationHelpContent = [
+    {
+      title: "Account Creation",
+      content: "Create your Alcor account with a valid email address and secure password."
+    },
+    {
+      title: "Email Verification",
+      content: "After submitting your information, you'll receive a verification code to validate your email address."
+    },
+    {
+      title: "Password Requirements",
+      content: "Your password must be at least 8 characters long and include a mix of uppercase, lowercase, numbers, and symbols for security."
+    },
+    {
+      title: "Need assistance?",
+      content: (
+        <>
+          Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        </>
+      )
+    }
+  ];
   
   console.log("AccountCreationForm rendered with verificationStep:", verificationStep);
   console.log("Form data:", formData);
@@ -276,6 +308,13 @@ const AccountCreationForm = ({
             />
           </div>
         </div>
+        
+        {/* Help Panel Component */}
+        <HelpPanel 
+          showHelpInfo={showHelpInfo} 
+          toggleHelpInfo={toggleHelpInfo} 
+          helpItems={accountCreationHelpContent} 
+        />
       </form>
     );
   }
@@ -451,6 +490,13 @@ const AccountCreationForm = ({
         onClose={closeModal}
         type={modalType}
         directContent={modalType === 'terms' ? termsContent : privacyContent}
+      />
+      
+      {/* Help Panel Component */}
+      <HelpPanel 
+        showHelpInfo={showHelpInfo} 
+        toggleHelpInfo={toggleHelpInfo} 
+        helpItems={accountCreationHelpContent} 
       />
     </>
   );

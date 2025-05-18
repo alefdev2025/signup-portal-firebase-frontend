@@ -1,12 +1,10 @@
 // File: pages/signup/ContactInfoStep.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../../services/firebase";
 import { useUser } from "../../contexts/UserContext";
+import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
 import { getStepFormData, saveFormData } from "../../services/storage";
 
-// Import your existing ContactInfoPage component or create a simplified version
 import ContactInfoPage from "./ContactInfoPage";
 
 const ContactInfoStep = () => {
@@ -19,30 +17,34 @@ const ContactInfoStep = () => {
   useEffect(() => {
     const init = async () => {
       if (!currentUser) {
+        console.log("No user authenticated, redirecting to signup");
         // Redirect unauthenticated users back to account creation
         navigate('/signup', { replace: true });
         return;
       }
       
       try {
-        // Load any saved form data for this step
+        // Load any saved form data for this step from local storage
         const savedData = getStepFormData("contact_info");
         if (savedData) {
           setFormData(savedData);
         }
         
-        // Check user's progress in the database
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        // Check user's progress via API
+        console.log("Checking user progress via API");
+        const progressResult = await getUserProgressAPI();
         
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        if (progressResult.success) {
+          console.log("User progress:", progressResult);
           
           // If user hasn't completed previous step, redirect back
-          if (userData.signupProgress < 1) {
+          if (progressResult.step < 1) {
+            console.log("User has not completed previous step, redirecting");
             navigate('/signup/success', { replace: true });
             return;
           }
+        } else {
+          console.error("Error getting user progress:", progressResult.error);
         }
         
         setLoading(false);
@@ -68,17 +70,21 @@ const ContactInfoStep = () => {
       // Save form data locally
       saveFormData("contact_info", stepData);
       
-      // Update progress in database
-      const userDocRef = doc(db, "users", currentUser.uid);
+      // Save contact info via API
+      const saveResult = await saveContactInfo(stepData);
       
-      await setDoc(userDocRef, {
-        contactInfo: stepData, // Store the actual form data
-        signupStep: "package", // Next step
-        signupProgress: 3, // Progress to step 3
-        lastUpdated: new Date()
-      }, { merge: true });
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || "Failed to save contact information");
+      }
       
-      // Refresh user progress from backend
+      // Update progress via API
+      const progressResult = await updateSignupProgressAPI("package", 3);
+      
+      if (!progressResult.success) {
+        throw new Error(progressResult.error || "Failed to update progress");
+      }
+      
+      // Refresh user progress from context
       if (typeof refreshUserProgress === 'function') {
         await refreshUserProgress();
       }
@@ -92,6 +98,7 @@ const ContactInfoStep = () => {
     }
   };
   
+  // Show loading spinner while initializing
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -100,7 +107,7 @@ const ContactInfoStep = () => {
     );
   }
   
-  // Either use your existing ContactInfoPage or create a simplified version
+  // Render the contact info form with proper handlers
   return (
     <ContactInfoPage
       initialData={formData}

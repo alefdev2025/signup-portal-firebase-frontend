@@ -162,7 +162,7 @@ const ResponsiveBanner = ({
       case 1: return "Account created!"; // Success page
       case 2: return "Contact information"; // Contact info
       case 3: return "Package selection"; // Package
-      case 4: return "Funding details"; // Funding
+      case 4: return "Funding Options"; // Funding
       case 5: return "Membership confirmation"; // Membership
       default: return "Become a member";
     }

@@ -1,12 +1,12 @@
 // File: pages/signup/PackageStep.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../../services/firebase";
 import { useUser } from "../../contexts/UserContext";
+import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
+import { savePackageInfo } from "../../services/package";
 import { getStepFormData, saveFormData } from "../../services/storage";
 
-// Import your existing PackagePage component or create a simplified version
+// Import your existing PackagePage component
 import PackagePage from "./PackagePage";
 
 const PackageStep = () => {
@@ -19,30 +19,34 @@ const PackageStep = () => {
   useEffect(() => {
     const init = async () => {
       if (!currentUser) {
+        console.log("No user authenticated, redirecting to signup");
         // Redirect unauthenticated users back to account creation
         navigate('/signup', { replace: true });
         return;
       }
       
       try {
-        // Load any saved form data for this step
+        // Load any saved form data for this step from local storage
         const savedData = getStepFormData("package");
         if (savedData) {
           setFormData(savedData);
         }
         
-        // Check user's progress in the database
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        // Check user's progress via API
+        console.log("Checking user progress via API");
+        const progressResult = await getUserProgressAPI();
         
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        if (progressResult.success) {
+          console.log("User progress:", progressResult);
           
           // If user hasn't completed previous step, redirect back
-          if (userData.signupProgress < 2) {
+          if (progressResult.step < 2) {
+            console.log("User has not completed previous step, redirecting");
             navigate('/signup/contact', { replace: true });
             return;
           }
+        } else {
+          console.error("Error getting user progress:", progressResult.error);
         }
         
         setLoading(false);
@@ -68,17 +72,21 @@ const PackageStep = () => {
       // Save form data locally
       saveFormData("package", stepData);
       
-      // Update progress in database
-      const userDocRef = doc(db, "users", currentUser.uid);
+      // Save package info via API
+      const saveResult = await savePackageInfo(stepData);
       
-      await setDoc(userDocRef, {
-        packageInfo: stepData, // Store the actual form data
-        signupStep: "funding", // Next step
-        signupProgress: 4, // Progress to step 4
-        lastUpdated: new Date()
-      }, { merge: true });
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || "Failed to save package information");
+      }
       
-      // Refresh user progress from backend
+      // Update progress via API
+      const progressResult = await updateSignupProgressAPI("funding", 4);
+      
+      if (!progressResult.success) {
+        throw new Error(progressResult.error || "Failed to update progress");
+      }
+      
+      // Refresh user progress from context
       if (typeof refreshUserProgress === 'function') {
         await refreshUserProgress();
       }
@@ -92,6 +100,7 @@ const PackageStep = () => {
     }
   };
   
+  // Show loading spinner while initializing
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -100,7 +109,7 @@ const PackageStep = () => {
     );
   }
   
-  // Either use your existing PackagePage or create a simplified version
+  // Render the package selection form with proper handlers
   return (
     <PackagePage
       initialData={formData}

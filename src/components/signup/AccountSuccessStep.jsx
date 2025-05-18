@@ -5,6 +5,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../services/firebase";
 import { useUser } from "../../contexts/UserContext";
 import { isAccountCreated, setForceNavigation } from "../../services/storage";
+// Import the new API function
+import { updateSignupProgressAPI } from "../../services/auth";
 
 // Import components
 import AccountCreationSuccess from "../../components/signup/AccountCreationSuccess";
@@ -84,27 +86,28 @@ const AccountSuccessStep = () => {
     }
   }, [currentUser, navigate, refreshUserProgress]);
   
-  // Function to handle continuing to next step
+  // UPDATED: Function to handle continuing to next step using the API
   const handleContinue = async () => {
     if (!currentUser) return;
     
     try {
-      console.log("Continue button clicked, updating database");
-      // Update user document to indicate progression to next step
-      const userDocRef = doc(db, "users", currentUser.uid);
+      console.log("Continue button clicked, updating via API");
       
-      await setDoc(userDocRef, {
-        signupStep: "contact_info",
-        signupProgress: 2,
-        lastUpdated: new Date()
-      }, { merge: true });
+      // Call the API function instead of direct Firestore call
+      const result = await updateSignupProgressAPI("contact_info", 2);
+      
+      if (!result.success) {
+        console.error("Failed to update progress:", result.error);
+        // Show an error message to the user if needed
+        return;
+      }
       
       // Refresh user progress from backend
       if (typeof refreshUserProgress === 'function') {
         await refreshUserProgress();
       }
       
-      console.log("Database updated, setting force navigation and redirecting");
+      console.log("API update successful, setting force navigation and redirecting");
       // Set force navigation to bypass route guards
       setForceNavigation(2);
       
