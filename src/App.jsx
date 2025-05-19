@@ -67,7 +67,6 @@ const AppRoutes = () => {
               <h1 className="text-2xl font-bold text-gray-800 mb-4">404 - Page Not Found</h1>
               <p className="text-gray-600 mb-6">The page you're looking for doesn't exist or has been moved.</p>
               <button 
-                onClick={() => window.location.href = '/'}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
                 className="py-3 px-6 rounded-full font-semibold text-lg hover:opacity-90"
               >
