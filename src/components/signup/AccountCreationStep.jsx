@@ -55,6 +55,7 @@ const AccountCreationStep = () => {
   const [verificationStep, setVerificationStep] = useState("initial"); // "initial", "verification"
   const [isExistingUser, setIsExistingUser] = useState(false);
   const [highlightGoogleButton, setHighlightGoogleButton] = useState(false);
+  const [isNavigatingPostVerification, setIsNavigatingPostVerification] = useState(false); // New state for verification navigation
   
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
@@ -85,6 +86,22 @@ const AccountCreationStep = () => {
     verificationCode: "",
     general: ""
   });
+  
+  // Verification success overlay component
+  const VerificationSuccessOverlay = () => (
+    <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#6f2d74] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">Verification Successful!</h2>
+        <p className="text-lg text-gray-600">Setting up your account...</p>
+      </div>
+    </div>
+  );
+  
+  // Early return if navigating post-verification
+  if (isNavigatingPostVerification) {
+    return <VerificationSuccessOverlay />;
+  }
 
   // Change this useEffect
 useEffect(() => {
@@ -518,75 +535,86 @@ useEffect(() => {
         if (verificationResult.success) {
           console.log("Verification successful:", verificationResult);
           
+          // Show navigation overlay immediately to prevent flash
+          setIsNavigatingPostVerification(true);
+          
           // Whether existing or new user, we'll handle the same way
           let authResult;
           
-          // Check if this is an existing user from the verification result
-          if (verificationResult.isExistingUser) {
-            console.log("This is an existing user, signing in");
-            // Use signInExistingUser for existing users
-            authResult = await signInExistingUser(
-              verificationResult,
-              formData.email,
-              passwordState
-            );
-          } else {
-            console.log("This is a new user, creating account");
-            // Use createNewUser for new users
-            authResult = await createNewUser(
-              {
-                ...verificationResult,
-                verificationId: formData.verificationId  // Add the ID from formData
-              },
-              formData.email,
-              formData.name || "New Member",
-              passwordState
-            );
-          }
-          
-          // Clear sensitive data from memory immediately
-          setPasswordState('');
-          setConfirmPasswordState('');
-          
-          if (authResult.success) {
-            console.log("Authentication successful, setting up redirection");
+          try {
+            // Check if this is an existing user from the verification result
+            if (verificationResult.isExistingUser) {
+              console.log("This is an existing user, signing in");
+              // Use signInExistingUser for existing users
+              authResult = await signInExistingUser(
+                verificationResult,
+                formData.email,
+                passwordState
+              );
+            } else {
+              console.log("This is a new user, creating account");
+              // Use createNewUser for new users
+              authResult = await createNewUser(
+                {
+                  ...verificationResult,
+                  verificationId: formData.verificationId  // Add the ID from formData
+                },
+                formData.email,
+                formData.name || "New Member",
+                passwordState
+              );
+            }
             
-            // 1. Clear verification state first
-            clearVerificationState();
+            // Clear sensitive data from memory immediately
+            setPasswordState('');
+            setConfirmPasswordState('');
             
-            // 2. Set account created flag in localStorage
-            setAccountCreated(true);
-            
-            // 3. Reset UI state
-            setVerificationStep("initial");
-            setFormData(prev => ({
-              ...prev,
-              verificationCode: "",
-              verificationId: ""
-            }));
-            
-            // 4. Set a just verified flag in localStorage
-            localStorage.setItem('just_verified', 'true');
-            localStorage.setItem('verification_timestamp', Date.now().toString());
-            
-            // 5. Set force navigation to bypass route guards
-            setForceNavigation(1); // 1 = success step
-            
-            // FIXED: Remove direct navigation and let auth state change handle it
-            console.log("All flags set, waiting for auth state change to handle navigation");
-            
-            // Show success message while auth system processes the change
+            if (authResult.success) {
+              console.log("Authentication successful, setting up redirection");
+              
+              // 1. Clear verification state first
+              clearVerificationState();
+              
+              // 2. Set account created flag in localStorage
+              setAccountCreated(true);
+              
+              // 3. Reset UI state (though the overlay will prevent display flashes)
+              setVerificationStep("initial");
+              setFormData(prev => ({
+                ...prev,
+                verificationCode: "",
+                verificationId: ""
+              }));
+              
+              // 4. Set a just verified flag in localStorage
+              localStorage.setItem('just_verified', 'true');
+              localStorage.setItem('verification_timestamp', Date.now().toString());
+              
+              // 5. Set force navigation to bypass route guards
+              setForceNavigation(1); // 1 = success step
+              
+              // 6. Use a small delay to allow auth state to update
+              setTimeout(() => {
+                // Use direct navigation to avoid any component re-renders
+                console.log("Redirecting to success page");
+                window.location.href = '/signup/success';
+              }, 500);
+            } else {
+              // Handle auth failure
+              console.error("Authentication result indicated failure:", authResult);
+              setIsNavigatingPostVerification(false); // Turn off overlay
+              setErrors(prev => ({
+                ...prev,
+                general: "Authentication failed. Please try again."
+              }));
+            }
+          } catch (authError) {
+            // Handle auth exception
+            console.error("Error during authentication process:", authError);
+            setIsNavigatingPostVerification(false); // Turn off overlay
             setErrors(prev => ({
               ...prev,
-              general: "Account verified successfully! Redirecting..." 
-            }));
-            
-            // No return statement here, let the component finish rendering
-          } else {
-            console.error("Authentication result indicated failure:", authResult);
-            setErrors(prev => ({
-              ...prev,
-              general: "Authentication failed. Please try again."
+              general: authError.message || "An error occurred during account setup."
             }));
           }
         } else {
@@ -621,160 +649,6 @@ useEffect(() => {
       }
     }
   };
-
-  /*const handleLinkAccounts = async (password) => {
-    // Create a logging function for consistent debugging
-    const log = (message) => {
-      try {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/log?t=${Date.now()}`, false); // Synchronous request
-        xhr.send(message);
-        console.log(message); // Also log to console
-      } catch (e) {
-        // Ignore errors
-      }
-    };
-    
-    log(`ACCOUNT LINKING START: email=${linkingEmail}`);
-    setIsLinking(true);
-    
-    try {
-      // First check if functions are available
-      log(`CHECKING FUNCTIONS: signInWithEmailAndPassword=${Boolean(signInWithEmailAndPassword)}, linkGoogleToEmailAccount=${Boolean(linkGoogleToEmailAccount)}`);
-      
-      if (typeof signInWithEmailAndPassword !== 'function') {
-        log("ERROR: signInWithEmailAndPassword is missing - make sure it's imported!");
-        throw new Error("Missing sign in function");
-      }
-      
-      // Try sign in
-      log(`SIGN IN ATTEMPT: ${linkingEmail}`);
-      let signInResult;
-      try {
-        // Use the directly imported signInWithEmailAndPassword
-        signInResult = await signInWithEmailAndPassword(linkingEmail, password);
-        log(`SIGN IN RESULT: ${JSON.stringify(signInResult)}`);
-      } catch (e) {
-        log(`SIGN IN ERROR: ${e.message}`);
-        throw e;
-      }
-      
-      if (!signInResult || !signInResult.success) {
-        log("SIGN IN FAILED - bad result");
-        throw new Error("Failed to sign in");
-      }
-      
-      // Try linking
-      log("LINKING GOOGLE ATTEMPT");
-      let linkResult;
-      try {
-        linkResult = await linkGoogleToEmailAccount();
-        log(`LINK RESULT: ${JSON.stringify(linkResult)}`);
-      } catch (e) {
-        log(`LINK ERROR: ${e.message}`);
-        throw e;
-      }
-      
-      // Handle credential-already-in-use error specifically
-      if (!linkResult.success && linkResult.error === "auth/credential-already-in-use") {
-        log("DETECTED: Credential already in use error - this is expected when the same email has separate accounts");
-        
-        // Call the backend function to finalize the linking, even though the actual Firebase Auth linking failed
-        try {
-          log("Calling finalizeGoogleLinking Cloud Function to update Firestore");
-          
-          // Get the Firebase functions instance
-          const finalizeGoogleLinkingFn = httpsCallable(functions, 'finalizeGoogleLinking');
-          
-          // Call the function with the user's ID and email
-          const finalizeResult = await finalizeGoogleLinkingFn({ 
-            userId: signInResult.user.uid,
-            email: linkingEmail
-          });
-          
-          log(`FINALIZE RESULT: ${JSON.stringify(finalizeResult.data)}`);
-          
-          // Check if backend operation succeeded
-          if (!finalizeResult.data || !finalizeResult.data.success) {
-            log(`WARNING: Backend finalization returned error: ${finalizeResult.data?.error || 'Unknown error'}`);
-            // Continue anyway since we still want to proceed with the password account
-          } else {
-            log("SUCCESS: Backend finalization completed");
-          }
-        } catch (finalizeError) {
-          log(`ERROR: Failed to call finalizeGoogleLinking: ${finalizeError.message}`);
-          // Continue anyway - we'll still proceed with the password account
-        }
-        
-        // Clear localStorage linking flags
-        localStorage.removeItem('linkingEmail');
-        localStorage.removeItem('showLinkingModal');
-        log("Cleared localStorage linking flags");
-        
-        // Proceed with the current password account
-        const nextStep = signInResult.user ? 1 : 0; // Default to success page
-        const paths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
-        
-        log(`PROCEEDING WITH PASSWORD ACCOUNT: path=/signup${paths[nextStep]}`);
-        
-        // Directly set force navigation in localStorage to avoid potential issues
-        localStorage.setItem('force_active_step', String(nextStep));
-        log(`Directly set force_active_step in localStorage to: ${nextStep}`);
-        
-        // Send final log before navigation
-        log("ABOUT TO NAVIGATE");
-        
-        // Use setTimeout to ensure log completes
-        setTimeout(() => {
-          log("REDIRECTING NOW");
-          window.location.href = `/signup${paths[nextStep]}`;
-        }, 200);
-        
-        return true;
-      }
-      
-      if (!linkResult || !linkResult.success) {
-        log("LINK FAILED - bad result");
-        throw new Error(linkResult.message || "Failed to link accounts");
-      }
-      
-      // Success path
-      log("SUCCESS - ACCOUNTS LINKED!");
-      
-      // Clear localStorage linking flags
-      localStorage.removeItem('linkingEmail');
-      localStorage.removeItem('showLinkingModal');
-      log("Cleared localStorage linking flags");
-      
-      clearVerificationState();
-      
-      const nextStep = linkResult.signupProgress || 1;
-      const paths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
-      
-      log(`NAVIGATION: step=${nextStep}, path=/signup${paths[nextStep]}`);
-      
-      // Directly set force navigation in localStorage to avoid potential issues
-      localStorage.setItem('force_active_step', String(nextStep));
-      log(`Directly set force_active_step in localStorage to: ${nextStep}`);
-      
-      // Send final log before navigation
-      log("ABOUT TO NAVIGATE");
-      
-      // Use setTimeout to ensure log completes
-      setTimeout(() => {
-        log("REDIRECTING NOW");
-        window.location.href = `/signup${paths[nextStep]}`;
-      }, 200);
-      
-      return true;
-    } catch (error) {
-      log(`FATAL ERROR: ${error.message}`);
-      throw error;
-    } finally {
-      setIsLinking(false);
-      log("FUNCTION COMPLETE");
-    }
-  };*/
 
   const handleLinkAccounts = async (password) => {
     // Import functions and httpsCallable at the top of your file
@@ -1192,6 +1066,9 @@ useEffect(() => {
       
       {/* Add the debug panel */}
       {process.env.NODE_ENV !== 'production' && <DebugPanel />}
+      
+      {/* Verification success overlay - in case early return doesn't trigger */}
+      {isNavigatingPostVerification && <VerificationSuccessOverlay />}
     </div>
   );
 };
