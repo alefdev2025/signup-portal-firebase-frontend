@@ -109,6 +109,19 @@ const SignupRouteGuard = ({ children }) => {
         navigate('/signup/success', { replace: true });
         return;
       }
+      
+      // NEW CODE: Auto-forward to user's current step if they're viewing a completed previous step
+      // Only do this if not forced to stay with the force=true parameter
+      if (currentStepIndex < signupState.signupProgress && !location.search.includes('force=true')) {
+        console.log(`User viewing completed step ${currentStepIndex} but has progressed to step ${signupState.signupProgress}, auto-forwarding`);
+        
+        // Get the path for the user's current active step
+        const currentActivePath = getStepPathByIndex(signupState.signupProgress);
+        
+        // Navigate to the user's current step
+        navigate(`/signup${currentActivePath}`, { replace: true });
+        return;
+      }
     } else if (!currentUser) {
       console.log("Unauthenticated user, checking access permissions");
       

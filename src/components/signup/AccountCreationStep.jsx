@@ -481,12 +481,21 @@ const AccountCreationStep = () => {
       console.log("Attempting Google sign-in");
       const result = await signInWithGoogle();
       
-      // Check specifically for account-exists-with-different-credential error
-      if (result && result.error === 'auth/account-exists-with-different-credential') {
-        // Get the email from the result
-        const email = result.email || '';
+      console.log("Google sign-in result:", result);
+      
+      // More comprehensive check for account conflicts
+      if (result && (
+          result.error === 'auth/account-exists-with-different-credential' || 
+          result.accountConflict === true || 
+          (result.success === false && result.message && 
+           (result.message.includes("already registered") || 
+            result.message.includes("already exists") ||
+            result.message.includes("account exists")))
+      )) {
+        // Get the email from any possible location in the result
+        const email = result.email || result.existingEmail || '';
         
-        console.log("Different credential error, redirecting to account linking");
+        console.log("Existing account detected, redirecting to account linking");
         // Navigate to login page with parameters to trigger account linking
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
         return;
@@ -530,25 +539,52 @@ const AccountCreationStep = () => {
           // Use window.location for a clean redirect
           window.location.href = `/signup${paths[nextStep]}`;
         }
+      } else if (!result || (result && !result.success && !result.error)) {
+        // Handle undefined or unexpected result format
+        console.error("Unexpected result format from Google sign-in:", result);
+        setErrors(prev => ({
+          ...prev,
+          general: "Sign-in failed. Please try again or use email/password."
+        }));
       }
     } catch (error) {
       console.error("Error during Google sign-in:", error);
       
-      // Check for different credential error directly from the caught error
-      if (error.code === 'auth/account-exists-with-different-credential') {
+      // More comprehensive check for error structure in exceptions too
+      if (error.code === 'auth/account-exists-with-different-credential' || 
+          (error.message && (
+            error.message.includes("already registered") || 
+            error.message.includes("already exists") ||
+            error.message.includes("account exists") ||
+            error.message.includes("different credential")))
+      ) {
         // Get the email from the error if available
-        const email = error.customData?.email || '';
+        const email = error.customData?.email || error.email || '';
         
-        console.log("Different credential error from catch block, redirecting to account linking");
+        console.log("Account conflict detected from exception, redirecting to account linking");
         // Navigate to login page with parameters for linking
         navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
         return;
       }
       
-      setErrors(prev => ({
-        ...prev,
-        general: "Error during Google sign-in. Please try again."
-      }));
+      // Handle other specific errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        setErrors(prev => ({
+          ...prev,
+          general: "Google sign-in was cancelled. Please try again."
+        }));
+      } else if (error.code === 'auth/network-request-failed' || 
+                 (error.message && error.message.includes('network'))) {
+        setErrors(prev => ({
+          ...prev,
+          general: "Network error. Please check your internet connection and try again."
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: "Error during Google sign-in. Please try again or use email/password."
+        }));
+      }
     } finally {
       setIsSubmitting(false);
     }
