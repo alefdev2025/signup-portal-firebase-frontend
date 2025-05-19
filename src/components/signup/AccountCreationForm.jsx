@@ -479,7 +479,7 @@ const AccountCreationForm = ({
         
         <div className="text-center">
           <p className="text-gray-700 text-sm sm:text-base">
-            Already an Alcor Member? <a href="/login" className="text-brand-purple">Login here</a>
+            Already have an account? <a href="/" className="text-brand-purple">Login</a>
           </p>
         </div>
       </form>
