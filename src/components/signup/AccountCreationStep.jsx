@@ -2,6 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useUser } from "../../contexts/UserContext";
+import { debugLogger, DebugPanel } from '../../components/debug/logs';
+import { useSearchParams } from 'react-router-dom';
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../../services/firebase";
 
 // Import auth-related functions
 import { 
@@ -9,7 +13,10 @@ import {
   verifyEmailCodeOnly,
   createNewUser,
   signInExistingUser,
-  signInWithGoogle
+  signInWithGoogle,
+  getPendingLinkingEmail,
+  signInWithEmailAndPassword,
+  linkGoogleToEmailAccount // Added new import
 } from "../../services/auth";
 
 import { 
@@ -22,6 +29,23 @@ import {
 
 // Import form component
 import AccountCreationForm from "../../components/signup/AccountCreationForm";
+// Import new Account Linking Modal
+import AccountLinkingModal from "../../components/modals/AccountLinkingModal";
+
+// Add this at the top of your AccountCreationStep.jsx file, right after the imports
+// Global debug function that persists through navigation
+const LOG_TO_TERMINAL = (message) => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/log?t=${Date.now()}`, false); // Synchronous request
+      xhr.send(`[DEBUG] ${message}`);
+      console.log(`[DEBUG] ${message}`); // Also log to console
+    } catch (e) {
+      // Ignore errors
+    }
+  };
+  
+
 
 const AccountCreationStep = () => {
   const navigate = useNavigate();
@@ -35,6 +59,12 @@ const AccountCreationStep = () => {
   // Keep password in memory only - not in formData that might be persisted
   const [passwordState, setPasswordState] = useState('');
   const [confirmPasswordState, setConfirmPasswordState] = useState('');
+  
+  // New state for account linking modal
+  const [showLinkingModal, setShowLinkingModal] = useState(false);
+  const [linkingEmail, setLinkingEmail] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [formData, setFormData] = useState({
     name: "New Member", // Using placeholder name
@@ -53,6 +83,133 @@ const AccountCreationStep = () => {
     verificationCode: "",
     general: ""
   });
+
+  // Change this useEffect
+useEffect(() => {
+    if (currentUser) {
+      // 👇 Add this check to prevent redirect during account linking
+      const isLinking = localStorage.getItem('linkingEmail') !== null;
+      
+      if (!isLinking) {
+        console.log("User already logged in, redirecting to success page");
+        setForceNavigation(1); // 1 = success step
+        window.location.href = '/signup/success';
+      } else {
+        console.log("Not redirecting - account linking in progress");
+      }
+    }
+  }, [currentUser]);
+
+// Add this near the top of your component
+useEffect(() => {
+    // Check if there's a pending linking email from a previous Google sign-in
+    try {
+      const pendingEmail = getPendingLinkingEmail();
+      if (pendingEmail) {
+        LOG_TO_TERMINAL(`Found pending linking email: ${pendingEmail}`);
+        setLinkingEmail(pendingEmail);
+        setShowLinkingModal(true);
+      }
+    } catch (e) {
+      LOG_TO_TERMINAL(`Error checking pending email: ${e.message}`);
+    }
+  }, []);
+
+  // Add this useEffect after your imports and before your component code
+  useEffect(() => {
+    LOG_TO_TERMINAL("Checking localStorage for linking state");
+    
+    // Check if localStorage has linking state
+    const storedEmail = localStorage.getItem('linkingEmail');
+    const showModal = localStorage.getItem('showLinkingModal');
+    
+    LOG_TO_TERMINAL(`Linking state check - email: ${storedEmail || 'null'}, showModal: ${showModal || 'null'}`);
+    
+    if (storedEmail && showModal === 'true') {
+      LOG_TO_TERMINAL(`Found linking state in localStorage: ${storedEmail}`);
+      
+      // Set state from localStorage
+      setLinkingEmail(storedEmail);
+      setShowLinkingModal(true);
+      
+      LOG_TO_TERMINAL("Set component state for linking modal");
+      
+      // Force stay on this page to ensure modal shows
+      setForceNavigation(0);
+      LOG_TO_TERMINAL("Set force navigation to 0 to stay on page during linking");
+    }
+  }, []); // Empty dependency array means this only runs once on mount
+
+  useEffect(() => {
+    LOG_TO_TERMINAL("Checking for URL params");
+    
+    // Check if URL contains account linking parameters
+    const linkingEmail = searchParams.get('linkEmail');
+    const showModal = searchParams.get('showLinkingModal');
+    
+    LOG_TO_TERMINAL(`URL params check - linkEmail: ${linkingEmail || 'null'}, showModal: ${showModal || 'null'}`);
+    
+    if (linkingEmail && showModal === 'true') {
+      LOG_TO_TERMINAL(`Found linking params in URL: ${linkingEmail}`);
+      
+      // Store in localStorage as well for persistence
+      localStorage.setItem('linkingEmail', linkingEmail);
+      localStorage.setItem('showLinkingModal', 'true');
+      
+      // Set component state
+      setLinkingEmail(linkingEmail);
+      setShowLinkingModal(true);
+      
+      LOG_TO_TERMINAL("Set component state for linking modal from URL params");
+      
+      // Force stay on this page
+      setForceNavigation(0);
+      LOG_TO_TERMINAL("Set force navigation to 0 to stay on page during linking from URL params");
+      
+      // Remove params from URL to avoid loops
+      searchParams.delete('linkEmail');
+      searchParams.delete('showLinkingModal');
+      setSearchParams(searchParams);
+      
+      LOG_TO_TERMINAL("Removed linking params from URL");
+    }
+  }, [searchParams, setSearchParams]);
+
+   // Initialize debugging when component loads
+   useEffect(() => {
+    LOG_TO_TERMINAL("AccountCreationStep MOUNTED");
+    LOG_TO_TERMINAL(`Current User: ${currentUser ? currentUser.uid : 'null'}`);
+    LOG_TO_TERMINAL(`Initial VerificationStep: ${verificationStep}`);
+    
+    // Debug button to dump state
+    const debugButton = document.createElement('button');
+    debugButton.textContent = 'DEBUG STATE';
+    debugButton.style.position = 'fixed';
+    debugButton.style.bottom = '70px';
+    debugButton.style.left = '10px';
+    debugButton.style.backgroundColor = 'red';
+    debugButton.style.color = 'white';
+    debugButton.style.padding = '10px';
+    debugButton.style.zIndex = '9999';
+    debugButton.style.border = 'none';
+    debugButton.style.borderRadius = '5px';
+    debugButton.onclick = () => {
+      LOG_TO_TERMINAL(`CURRENT STATE: 
+        isSubmitting: ${isSubmitting}
+        verificationStep: ${verificationStep}
+        showLinkingModal: ${showLinkingModal}
+        linkingEmail: ${linkingEmail}
+        isLinking: ${isLinking}
+        formData.email: ${formData.email}
+      `);
+    };
+    document.body.appendChild(debugButton);
+    
+    return () => {
+      document.body.removeChild(debugButton);
+      LOG_TO_TERMINAL("AccountCreationStep UNMOUNTED");
+    };
+  }, []);
   
   // Add debugging for the verification loop
   useEffect(() => {
@@ -62,7 +219,7 @@ const AccountCreationStep = () => {
   }, [currentUser, verificationStep]);
   
   // If user is already logged in, redirect to success page
-  useEffect(() => {
+  /*useEffect(() => {
     if (currentUser) {
       console.log("User already logged in, redirecting to success page");
       
@@ -72,7 +229,7 @@ const AccountCreationStep = () => {
       // Use window.location for a clean redirect instead of navigate
       window.location.href = '/signup/success';
     }
-  }, [currentUser]);
+  }, [currentUser]);*/
   
   // Check for existing verification state on component mount
   useEffect(() => {
@@ -463,10 +620,171 @@ const AccountCreationStep = () => {
     }
   };
 
+  const handleLinkAccounts = async (password) => {
+    // Create a logging function for consistent debugging
+    const log = (message) => {
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/log?t=${Date.now()}`, false); // Synchronous request
+        xhr.send(message);
+        console.log(message); // Also log to console
+      } catch (e) {
+        // Ignore errors
+      }
+    };
+    
+    log(`ACCOUNT LINKING START: email=${linkingEmail}`);
+    setIsLinking(true);
+    
+    try {
+      // First check if functions are available
+      log(`CHECKING FUNCTIONS: signInWithEmailAndPassword=${Boolean(signInWithEmailAndPassword)}, linkGoogleToEmailAccount=${Boolean(linkGoogleToEmailAccount)}`);
+      
+      if (typeof signInWithEmailAndPassword !== 'function') {
+        log("ERROR: signInWithEmailAndPassword is missing - make sure it's imported!");
+        throw new Error("Missing sign in function");
+      }
+      
+      // Try sign in
+      log(`SIGN IN ATTEMPT: ${linkingEmail}`);
+      let signInResult;
+      try {
+        // Use the directly imported signInWithEmailAndPassword
+        signInResult = await signInWithEmailAndPassword(linkingEmail, password);
+        log(`SIGN IN RESULT: ${JSON.stringify(signInResult)}`);
+      } catch (e) {
+        log(`SIGN IN ERROR: ${e.message}`);
+        throw e;
+      }
+      
+      if (!signInResult || !signInResult.success) {
+        log("SIGN IN FAILED - bad result");
+        throw new Error("Failed to sign in");
+      }
+      
+      // Try linking
+      log("LINKING GOOGLE ATTEMPT");
+      let linkResult;
+      try {
+        linkResult = await linkGoogleToEmailAccount();
+        log(`LINK RESULT: ${JSON.stringify(linkResult)}`);
+      } catch (e) {
+        log(`LINK ERROR: ${e.message}`);
+        throw e;
+      }
+      
+      // Handle credential-already-in-use error specifically
+      if (!linkResult.success && linkResult.error === "auth/credential-already-in-use") {
+        log("DETECTED: Credential already in use error - this is expected when the same email has separate accounts");
+        
+        // Call the backend function to finalize the linking, even though the actual Firebase Auth linking failed
+        try {
+          log("Calling finalizeGoogleLinking Cloud Function to update Firestore");
+          
+          // Get the Firebase functions instance
+          const finalizeGoogleLinkingFn = httpsCallable(functions, 'finalizeGoogleLinking');
+          
+          // Call the function with the user's ID and email
+          const finalizeResult = await finalizeGoogleLinkingFn({ 
+            userId: signInResult.user.uid,
+            email: linkingEmail
+          });
+          
+          log(`FINALIZE RESULT: ${JSON.stringify(finalizeResult.data)}`);
+          
+          // Check if backend operation succeeded
+          if (!finalizeResult.data || !finalizeResult.data.success) {
+            log(`WARNING: Backend finalization returned error: ${finalizeResult.data?.error || 'Unknown error'}`);
+            // Continue anyway since we still want to proceed with the password account
+          } else {
+            log("SUCCESS: Backend finalization completed");
+          }
+        } catch (finalizeError) {
+          log(`ERROR: Failed to call finalizeGoogleLinking: ${finalizeError.message}`);
+          // Continue anyway - we'll still proceed with the password account
+        }
+        
+        // Clear localStorage linking flags
+        localStorage.removeItem('linkingEmail');
+        localStorage.removeItem('showLinkingModal');
+        log("Cleared localStorage linking flags");
+        
+        // Proceed with the current password account
+        const nextStep = signInResult.user ? 1 : 0; // Default to success page
+        const paths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
+        
+        log(`PROCEEDING WITH PASSWORD ACCOUNT: path=/signup${paths[nextStep]}`);
+        
+        // Directly set force navigation in localStorage to avoid potential issues
+        localStorage.setItem('force_active_step', String(nextStep));
+        log(`Directly set force_active_step in localStorage to: ${nextStep}`);
+        
+        // Send final log before navigation
+        log("ABOUT TO NAVIGATE");
+        
+        // Use setTimeout to ensure log completes
+        setTimeout(() => {
+          log("REDIRECTING NOW");
+          window.location.href = `/signup${paths[nextStep]}`;
+        }, 200);
+        
+        return true;
+      }
+      
+      if (!linkResult || !linkResult.success) {
+        log("LINK FAILED - bad result");
+        throw new Error(linkResult.message || "Failed to link accounts");
+      }
+      
+      // Success path
+      log("SUCCESS - ACCOUNTS LINKED!");
+      
+      // Clear localStorage linking flags
+      localStorage.removeItem('linkingEmail');
+      localStorage.removeItem('showLinkingModal');
+      log("Cleared localStorage linking flags");
+      
+      clearVerificationState();
+      
+      const nextStep = linkResult.signupProgress || 1;
+      const paths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
+      
+      log(`NAVIGATION: step=${nextStep}, path=/signup${paths[nextStep]}`);
+      
+      // Directly set force navigation in localStorage to avoid potential issues
+      localStorage.setItem('force_active_step', String(nextStep));
+      log(`Directly set force_active_step in localStorage to: ${nextStep}`);
+      
+      // Send final log before navigation
+      log("ABOUT TO NAVIGATE");
+      
+      // Use setTimeout to ensure log completes
+      setTimeout(() => {
+        log("REDIRECTING NOW");
+        window.location.href = `/signup${paths[nextStep]}`;
+      }, 200);
+      
+      return true;
+    } catch (error) {
+      log(`FATAL ERROR: ${error.message}`);
+      throw error;
+    } finally {
+      setIsLinking(false);
+      log("FUNCTION COMPLETE");
+    }
+  };
+
   const handleGoogleSignIn = async () => {
-    if (isSubmitting) return;
+    LOG_TO_TERMINAL("GOOGLE SIGN IN: Starting");
+    
+    if (isSubmitting) {
+      LOG_TO_TERMINAL("GOOGLE SIGN IN: Prevented - already submitting");
+      return;
+    }
     
     setIsSubmitting(true);
+    LOG_TO_TERMINAL("GOOGLE SIGN IN: Set isSubmitting to true");
+    
     setErrors({
       name: "",
       email: "",
@@ -478,115 +796,117 @@ const AccountCreationStep = () => {
     });
     
     try {
-      console.log("Attempting Google sign-in");
-      const result = await signInWithGoogle();
+      LOG_TO_TERMINAL("GOOGLE SIGN IN: Calling signInWithGoogle");
+      // Pass maintainSession:true to keep the Google user signed in for potential linking
+      const result = await signInWithGoogle({ maintainSession: true });
       
-      console.log("Google sign-in result:", result);
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Result received: ${JSON.stringify(result)}`);
       
-      // More comprehensive check for account conflicts
-      if (result && (
-          result.error === 'auth/account-exists-with-different-credential' || 
-          result.accountConflict === true || 
-          (result.success === false && result.message && 
-           (result.message.includes("already registered") || 
-            result.message.includes("already exists") ||
-            result.message.includes("account exists")))
-      )) {
-        // Get the email from any possible location in the result
+      // More comprehensive check for account conflicts with logging
+      const hasConflict = result && (
+        result.error === 'auth/account-exists-with-different-credential' || 
+        result.accountConflict === true || 
+        (result.success === false && result.message && 
+          (result.message.includes("already registered") || 
+           result.message.includes("already exists") ||
+           result.message.includes("account exists")))
+      );
+      
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Conflict detected: ${hasConflict}`);
+        
+      if (hasConflict) {
         const email = result.email || result.existingEmail || '';
+        LOG_TO_TERMINAL(`GOOGLE SIGN IN: Account conflict with email: ${email}`);
         
-        console.log("Existing account detected, redirecting to account linking");
-        // Navigate to login page with parameters to trigger account linking
-        navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
-        return;
-      }
-      
-      if (result && result.success) {
-        console.log("Google sign-in successful:", result);
-        
-        // Clear verification state since we're now authenticated
-        clearVerificationState();
-        
-        // Only show success screen for new users
-        if (result.isNewUser === true) {
-          console.log("This is a new user, setting account created flag");
-          
-          // Set account created flag
-          setAccountCreated(true);
-          
-          // Set just verified flag
-          localStorage.setItem('just_verified', 'true');
-          localStorage.setItem('verification_timestamp', Date.now().toString());
-          
-          // Set force navigation to bypass route guards
-          setForceNavigation(1); // 1 = success step
-          
-          console.log("Redirecting to success page");
-          // Use window.location for a clean redirect
-          window.location.href = '/signup/success';
-        } else {
-          // For existing users, navigate based on their progress
-          console.log("This is an existing user with progress:", result.signupProgress);
-          const nextStep = result.signupProgress || 1;
-          
-          // Map progress to the appropriate path and set force navigation
-          setForceNavigation(nextStep);
-          
-          // Use array indexing for path mapping
-          const paths = ["", "/success", "/contact", "/package", "/funding", "/membership"];
-          
-          console.log(`Redirecting to step ${nextStep}: /signup${paths[nextStep]}`);
-          // Use window.location for a clean redirect
-          window.location.href = `/signup${paths[nextStep]}`;
+        if (!email || !email.includes('@')) {
+          LOG_TO_TERMINAL(`GOOGLE SIGN IN: Invalid email for linking: ${email}`);
+          setErrors(prev => ({
+            ...prev,
+            general: "Account linking failed - please try again or use password sign in."
+          }));
+          setIsSubmitting(false);
+          return;
         }
-      } else if (!result || (result && !result.success && !result.error)) {
-        // Handle undefined or unexpected result format
-        console.error("Unexpected result format from Google sign-in:", result);
-        setErrors(prev => ({
-          ...prev,
-          general: "Sign-in failed. Please try again or use email/password."
-        }));
-      }
-    } catch (error) {
-      console.error("Error during Google sign-in:", error);
-      
-      // More comprehensive check for error structure in exceptions too
-      if (error.code === 'auth/account-exists-with-different-credential' || 
-          (error.message && (
-            error.message.includes("already registered") || 
-            error.message.includes("already exists") ||
-            error.message.includes("account exists") ||
-            error.message.includes("different credential")))
-      ) {
-        // Get the email from the error if available
-        const email = error.customData?.email || error.email || '';
         
-        console.log("Account conflict detected from exception, redirecting to account linking");
-        // Navigate to login page with parameters for linking
-        navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
+        // Don't try to call clearForceNavigation - just set the localStorage directly
+        
+        // Store in localStorage for persistence across remounts
+        localStorage.setItem('linkingEmail', email);
+        localStorage.setItem('showLinkingModal', 'true');
+        
+        LOG_TO_TERMINAL(`GOOGLE SIGN IN: Set localStorage for linking - email: ${email}`);
+        
+        // Set state to trigger modal
+        setLinkingEmail(email);
+        setShowLinkingModal(true);
+        
+        LOG_TO_TERMINAL("GOOGLE SIGN IN: Set linking state in component");
+        
+        setIsSubmitting(false);
+        LOG_TO_TERMINAL("GOOGLE SIGN IN: Set isSubmitting to false");
         return;
       }
       
-      // Handle other specific errors
-      if (error.code === 'auth/popup-closed-by-user') {
-        setErrors(prev => ({
-          ...prev,
-          general: "Google sign-in was cancelled. Please try again."
-        }));
-      } else if (error.code === 'auth/network-request-failed' || 
-                 (error.message && error.message.includes('network'))) {
-        setErrors(prev => ({
-          ...prev,
-          general: "Network error. Please check your internet connection and try again."
-        }));
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          general: "Error during Google sign-in. Please try again or use email/password."
-        }));
+      // Rest of your existing success case code here
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Success: ${result && result.success}`);
+      
+      // Existing success handling...
+      
+    } catch (error) {
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Error occurred: ${error.message}`);
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Error code: ${error.code}`);
+      
+      // Check for account conflict in error
+      const errorHasConflict = error.code === 'auth/account-exists-with-different-credential' || 
+        (error.message && (
+          error.message.includes("already registered") || 
+          error.message.includes("already exists") ||
+          error.message.includes("account exists") ||
+          error.message.includes("different credential")));
+          
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Error contains conflict: ${errorHasConflict}`);
+      
+      if (errorHasConflict) {
+        const email = error.customData?.email || error.email || '';
+        LOG_TO_TERMINAL(`GOOGLE SIGN IN: Conflict from error with email: ${email}`);
+        
+        if (!email || !email.includes('@')) {
+          LOG_TO_TERMINAL(`GOOGLE SIGN IN: Invalid email from error: ${email}`);
+          setErrors(prev => ({
+            ...prev,
+            general: "Account linking failed - please try again or use password sign in."
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('linkingEmail', email);
+        localStorage.setItem('showLinkingModal', 'true');
+        
+        LOG_TO_TERMINAL(`GOOGLE SIGN IN: Set localStorage for linking from error - email: ${email}`);
+        
+        // Set state
+        setLinkingEmail(email);
+        setShowLinkingModal(true);
+        
+        LOG_TO_TERMINAL("GOOGLE SIGN IN: Set linking state in component from error");
+        
+        setIsSubmitting(false);
+        LOG_TO_TERMINAL("GOOGLE SIGN IN: Set isSubmitting to false");
+        return;
       }
+      
+      // Existing error handling...
+      LOG_TO_TERMINAL(`GOOGLE SIGN IN: Setting general error: ${error.message}`);
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || "Failed to sign in with Google. Please try again."
+      }));
+      
     } finally {
       setIsSubmitting(false);
+      LOG_TO_TERMINAL("GOOGLE SIGN IN: Completed (finally block)");
     }
   };
 
@@ -681,6 +1001,18 @@ const AccountCreationStep = () => {
         highlightGoogleButton={highlightGoogleButton}
         setErrors={setErrors}
       />
+      
+      {/* Account Linking Modal */}
+      <AccountLinkingModal
+        isOpen={showLinkingModal}
+        onClose={() => setShowLinkingModal(false)}
+        email={linkingEmail}
+        onLinkAccounts={handleLinkAccounts}
+        isLoading={isLinking}
+      />
+      
+      {/* Add the debug panel */}
+      {process.env.NODE_ENV !== 'production' && <DebugPanel />}
     </div>
   );
 };
