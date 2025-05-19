@@ -1,12 +1,13 @@
 // src/pages/LoginPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { resetPassword } from '../services/auth';
 import { useUser } from '../contexts/UserContext';
 import { getStepPathByIndex } from '../services/storage';
 import ResponsiveBanner from '../components/ResponsiveBanner';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import darkLogo from "../assets/images/alcor-white-logo.png";
 
 const LoginPage = () => {
@@ -22,6 +23,14 @@ const LoginPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmittingReset, setIsSubmittingReset] = useState(false);
   const [isContinueSignup, setIsContinueSignup] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false); // Navigation state
+  const [initialCheckDone, setInitialCheckDone] = useState(false); // Track initial auth check
+  const initialRenderRef = useRef(true); // Track if this is the initial render
+  
+  // States for Google sign-in integration
+  const [pendingGoogleLinking, setPendingGoogleLinking] = useState(false);
+  const [highlightGoogleButton, setHighlightGoogleButton] = useState(false);
+  const [showNoAccountMessage, setShowNoAccountMessage] = useState(false);
   
   // Wrap user context access in try/catch for debugging
   let currentUser, signupState, authResolved, isLoading;
@@ -48,17 +57,60 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Detect and store "continue signup" context from URL parameters
+  // Add a direct auth state listener to catch auth changes as early as possible
+  useEffect(() => {
+    // Show loading spinner from the very beginning
+    if (initialRenderRef.current) {
+      setIsNavigating(true);
+    }
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Direct auth state change detected:", !!user);
+      
+      // If user exists, maintain the loading state
+      if (user) {
+        setIsNavigating(true);
+      } else {
+        // Only stop showing the loading state once we confirm no user is logged in
+        setIsNavigating(false);
+      }
+      
+      // Mark initial check as done
+      setInitialCheckDone(true);
+      initialRenderRef.current = false;
+    });
+    
+    // Cleanup listener
+    return () => unsubscribe();
+  }, []);
+
+  // Process URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const continueSignup = searchParams.get('continue') === 'signup';
+    const emailParam = searchParams.get('email');
+    const provider = searchParams.get('provider');
     
-    console.log("URL parameter continue=signup:", continueSignup);
+    console.log("URL parameters:", { continueSignup, provider, emailParam });
     
     if (continueSignup) {
       // Store in state AND sessionStorage for persistence
       setIsContinueSignup(true);
       sessionStorage.setItem('continue_signup', 'true');
+    }
+    
+    // Pre-fill email if provided
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    
+    // Handle Google account users
+    if (provider === 'google' && emailParam) {
+      console.log("This email is associated with a Google account");
+      setHighlightGoogleButton(true);
+      
+      // Show a message to the user
+      setSuccessMessage(`This email (${emailParam}) is associated with a Google account. Please sign in with Google.`);
     }
   }, [location.search]);
   
@@ -103,10 +155,20 @@ const LoginPage = () => {
         return;
       }
       
+      // Set navigation flag immediately to prevent flash of login UI
+      setIsNavigating(true);
+      
       console.log("Processing redirect logic for logged-in user");
       
       // Clear the continue signup flag since user is now authenticated
       sessionStorage.removeItem('continue_signup');
+      
+      // Special handling for Google linking if needed
+      if (pendingGoogleLinking) {
+        console.log("Handling pending Google linking");
+        setPendingGoogleLinking(false);
+        // Any special UI handling for successful linking can go here
+      }
       
       // Check if we have a valid return URL (highest priority)
       const returnTo = new URLSearchParams(location.search).get('returnTo') || '';
@@ -157,8 +219,9 @@ const LoginPage = () => {
       
     } catch (err) {
       console.error("Error in redirect logic:", err);
+      setIsNavigating(false); // Reset flag if error occurs
     }
-  }, [authResolved, currentUser, signupState, navigate, location.search]);
+  }, [authResolved, currentUser, signupState, navigate, location.search, pendingGoogleLinking]);
   
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -208,8 +271,39 @@ const LoginPage = () => {
     }
   };
   
-  const handleGoogleSignIn = async () => {
-    setError('Google sign-in is currently disabled');
+  // Google Sign-In Success Handler
+  const handleGoogleSignInSuccess = (result, isNewUser) => {
+    console.log("Google sign-in successful", result);
+    
+    // Set navigating flag immediately to prevent flash
+    setIsNavigating(true);
+    
+    if (isNewUser) {
+      // Handle new user signup
+      console.log("New user from Google sign-in, redirecting to signup");
+      setIsNavigating(false); // Reset for this specific case
+      setShowNoAccountMessage(true);
+      return;
+    }
+    
+    // For existing users, the redirect will happen automatically through the useEffect
+    setSuccessMessage("Successfully signed in with Google. Redirecting...");
+  };
+  
+  // Google Sign-In Error Handler
+  const handleGoogleSignInError = (errorMessage) => {
+    console.error("Google sign-in error:", errorMessage);
+    setError(errorMessage);
+  };
+  
+  // Account Conflict Handler
+  const handleAccountConflict = (result) => {
+    console.log("Account conflict detected", result);
+    
+    const email = result.email || result.existingEmail || "";
+    
+    // Redirect to login page for account linking
+    navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
   };
 
   const handleGoBack = () => {
@@ -318,9 +412,9 @@ const LoginPage = () => {
     }
   };
   
-  // Render a simple loading state if still loading
-  if (isLoading && !authResolved) {
-    console.log("Rendering loading state");
+  // Render a loading state until we've completed the initial authentication check
+  // This ensures we don't show the login page at all if the user is already authenticated
+  if (!initialCheckDone || isLoading || isNavigating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
@@ -424,6 +518,24 @@ const LoginPage = () => {
                 </div>
               )}
               
+              {/* No Account Message */}
+              {showNoAccountMessage && (
+                <div className="mb-6 p-4 rounded-md bg-yellow-50 border border-yellow-200">
+                  <p className="font-medium mb-3 text-yellow-800">No account exists with this Google account.</p>
+                  <p className="mb-4 text-yellow-700">Select 'Create New Account' or continue to sign in another way.</p>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/signup?step=0')}
+                      style={{ backgroundColor: "#172741", color: "white" }}
+                      className="py-2 px-4 rounded hover:opacity-90 w-full"
+                    >
+                      Create New Account
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               <div className="mb-6">
                 <label htmlFor="email" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
                 <input 
@@ -492,15 +604,16 @@ const LoginPage = () => {
                 <div className="flex-grow border-t border-gray-300"></div>
               </div>
               
-              <button 
-                type="button"
-                onClick={handleGoogleSignIn}
+              <GoogleSignInButton
+                onSuccess={handleGoogleSignInSuccess}
+                onError={handleGoogleSignInError}
+                onAccountConflict={handleAccountConflict}
                 disabled={loading}
-                className="w-full bg-white border border-gray-300 text-gray-700 py-4 px-6 rounded-full font-medium text-lg mb-6 flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
-              >
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-6 w-6 mr-3" />
-                Continue with Google
-              </button>
+                highlight={highlightGoogleButton}
+                setIsSubmitting={setLoading}
+                setPendingGoogleLinking={setPendingGoogleLinking}
+                label={highlightGoogleButton ? "Sign in with Google (Recommended)" : "Continue with Google"}
+              />
               
               {/* Sign Up Option */}
               <div className="text-center mt-6">
