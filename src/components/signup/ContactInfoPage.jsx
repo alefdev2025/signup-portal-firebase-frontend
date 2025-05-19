@@ -870,7 +870,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const handleBack = () => {
     console.log("ContactInfoPage: Handle back button clicked");
     
-    // Simply navigate to the previous step
+    // Call the onBack prop if provided
+    if (typeof onBack === 'function') {
+      console.log("Calling parent onBack handler");
+      onBack();
+      return; // Early return to prevent default navigation
+    }
+    
+    // Fallback navigation if onBack is not provided
+    console.log("No onBack handler provided, using fallback navigation");
     navigate('/signup/success', { replace: true });
   };
 

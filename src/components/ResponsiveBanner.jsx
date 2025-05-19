@@ -138,8 +138,18 @@ const ResponsiveBanner = ({
     if (targetPathIndex <= maxCompletedStep) {
       console.log(`Navigating from progress index ${progressIndex} to path ${stepPaths[targetPathIndex]}`);
       
-      // Use React Router for navigation
-      navigate(`/signup${stepPaths[targetPathIndex]}`, { replace: true });
+      // Set force navigation flag in localStorage for reliability
+      localStorage.setItem('force_active_step', String(targetPathIndex));
+      localStorage.setItem('force_timestamp', Date.now().toString());
+      
+      // Use React Router for navigation with fallback
+      try {
+        navigate(`/signup${stepPaths[targetPathIndex]}`, { replace: true });
+      } catch (err) {
+        console.error("Banner navigation error:", err);
+        // Fallback to direct URL change
+        window.location.href = `/signup${stepPaths[targetPathIndex]}`;
+      }
     } else {
       console.log(`Cannot navigate to step ${targetPathIndex}, max completed step is ${maxCompletedStep}`);
     }
