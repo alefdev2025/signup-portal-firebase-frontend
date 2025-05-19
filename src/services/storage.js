@@ -9,6 +9,11 @@ const ACCOUNT_CREATION_SUCCESS_KEY = "account_creation_success";
 const FRESH_SIGNUP_KEY = "fresh_signup";
 const FORCE_STEP_KEY = "force_active_step";
 const FORCE_TIMESTAMP_KEY = "force_timestamp";
+const CRITICAL_NAVIGATION_KEY = "critical_navigation";
+const BLOCK_NAVIGATION_KEY = "block_navigation";
+const ACCOUNT_LINKING_ACTIVE_KEY = "account_linking_active";
+const LINKING_EMAIL_KEY = "linkingEmail";
+const SHOW_LINKING_MODAL_KEY = "showLinkingModal";
 
 // ===== Signup State =====
 export const saveSignupState = (state) => {
@@ -300,6 +305,177 @@ export const getForceNavigation = () => {
   }
 };
 
+// ===== NEW: Navigation Management =====
+
+/**
+ * Request critical navigation - highest priority
+ * @param {string} path The path to navigate to
+ * @returns {boolean} Success status
+ */
+export const requestCriticalNavigation = (path) => {
+  try {
+    localStorage.setItem(CRITICAL_NAVIGATION_KEY, JSON.stringify({
+      path,
+      timestamp: Date.now()
+    }));
+    return true;
+  } catch (error) {
+    console.error("Error setting critical navigation:", error);
+    return false;
+  }
+};
+
+/**
+ * Get critical navigation request
+ * @returns {Object|null} The navigation request or null if none exists
+ */
+export const getCriticalNavigation = () => {
+  try {
+    const nav = localStorage.getItem(CRITICAL_NAVIGATION_KEY);
+    if (!nav) return null;
+    
+    const navData = JSON.parse(nav);
+    
+    // Validate and check recency (5 seconds)
+    if (!navData || !navData.path || !navData.timestamp) return null;
+    
+    const now = Date.now();
+    const isRecent = (now - navData.timestamp) < 5000;
+    
+    if (!isRecent) {
+      localStorage.removeItem(CRITICAL_NAVIGATION_KEY);
+      return null;
+    }
+    
+    return navData;
+  } catch (error) {
+    console.error("Error getting critical navigation:", error);
+    return null;
+  }
+};
+
+/**
+ * Clear critical navigation request
+ * @returns {boolean} Success status
+ */
+export const clearCriticalNavigation = () => {
+  try {
+    localStorage.removeItem(CRITICAL_NAVIGATION_KEY);
+    return true;
+  } catch (error) {
+    console.error("Error clearing critical navigation:", error);
+    return false;
+  }
+};
+
+/**
+ * Block all navigation - used during sensitive operations
+ * @returns {boolean} Success status
+ */
+export const blockNavigation = () => {
+  try {
+    localStorage.setItem(BLOCK_NAVIGATION_KEY, 'true');
+    return true;
+  } catch (error) {
+    console.error("Error blocking navigation:", error);
+    return false;
+  }
+};
+
+/**
+ * Check if navigation is currently blocked
+ * @returns {boolean} Whether navigation is blocked
+ */
+export const isNavigationBlocked = () => {
+  try {
+    return localStorage.getItem(BLOCK_NAVIGATION_KEY) === 'true';
+  } catch (error) {
+    console.error("Error checking if navigation is blocked:", error);
+    return false;
+  }
+};
+
+/**
+ * Allow navigation (unblock)
+ * @returns {boolean} Success status
+ */
+export const allowNavigation = () => {
+  try {
+    localStorage.removeItem(BLOCK_NAVIGATION_KEY);
+    return true;
+  } catch (error) {
+    console.error("Error allowing navigation:", error);
+    return false;
+  }
+};
+
+/**
+ * Start account linking process
+ * @param {string} email The email being linked
+ * @returns {boolean} Success status
+ */
+export const startAccountLinking = (email) => {
+  try {
+    localStorage.setItem(LINKING_EMAIL_KEY, email);
+    localStorage.setItem(SHOW_LINKING_MODAL_KEY, 'true');
+    localStorage.setItem(ACCOUNT_LINKING_ACTIVE_KEY, 'true');
+    blockNavigation();
+    return true;
+  } catch (error) {
+    console.error("Error starting account linking:", error);
+    return false;
+  }
+};
+
+/**
+ * Check if account linking is in progress
+ * @returns {boolean} Whether account linking is active
+ */
+export const isAccountLinkingActive = () => {
+  try {
+    return localStorage.getItem(ACCOUNT_LINKING_ACTIVE_KEY) === 'true' ||
+           (localStorage.getItem(LINKING_EMAIL_KEY) !== null && 
+            localStorage.getItem(SHOW_LINKING_MODAL_KEY) === 'true');
+  } catch (error) {
+    console.error("Error checking if account linking is active:", error);
+    return false;
+  }
+};
+
+/**
+ * End account linking process and clear all related flags
+ * @returns {boolean} Success status
+ */
+export const endAccountLinking = () => {
+  try {
+    localStorage.removeItem(LINKING_EMAIL_KEY);
+    localStorage.removeItem(SHOW_LINKING_MODAL_KEY);
+    localStorage.removeItem(ACCOUNT_LINKING_ACTIVE_KEY);
+    allowNavigation();
+    return true;
+  } catch (error) {
+    console.error("Error ending account linking:", error);
+    return false;
+  }
+};
+
+/**
+ * Clear all navigation control flags
+ * @returns {boolean} Success status
+ */
+export const clearAllNavigationControls = () => {
+  try {
+    clearForceNavigation();
+    clearCriticalNavigation();
+    endAccountLinking();
+    allowNavigation();
+    return true;
+  } catch (error) {
+    console.error("Error clearing navigation controls:", error);
+    return false;
+  }
+};
+
 // ===== Utility Functions =====
 
 /**
@@ -347,6 +523,7 @@ export const clearAllSignupData = () => {
   clearVerificationState();
   clearFormData();
   clearForceNavigation();
+  clearAllNavigationControls();
   setAccountCreated(false);
   // Don't clear navigation history as it might be useful for other parts of the app
 };

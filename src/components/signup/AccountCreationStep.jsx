@@ -65,6 +65,8 @@ const AccountCreationStep = () => {
   const [linkingEmail, setLinkingEmail] = useState('');
   const [isLinking, setIsLinking] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  // Add new state for the loading overlay
+  const [isLinkingInProgress, setIsLinkingInProgress] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "New Member", // Using placeholder name
@@ -620,7 +622,7 @@ useEffect(() => {
     }
   };
 
-  const handleLinkAccounts = async (password) => {
+  /*const handleLinkAccounts = async (password) => {
     // Create a logging function for consistent debugging
     const log = (message) => {
       try {
@@ -771,6 +773,173 @@ useEffect(() => {
     } finally {
       setIsLinking(false);
       log("FUNCTION COMPLETE");
+    }
+  };*/
+
+  const handleLinkAccounts = async (password) => {
+    // Import functions and httpsCallable at the top of your file
+    // import { functions } from "../../services/firebase";
+    // import { httpsCallable } from "firebase/functions";
+    
+    const log = (message) => {
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/log?t=${Date.now()}`, false);
+        xhr.send(message);
+        console.log(message);
+      } catch (e) {
+        // Ignore errors
+      }
+    };
+    
+    // Set loading overlay to prevent flickering
+    setIsLinkingInProgress(true);
+    
+    log(`ACCOUNT LINKING START: email=${linkingEmail}`);
+    setIsLinking(true);
+    
+    try {
+      // Block navigation by setting linking flags
+      localStorage.setItem('block_navigation', 'true');
+      localStorage.setItem('account_linking_active', 'true');
+      
+      log(`CHECKING FUNCTIONS: signInWithEmailAndPassword=${Boolean(signInWithEmailAndPassword)}, linkGoogleToEmailAccount=${Boolean(linkGoogleToEmailAccount)}, functions=${Boolean(functions)}, httpsCallable=${Boolean(httpsCallable)}`);
+      
+      if (typeof signInWithEmailAndPassword !== 'function') {
+        log("ERROR: signInWithEmailAndPassword is missing!");
+        throw new Error("Missing sign in function");
+      }
+      
+      if (typeof httpsCallable !== 'function' || !functions) {
+        log("ERROR: Firebase functions tools not properly imported");
+        throw new Error("Firebase functions not available");
+      }
+      
+      // Try sign in
+      log(`SIGN IN ATTEMPT: ${linkingEmail}`);
+      let signInResult;
+      try {
+        signInResult = await signInWithEmailAndPassword(linkingEmail, password);
+        log(`SIGN IN RESULT: ${JSON.stringify(signInResult)}`);
+      } catch (e) {
+        log(`SIGN IN ERROR: ${e.message}`);
+        throw e;
+      }
+      
+      if (!signInResult || !signInResult.success) {
+        log("SIGN IN FAILED - bad result");
+        throw new Error("Failed to sign in");
+      }
+      
+      // Try linking
+      log("LINKING GOOGLE ATTEMPT");
+      let linkResult;
+      try {
+        linkResult = await linkGoogleToEmailAccount();
+        log(`LINK RESULT: ${JSON.stringify(linkResult)}`);
+      } catch (e) {
+        log(`LINK ERROR: ${e.message}`);
+        throw e;
+      }
+      
+      // Handle credential-already-in-use error specifically
+      if (!linkResult.success && linkResult.error === "auth/credential-already-in-use") {
+        log("DETECTED: Credential already in use error - this is expected when the same email has separate accounts");
+        
+        try {
+          log("Calling finalizeGoogleLinking Cloud Function to update Firestore");
+          
+          // Call the backend function to finalize the linking
+          const finalizeGoogleLinkingFn = httpsCallable(functions, 'finalizeGoogleLinking');
+          
+          const finalizeResult = await finalizeGoogleLinkingFn({ 
+            userId: signInResult.user.uid,
+            email: linkingEmail 
+          });
+          
+          log(`FINALIZE RESULT: ${JSON.stringify(finalizeResult.data)}`);
+          
+          if (!finalizeResult.data || !finalizeResult.data.success) {
+            log(`WARNING: Backend finalization returned error: ${finalizeResult.data?.error || 'Unknown error'}`);
+          } else {
+            log("SUCCESS: Backend finalization completed");
+          }
+        } catch (finalizeError) {
+          log(`ERROR: Failed to call finalizeGoogleLinking: ${finalizeError.message}`);
+          // Continue anyway - we'll still proceed with the password account
+        }
+        
+        // Clear all navigation blocking and linking flags
+        localStorage.removeItem('block_navigation');
+        localStorage.removeItem('account_linking_active');
+        localStorage.removeItem('linkingEmail');
+        localStorage.removeItem('showLinkingModal');
+        log("Cleared all localStorage linking flags");
+        
+        // Set force navigation
+        setForceNavigation(2); // Contact info step
+        log("Set force navigation to step 2 (contact)");
+        
+        // Allow a moment for state updates to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Keep overlay active during navigation
+        // Use direct navigation to avoid flickering
+        setTimeout(() => {
+          log("REDIRECTING NOW");
+          window.location.href = "/signup/contact";
+        }, 100);
+        
+        return true;
+      }
+      
+      if (!linkResult || !linkResult.success) {
+        log("LINK FAILED - bad result");
+        throw new Error(linkResult.message || "Failed to link accounts");
+      }
+      
+      // Success path
+      log("SUCCESS - ACCOUNTS LINKED!");
+      
+      // Clear all linking flags
+      localStorage.removeItem('block_navigation');
+      localStorage.removeItem('account_linking_active');
+      localStorage.removeItem('linkingEmail');
+      localStorage.removeItem('showLinkingModal');
+      log("Cleared all localStorage linking flags");
+      
+      // Set force navigation
+      setForceNavigation(2); // Contact info step
+      log("Set force navigation to step 2 (contact)");
+      
+      // Allow a moment for state updates to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Use direct navigation to avoid flicker
+      setTimeout(() => {
+        log("REDIRECTING NOW");
+        window.location.href = "/signup/contact";
+      }, 100);
+      
+      return true;
+    } catch (error) {
+      log(`FATAL ERROR: ${error.message}`);
+      
+      // Make sure we clean up properly on error
+      localStorage.removeItem('block_navigation');
+      localStorage.removeItem('account_linking_active');
+      localStorage.removeItem('linkingEmail');
+      localStorage.removeItem('showLinkingModal');
+      
+      throw error;
+    } finally {
+      setIsLinking(false);
+      log("FUNCTION COMPLETE");
+      
+      // Keep overlay visible for a moment to prevent flicker
+      setTimeout(() => {
+        setIsLinkingInProgress(false);
+      }, 500);
     }
   };
 
@@ -980,6 +1149,16 @@ useEffect(() => {
 
   return (
     <div className="w-full">
+      {/* Loading overlay to prevent flickering during account linking */}
+      {isLinkingInProgress && (
+        <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-lg">Linking your accounts...</p>
+          </div>
+        </div>
+      )}
+      
       {errors.general && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
           {errors.general}
