@@ -330,13 +330,21 @@ const ResponsiveBanner = ({
   // Calculate which progress dot should be active
   const activeProgressDot = getProgressIndexFromStep(activeStep);
 
+  // Custom font style to apply Marcellus font to this component
+  const marcellusStyle = {
+    fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
+  };
+
   return (
-    <div className="banner-container">
+    <div className="banner-container" style={marcellusStyle}>
       {/* Mobile Banner (compact version) */}
       <div className="md:hidden">
         <div 
           className={`${shouldUseGradient ? '' : 'bg-[#13263f]'} text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'py-8' : 'py-8'} relative overflow-hidden`}
-          style={shouldUseGradient ? gradientStyle : {}}
+          style={{
+            ...marcellusStyle,
+            ...(shouldUseGradient ? gradientStyle : {})
+          }}
         >
           {/* Top section with logo and heading - FIXED LAYOUT */}
           <div className="flex items-center justify-between mb-6 pt-4">
@@ -389,7 +397,7 @@ const ResponsiveBanner = ({
         
         {/* Transparent section with Sign up text - NEW SECTION */}
         {showSteps && !isWelcomePage && (
-          <div className="bg-transparent text-black px-4 pt-10 pb-6 flex flex-col items-center text-center">
+          <div className="bg-transparent text-black px-4 pt-10 pb-6 flex flex-col items-center text-center" style={marcellusStyle}>
             <div className="flex items-center justify-center mb-3">
               <span className="text-2xl font-semibold">Sign up → Step {stepNumber}:</span>
               <span className="flex items-center ml-2">
@@ -405,7 +413,10 @@ const ResponsiveBanner = ({
       {/* Desktop Banner - consistent height regardless of progress bar visibility */}
       <div 
         className={`hidden md:block ${shouldUseGradient ? '' : 'bg-[#13263f]'}`}
-        style={shouldUseGradient ? gradientStyle : {}}
+        style={{
+          ...marcellusStyle,
+          ...(shouldUseGradient ? gradientStyle : {})
+        }}
       >
         {/* Main Banner Content - dynamic padding based on page type */}
         <div 

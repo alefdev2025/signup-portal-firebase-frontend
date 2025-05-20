@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         'brand-dark': '#13263f',
-        'brand-purple': '#6c4674',
+        'brand-purple': '#',
         'brand-gold': '#d6a851',
         'brand-tan': '#ca8d62',
       }
