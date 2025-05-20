@@ -123,40 +123,54 @@ const ResponsiveBanner = ({
     return () => clearInterval(intervalId);
   }, [currentUser, showProgressBar, navigate]);
 
-  // FIXED: handleStepClick to correctly map between progress circles and step paths
-  const handleStepClick = (progressIndex) => {
-    if (!showProgressBar || isLoading) return;
+// IMPROVED: handleStepClick with better debugging and package step handling
+const handleStepClick = (progressIndex) => {
+  if (!showProgressBar || isLoading) return;
+  
+  // Map from progress dot index to actual path index
+  const pathIndex = getStepPathFromProgressIndex(progressIndex);
+  
+  // Special case: If clicking first progress dot (Account), always go to success page
+  // unless the user hasn't completed account creation yet
+  const targetPathIndex = progressIndex === 0 && maxCompletedStep >= 1 ? 1 : pathIndex;
+  
+  // Debug the values to see what's happening
+  console.log(`DEBUG handleStepClick:
+    progressIndex: ${progressIndex}
+    pathIndex: ${pathIndex}
+    targetPathIndex: ${targetPathIndex}
+    maxCompletedStep: ${maxCompletedStep}
+    stepPaths[targetPathIndex]: ${stepPaths[targetPathIndex]}
+  `);
+  
+  // Always allow navigation to any previously completed step
+  if (targetPathIndex <= maxCompletedStep) {
+    console.log(`Navigating from progress index ${progressIndex} to path ${stepPaths[targetPathIndex]}`);
     
-    // Map from progress dot index to actual path index
-    const pathIndex = getStepPathFromProgressIndex(progressIndex);
+    // Set force navigation flag in localStorage for reliability with more specific flags
+    localStorage.setItem('force_active_step', String(targetPathIndex));
+    localStorage.setItem('force_timestamp', Date.now().toString());
+    localStorage.setItem('force_navigation_source', 'banner_step_click');
     
-    // Special case: If clicking first progress dot (Account), always go to success page
-    // unless the user hasn't completed account creation yet
-    const targetPathIndex = progressIndex === 0 && maxCompletedStep >= 1 ? 1 : pathIndex;
+    // Special case for package step which seems problematic
+    let forceParam = progressIndex === 2 ? "force=true&banner=true" : "force=true";
     
-    // Allow navigation to any previously completed step
-    if (targetPathIndex <= maxCompletedStep) {
-      console.log(`Navigating from progress index ${progressIndex} to path ${stepPaths[targetPathIndex]}`);
-      
-      // Set force navigation flag in localStorage for reliability
-      localStorage.setItem('force_active_step', String(targetPathIndex));
-      localStorage.setItem('force_timestamp', Date.now().toString());
-      
-      // Use React Router for navigation with fallback
-      try {
-        navigate(`/signup${stepPaths[targetPathIndex]}`, { replace: true });
-      } catch (err) {
-        console.error("Banner navigation error:", err);
-        // Fallback to direct URL change
-        window.location.href = `/signup${stepPaths[targetPathIndex]}`;
-      }
-    } else {
-      console.log(`Cannot navigate to step ${targetPathIndex}, max completed step is ${maxCompletedStep}`);
-    }
-  };
+    // Use direct URL navigation with force=true parameter to bypass route guard
+    const targetPath = `/signup${stepPaths[targetPathIndex]}?${forceParam}`;
+    console.log(`Using direct navigation with force parameter: ${targetPath}`);
+    
+    // Add a tiny delay to ensure localStorage is set before navigation
+    setTimeout(() => {
+      // Use direct browser navigation for maximum reliability
+      window.location.href = targetPath;
+    }, 10);
+  } else {
+    console.log(`Cannot navigate to step ${targetPathIndex}, max completed step is ${maxCompletedStep}`);
+  }
+};
 
   // Content calculations
-  // Adjust stepNumber calculation to account for special mapping
+  // Adjust stepNxqxaumber calculation to account for special mapping
   // If we're on account creation (0) or success page (1), show as Step 1
   const stepNumber = activeStep <= 1 ? 1 : activeStep;
   
