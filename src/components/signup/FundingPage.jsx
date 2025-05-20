@@ -194,14 +194,24 @@ export default function FundingPage({ initialData, onBack, onNext }) {
     }
   };
   
+  // Apply Marcellus font to the entire component
+  const marcellusStyle = {
+    fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
+    fontSize: "1.05rem" // Increase base font size
+  };
+  
   return (
-    <div className="w-full bg-gray-100" style={{
-      width: '100vw',
-      marginLeft: 'calc(-50vw + 50%)',
-      marginRight: 'calc(-50vw + 50%)',
-      position: 'relative'
-    }}>
-      <div className="w-full mx-auto px-4 py-8" style={{ maxWidth: "70%" }}>
+    <div 
+      className="w-full bg-gray-100" 
+      style={{
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)',
+        marginRight: 'calc(-50vw + 50%)',
+        position: 'relative',
+        ...marcellusStyle  // Apply Marcellus font to the entire component
+      }}
+    >
+      <div className="w-full mx-auto px-4 sm:px-6 md:px-8 py-8" style={{ maxWidth: "90%", '@media (min-width: 768px)': { maxWidth: "70%" } }}>
         {isLoading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
@@ -214,7 +224,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
           </div>
         ) : (
           <div className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {/* LIFE INSURANCE OPTION */}
               <div onClick={() => selectOption("insurance")} className={`cursor-pointer h-full`}>
                 <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "insurance" ? "border border-[#65417c]" : "border-2 border-transparent"} relative`}>
@@ -249,18 +259,18 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                     
                     {/* Content in white sections */}
                     <div className="bg-white px-8 py-6 border-t border-gray-200">
-                      <p className="text-gray-700 text-lg mb-6">
+                      <p className="text-gray-700 text-xl mb-6">
                         Most affordable option with manageable monthly premiums.
                       </p>
                       
                       <div className="pt-2">
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-gray-600 text-lg">Typical Cost:</span>
-                          <span className="text-[#49355B] font-bold text-lg">$50-250/month</span>
+                          <span className="text-gray-600 text-xl">Typical Cost:</span>
+                          <span className="text-[#49355B] font-bold text-xl">$50-250/month</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-lg">Complexity:</span>
-                          <span className="text-[#49355B] font-bold text-lg">Simple</span>
+                          <span className="text-gray-600 text-xl">Complexity:</span>
+                          <span className="text-[#49355B] font-bold text-xl">Simple</span>
                         </div>
                       </div>
                     </div>
@@ -272,7 +282,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                       <ul className="mb-4 space-y-2">
                         {fundingOptions.insurance.benefits.map((benefit, index) => (
                           <li key={index} className="flex items-center">
-                            <span className="text-gray-800 text-lg">{benefit}</span>
+                            <span className="text-gray-800 text-xl">{benefit}</span>
                           </li>
                         ))}
                       </ul>
@@ -315,18 +325,18 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                     
                     {/* Content in white sections */}
                     <div className="bg-white px-8 py-6 border-t border-gray-200">
-                      <p className="text-gray-700 text-lg mb-6">
+                      <p className="text-gray-700 text-xl mb-6">
                         Pay upfront for guaranteed coverage and simplicity.
                       </p>
                       
                       <div className="pt-2">
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-gray-600 text-lg">Payment:</span>
-                          <span className="text-[#2D3050] font-bold text-lg">One-time</span>
+                          <span className="text-gray-600 text-xl">Payment:</span>
+                          <span className="text-[#2D3050] font-bold text-xl">One-time</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-lg">Complexity:</span>
-                          <span className="text-[#2D3050] font-bold text-lg">Very Simple</span>
+                          <span className="text-gray-600 text-xl">Complexity:</span>
+                          <span className="text-[#2D3050] font-bold text-xl">Very Simple</span>
                         </div>
                       </div>
                     </div>
@@ -381,18 +391,18 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                     
                     {/* Content in white sections */}
                     <div className="bg-white px-8 py-6 border-t border-gray-200">
-                    <p className="text-gray-700 text-lg mb-6">
+                    <p className="text-gray-700 text-xl mb-6">
                       Start your contract today, decide on funding method later.
                     </p>
                     
                     <div className="pt-2">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-gray-600 text-lg">Contract:</span>
-                        <span className="text-[#13233e] font-bold text-lg">Cryopreservation</span>
+                        <span className="text-gray-600 text-xl">Contract:</span>
+                        <span className="text-[#13233e] font-bold text-xl">Cryopreservation</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600 text-lg">Funding Decision:</span>
-                        <span className="text-[#13233e] font-bold text-lg">At Your Own Pace</span>
+                        <span className="text-gray-600 text-xl">Funding Decision:</span>
+                        <span className="text-[#13233e] font-bold text-xl">At Your Own Pace</span>
                       </div>
                     </div>
                   </div>
@@ -428,7 +438,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                 {/* Life Insurance specific content */}
                 {selectedOption === "insurance" && (
                   <div>
-                    <p className="text-gray-700 text-lg mb-2">
+                    <p className="text-gray-700 text-xl mb-2">
                       Select your preferred insurance option:
                     </p>
                     
@@ -512,7 +522,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                             </div>
                             Insurance Options
                           </h4>
-                          <p className="text-gray-800 text-lg mb-8">
+                          <p className="text-gray-800 text-xl mb-8">
                             We'll connect you with specialized insurance providers for your cryonics arrangement.
                           </p>
                           <div className="space-y-10">
@@ -572,7 +582,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                             </div>
                             Policy Information
                           </h4>
-                          <p className="text-gray-800 text-lg mb-8">
+                          <p className="text-gray-800 text-xl mb-8">
                             Please provide details about your existing policy to add Alcor as a beneficiary.
                           </p>
                           <div className="space-y-8 mt-8">
@@ -588,6 +598,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                                 onChange={handlePolicyDetailChange}
                                 className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684]"
                                 placeholder="e.g. Prudential, New York Life"
+                                style={marcellusStyle}  // Apply font to input
                               />
                             </div>
                             
@@ -603,6 +614,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                                 onChange={handlePolicyDetailChange}
                                 className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684]"
                                 placeholder="Optional - Your policy number"
+                                style={marcellusStyle}  // Apply font to input
                               />
                             </div>
                             
@@ -620,6 +632,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                                   onChange={handlePolicyDetailChange}
                                   className="w-full pl-12 px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684]"
                                   placeholder="Optional - Total coverage amount"
+                                  style={marcellusStyle}  // Apply font to input
                                 />
                               </div>
                             </div>
@@ -630,7 +643,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
-                              <p className="text-gray-800 text-lg">
+                              <p className="text-gray-800 text-xl">
                                 Our team will help you add Alcor as a beneficiary to your policy.
                               </p>
                             </div>
@@ -653,7 +666,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                       </div>
                       Prepayment Process
                     </h4>
-                    <p className="text-gray-800 text-lg mb-8">
+                    <p className="text-gray-800 text-xl mb-8">
                       Here's what to expect with the prepayment option:
                     </p>
                     
@@ -667,7 +680,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                           </div>
                           Next Steps
                         </h5>
-                        <ol className="space-y-4 ml-16 list-decimal text-gray-800 text-lg">
+                        <ol className="space-y-4 ml-16 list-decimal text-gray-800 text-xl">
                           <li className="pl-3">Complete your membership signup</li>
                           <li className="pl-3">Our team will contact you within 2 days</li>
                           <li className="pl-3">You'll receive payment instructions</li>
@@ -681,7 +694,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                           </svg>
                         </div>
-                        <p className="text-gray-800 text-lg">
+                        <p className="text-gray-800 text-xl">
                           <span className="font-bold">Pro Tip:</span> Prepayment can be combined with other funding methods for additional security.
                         </p>
                       </div>
@@ -700,7 +713,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                       </div>
                       Cryopreservation Contract & Future Funding
                     </h4>
-                    <p className="text-gray-800 text-lg mb-8">
+                    <p className="text-gray-800 text-xl mb-8">
                       By selecting this option, you'll sign a cryopreservation contract now while taking time to decide on your preferred funding method:
                     </p>
                     
@@ -714,7 +727,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                           </div>
                           What's Included Now
                         </h5>
-                        <ul className="space-y-4 text-gray-800 text-lg pl-16">
+                        <ul className="space-y-4 text-gray-800 text-xl pl-16">
                           <li className="flex items-start">
                             <span>Full cryopreservation contract</span>
                           </li>
@@ -737,7 +750,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                           Next Steps
                         </h5>
                         <ol className="space-y-4 text-gray-800 text-lg pl-16 list-decimal">
-                          <li className="pl-3">Complete your membership & contract</li>
+                          <li className="pl-3">Complete your membership signup</li>
                           <li className="pl-3">Meet with your funding advisor</li>
                           <li className="pl-3">Explore insurance & prepayment options</li>
                           <li className="pl-3">Choose your funding method when you're ready</li>
@@ -750,7 +763,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                           </svg>
                         </div>
-                        <p className="text-gray-800 text-lg">
+                        <p className="text-gray-800 text-xl">
                           <span className="font-bold">Important:</span> This option secures your cryopreservation contract immediately. Our team will provide personalized guidance to help you decide on your preferred funding method at your own pace.
                         </p>
                       </div>
@@ -768,6 +781,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
             type="button"
             onClick={handleBackClick}
             className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+            style={marcellusStyle}  // Apply font to button
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -782,6 +796,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
             className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
               selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
             } disabled:opacity-70`}
+            style={marcellusStyle}  // Apply font to button
           >
             {isSubmitting ? (
               <>
