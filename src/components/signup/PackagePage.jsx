@@ -6,6 +6,8 @@ import { getMembershipCost } from "../../services/pricing";
 import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 import HelpPanel from "./HelpPanel";
+import { updateSignupProgressAPI } from "../../services/auth";
+import { savePackageInfo } from "../../services/package";
 
 // TOGGLE BETWEEN VERSIONS: set to true for the updated design, false for the original
 const USE_UPDATED_VERSION = false;
@@ -193,21 +195,24 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       // Prepare the data object to pass to the parent component
       const packageData = {
         packageType: selectedPackage,
-        cost: finalPrice,
-        preservationType: selectedOption,
-        preservationEstimate: preservationEstimate,
-        basePrice: membershipCost,
-        calculatedAt: new Date().toISOString()
+        packageDetails: {
+          cost: finalPrice,
+          preservationType: selectedOption,
+          preservationEstimate: preservationEstimate,
+          basePrice: membershipCost,
+          calculatedAt: new Date().toISOString()
+        }
       };
       
-      // Set force navigation flags for reliability
-      localStorage.setItem('force_active_step', '4'); // 4 = funding step
-      localStorage.setItem('force_timestamp', Date.now().toString());
+      // Save package info to backend
+      const saveResult = await savePackageInfo(packageData);
       
-      console.log("Setting force navigation to step 4 (funding)");
+      if (!saveResult || !saveResult.success) {
+        throw new Error("Failed to save package information to backend");
+      }
       
-      // Update progress in Firebase with selection data
-      await updateSignupProgress("funding", 4, {
+      // Update step progress directly via API
+      const progressResult = await updateSignupProgressAPI("funding", 4, {
         selectedPackage,
         packageCost: finalPrice,
         calculatedAt: new Date().toISOString(),
@@ -215,6 +220,16 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         preservationType: selectedOption,
         estimatedPreservationCost: preservationEstimate
       });
+      
+      if (!progressResult || !progressResult.success) {
+        console.warn("Warning: Failed to update signup progress, but continuing with navigation");
+      }
+      
+      // Set force navigation flags for reliability
+      localStorage.setItem('force_active_step', '4'); // 4 = funding step
+      localStorage.setItem('force_timestamp', Date.now().toString());
+      
+      console.log("Setting force navigation to step 4 (funding)");
       
       // Use onNext prop instead of direct navigation
       if (onNext) {
