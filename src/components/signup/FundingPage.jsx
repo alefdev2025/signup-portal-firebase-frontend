@@ -84,7 +84,23 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  });
  
  // Add state for policy resources dropdown
- const [policyResourcesExpanded, setPolicyResourcesExpanded] = useState(false);
+ const [animationsLoaded, setAnimationsLoaded] = useState(false);
+
+ // Animation trigger after initial render
+ useEffect(() => {
+   // Delay the animation trigger slightly for better effect
+   const timer = setTimeout(() => {
+     setAnimationsLoaded(true);
+   }, 100);
+   
+   return () => clearTimeout(timer);
+ }, []);
+ 
+ // CSS classes for fade-in animations
+ const fadeIn = animationsLoaded ? "opacity-100" : "opacity-0";
+ const fadeInDelay1 = animationsLoaded ? "opacity-100 delay-150" : "opacity-0";
+ const fadeInDelay2 = animationsLoaded ? "opacity-100 delay-300" : "opacity-0";
+ const fadeInDelay3 = animationsLoaded ? "opacity-100 delay-450" : "opacity-0";
  
  // Load package info when component mounts
  useEffect(() => {
@@ -347,7 +363,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        ) : (
          <div className="mb-8">
            {packageInfo && (
-             <div className="bg-white p-6 rounded-xl mb-6 shadow-sm">
+             <div className={`bg-white p-6 rounded-xl mb-6 shadow-sm transition-opacity duration-700 linear ${fadeIn}`}>
                <h2 className="text-2xl font-bold text-[#323053] mb-2">Your Selected Package</h2>
                <div className="flex flex-wrap">
                  <div className="w-full md:w-1/2 mb-4 md:mb-0">
@@ -371,15 +387,14 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                </div>
                
                {hasBasicMembership && (
-                 <div className="mt-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded flex items-start">
+                 <div className={`mt-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded flex items-start transition-opacity duration-700 linear ${fadeInDelay1}`}>
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-500 mr-3 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                    </svg>
                    <div>
-                     <p className="font-bold text-amber-800">Important: Basic Membership does not include cryopreservation</p>
+                     <p className="font-bold text-amber-800">Basic Membership doesn't include cryopreservation</p>
                      <p className="text-amber-700 mt-1">
-                       This option only covers membership dues and does not include any cryopreservation services. 
-                       If you intended to select a full cryopreservation package, please <a href="/signup/package?force=true" className="underline font-semibold hover:text-amber-800">go back</a> and select either Neuropreservation or Whole Body options.
+                       This covers membership dues only. If you want cryopreservation, <a href="/signup/package?force=true" className="underline font-semibold hover:text-amber-800">go back</a> and select Neuropreservation or Whole Body.
                      </p>
                    </div>
                  </div>
@@ -388,13 +403,13 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            )}
            
            {hasBasicMembership ? (
-                            <div className="bg-white p-8 rounded-xl shadow-sm">
+             <div className={`bg-white p-8 rounded-xl shadow-sm transition-opacity duration-700 linear ${fadeInDelay2}`}>
                <h2 className="text-2xl font-bold text-[#323053] mb-6 flex items-center">
                  Basic Membership Information
                  <img src={alcorStar} alt="Star" className="ml-3 w-8 h-8" />
                </h2>
                
-               <div className="bg-[#f5f0f8] p-8 rounded-lg mb-8">
+               <div className={`bg-[#f5f0f8] p-8 rounded-lg mb-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
                  <div className="flex items-start">
                    <div className="bg-[#775684] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -410,80 +425,32 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                  </div>
                </div>
                
-               <div className="mb-8 px-8">
-                 <div className="flex items-start mb-8">
-                   <div className="bg-[#775684] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <div className={`bg-[#f8f8f0] p-8 rounded-lg mt-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
+                 <div className="flex items-start">
+                   <div className="bg-[#d8b453] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                      </svg>
                    </div>
                    <div>
-                     <h3 className="text-xl font-semibold text-[#323053] mb-3 flex items-center">
-                       Your Membership Journey
-                       <img src={alcorStarSelected} alt="Star" className="ml-3 w-7 h-7" />
-                     </h3>
+                     <h4 className="text-xl font-semibold text-[#323053] mb-3 flex items-center">
+                       What happens next?
+                       <img src={alcorStar} alt="Star" className="ml-3 w-7 h-7" />
+                     </h4>
                      <p className="text-gray-700 text-lg">
-                       As a Basic Member, you'll have access to Alcor's community and resources. When you're ready to add cryopreservation services in the future, these are the funding options that will be available:
+                       After completing your Basic Membership, you'll receive information about upgrading to cryopreservation. Your Alcor advisor will guide you through options when you're ready.
                      </p>
-                   </div>
-                 </div>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 my-10">
-                   <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
-                     <div className="flex items-start mb-6">
-                       <div className="bg-[#f0eef5] p-4 mr-4 rounded-lg shadow" style={{ minWidth: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <img src={insuranceImage} alt="Insurance" className="w-12 h-12 object-contain" />
-                       </div>
-                       <h4 className="text-xl font-semibold text-[#323053] mt-3">Life Insurance</h4>
-                     </div>
-                     <p className="text-gray-700 text-lg">Most affordable option with manageable monthly premiums</p>
-                   </div>
-                   
-                   <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
-                     <div className="flex items-start mb-6">
-                       <div className="bg-[#f0eef5] p-4 mr-4 rounded-lg shadow" style={{ minWidth: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <img src={prepayImage} alt="Prepayment" className="w-12 h-12 object-contain" />
-                       </div>
-                       <h4 className="text-xl font-semibold text-[#323053] mt-3">Prepayment</h4>
-                     </div>
-                     <p className="text-gray-700 text-lg">Pay upfront for guaranteed coverage and simplicity</p>
-                   </div>
-                   
-                   <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
-                     <div className="flex items-start mb-6">
-                       <div className="bg-[#f0eef5] p-4 mr-4 rounded-lg shadow" style={{ minWidth: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                         <img src={laterImage} alt="Additional Options" className="w-12 h-12 object-contain" />
-                       </div>
-                       <h4 className="text-xl font-semibold text-[#323053] mt-3">Additional Options</h4>
-                     </div>
-                     <p className="text-gray-700 text-lg">Explore other specialized funding arrangements</p>
-                   </div>
-                 </div>
-                 
-                 <div className="bg-[#f8f8f0] p-8 rounded-lg mt-8">
-                   <div className="flex items-start">
-                     <div className="bg-[#d8b453] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                       </svg>
-                     </div>
-                     <div>
-                       <h4 className="text-xl font-semibold text-[#323053] mb-3 flex items-center">
-                         What happens next?
-                         <img src={alcorStar} alt="Star" className="ml-3 w-7 h-7" />
-                       </h4>
-                       <p className="text-gray-700 text-lg">
-                         After completing your Basic Membership, you'll receive information about upgrading to full cryopreservation services. Your Alcor advisor will guide you through the funding options when you're ready to upgrade.
-                       </p>
-                     </div>
                    </div>
                  </div>
                </div>
              </div>
            ) : (
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+             <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 transition-opacity duration-700 linear ${fadeInDelay2}`}>
                {availableOptions.includes("insurance") && (
-                 <div onClick={() => selectOption("insurance")} className={`cursor-pointer h-full`}>
+                 <div 
+                   onClick={() => selectOption("insurance")} 
+                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "insurance" ? "" : "hover:shadow-lg"}`}
+                 >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "insurance" ? "border border-[#65417c]" : "border-2 border-transparent"} relative`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
                        <div className={`flex items-center ${selectedOption === "insurance" ? "bg-[#15263f] text-white px-3 py-1 rounded-sm" : "text-transparent"}`}>
@@ -545,7 +512,10 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                )}
                
                {availableOptions.includes("prepay") && (
-                 <div onClick={() => selectOption("prepay")} className={`cursor-pointer h-full`}>
+                 <div 
+                   onClick={() => selectOption("prepay")} 
+                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "prepay" ? "" : "hover:shadow-lg"}`}
+                 >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "prepay" ? "border border-[#65417c]" : "border-2 border-transparent"}`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
                        <div className={`flex items-center ${selectedOption === "prepay" ? "bg-[#15263f] text-white px-3 py-1 rounded-sm" : "text-transparent"}`}>
@@ -607,7 +577,10 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                )}
                
                {availableOptions.includes("later") && (
-                 <div onClick={() => selectOption("later")} className={`cursor-pointer h-full`}>
+                 <div 
+                   onClick={() => selectOption("later")} 
+                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "later" ? "" : "hover:shadow-lg"}`}
+                 >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "later" ? "border border-[#65417c]" : "border-2 border-transparent"}`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
                        <div className={`flex items-center ${selectedOption === "later" ? "bg-[#15263f] text-white px-3 py-1 rounded-sm" : "text-transparent"}`}>
@@ -671,7 +644,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            )}
            
            {!hasBasicMembership && (
-             <div className="mt-8 bg-white p-8 rounded-lg">
+             <div className={`mt-8 bg-white p-8 rounded-lg transition-opacity duration-700 linear ${fadeInDelay3}`}>
                <div className="border-b border-gray-200 pb-6 mb-4">
                  <h3 className="text-2xl font-bold text-[#323053]">
                    {selectedOption === "insurance" ? "Life Insurance Details" : 
@@ -1012,11 +985,11 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          </div>
        )}
        
-       <div className="flex justify-between mt-8">
+       <div className={`flex justify-between mt-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
          <button
            type="button"
            onClick={handleBackClick}
-           className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+           className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
            style={marcellusStyle}
          >
            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -1029,7 +1002,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            type="button"
            onClick={handleNext}
            disabled={isSubmitting || isLoading || !selectedOption}
-           className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
+           className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
              selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
            } disabled:opacity-70`}
            style={marcellusStyle}
@@ -1059,6 +1032,49 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        toggleHelpInfo={toggleHelpInfo} 
        helpItems={fundingHelpContent} 
      />
+
+     {/* Global animation styles */}
+     <style jsx global>{`
+       .transition-all {
+         transition-property: opacity;
+       }
+       .duration-300 {
+         transition-duration: 300ms;
+       }
+       .duration-500 {
+         transition-duration: 500ms;
+       }
+       .duration-700 {
+         transition-duration: 700ms;
+       }
+       .ease-in-out {
+         transition-timing-function: linear;
+       }
+       .delay-150 {
+         transition-delay: 150ms;
+       }
+       .delay-300 {
+         transition-delay: 300ms;
+       }
+       .delay-450 {
+         transition-delay: 450ms;
+       }
+       .opacity-0 {
+         opacity: 0;
+       }
+       .opacity-100 {
+         opacity: 1;
+       }
+       .transform {
+         transform-origin: center;
+       }
+       .hover\\:scale-\\[1\\.02\\]:hover {
+         transform: scale(1.02);
+       }
+       .hover\\:scale-\\[1\\.03\\]:hover {
+         transform: scale(1.03);
+       }
+     `}</style>
    </div>
  );
 }
