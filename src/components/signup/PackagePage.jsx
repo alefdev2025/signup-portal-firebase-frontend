@@ -53,6 +53,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
     pricing: false,
     payment: false
   });
+  // Add animation states
+  const [contentLoaded, setContentLoaded] = useState(false);
 
   // Toggle help panel
   const toggleHelpInfo = () => {
@@ -141,6 +143,10 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         setError("An error occurred while calculating your membership cost. Please try again later.");
       } finally {
         setIsLoading(false);
+        // Set content loaded state after data is fetched
+        setTimeout(() => {
+          setContentLoaded(true);
+        }, 100);
       }
     }
     
@@ -340,19 +346,33 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   // Show error message
   if (error) {
     return USE_UPDATED_VERSION ? (
-      <div className="mt-4">
+      <div className="mt-4 opacity-0 animate-fadeIn" style={{ animation: "fadeIn 0.5s forwards" }}>
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-red-700">{error}</p>
           <p className="text-red-600 mt-2">Please try refreshing the page or contact support if this issue persists.</p>
         </div>
       </div>
     ) : (
-      <div className="bg-red-50 border border-red-200 rounded-md p-6 mb-8">
+      <div className="bg-red-50 border border-red-200 rounded-md p-6 mb-8 opacity-0 animate-fadeIn" style={{ animation: "fadeIn 0.5s forwards" }}>
         <p className="text-red-700 text-lg">{error}</p>
         <p className="text-red-600 mt-2">Please try refreshing the page or contact support if this issue persists.</p>
       </div>
     );
   }
+  
+  // Define animation styles for the component
+  const fadeInStyle = {
+    opacity: contentLoaded ? 1 : 0,
+    transform: contentLoaded ? 'translateY(0)' : 'translateY(20px)',
+    transition: 'opacity 0.5s ease-in-out, transform 0.5s ease-in-out'
+  };
+  
+  // Calculate staggered animation delay
+  const getAnimationDelay = (index) => {
+    return {
+      transitionDelay: `${0.1 + (index * 0.15)}s`
+    };
+  };
   
   return (
     <div className="w-full bg-gray-100" style={{
@@ -360,7 +380,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       marginLeft: 'calc(-50vw + 50%)',
       marginRight: 'calc(-50vw + 50%)',
       position: 'relative',
-      fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
+      fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
+      opacity: 0,
+      animation: "fadeIn 0.5s forwards 0.1s"
     }}>
       {/* Main container with appropriate padding based on version */}
       <div className={`w-full mx-auto ${USE_UPDATED_VERSION ? 'px-6 sm:px-8 md:px-12' : 'px-4 sm:px-8'} py-8`} 
@@ -372,13 +394,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               {/* Cards container - wider cards with increased spacing */}
               <div id="options-container" className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 lg:gap-16">
                 {/* NEURO OPTION */}
-                <div onClick={() => selectOption("neuro")} className="cursor-pointer">
-                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"}`}>
+                <div onClick={() => selectOption("neuro")} className="cursor-pointer transform transition duration-300 hover:scale-[1.02]" style={{...fadeInStyle, ...getAnimationDelay(0)}}>
+                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"} transition-all duration-300`}>
                     {/* SELECTED indicator */}
                     <div className="bg-white border-b border-gray-200">
                       {selectedOption === "neuro" && (
                         <div className="text-center py-3.5">
-                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md">
+                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md animate-fadeInDown">
                             Selected
                           </span>
                         </div>
@@ -392,10 +414,10 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-8 md:pt-4 md:pl-4 text-gray-800">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center justify-start w-full">
-                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0" />
+                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0 animate-pulse" style={{animationDuration: '3s'}} />
                             <h3 className="text-2xl font-semibold text-gray-900">{planOptions.neuro.title}</h3>
                           </div>
-                          <div className={`${planOptions.neuro.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0`}>
+                          <div className={`${planOptions.neuro.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
                             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                             </svg>
@@ -426,19 +448,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <h4 className="text-white text-xl font-semibold mb-5">What's Included:</h4>
                       
                       <div className="space-y-4 pl-4 text-gray-200 text-lg">
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Standby Service</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Neural Cryopreservation</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Long-Term Storage</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Possible Revival</span>
                         </div>
@@ -452,13 +474,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                 </div>
                 
                 {/* WHOLE BODY OPTION */}
-                <div onClick={() => selectOption("wholebody")} className="cursor-pointer">
-                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"}`}>
+                <div onClick={() => selectOption("wholebody")} className="cursor-pointer transform transition duration-300 hover:scale-[1.02]" style={{...fadeInStyle, ...getAnimationDelay(1)}}>
+                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"} transition-all duration-300`}>
                     {/* SELECTED indicator */}
                     <div className="bg-white border-b border-gray-200">
                       {selectedOption === "wholebody" && (
                         <div className="text-center py-3.5">
-                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md">
+                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md animate-fadeInDown">
                             Selected
                           </span>
                         </div>
@@ -472,10 +494,10 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-8 md:pt-4 md:pl-4 text-gray-800">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center justify-start w-full">
-                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0" />
+                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0 animate-pulse" style={{animationDuration: '3s'}} />
                             <h3 className="text-2xl font-semibold text-gray-900">{planOptions.wholebody.title}</h3>
                           </div>
-                          <div className={`${planOptions.wholebody.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0`}>
+                          <div className={`${planOptions.wholebody.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
                             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
@@ -506,19 +528,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <h4 className="text-white text-xl font-semibold mb-5">What's Included:</h4>
                       
                       <div className="space-y-4 pl-4 text-gray-200 text-lg">
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Standby Service</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Full Body Cryopreservation</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Long-Term Storage</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Possible Revival</span>
                         </div>
@@ -532,13 +554,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                 </div>
                 
                 {/* BASIC OPTION */}
-                <div onClick={() => selectOption("basic")} className="cursor-pointer">
-                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"}`}>
+                <div onClick={() => selectOption("basic")} className="cursor-pointer transform transition duration-300 hover:scale-[1.02]" style={{...fadeInStyle, ...getAnimationDelay(2)}}>
+                  <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"} transition-all duration-300`}>
                     {/* SELECTED indicator */}
                     <div className="bg-white border-b border-gray-200">
                       {selectedOption === "basic" && (
                         <div className="text-center py-3.5">
-                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md">
+                          <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md animate-fadeInDown">
                             Selected
                           </span>
                         </div>
@@ -552,10 +574,10 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-8 md:pt-4 md:pl-4 text-gray-800">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center justify-start w-full">
-                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0" />
+                            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0 animate-pulse" style={{animationDuration: '3s'}} />
                             <h3 className="text-2xl font-semibold text-gray-900">{planOptions.basic.title}</h3>
                           </div>
-                          <div className={`${planOptions.basic.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0`}>
+                          <div className={`${planOptions.basic.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
                             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                             </svg>
@@ -586,19 +608,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       <h4 className="text-white text-xl font-semibold mb-5">What's Included:</h4>
                       
                       <div className="space-y-4 pl-4 text-gray-200 text-lg">
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Member Events & Resources</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Pet Preservation Options</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Add on Cryopreservation Anytime</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
                           <span>Consultation Services</span>
                         </div>
@@ -613,7 +635,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
               
               {/* Selection Summary Section - only visible on mobile */}
-              <div className="mt-5 p-4 sm:p-6 bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm md:hidden">
+              <div className="mt-5 p-4 sm:p-6 bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm md:hidden transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(3)}}>
                 <div className="flex flex-col">
                   <h4 className="text-gray-800 font-bold text-lg mb-3">Your Selection</h4>
                   
@@ -666,7 +688,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   <div className="mt-4 pt-2">
                     <button 
                       onClick={scrollToOptions}
-                      className="text-[#775684] font-medium text-sm hover:underline focus:outline-none flex items-center"
+                      className="text-[#775684] font-medium text-sm hover:underline focus:outline-none flex items-center transition-transform duration-300 hover:translate-y-[-2px]"
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -678,9 +700,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
               
               {/* Important Information Section */}
-              <div className="mt-5 p-4 sm:p-6 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-200">
+              <div className="mt-5 p-4 sm:p-6 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-200 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(4)}}>
                 <div className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 mr-2 flex-shrink-0 mt-0.5 animate-bounce" style={{animationDuration: '2s'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
@@ -693,11 +715,11 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
               
               {/* Navigation buttons - with improved navigation handling */}
-              <div className="flex justify-between mt-8 mb-6">
+              <div className="flex justify-between mt-8 mb-6 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
                 <button
                   type="button"
                   onClick={handleBackClick}
-                  className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                  className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
                   disabled={isSubmitting}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -710,7 +732,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   type="button"
                   onClick={handleNext}
                   disabled={isSubmitting || isLoading || !selectedOption}
-                  className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
+                  className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] ${
                     selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   } disabled:opacity-70`}
                 >
@@ -737,13 +759,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
             // ORIGINAL VERSION Layout
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-8 sm:px-12 md:px-0">
               {/* NEURO OPTION */}
-              <div onClick={() => selectOption("neuro")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "830px" }}>
+              <div onClick={() => selectOption("neuro")} className="cursor-pointer" style={{...fadeInStyle, ...getAnimationDelay(0)}}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01]`} style={{ height: "830px" }}>
                   {/* SELECTED indicator */}
                   <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "neuro" && (
                       <div className="text-center py-3.5">
-                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
+                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide animate-fadeInDown">
                           SELECTED
                         </span>
                       </div>
@@ -754,9 +776,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   <div className="bg-[#323053] text-white p-7 pl-5" style={{ height: "380px" }}>
                     {/* Header content */}
                     <div className="flex items-center">
-                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
+                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2 animate-pulse" style={{animationDuration: '3s'}} />
                       <h3 className="text-2xl font-bold">{planOptions.neuro.title}</h3>
-                      <div className="ml-auto bg-[#454575] p-3 rounded-full">
+                      <div className="ml-auto bg-[#454575] p-3 rounded-full transform transition duration-300 hover:rotate-12">
                         <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
@@ -783,19 +805,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                     <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
                     <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Standby Service</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Neural Cryopreservation</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Long-Term Storage</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Possible Revival</span>
                       </div>
@@ -809,13 +831,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
               
               {/* WHOLE BODY OPTION */}
-              <div onClick={() => selectOption("wholebody")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "830px" }}>
+              <div onClick={() => selectOption("wholebody")} className="cursor-pointer" style={{...fadeInStyle, ...getAnimationDelay(1)}}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01]`} style={{ height: "830px" }}>
                   {/* SELECTED indicator */}
                   <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "wholebody" && (
                       <div className="text-center py-3.5">
-                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
+                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide animate-fadeInDown">
                           SELECTED
                         </span>
                       </div>
@@ -826,9 +848,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   <div className="bg-[#1a2342] text-white p-7 pl-5" style={{ height: "380px" }}>
                     {/* Header content */}
                     <div className="flex items-center">
-                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
+                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2 animate-pulse" style={{animationDuration: '3s'}} />
                       <h3 className="text-2xl font-bold">{planOptions.wholebody.title}</h3>
-                      <div className="ml-auto bg-[#293253] p-3 rounded-full">
+                      <div className="ml-auto bg-[#293253] p-3 rounded-full transform transition duration-300 hover:rotate-12">
                         <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -855,19 +877,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                     <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
                     <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Standby Service</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Full Body Cryopreservation</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Long-Term Storage</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Possible Revival</span>
                       </div>
@@ -881,13 +903,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
               
               {/* BASIC OPTION */}
-              <div onClick={() => selectOption("basic")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "830px" }}>
+              <div onClick={() => selectOption("basic")} className="cursor-pointer" style={{...fadeInStyle, ...getAnimationDelay(2)}}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01]`} style={{ height: "830px" }}>
                   {/* SELECTED indicator */}
                   <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "basic" && (
                       <div className="text-center py-3.5">
-                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
+                        <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide animate-fadeInDown">
                           SELECTED
                         </span>
                       </div>
@@ -898,9 +920,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   <div className="bg-[#11243a] text-white p-7 pl-5" style={{ height: "380px" }}>
                     {/* Header content */}
                     <div className="flex items-center">
-                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
+                      <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2 animate-pulse" style={{animationDuration: '3s'}} />
                       <h3 className="text-2xl font-bold">{planOptions.basic.title}</h3>
-                      <div className="ml-auto bg-[#1c324c] p-3 rounded-full">
+                      <div className="ml-auto bg-[#1c324c] p-3 rounded-full transform transition duration-300 hover:rotate-12">
                         <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                         </svg>
@@ -927,19 +949,19 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                     <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
                     <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Member Events & Resources</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Pet Preservation Options</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Add on Cryopreservation Anytime</span>
                       </div>
-                      <div className="flex items-start">
+                      <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Consultation Services</span>
                       </div>
@@ -958,7 +980,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           {!USE_UPDATED_VERSION && (
             <>
               {/* Mobile Selection Summary Section - only visible on mobile */}
-              <div className="mt-8 p-5 bg-white rounded-lg border border-gray-200 shadow-sm md:hidden mx-8 sm:mx-12 md:mx-0">
+              <div className="mt-8 p-5 bg-white rounded-lg border border-gray-200 shadow-sm md:hidden mx-8 sm:mx-12 md:mx-0 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(3)}}>
                 <div className="flex flex-col">
                   <h4 className="text-gray-800 font-bold text-xl mb-3">Your Selection</h4>
                   
@@ -1014,7 +1036,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         // Scroll to top of page smoothly
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="text-[#775684] font-medium hover:underline focus:outline-none flex items-center"
+                      className="text-[#775684] font-medium hover:underline focus:outline-none flex items-center transition-transform duration-300 hover:translate-y-[-2px]"
                     >
                       <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -1026,9 +1048,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               </div>
             
               {/* Important Information Section */}
-              <div className="mt-8 p-5 bg-gray-50 rounded-lg border border-gray-200 mx-8 sm:mx-12 md:mx-0">
+              <div className="mt-8 p-5 bg-gray-50 rounded-lg border border-gray-200 mx-8 sm:mx-12 md:mx-0 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(4)}}>
                 <div className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-600 mr-3 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-600 mr-3 flex-shrink-0 mt-0.5 animate-bounce" style={{animationDuration: '2s'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
@@ -1045,11 +1067,11 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         
         {/* Navigation buttons - Only shown in original version */}
         {!USE_UPDATED_VERSION && (
-          <div className="flex justify-between mt-8 mb-6">
+          <div className="flex justify-between mt-8 mb-6 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
             <button
               type="button"
               onClick={handleBackClick}
-              className="py-4 px-8 border border-gray-300 rounded-full text-gray-700 font-medium text-lg flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+              className="py-4 px-8 border border-gray-300 rounded-full text-gray-700 font-medium text-lg flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
               disabled={isSubmitting}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -1062,7 +1084,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               type="button"
               onClick={handleNext}
               disabled={isSubmitting || isLoading || !selectedOption}
-              className={`py-4 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
+              className={`py-4 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] ${
                 selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
               } disabled:opacity-70`}
             >
@@ -1096,3 +1118,32 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
     </div>
   );
 }
+
+// Add global CSS animations
+const globalStyles = document.createElement('style');
+globalStyles.innerHTML = `
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-in-out forwards;
+  }
+  
+  .animate-fadeInDown {
+    animation: fadeInDown 0.3s ease-in-out forwards;
+  }
+`;
+document.head.appendChild(globalStyles);
