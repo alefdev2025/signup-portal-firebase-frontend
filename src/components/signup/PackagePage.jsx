@@ -344,7 +344,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       width: '100vw',
       marginLeft: 'calc(-50vw + 50%)',
       marginRight: 'calc(-50vw + 50%)',
-      position: 'relative'
+      position: 'relative',
+      fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
     }}>
       {/* Main container with appropriate padding based on version */}
       <div className={`w-full mx-auto ${USE_UPDATED_VERSION ? 'px-6 sm:px-8 md:px-12' : 'px-4 sm:px-8'} py-8`} 
@@ -416,7 +417,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                          <span>Neuro Cryopreservation</span>
+                          <span>Neural Cryopreservation</span>
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
@@ -580,7 +581,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                          <span>Add on Cryopreservation</span>
+                          <span>Add on Cryopreservation Anytime</span>
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
@@ -722,21 +723,21 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 sm:px-6 md:px-0">
               {/* NEURO OPTION */}
               <div onClick={() => selectOption("neuro")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : ""}`}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "neuro" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "800px" }}>
                   {/* SELECTED indicator */}
-                  <div className="bg-white border-b border-gray-200">
+                  <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "neuro" && (
-                      <div className="text-center py-3">
+                      <div className="text-center py-3.5">
                         <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
                           SELECTED
                         </span>
                       </div>
                     )}
-                    {selectedOption !== "neuro" && <div className="h-12"></div>}
                   </div>
                   
-                  {/* Card header */}
-                  <div className="bg-[#323053] text-white p-7 pl-5">
+                  {/* Card header with colored background that extends only to "What's Included" */}
+                  <div className="bg-[#323053] text-white p-7 pl-5" style={{ height: "380px" }}>
+                    {/* Header content */}
                     <div className="flex items-center">
                       <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
                       <h3 className="text-2xl font-bold">{planOptions.neuro.title}</h3>
@@ -747,33 +748,33 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                     </div>
                     
-                    <p className="text-gray-300 mt-7 text-lg">
+                    <p className="text-gray-300 mt-8 text-lg">
                       {planOptions.neuro.short}
                     </p>
                     
-                    <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-700">
+                    <div className="flex justify-between items-center mt-10 pt-5 border-t border-gray-700">
                       <span className="text-gray-400 text-lg">Preservation:</span>
                       <span className="font-bold text-xl">${calculatePreservationEstimate("neuro")?.toLocaleString()}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center mt-3">
+                    <div className="flex justify-between items-center mt-4 mb-8">
                       <span className="text-gray-400 text-lg">Membership:</span>
                       <span className="font-bold text-xl">${getPackagePrice("standard")}/year</span>
                     </div>
                   </div>
                   
-                  {/* What's Included */}
-                  <div className="bg-white p-7" style={{ minHeight: "280px" }}>
-                    <h4 className="text-gray-800 mb-5 text-xl font-semibold">What's Included:</h4>
+                  {/* What's Included section with white background */}
+                  <div className="bg-white p-7" style={{ height: "360px" }}>
+                    <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
-                    <div className="space-y-4 pl-5 text-lg">
+                    <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Standby Service</span>
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                        <span>Neuro Cryopreservation</span>
+                        <span>Neural Cryopreservation</span>
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
@@ -783,32 +784,32 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Possible Revival</span>
                       </div>
+                      
+                      <p className="text-gray-600 text-lg pt-4 mt-2 border-t border-gray-200">
+                        {planOptions.neuro.long}
+                      </p>
                     </div>
-                    
-                    <p className="mt-8 pt-5 border-t border-gray-200 text-gray-600 text-lg">
-                      {planOptions.neuro.long}
-                    </p>
                   </div>
                 </div>
               </div>
               
               {/* WHOLE BODY OPTION */}
               <div onClick={() => selectOption("wholebody")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : ""}`}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "wholebody" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "800px" }}>
                   {/* SELECTED indicator */}
-                  <div className="bg-white border-b border-gray-200">
+                  <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "wholebody" && (
-                      <div className="text-center py-3">
+                      <div className="text-center py-3.5">
                         <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
                           SELECTED
                         </span>
                       </div>
                     )}
-                    {selectedOption !== "wholebody" && <div className="h-12"></div>}
                   </div>
                   
-                  {/* Card header */}
-                  <div className="bg-[#1a2342] text-white p-7 pl-5">
+                  {/* Card header with colored background that extends only to "What's Included" */}
+                  <div className="bg-[#1a2342] text-white p-7 pl-5" style={{ height: "380px" }}>
+                    {/* Header content */}
                     <div className="flex items-center">
                       <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
                       <h3 className="text-2xl font-bold">{planOptions.wholebody.title}</h3>
@@ -819,26 +820,26 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                     </div>
                     
-                    <p className="text-gray-300 mt-7 text-lg">
+                    <p className="text-gray-300 mt-8 text-lg">
                       {planOptions.wholebody.short}
                     </p>
                     
-                    <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-700">
+                    <div className="flex justify-between items-center mt-10 pt-5 border-t border-gray-700">
                       <span className="text-gray-400 text-lg">Preservation:</span>
                       <span className="font-bold text-xl">${calculatePreservationEstimate("wholebody")?.toLocaleString()}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center mt-3">
+                    <div className="flex justify-between items-center mt-4 mb-8">
                       <span className="text-gray-400 text-lg">Membership:</span>
                       <span className="font-bold text-xl">${getPackagePrice("standard")}/year</span>
                     </div>
                   </div>
                   
-                  {/* What's Included */}
-                  <div className="bg-white p-7" style={{ minHeight: "280px" }}>
-                    <h4 className="text-gray-800 mb-5 text-xl font-semibold">What's Included:</h4>
+                  {/* What's Included section with white background */}
+                  <div className="bg-white p-7" style={{ height: "360px" }}>
+                    <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
-                    <div className="space-y-4 pl-5 text-lg">
+                    <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Standby Service</span>
@@ -855,32 +856,32 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Possible Revival</span>
                       </div>
+                      
+                      <p className="text-gray-600 text-lg pt-4 mt-2 border-t border-gray-200">
+                        {planOptions.wholebody.long}
+                      </p>
                     </div>
-                    
-                    <p className="mt-8 pt-5 border-t border-gray-200 text-gray-600 text-lg">
-                      {planOptions.wholebody.long}
-                    </p>
                   </div>
                 </div>
               </div>
               
               {/* BASIC OPTION */}
               <div onClick={() => selectOption("basic")} className="cursor-pointer">
-                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : ""}`}>
+                <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === "basic" ? "ring-2 ring-[#775684]" : ""}`} style={{ height: "800px" }}>
                   {/* SELECTED indicator */}
-                  <div className="bg-white border-b border-gray-200">
+                  <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
                     {selectedOption === "basic" && (
-                      <div className="text-center py-3">
+                      <div className="text-center py-3.5">
                         <span className="text-[#775684] px-6 py-1.5 text-base font-bold tracking-wide">
                           SELECTED
                         </span>
                       </div>
                     )}
-                    {selectedOption !== "basic" && <div className="h-12"></div>}
                   </div>
                   
-                  {/* Card header */}
-                  <div className="bg-[#11243a] text-white p-7 pl-5">
+                  {/* Card header with colored background that extends only to "What's Included" */}
+                  <div className="bg-[#11243a] text-white p-7 pl-5" style={{ height: "380px" }}>
+                    {/* Header content */}
                     <div className="flex items-center">
                       <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2" />
                       <h3 className="text-2xl font-bold">{planOptions.basic.title}</h3>
@@ -891,26 +892,26 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                     </div>
                     
-                    <p className="text-gray-300 mt-7 text-lg">
+                    <p className="text-gray-300 mt-8 text-lg">
                       {planOptions.basic.short}
                     </p>
                     
-                    <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-700">
+                    <div className="flex justify-between items-center mt-10 pt-5 border-t border-gray-700">
                       <span className="text-gray-400 text-lg">Annual Cost:</span>
                       <span className="font-bold text-xl">${getPackagePrice("standard")}/year</span>
                     </div>
                     
-                    <div className="flex justify-between items-center mt-3">
+                    <div className="flex justify-between items-center mt-4 mb-8">
                       <span className="text-gray-400 text-lg">Preservation:</span>
                       <span className="font-bold text-xl">Not required</span>
                     </div>
                   </div>
                   
-                  {/* What's Included */}
-                  <div className="bg-white p-7" style={{ minHeight: "280px" }}>
-                    <h4 className="text-gray-800 mb-5 text-xl font-semibold">What's Included:</h4>
+                  {/* What's Included section with white background */}
+                  <div className="bg-white p-7" style={{ height: "360px" }}>
+                    <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
                     
-                    <div className="space-y-4 pl-5 text-lg">
+                    <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Member Events & Resources</span>
@@ -921,17 +922,17 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                        <span>Add on Cryopreservation</span>
+                        <span>Add on Cryopreservation Anytime</span>
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
                         <span>Consultation Services</span>
                       </div>
+                      
+                      <p className="text-gray-600 text-lg pt-4 mt-2 border-t border-gray-200">
+                        {planOptions.basic.long}
+                      </p>
                     </div>
-                    
-                    <p className="mt-8 pt-5 border-t border-gray-200 text-gray-600 text-lg">
-                      {planOptions.basic.long}
-                    </p>
                   </div>
                 </div>
               </div>
