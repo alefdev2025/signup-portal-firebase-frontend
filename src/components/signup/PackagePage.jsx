@@ -416,7 +416,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                          <span>Neural Cryopreservation</span>
+                          <span>Neuro Cryopreservation</span>
                         </div>
                         <div className="flex items-center">
                           <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
@@ -773,7 +773,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                        <span>Neural Cryopreservation</span>
+                        <span>Neuro Cryopreservation</span>
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
@@ -921,7 +921,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                        <span>Add on Cryopreservation Anytime</span>
+                        <span>Add on Cryopreservation</span>
                       </div>
                       <div className="flex items-start">
                         <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
