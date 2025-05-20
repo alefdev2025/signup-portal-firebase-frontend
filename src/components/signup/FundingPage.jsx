@@ -10,6 +10,7 @@ import alcorStarSelected from "../../assets/images/alcor-star.png";
 import insuranceImage from "../../assets/images/policy-purple.png";
 import prepayImage from "../../assets/images/bank-purple.png";
 import laterImage from "../../assets/images/decision-tree-purple.png";
+//import { setForceNavigation } from "../../services/storage";
 
 // Import funding service
 import fundingService from "../../services/funding";
@@ -41,6 +42,18 @@ const fundingHelpContent = [
    )
  }
 ];
+
+const setForceNavigation = (stepIndex) => {
+  console.log(`Setting force navigation to step ${stepIndex}`);
+  localStorage.setItem('force_active_step', stepIndex.toString());
+  localStorage.setItem('force_timestamp', Date.now().toString());
+  
+  // Add debug output
+  console.log("Force navigation set:", {
+    step: localStorage.getItem('force_active_step'),
+    timestamp: localStorage.getItem('force_timestamp')
+  });
+};
 
 export default function FundingPage({ initialData, onBack, onNext }) {
  const navigate = useNavigate();
@@ -167,16 +180,37 @@ export default function FundingPage({ initialData, onBack, onNext }) {
    }));
  };
  
- // Handler for back button
  const handleBackClick = () => {
-   if (onBack) {
-     onBack();
-   } else {
-     // Direct navigation to package page if no onBack handler
-     navigate('/signup/package');
-   }
- };
- 
+  console.log("********** FundingPage: Handle back button clicked **********");
+  
+  try {
+    // Set force navigation
+    localStorage.setItem('force_active_step', '3');
+    localStorage.setItem('force_timestamp', Date.now().toString());
+    
+    console.log("Force navigation set:", {
+      step: localStorage.getItem('force_active_step'),
+      timestamp: localStorage.getItem('force_timestamp')
+    });
+    
+    // Use the force=true URL parameter to bypass the route guard
+    const packageUrlWithForce = "/signup/package?force=true";
+    console.log(`Navigating to ${packageUrlWithForce}`);
+    
+    // Use direct window location change for most reliable navigation
+    window.location.href = packageUrlWithForce;
+    
+    // The code below will not execute due to page reload
+    return false;
+  } catch (error) {
+    console.error("Error during back navigation:", error);
+    
+    // Last resort fallback
+    window.location.href = '/signup/package?force=true';
+    return false;
+  }
+};
+
  // Handler for next button
  const handleNext = async () => {
    if (!selectedOption) return;
