@@ -367,7 +367,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  {/* What Happens Next Card (NOW ON LEFT) */}
                  <div className="rounded-lg overflow-hidden shadow-md h-full">
-                   <div className="bg-gradient-to-l from-[#323053] to-[#454575] text-white p-10" style={{ minHeight: '320px' }}>
+                   <div className="bg-gradient-to-l from-[#323053] to-[#454575] text-white p-10 h-full">
                      <div className="flex items-center mb-8">
                        <div className="bg-[#575790] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -412,7 +412,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                  
                  {/* Funding Notice Card (NOW ON RIGHT) */}
                  <div className="rounded-lg overflow-hidden shadow-md h-full">
-                   <div className="bg-gradient-to-l from-[#11243a] to-[#1c324c] text-white p-10" style={{ minHeight: '320px' }}>
+                   <div className="bg-gradient-to-l from-[#11243a] to-[#1c324c] text-white p-10 h-full">
                      <div className="flex items-center mb-8">
                        <div className="bg-[#293253] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -558,7 +558,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                        
                        <div className="bg-white px-8 py-6 border-t border-gray-200">
                          <p className="text-gray-700 text-xl mb-6">
-                           Pay upfront for guaranteed coverage and simplicity.
+                           Pay upfront for the full cryopreservation amount.
                          </p>
                          
                          <div className="pt-2">
@@ -583,7 +583,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                          <ul className="mb-4 space-y-2">
                            {fundingOptions.prepay.benefits.map((benefit, index) => (
                              <li key={index} className="flex items-center">
-                               <span className="text-gray-800 text-lg">{benefit}</span>
+                               <span className="text-gray-800 text-xl">{benefit}</span>
                              </li>
                            ))}
                          </ul>
@@ -648,7 +648,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                          <ul className="mb-4 space-y-2">
                            {fundingOptions.later.benefits.map((benefit, index) => (
                              <li key={index} className="flex items-center">
-                               <span className="text-gray-800 text-lg">{benefit}</span>
+                               <span className="text-gray-800 text-xl">{benefit}</span>
                              </li>
                            ))}
                          </ul>
@@ -914,17 +914,6 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                            <li className="pl-3">We'll confirm your funded status</li>
                          </ol>
                        </div>
-                       
-                       <div className="flex items-start">
-                         <div className="bg-[#775684] w-12 h-12 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                           </svg>
-                         </div>
-                         <p className="text-gray-800 text-xl">
-                           <span className="font-bold">Pro Tip:</span> Prepayment can be combined with other funding methods for additional security.
-                         </p>
-                       </div>
                      </div>
                    </div>
                  )}
@@ -937,63 +926,11 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                          </svg>
                        </div>
-                       Cryopreservation Contract & Future Funding
+                       Basic Membership & Future Funding
                      </h4>
                      <p className="text-gray-800 text-xl mb-8">
-                       By selecting this option, you'll sign a cryopreservation contract now while taking time to decide on your preferred funding method:
-                     </p>
-                     
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-8">
-                       <div>
-                         <h5 className="font-bold text-[#775684] text-xl mb-6 flex items-center">
-                           <div className="bg-[#775684] w-12 h-12 rounded-lg flex items-center justify-center mr-4">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                             </svg>
-                           </div>
-                           What's Included Now
-                         </h5>
-                         <ul className="space-y-4 text-gray-800 text-xl pl-16">
-                           <li className="flex items-start">
-                             <span>Full cryopreservation contract</span>
-                           </li>
-                           <li className="flex items-start">
-                             <span>Member benefits & privileges</span>
-                           </li>
-                           <li className="flex items-start">
-                             <span>Dedicated funding advisor</span>
-                           </li>
-                         </ul>
-                       </div>
-                       
-                       <div>
-                         <h5 className="font-bold text-[#775684] text-xl mb-6 flex items-center">
-                           <div className="bg-[#775684] w-12 h-12 rounded-lg flex items-center justify-center mr-4">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                             </svg>
-                           </div>
-                           Next Steps
-                         </h5>
-                         <ol className="space-y-4 text-gray-800 text-lg pl-16 list-decimal">
-                           <li className="pl-3">Complete your membership signup</li>
-                           <li className="pl-3">Meet with your funding advisor</li>
-                           <li className="pl-3">Explore insurance & prepayment options</li>
-                           <li className="pl-3">Choose your funding method when you're ready</li>
-                         </ol>
-                       </div>
-                       
-                       <div className="md:col-span-2 flex items-start mt-4">
-                         <div className="bg-[#775684] w-12 h-12 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                           </svg>
-                         </div>
-                         <p className="text-gray-800 text-xl">
-                           <span className="font-bold">Important:</span> This option secures your cryopreservation contract immediately. Our team will provide personalized guidance to help you decide on your preferred funding method at your own pace.
-                         </p>
-                       </div>
-                     </div>
+                       By selecting this option, you'll start the process of a cryopreservation contract, taking time to decide on your preferred funding method. We'll connect you with our team that can help you consider your funding options.
+                     </p> 
                    </div>
                  )}
                </div>
