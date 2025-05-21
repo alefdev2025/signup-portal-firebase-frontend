@@ -65,6 +65,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  const [error, setError] = useState(null);
  const [packageInfo, setPackageInfo] = useState(null);
  const [dropdownOpen, setDropdownOpen] = useState(false);
+ const [animationComplete, setAnimationComplete] = useState(false);
  
  // Add state for insurance sub-option
  const [insuranceSubOption, setInsuranceSubOption] = useState(initialData?.insuranceSubOption || "existing");
@@ -130,6 +131,10 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        setError("An error occurred while loading your package information. Please try again.");
      } finally {
        setIsLoading(false);
+       // Set animation to start once loading is complete
+       setTimeout(() => {
+         setAnimationComplete(true);
+       }, 100);
      }
    };
    
@@ -366,7 +371,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  {/* What Happens Next Card (NOW ON LEFT) */}
-                 <div className="rounded-lg overflow-hidden shadow-md h-full">
+                 <div className={`rounded-lg overflow-hidden shadow-md h-full transition-all duration-700 ease-in-out delay-150 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                    <div className="bg-gradient-to-l from-[#323053] to-[#454575] text-white p-10 h-full">
                      <div className="flex items-center mb-8">
                        <div className="bg-[#575790] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -411,7 +416,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                  </div>
                  
                  {/* Funding Notice Card (NOW ON RIGHT) */}
-                 <div className="rounded-lg overflow-hidden shadow-md h-full">
+                 <div className={`rounded-lg overflow-hidden shadow-md h-full transition-all duration-700 ease-in-out delay-300 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                    <div className="bg-gradient-to-l from-[#11243a] to-[#1c324c] text-white p-10 h-full">
                      <div className="flex items-center mb-8">
                        <div className="bg-[#293253] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -462,7 +467,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                {availableOptions.includes("insurance") && (
                  <div 
                    onClick={() => selectOption("insurance")} 
-                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "insurance" ? "" : "hover:shadow-lg"}`}
+                   className={`cursor-pointer h-full transform transition-all duration-500 ease-in-out hover:scale-[1.02] delay-150 ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${selectedOption === "insurance" ? "" : "hover:shadow-lg"}`}
                  >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "insurance" ? "border border-[#65417c]" : "border-2 border-transparent"} relative`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
@@ -527,7 +532,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                {availableOptions.includes("prepay") && (
                  <div 
                    onClick={() => selectOption("prepay")} 
-                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "prepay" ? "" : "hover:shadow-lg"}`}
+                   className={`cursor-pointer h-full transform transition-all duration-500 ease-in-out hover:scale-[1.02] delay-300 ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${selectedOption === "prepay" ? "" : "hover:shadow-lg"}`}
                  >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "prepay" ? "border border-[#65417c]" : "border-2 border-transparent"}`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
@@ -596,7 +601,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                {availableOptions.includes("later") && (
                  <div 
                    onClick={() => selectOption("later")} 
-                   className={`cursor-pointer h-full transform transition-all duration-500 hover:scale-[1.02] ${selectedOption === "later" ? "" : "hover:shadow-lg"}`}
+                   className={`cursor-pointer h-full transform transition-all duration-500 ease-in-out hover:scale-[1.02] delay-450 ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${selectedOption === "later" ? "" : "hover:shadow-lg"}`}
                  >
                    <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${selectedOption === "later" ? "border border-[#65417c]" : "border-2 border-transparent"}`}>
                      <div className="h-12 w-full bg-white flex items-center justify-center">
@@ -661,7 +666,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            )}
            
            {!hasBasicMembership && (
-             <div className="mt-8 bg-white p-8 rounded-lg">
+             <div className={`mt-8 bg-white p-8 rounded-lg transition-all duration-700 ease-in-out delay-600 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                <div className="border-b border-gray-200 pb-6 mb-4">
                  <h3 className="text-2xl font-bold text-[#323053]">
                    {selectedOption === "insurance" ? "Life Insurance Details" : 
@@ -939,7 +944,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          </div>
        )}
        
-       <div className="flex justify-between mt-8">
+       <div className={`flex justify-between mt-8 transition-all duration-700 ease-in-out delay-700 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
          <button
            type="button"
            onClick={handleBackClick}
@@ -992,6 +997,9 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        .transition-all {
          transition-property: all;
        }
+       .duration-200 {
+         transition-duration: 200ms;
+       }
        .duration-300 {
          transition-duration: 300ms;
        }
@@ -1013,17 +1021,26 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        .delay-450 {
          transition-delay: 450ms;
        }
+       .delay-600 {
+         transition-delay: 600ms;
+       }
+       .delay-700 {
+         transition-delay: 700ms;
+       }
        .opacity-0 {
          opacity: 0;
        }
        .opacity-100 {
          opacity: 1;
        }
+       .translate-y-0 {
+         transform: translateY(0);
+       }
        .translate-y-4 {
          transform: translateY(1rem);
        }
-       .translate-y-0 {
-         transform: translateY(0);
+       .translate-y-8 {
+         transform: translateY(2rem);
        }
        .transform {
          transform-origin: center;
@@ -1036,6 +1053,12 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        }
        .hover\\:scale-\\[1\\.03\\]:hover {
          transform: scale(1.03);
+       }
+       .max-h-0 {
+         max-height: 0;
+       }
+       .max-h-96 {
+         max-height: 24rem;
        }
      `}</style>
    </div>
