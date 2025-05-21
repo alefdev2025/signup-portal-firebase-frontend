@@ -10,7 +10,6 @@ import alcorStarSelected from "../../assets/images/alcor-star.png";
 import insuranceImage from "../../assets/images/policy-purple.png";
 import prepayImage from "../../assets/images/bank-purple.png";
 import laterImage from "../../assets/images/decision-tree-purple.png";
-//import { setForceNavigation } from "../../services/storage";
 
 // Import funding service
 import fundingService from "../../services/funding";
@@ -84,23 +83,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  });
  
  // Add state for policy resources dropdown
- const [animationsLoaded, setAnimationsLoaded] = useState(false);
-
- // Animation trigger after initial render
- useEffect(() => {
-   // Delay the animation trigger slightly for better effect
-   const timer = setTimeout(() => {
-     setAnimationsLoaded(true);
-   }, 100);
-   
-   return () => clearTimeout(timer);
- }, []);
- 
- // CSS classes for fade-in animations
- const fadeIn = animationsLoaded ? "opacity-100" : "opacity-0";
- const fadeInDelay1 = animationsLoaded ? "opacity-100 delay-150" : "opacity-0";
- const fadeInDelay2 = animationsLoaded ? "opacity-100 delay-300" : "opacity-0";
- const fadeInDelay3 = animationsLoaded ? "opacity-100 delay-450" : "opacity-0";
+ const [policyResourcesExpanded, setPolicyResourcesExpanded] = useState(false);
  
  // Load package info when component mounts
  useEffect(() => {
@@ -292,7 +275,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
      icon: insuranceImage,
      benefits: [
        "Low monthly payments",
-       "Coverage increases over time"
+       "Term or Whole Life Options"
      ]
    },
    prepay: {
@@ -301,7 +284,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
      icon: prepayImage,
      benefits: [
        "Single payment covers all costs",
-       "No ongoing payments required"
+       "No ongoing insurance payments"
      ]
    },
    later: {
@@ -338,6 +321,17 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  // Check if the user has basic membership
  const hasBasicMembership = packageInfo && packageInfo.preservationType === "basic";
  
+ // Format price for display
+ const formatCurrency = (amount) => {
+   if (!amount) return "";
+   return new Intl.NumberFormat('en-US', {
+     style: 'currency',
+     currency: 'USD',
+     minimumFractionDigits: 0,
+     maximumFractionDigits: 0
+   }).format(amount);
+ };
+ 
  return (
    <div 
      className="w-full bg-gray-100" 
@@ -362,90 +356,109 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          </div>
        ) : (
          <div className="mb-8">
-           {packageInfo && (
-             <div className={`bg-white p-6 rounded-xl mb-6 shadow-sm transition-opacity duration-700 linear ${fadeIn}`}>
-               <h2 className="text-2xl font-bold text-[#323053] mb-2">Your Selected Package</h2>
-               <div className="flex flex-wrap">
-                 <div className="w-full md:w-1/2 mb-4 md:mb-0">
-                   <p className="text-gray-700 mb-2">
-                     <span className="font-semibold">Package Type:</span> {packageInfo.packageType === "standard" ? "Standard" : packageInfo.packageType === "premium" ? "Premium" : "Basic"}
-                   </p>
-                   <p className="text-gray-700 mb-2">
-                     <span className="font-semibold">Preservation Type:</span> {packageInfo.preservationType === "neuro" ? "Neuropreservation" : packageInfo.preservationType === "wholebody" ? "Whole Body" : "Basic Membership"}
-                   </p>
-                 </div>
-                 <div className="w-full md:w-1/2">
-                   <p className="text-gray-700 mb-2">
-                     <span className="font-semibold">Annual Cost:</span> ${packageInfo.annualCost}/year
-                   </p>
-                   {packageInfo.preservationEstimate && (
-                     <p className="text-gray-700">
-                       <span className="font-semibold">Preservation Estimate:</span> ${packageInfo.preservationEstimate.toLocaleString()}
-                     </p>
-                   )}
-                 </div>
-               </div>
-               
-               {hasBasicMembership && (
-                 <div className={`mt-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded flex items-start transition-opacity duration-700 linear ${fadeInDelay1}`}>
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-500 mr-3 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                   </svg>
-                   <div>
-                     <p className="font-bold text-amber-800">Basic Membership doesn't include cryopreservation</p>
-                     <p className="text-amber-700 mt-1">
-                       This covers membership dues only. If you want cryopreservation, <a href="/signup/package?force=true" className="underline font-semibold hover:text-amber-800">go back</a> and select Neuropreservation or Whole Body.
-                     </p>
-                   </div>
-                 </div>
-               )}
-             </div>
-           )}
+           {/* No package header information here - we'll only show it within the cards */}
            
            {hasBasicMembership ? (
-             <div className={`bg-white p-8 rounded-xl shadow-sm transition-opacity duration-700 linear ${fadeInDelay2}`}>
-               <h2 className="text-2xl font-bold text-[#323053] mb-6 flex items-center">
-                 Basic Membership Information
-                 <img src={alcorStar} alt="Star" className="ml-3 w-8 h-8" />
+             <div className="mb-8">
+               <h2 className="text-3xl font-bold text-[#323053] mb-6 flex items-center">
+                 Basic Membership: <span className="text-[#775684] ml-3">{packageInfo && packageInfo.annualCost ? formatCurrency(packageInfo.annualCost) : "$540"}/year</span>
                </h2>
                
-               <div className={`bg-[#f5f0f8] p-8 rounded-lg mb-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
-                 <div className="flex items-start">
-                   <div className="bg-[#775684] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                     </svg>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* What Happens Next Card (NOW ON LEFT) */}
+                 <div className="rounded-lg overflow-hidden shadow-md h-full">
+                   <div className="bg-gradient-to-l from-[#323053] to-[#454575] text-white p-10" style={{ minHeight: '320px' }}>
+                     <div className="flex items-center mb-8">
+                       <div className="bg-[#575790] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                         </svg>
+                       </div>
+                       <h4 className="text-2xl font-semibold text-white flex items-center">
+                         What happens next?<img src={alcorStar} alt="Star" className="ml-2 w-10 h-10 filter brightness-0 invert" />
+                       </h4>
+                     </div>
+                     
+                     <div className="mt-8 pl-14">
+                       <p className="text-gray-200 text-xl leading-relaxed mb-8">
+                         After completing your Basic Membership, you'll receive information about upgrading to cryopreservation. Your Alcor advisor will guide you through options when you're ready.
+                       </p>
+                       
+                       <div className="mt-8 text-gray-200">
+                         <h5 className="text-xl font-semibold mb-4">Future Funding Options:</h5>
+                         <div className="flex flex-col space-y-6">
+                           <div className="flex items-center">
+                             <div className="bg-[#454575] p-3 rounded-lg mr-4 flex-shrink-0">
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                               </svg>
+                             </div>
+                             <span className="text-lg">Life Insurance (monthly premiums)</span>
+                           </div>
+                           
+                           <div className="flex items-center">
+                             <div className="bg-[#454575] p-3 rounded-lg mr-4 flex-shrink-0">
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                               </svg>
+                             </div>
+                             <span className="text-lg">Prepayment (one-time payment)</span>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
                    </div>
-                   <div>
-                     <h3 className="text-xl font-semibold text-[#323053] mb-3">Funding Notice</h3>
-                     <p className="text-gray-700 text-lg">
-                       With a Basic Membership, you don't need to set up life insurance or prepayment for cryopreservation at this time. Your membership begins with annual dues only.
-                     </p>
+                 </div>
+                 
+                 {/* Funding Notice Card (NOW ON RIGHT) */}
+                 <div className="rounded-lg overflow-hidden shadow-md h-full">
+                   <div className="bg-gradient-to-l from-[#11243a] to-[#1c324c] text-white p-10" style={{ minHeight: '320px' }}>
+                     <div className="flex items-center mb-8">
+                       <div className="bg-[#293253] p-3 rounded-lg shadow-md mr-4" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                         </svg>
+                       </div>
+                       <h3 className="text-2xl font-semibold text-white flex items-center">
+                         Funding Notice<img src={alcorStar} alt="Star" className="ml-2 w-10 h-10 filter brightness-0 invert" />
+                       </h3>
+                     </div>
+                     
+                     <div className="mt-8 pl-14">
+                       <p className="text-gray-200 text-xl leading-relaxed mb-8">
+                         With a Basic Membership, you don't need to set up life insurance or prepayment for cryopreservation at this time. Your membership begins with annual dues only.
+                       </p>
+                       
+                       <div className="mt-8">
+                         <h5 className="text-xl font-semibold text-white mb-5">What's Included:</h5>
+                         <div className="space-y-4 pl-2">
+                           <div className="flex items-center">
+                             <img src={alcorStar} alt="Star" className="w-6 h-6 mr-3 filter brightness-0 invert" />
+                             <span className="text-gray-200 text-lg">Member Events & Resources</span>
+                           </div>
+                           <div className="flex items-center">
+                             <img src={alcorStar} alt="Star" className="w-6 h-6 mr-3 filter brightness-0 invert" />
+                             <span className="text-gray-200 text-lg">Pet Preservation Options</span>
+                           </div>
+                           <div className="flex items-center">
+                             <img src={alcorStar} alt="Star" className="w-6 h-6 mr-3 filter brightness-0 invert" />
+                             <span className="text-gray-200 text-lg">Add On Cryopreservation Anytime</span>
+                           </div>
+                           <div className="flex items-center">
+                             <img src={alcorStar} alt="Star" className="w-6 h-6 mr-3 filter brightness-0 invert" />
+                             <span className="text-gray-200 text-lg">Consultation Services</span>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
                    </div>
                  </div>
                </div>
                
-               <div className={`bg-[#f8f8f0] p-8 rounded-lg mt-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
-                 <div className="flex items-start">
-                   <div className="bg-[#d8b453] p-4 mr-5 rounded-lg shadow-md" style={{ minWidth: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                     </svg>
-                   </div>
-                   <div>
-                     <h4 className="text-xl font-semibold text-[#323053] mb-3 flex items-center">
-                       What happens next?
-                       <img src={alcorStar} alt="Star" className="ml-3 w-7 h-7" />
-                     </h4>
-                     <p className="text-gray-700 text-lg">
-                       After completing your Basic Membership, you'll receive information about upgrading to cryopreservation. Your Alcor advisor will guide you through options when you're ready.
-                     </p>
-                   </div>
-                 </div>
-               </div>
+               {/* What's Included Section - REMOVED as it has been added to the boxes */}
              </div>
            ) : (
-             <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 transition-opacity duration-700 linear ${fadeInDelay2}`}>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                {availableOptions.includes("insurance") && (
                  <div 
                    onClick={() => selectOption("insurance")} 
@@ -551,7 +564,11 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                          <div className="pt-2">
                            <div className="flex justify-between items-center mb-3">
                              <span className="text-gray-600 text-xl">Payment:</span>
-                             <span className="text-[#2D3050] font-bold text-xl">One-time</span>
+                             <span className="text-[#2D3050] font-bold text-xl">
+                               {packageInfo && packageInfo.preservationType !== "basic" 
+                                 ? formatCurrency(packageInfo.preservationEstimate) 
+                                 : "One-time"}
+                             </span>
                            </div>
                            <div className="flex justify-between items-center">
                              <span className="text-gray-600 text-xl">Complexity:</span>
@@ -610,12 +627,12 @@ export default function FundingPage({ initialData, onBack, onNext }) {
                        
                        <div className="bg-white px-8 py-6 border-t border-gray-200">
                        <p className="text-gray-700 text-xl mb-6">
-                         Start your contract today, decide on funding method later.
+                         Start your membership today, decide on funding method later.
                        </p>
                        
                        <div className="pt-2">
                          <div className="flex justify-between items-center mb-3">
-                           <span className="text-gray-600 text-xl">Contract:</span>
+                           <span className="text-gray-600 text-xl">Intent:</span>
                            <span className="text-[#13233e] font-bold text-xl">Cryopreservation</span>
                          </div>
                          <div className="flex justify-between items-center">
@@ -644,7 +661,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            )}
            
            {!hasBasicMembership && (
-             <div className={`mt-8 bg-white p-8 rounded-lg transition-opacity duration-700 linear ${fadeInDelay3}`}>
+             <div className="mt-8 bg-white p-8 rounded-lg">
                <div className="border-b border-gray-200 pb-6 mb-4">
                  <h3 className="text-2xl font-bold text-[#323053]">
                    {selectedOption === "insurance" ? "Life Insurance Details" : 
@@ -985,7 +1002,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          </div>
        )}
        
-       <div className={`flex justify-between mt-8 transition-opacity duration-700 linear ${fadeInDelay3}`}>
+       <div className="flex justify-between mt-8">
          <button
            type="button"
            onClick={handleBackClick}
@@ -1036,7 +1053,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
      {/* Global animation styles */}
      <style jsx global>{`
        .transition-all {
-         transition-property: opacity;
+         transition-property: all;
        }
        .duration-300 {
          transition-duration: 300ms;
@@ -1048,7 +1065,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          transition-duration: 700ms;
        }
        .ease-in-out {
-         transition-timing-function: linear;
+         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
        }
        .delay-150 {
          transition-delay: 150ms;
@@ -1065,8 +1082,17 @@ export default function FundingPage({ initialData, onBack, onNext }) {
        .opacity-100 {
          opacity: 1;
        }
+       .translate-y-4 {
+         transform: translateY(1rem);
+       }
+       .translate-y-0 {
+         transform: translateY(0);
+       }
        .transform {
          transform-origin: center;
+       }
+       .scale-100 {
+         transform: scale(1);
        }
        .hover\\:scale-\\[1\\.02\\]:hover {
          transform: scale(1.02);
