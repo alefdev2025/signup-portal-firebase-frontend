@@ -187,7 +187,7 @@ const handleStepClick = (progressIndex) => {
       case 2: return "Contact information"; // Contact info
       case 3: return "Package selection"; // Package
       case 4: return "Funding Options"; // Funding
-      case 5: return "Membership confirmation"; // Membership
+      case 5: return "Start Your Membership"; // Membership
       default: return "Become a member";
     }
   };
