@@ -7,7 +7,7 @@ import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 import HelpPanel from "./HelpPanel";
 import { updateSignupProgressAPI } from "../../services/auth";
-import { savePackageInfo } from "../../services/package";
+import { savePackageInfo, getPackageInfo } from "../../services/package";
 
 // TOGGLE BETWEEN VERSIONS: set to true for the updated design, false for the original
 const USE_UPDATED_VERSION = false;
@@ -105,6 +105,70 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       )
     }
   };
+// Add this useEffect after your existing useEffects in PackagePage.jsx
+// Load saved package info on component mount
+useEffect(() => {
+  // Add a flag to prevent multiple calls
+  let isMounted = true;
+  
+  async function loadSavedPackageInfo() {
+    try {
+      console.log("PackagePage: Loading saved package info...");
+      const result = await getPackageInfo();
+      
+      // Check if component is still mounted before updating state
+      if (!isMounted) return;
+      
+      if (result?.success && result?.packageInfo) {
+        console.log("PackagePage: Found saved package info:", result.packageInfo);
+        
+        // Extract the preservation type from the actual data structure
+        const savedPreservationType = result.packageInfo.details?.preservationType || 
+                                    result.packageInfo.packageDetails?.preservationType || 
+                                    result.packageInfo.preservationType;
+        
+        // Extract the package type from the actual data structure  
+        const savedPackageType = result.packageInfo.type || 
+                               result.packageInfo.packageType || 
+                               result.packageInfo.packageDetails?.packageType;
+        
+        console.log("PackagePage: Extracted preservationType:", savedPreservationType);
+        console.log("PackagePage: Extracted packageType:", savedPackageType);
+        
+        // Set the selected option if we have saved data
+        if (savedPreservationType && isMounted) {
+          console.log("PackagePage: Setting selected option to:", savedPreservationType);
+          setSelectedOption(savedPreservationType);
+        } else {
+          console.log("PackagePage: No preservation type found in saved data");
+        }
+        
+        // Set the selected package type if we have saved data
+        if (savedPackageType && isMounted) {
+          console.log("PackagePage: Setting selected package to:", savedPackageType);
+          setSelectedPackage(savedPackageType);
+        } else {
+          console.log("PackagePage: No package type found in saved data");
+        }
+      } else {
+        console.log("PackagePage: No saved package info found or failed to load");
+      }
+    } catch (error) {
+      console.error("PackagePage: Error loading saved package info:", error);
+      // Don't show error to user for this - it's not critical
+      // User can still make selections normally
+    }
+  }
+  
+  // Always try to load saved info on mount, regardless of initial data
+  console.log("PackagePage: Attempting to load saved package info on mount");
+  loadSavedPackageInfo();
+  
+  // Cleanup function
+  return () => {
+    isMounted = false;
+  };
+}, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     if (!selectedOption && !isLoading) {
