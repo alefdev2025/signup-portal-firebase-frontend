@@ -172,8 +172,74 @@ export const validateFundingData = async (fundingData) => {
   }
 };
 
+// Add this function to services/funding.js
+
+/**
+ * Get user's funding information including selection and package data
+ * @returns {Promise<object>} Funding information
+ */
+ export const getUserFundingInfo = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error("No authenticated user found");
+      throw new Error("User must be authenticated to get funding information");
+    }
+    
+    // Get the Firebase ID token for authentication
+    const token = await user.getIdToken();
+    
+    console.log("Fetching user's funding info");
+    
+    // Call the backend endpoint
+    const fetchPromise = fetch(`${API_BASE_URL}/funding/user-info`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Apply timeout
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
+      )
+    ]);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    // Check for success in the response
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to retrieve funding information');
+    }
+    
+    // The backend returns data.fundingInfo
+    return {
+      success: true,
+      data: result.data?.fundingInfo || null,
+      packageInfo: result.data?.packageInfo || null
+    };
+  } catch (error) {
+    console.error("Error getting user funding info:", error);
+    return { 
+      success: false, 
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+// Update the export default at the bottom:
 export default {
   saveFundingSelection,
   getPackageInfoForFunding,
-  validateFundingData
+  validateFundingData,
+  getUserFundingInfo  // Add this line
 };

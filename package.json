@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.6",
+    "docusign-click": "^3.0.0",
+    "docusign-esign": "^8.1.0",
     "firebase": "^11.6.1",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
