@@ -9,6 +9,7 @@ import navyALogo from "../../assets/images/navy-a-logo.png";
 // Import membership service
 import membershipService from "../../services/membership";
 import fundingService from "../../services/funding";
+import { getMembershipCost } from "../../services/pricing";
 
 // Define help content
 const membershipHelpContent = [
@@ -59,6 +60,7 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
   const [packageInfo, setPackageInfo] = useState(null);
   const [membershipCosts, setMembershipCosts] = useState(null);
   const [membershipAge, setMembershipAge] = useState(null);
+  const [membershipCost, setMembershipCost] = useState(540); // Default to $540
   
   // Apply Marcellus font
   const marcellusStyle = {
@@ -72,6 +74,29 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // Fetch user's age and membership cost from pricing service (like PackagePage does)
+        const pricingResult = await getMembershipCost();
+        console.log("MembershipPage: getMembershipCost() result:", pricingResult);
+        if (pricingResult?.success) {
+          console.log("MembershipPage: User's age from backend:", pricingResult.age);
+          console.log("MembershipPage: Annual dues from backend:", pricingResult.annualDues);
+          console.log("MembershipPage: Membership cost from backend:", pricingResult.membershipCost);
+          
+          setMembershipAge(pricingResult.age || 36);
+          setMembershipCost(pricingResult.membershipCost || 540);
+          
+          // Store the membership costs from the pricing service
+          setMembershipCosts({
+            annualDues: pricingResult.annualDues,
+            monthlyDues: pricingResult.monthlyDues,
+            duesMultiplier: pricingResult.duesMultiplier,
+            membershipCost: pricingResult.membershipCost
+          });
+        } else {
+          console.log("MembershipPage: Failed to get data from backend, using defaults");
+          console.error("MembershipPage: Error from pricing service:", pricingResult.error);
+        }
         
         // If initialData contains package info, use it
         if (initialData && initialData.packageType && initialData.preservationType) {
@@ -103,13 +128,12 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
           }
         }
         
-        // Load membership costs
+        // Load membership costs - this might be redundant now
         const costsResult = await membershipService.getMembershipCosts();
         if (costsResult.success) {
-          setMembershipCosts(costsResult.data);
-          // Also get the user's age from the membership cost result
-          if (costsResult.age) {
-            setMembershipAge(costsResult.age);
+          // Only update if we didn't get costs from pricing service
+          if (!membershipCosts) {
+            setMembershipCosts(costsResult.data);
           }
         }
         
@@ -248,9 +272,9 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
   
   // Calculate pricing based on package info
   const getAnnualCost = () => {
-    // This should return the annual membership dues, not preservation cost
-    // Default annual membership is $540
-    return 540;
+    // Use membershipCost from backend (same as PackagePage uses)
+    console.log("getAnnualCost: Using membershipCost:", membershipCost);
+    return membershipCost;
   };
   
   const getMonthlyCost = () => {
@@ -263,8 +287,15 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
   
   // Calculate lifetime membership cost based on age
   const getLifetimeCost = () => {
-    // Get user's age from context or initial data
-    const userAge = user?.age || initialData?.age || membershipAge || 40; // Default to 40 if no age available
+    // Get user's age - prioritize membershipAge from pricing service, then other sources
+    const userAge = membershipAge || user?.age || initialData?.age || 40; // Default to 40 if no age available
+    
+    console.log("MembershipPage: getLifetimeCost calculation:", {
+      membershipAge: membershipAge,
+      userAge_from_context: user?.age,
+      userAge_from_initialData: initialData?.age,
+      final_userAge: userAge
+    });
     
     // Calculate years remaining (assuming life expectancy of 80)
     const yearsRemaining = Math.max(80 - userAge, 10); // Minimum 10 years
