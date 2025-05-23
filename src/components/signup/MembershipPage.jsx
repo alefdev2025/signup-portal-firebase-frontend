@@ -623,17 +623,17 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
                 
                 {/* Validation messages - Full width below input */}
                 {iceCode.trim() && iceCodeValid === true && iceCodeInfo && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-4">
+                  <div className="bg-[#f0f2ff] border border-[#e0e3ff] rounded-lg p-6 mb-4">
                     <div className="flex items-center mb-4">
-                      <svg className="h-6 w-6 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-6 w-6 text-black mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-green-800 font-bold text-2xl">Valid ICE Code!</span>
+                      <span className="text-black font-bold text-2xl">Valid ICE Code!</span>
                     </div>
-                    <div className="text-green-700 space-y-3 text-xl">
+                    <div className="text-black space-y-3 text-xl">
                       <p>Educator: <span className="font-semibold">{iceCodeInfo.educatorName}</span></p>
                       <p>Your Discount: <span className="font-semibold text-2xl">25% ({formatCurrency(costs.discountAmount)}) - First Year Only</span></p>
-                      <p className="text-green-600 text-lg mt-4">💡 Complete a cryopreservation contract to increase your discount to 50%!</p>
+                      <p className="text-black text-lg mt-4">💡 Complete a cryopreservation contract to increase your discount to 50%!</p>
                     </div>
                   </div>
                 )}
