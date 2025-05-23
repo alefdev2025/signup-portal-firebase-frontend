@@ -18,8 +18,8 @@ export const saveFundingSelection = async (fundingData) => {
       
       console.log("Saving funding selection to API:", fundingData);
       
-      // Call the backend endpoint with a timeout
-      const fetchPromise = fetch(`${API_BASE_URL}/funding/update-funding`, { // Changed from update to update-funding
+      // Call the CORRECT backend endpoint
+      const fetchPromise = fetch(`${API_BASE_URL}/funding/save`, { // Changed from update-funding to save
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -68,8 +68,8 @@ export const getPackageInfoForFunding = async () => {
       
       console.log("Fetching package info for funding options");
       
-      // Call the CORRECT backend endpoint with a timeout
-      const fetchPromise = fetch(`${API_BASE_URL}/funding/user-package`, { // Changed from package-info to user-package
+      // Call the CORRECT backend endpoint
+      const fetchPromise = fetch(`${API_BASE_URL}/funding/user-package`, { // This is correct
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
