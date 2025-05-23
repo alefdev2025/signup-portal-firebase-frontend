@@ -723,7 +723,7 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
                 {/* Demo codes hint */}
                 {!iceCode.trim() && (
                   <div className="text-base text-gray-500">
-                    <p>Demo: d39360, ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
+                    <p>Demo: ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
                   </div>
                 )}
               </div>
@@ -735,12 +735,11 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
                     <svg className="h-6 w-6 text-black mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-black font-bold text-2xl">Valid ICE Code!</span>
+                    <span className="text-black font-bold text-2xl">ICE Code Accepted</span>
                   </div>
                   <div className="text-black space-y-3 text-xl">
-                    <p>Educator: <span className="font-semibold">{iceCodeInfo.educatorName}</span></p>
                     <p>Your Discount: <span className="font-semibold text-2xl">25% ({formatCurrency(costs.discountAmount)}) - First Year Only</span></p>
-                    <p className="text-black text-lg mt-4">💡 Complete a cryopreservation contract to increase your discount to 50%!</p>
+                    <p className="text-black text-lg mt-4">Complete a cryopreservation contract to increase your discount to 50%!</p>
                   </div>
                 </div>
               )}
@@ -785,7 +784,7 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
               </p>
               <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
                 <p className="text-gray-700 text-xl">
-                  <strong className="text-2xl">Note:</strong> If you select lifetime membership, you'll submit only a membership application today and won't start your membership. We'll contact you within 24-48 hours to finalize your lifetime membership arrangement.
+                  <strong className="text-xl">Note:</strong> If you select lifetime membership, you'll submit only a membership application today and won't start your membership. We'll contact you within 24-48 hours to finalize your lifetime membership arrangement.
                 </p>
               </div>
             </label>
