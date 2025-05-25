@@ -1,9 +1,9 @@
-// Fixed UserContext.jsx - Remove blocking that prevents backend fetch
+// Fixed UserContext.jsx - Use the same API as ResponsiveBanner
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebase";
+import { auth } from "../services/firebase";
 import { saveSignupState, clearSignupState, getSignupState } from "../services/storage";
+import { checkUserStep } from "../services/auth";
 
 const LOG_TO_TERMINAL = (message) => {
   console.log(`[USER CONTEXT] ${message}`);
@@ -33,26 +33,25 @@ const UserProvider = ({ children }) => {
     if (!user) return null;
     
     LOG_TO_TERMINAL(`Refreshing user progress for uid: ${user.uid}`);
+    LOG_TO_TERMINAL(`Using checkUserStep API instead of direct Firestore`);
     
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userSnapshot = await getDoc(userDocRef);
+      const result = await checkUserStep({ userId: user.uid });
+      LOG_TO_TERMINAL(`checkUserStep API result: ${JSON.stringify(result)}`);
       
-      if (userSnapshot.exists()) {
-        const userData = userSnapshot.data();
-        
+      if (result.success) {
         const newSignupState = {
           userId: user.uid,
           email: user.email,
-          displayName: user.displayName || userData.displayName || "New Member",
-          signupStep: userData.signupStep || "account",
-          signupProgress: userData.signupProgress || 0,
-          signupCompleted: userData.signupCompleted || false,
-          lastUpdated: userData.lastUpdated ? userData.lastUpdated.toDate() : new Date(),
+          displayName: user.displayName || "New Member",
+          signupStep: result.stepName || "account",
+          signupProgress: result.step || 0,
+          signupCompleted: result.isCompleted || false,
+          lastUpdated: new Date(),
           timestamp: Date.now()
         };
         
-        LOG_TO_TERMINAL(`Got signup state from backend: ${JSON.stringify({
+        LOG_TO_TERMINAL(`Got signup state from API: ${JSON.stringify({
           signupStep: newSignupState.signupStep,
           signupProgress: newSignupState.signupProgress,
           signupCompleted: newSignupState.signupCompleted,
@@ -63,7 +62,8 @@ const UserProvider = ({ children }) => {
         return newSignupState;
         
       } else {
-        LOG_TO_TERMINAL("No user document found, creating default state");
+        LOG_TO_TERMINAL(`API returned error: ${result.error || 'Unknown error'}`);
+        LOG_TO_TERMINAL("Creating default state");
         const defaultState = {
           userId: user.uid,
           email: user.email,
@@ -79,8 +79,22 @@ const UserProvider = ({ children }) => {
         return defaultState;
       }
     } catch (error) {
-      LOG_TO_TERMINAL(`Error refreshing user progress: ${error.message}`);
-      return null;
+      LOG_TO_TERMINAL(`API CALL ERROR: ${error.message}`);
+      LOG_TO_TERMINAL("Creating default state due to error");
+      
+      const defaultState = {
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        signupStep: "account",
+        signupProgress: 0,
+        signupCompleted: false,
+        timestamp: Date.now()
+      };
+      
+      setSignupState(defaultState);
+      saveSignupState(defaultState);
+      return defaultState;
     }
   };
   
@@ -127,8 +141,8 @@ const UserProvider = ({ children }) => {
             setSignupState(tempState);
             saveSignupState(tempState);
           } else {
-            // ALWAYS fetch from backend for login cases
-            LOG_TO_TERMINAL("Fetching user data from backend");
+            // ALWAYS fetch from backend using API
+            LOG_TO_TERMINAL("Fetching user data from API");
             await refreshUserProgress(user);
           }
         } else {

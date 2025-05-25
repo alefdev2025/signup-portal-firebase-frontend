@@ -695,10 +695,10 @@ const AccountCreationStep = () => {
         localStorage.setItem('just_verified', 'true');
         localStorage.setItem('verification_timestamp', Date.now().toString());
         
-        // Navigate to success step (step 1) using your SignupFlow routing
-        navigateToStep(1, { reason: 'google_signin_success', force: true });
+        // REMOVE THIS LINE - let UserContext handle navigation
+        // navigateToStep(1, { reason: 'google_signin_success', force: true });
         
-        console.log("✅ Google sign-in completed - navigating to success step");
+        console.log("✅ Google sign-in completed - UserContext will handle navigation");
       } else if (result.accountConflict) {
         // Handle account conflicts like in your original
         const email = result.email || result.existingEmail || '';
