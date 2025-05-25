@@ -503,7 +503,13 @@ const AccountCreationForm = ({
         
         <div className="text-center">
           <p className="text-gray-700 text-sm sm:text-base">
-            Already have an account? <a href="/" className="text-brand-purple">Login</a>
+            Already have an account? <button 
+              type="button"
+              onClick={() => window.location.href = '/login?continue=signup'} 
+              className="text-brand-purple hover:underline bg-transparent border-none cursor-pointer"
+            >
+              Login
+            </button>
           </p>
         </div>
       </form>

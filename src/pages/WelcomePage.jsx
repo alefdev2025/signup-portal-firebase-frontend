@@ -1,4 +1,4 @@
-// File: pages/WelcomePage.jsx - FIXED NAVIGATION
+// File: pages/WelcomePage.jsx - FIXED: Only logout on explicit visit
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveBanner from "../components/ResponsiveBanner";
@@ -14,10 +14,10 @@ const steps = ["Account", "Contact Info", "Method", "Funding", "Membership"];
 const WelcomePage = () => {
   const navigate = useNavigate();
 
-  // Clear ALL state when the Welcome page loads
+  // Clear ALL state when the Welcome page loads - ALWAYS log out
   useEffect(() => {
     const clearAllState = async () => {
-      console.log("Clearing all state on WelcomePage mount");
+      console.log("Clearing all state on WelcomePage mount - ALWAYS logging out");
       try {
         // Clear all localStorage items
         localStorage.removeItem('alcor_signup_state');
@@ -27,7 +27,7 @@ const WelcomePage = () => {
         localStorage.removeItem('emailForSignIn');
         localStorage.removeItem('fresh_signup');
         
-        // EXPLICITLY clear account_creation_success flag
+        // Clear account creation flags
         localStorage.removeItem('account_creation_success');
         localStorage.removeItem('force_active_step');
         localStorage.removeItem('force_timestamp');
@@ -38,14 +38,32 @@ const WelcomePage = () => {
         
         // Clear any other stray flags
         localStorage.removeItem('has_navigated');
+        localStorage.removeItem('block_navigation');
         
-        // Sign out user if they're logged in
+        // Clear session storage
+        sessionStorage.clear();
+        
+        // ALWAYS sign out user - wait for completion
         try {
           await logout();
+          console.log("User logged out successfully");
+          
+          // FORCE clear ALL Firebase and app state
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Wait for Firebase to fully clear
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
         } catch (logoutError) {
           console.error("Logout error (non-critical):", logoutError);
-          // Continue anyway - we've cleared the localStorage
+          // Still clear storage even if logout fails
+          localStorage.clear();
+          sessionStorage.clear();
         }
+        
+        console.log("Logout process complete");
+        
       } catch (error) {
         console.error("Error clearing state:", error);
       }
@@ -56,30 +74,44 @@ const WelcomePage = () => {
 
   // SIMPLIFIED: Use React Router navigation for clean signup start
   const goToSignup = async () => {
+    console.log("Get Started button clicked, navigating to signup");
+    
+    // FORCE logout before going to signup
     try {
-      console.log("Get Started button clicked, clearing state and redirecting");
-      
-      // Clear all localStorage items
-      localStorage.clear(); // Clear everything for a fresh start
-      
-      // First, ensure the user is fully logged out
       await logout();
+      console.log("Force logout before signup navigation");
+      localStorage.clear();
+      sessionStorage.clear();
       
-      // Add a flag to indicate a fresh start
-      localStorage.setItem('fresh_signup', 'true');
-      
-      // Navigate to signup using React Router (clean navigation)
-      navigate('/signup');
-      
+      // Wait a bit to ensure logout completes
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
-      console.error("Error in goToSignup:", error);
-      // Fallback to direct navigation
-      navigate('/signup');
+      console.log("Logout error before navigation:", error);
     }
+    
+    // Add a flag to indicate a fresh start
+    localStorage.setItem('fresh_signup', 'true');
+    
+    // Navigate to signup
+    navigate('/signup');
   };
   
-  const goToLogin = (continueSignup = false) => {
+  const goToLogin = async (continueSignup = false) => {
     console.log(`Login button clicked, continueSignup=${continueSignup}`);
+    
+    // FORCE logout before going to login page
+    try {
+      await logout();
+      console.log("Force logout before login navigation");
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Wait a bit to ensure logout completes
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.log("Logout error before navigation:", error);
+    }
+    
     if (continueSignup) {
       navigate('/login?continue=signup');
     } else {
