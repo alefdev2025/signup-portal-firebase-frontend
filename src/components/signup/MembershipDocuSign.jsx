@@ -290,7 +290,7 @@ export default function MembershipDocuSign({
       
       const result = await createEmbeddedEnvelope({
         signerData: docuSignData,
-        templateId: "95ed7297-a975-4928-9595-ac2346f0c504",
+        templateId: "04610984-8920-4094-ac13-5c2d0914108c",
         clientUserId: `${docuSignData.email}_${Date.now()}`,
         returnUrl: `${window.location.origin}/signup/membership`
       });

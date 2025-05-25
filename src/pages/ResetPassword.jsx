@@ -234,7 +234,7 @@ const ResetPasswordPage = () => {
       />
       
       <div className="flex-1 flex justify-center items-start px-4 sm:px-8 md:px-12 pb-16 sm:pb-12 pt-12 sm:pt-8">
-        <div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="w-full max-w-lg bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-8">
             {/* Show messages */}
             {message && !resetSuccessful && (

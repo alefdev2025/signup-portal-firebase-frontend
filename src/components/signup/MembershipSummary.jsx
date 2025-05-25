@@ -290,15 +290,6 @@ export default function MembershipSummary({
             </div>
           )}
 
-          {/* Page Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 mr-3" />
-              <h1 className="text-4xl font-bold text-[#323053]">Review Your Membership</h1>
-            </div>
-            <p className="text-xl text-gray-600">Please review all details before proceeding to sign your agreement</p>
-          </div>
-
           {/* Contact Information Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
             <div className="mb-8 flex items-start pt-4">
