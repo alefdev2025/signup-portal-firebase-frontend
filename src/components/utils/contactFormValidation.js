@@ -1,5 +1,3 @@
-// File: utils/contactFormValidation.js
-
 import { isCountyRequiredForCountry } from './contactCountryConfig';
 
 // Validation function

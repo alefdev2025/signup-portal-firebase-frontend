@@ -27,7 +27,7 @@ export const countries = [
 // Countries where county is required
 export const countiesRequiredCountries = [
   "United States",
-  "United Kingdom",
+  "United Kingdom", 
   "Ireland"
 ];
 

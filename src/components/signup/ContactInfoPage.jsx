@@ -7,9 +7,11 @@ import { useUser } from "../../contexts/UserContext";
 // Firebase services
 import { saveContactInfo, getContactInfo } from "../../services/contact";
 
+// Services
+import { addressValidationService } from "../../services/addressValidation";
+
 // Components
-import AddressAutocomplete from "../AddressAutocomplete";
-import AddressAutocompleteV2 from '../AddressAutocompleteV2';
+import AddressAutocompleteV3 from "../AddressAutocompleteV3";
 import HelpPanel from "./HelpPanel";
 import { 
   LabelWithIcon, 
@@ -45,9 +47,9 @@ import {
   fixAutofillCountyIssue 
 } from '../utils/contactBrowserUtils';
 
-
-// Feature flag for enabling country-specific form localization
+// Feature flags
 const ENABLE_LOCALIZATION = import.meta.env.VITE_ENABLE_LOCALIZATION === 'true';
+const ENABLE_ADDRESS_VALIDATION = import.meta.env.VITE_ENABLE_ADDRESS_VALIDATION === 'true';
 
 // Help content for contact info page
 const contactInfoHelpContent = [
@@ -57,7 +59,11 @@ const contactInfoHelpContent = [
   },
   {
     title: "Address Information",
-    content: "Your residential address is required. If you receive mail at a different location, select 'No' for 'Same Mailing Address' and provide your mailing address."
+    content: "Your residential address is required. We validate addresses to ensure accurate shipping. If you receive mail at a different location, select 'No' for 'Same Mailing Address'."
+  },
+  {
+    title: "Address Validation",
+    content: "When you click Continue, we'll validate your address using PostGrid to ensure it's deliverable. Any corrections will be applied automatically."
   },
   {
     title: "Phone Numbers",
@@ -73,6 +79,23 @@ const contactInfoHelpContent = [
   }
 ];
 
+// Age validation utility
+const calculateAge = (birthMonth, birthDay, birthYear) => {
+  if (!birthMonth || !birthDay || !birthYear) return null;
+  
+  const today = new Date();
+  const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
+  
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
+
 export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const { currentUser } = useUser();
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
@@ -80,11 +103,18 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   
+  // Age validation state
+  const [showAgeOverlay, setShowAgeOverlay] = useState(false);
+  
   // Form state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState(createInitialFormData());
   const [errors, setErrors] = useState(createInitialErrors());
+
+  // Address validation state
+  const [isValidatingAddresses, setIsValidatingAddresses] = useState(false);
+  const [validationResults, setValidationResults] = useState(null);
 
   // Country configuration
   const [countryConfig, setCountryConfig] = useState(
@@ -108,12 +138,34 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     setShowHelpInfo(prev => !prev);
   };
 
+  // Age validation effect
+  useEffect(() => {
+    const age = calculateAge(formData.birthMonth, formData.birthDay, formData.birthYear);
+    if (age !== null && age < 18) {
+      setShowAgeOverlay(true);
+    } else {
+      setShowAgeOverlay(false);
+    }
+  }, [formData.birthMonth, formData.birthDay, formData.birthYear]);
+
+  useEffect(() => {
+    const handleCustomAddressUpdate = (event) => {
+      console.log("🎯 Received custom address update event:", event.detail);
+      handleAddressSelect(event.detail);
+    };
+  
+    // Listen for the custom event
+    document.addEventListener('addressAutocompleteUpdate', handleCustomAddressUpdate);
+    
+    return () => {
+      document.removeEventListener('addressAutocompleteUpdate', handleCustomAddressUpdate);
+    };
+  }, []);
+
   // Detect Safari browser and apply styles on initial render
   useEffect(() => {
     setIsSafariBrowser(isSafari());
     
-    console.log("API Key Available:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Yes" : "No");
-    console.log("API Key first 5 chars:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.substring(0, 5) + "...");
     console.log("Browser detected as Safari:", isSafariBrowser);
     
     const styleElement = applyContactFormStyles();
@@ -130,72 +182,100 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     fixAutofillCountyIssue(formData, setFormData);
   }, [formData.region, formData.cnty_hm, formData.mailingRegion, formData.cnty_ml]);
 
-// Replace the entire loadDataFromBackend useEffect with this:
-
-useEffect(() => {
-  const loadDataFromBackend = async () => {
-    setIsLoading(true);
-    
-    try {
-      if (currentUser) {
-        console.log("User authenticated, fetching contact info from backend");
-        
-        try {
-          const response = await getContactInfo();
+  // Enhanced data loading with better auto-population
+  useEffect(() => {
+    const loadDataFromBackend = async () => {
+      setIsLoading(true);
+      
+      try {
+        if (currentUser) {
+          console.log("User authenticated, fetching contact info from backend");
           
-          if (response.success && response.contactInfo) {
-            console.log("Successfully retrieved contact info from backend");
+          try {
+            const response = await getContactInfo();
             
-            setFormData(prev => ({
-              ...prev,
-              ...response.contactInfo,
-              email: currentUser.email || response.contactInfo.email || ""
-            }));
-            
-            // Parse date of birth if it exists
-            if (response.contactInfo.dateOfBirth) {
-              const dateFields = parseDateOfBirth(response.contactInfo.dateOfBirth);
+            if (response.success && response.contactInfo) {
+              console.log("Successfully retrieved contact info from backend");
+              
+              // Auto-populate form data with backend data
+              const backendData = {
+                ...response.contactInfo,
+                email: currentUser.email || response.contactInfo.email || ""
+              };
+              
               setFormData(prev => ({
-                ...prev,
-                ...dateFields
+                ...createInitialFormData(), // Start with clean form
+                ...backendData // Overlay with backend data
+              }));
+              
+              // Parse date of birth if it exists
+              if (response.contactInfo.dateOfBirth) {
+                const dateFields = parseDateOfBirth(response.contactInfo.dateOfBirth);
+                setFormData(prev => ({
+                  ...prev,
+                  ...dateFields
+                }));
+              }
+              
+              console.log("Form auto-populated with:", Object.keys(backendData));
+            } else {
+              console.log("No contact info found in backend, checking initialData");
+              
+              // Check for initialData passed from parent
+              if (initialData && Object.keys(initialData).length > 0) {
+                console.log("Using initialData for auto-population");
+                setFormData(prev => ({
+                  ...createInitialFormData(),
+                  ...initialData,
+                  email: currentUser.email || initialData.email || ""
+                }));
+              } else {
+                // Only set email from currentUser
+                setFormData(prev => ({
+                  ...createInitialFormData(),
+                  email: currentUser.email || ""
+                }));
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching contact info:", error);
+            
+            // Fallback to initialData or empty form
+            if (initialData && Object.keys(initialData).length > 0) {
+              setFormData(prev => ({
+                ...createInitialFormData(),
+                ...initialData,
+                email: currentUser.email || initialData.email || ""
+              }));
+            } else {
+              setFormData(prev => ({
+                ...createInitialFormData(),
+                email: currentUser.email || ""
               }));
             }
-          } else {
-            console.log("No contact info found in backend, using empty form");
-            
-            // FIXED: Only set email from currentUser, nothing else
-            setFormData(prev => ({
-              ...createInitialFormData(), // Fresh empty form
-              email: currentUser.email || ""
-            }));
           }
-        } catch (error) {
-          console.error("Error fetching contact info:", error);
+        } else {
+          console.log("User not authenticated, using initialData or empty form");
           
-          // FIXED: On error, use empty form too
-          setFormData(prev => ({
-            ...createInitialFormData(), // Fresh empty form
-            email: currentUser.email || ""
-          }));
+          if (initialData && Object.keys(initialData).length > 0) {
+            setFormData(prev => ({
+              ...createInitialFormData(),
+              ...initialData
+            }));
+          } else {
+            setFormData(createInitialFormData());
+          }
         }
-      } else {
-        console.log("User not authenticated, using empty form");
-        
-        // FIXED: No user = completely empty form
+      } catch (error) {
+        console.error("Error in loadDataFromBackend:", error);
         setFormData(createInitialFormData());
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error in loadDataFromBackend:", error);
-      
-      // FIXED: Any error = empty form
-      setFormData(createInitialFormData());
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  loadDataFromBackend();
-}, [currentUser]); // FIXED: Remove initialData dependency completely
+    };
+    
+    loadDataFromBackend();
+  }, [currentUser, initialData]);
 
   // Parse existing dateOfBirth into separate fields when loading the component
   useEffect(() => {
@@ -234,6 +314,11 @@ useEffect(() => {
       }));
     }
     
+    // Clear validation results when address fields change
+    if (name.includes('Address') || name.includes('City') || name.includes('Region') || name.includes('PostalCode')) {
+      setValidationResults(null);
+    }
+    
     // Special handling for same mailing address
     if (name === 'sameMailingAddress' && value === "Yes") {
       const mailingData = handleSameMailingAddress(value, formData);
@@ -255,7 +340,6 @@ useEffect(() => {
     }
   };
 
-  // Fix for autofill - Add this handler
   const handleInput = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -282,26 +366,72 @@ useEffect(() => {
       }
     }
   };
+
+  const debugAddressPopulation = () => {
+    console.log("🔍 CURRENT FORM STATE:");
+    console.log("formData.streetAddress:", formData.streetAddress);
+    console.log("formData.city:", formData.city);
+    console.log("formData.region:", formData.region);
+    console.log("formData.postalCode:", formData.postalCode);
+    console.log("formData.country:", formData.country);
+    
+    console.log("🔍 DOM VALUES:");
+    console.log("DOM streetAddress:", document.getElementById('streetAddress')?.value);
+    console.log("DOM city:", document.getElementById('city')?.value);
+    console.log("DOM region:", document.getElementById('region')?.value);
+    console.log("DOM postalCode:", document.getElementById('postalCode')?.value);
+    console.log("DOM country:", document.getElementById('country')?.value);
+  };
   
-  // Handler for address selection from autocomplete
   const handleAddressSelect = (addressData) => {
-    console.log("Address selected in parent component:", addressData);
+    console.log("🏠 === ADDRESS SELECT DEBUG START ===");
+    console.log("🏠 Raw addressData received:", addressData);
     
-    const processedData = processAddressData(addressData, false);
-    setFormData(prev => ({
-      ...prev,
-      ...processedData
-    }));
+    // BEFORE processing
+    console.log("🏠 BEFORE - formData state:", {
+      city: formData.city,
+      region: formData.region, 
+      postalCode: formData.postalCode
+    });
     
-    // Manually force county field to be empty if it exists in DOM
+    // Process the address data (your existing logic)
+    const updatedFormData = {
+      ...formData
+    };
+    
+    // Force remove county field
+    delete updatedFormData.cnty_hm;
+    
+    // Set all the address fields DIRECTLY
+    updatedFormData.streetAddress = addressData.streetAddress || addressData.formattedAddress || "";
+    updatedFormData.city = addressData.city || "";
+    updatedFormData.region = addressData.region || "";
+    updatedFormData.postalCode = addressData.postalCode || "";
+    updatedFormData.country = addressData.country || "United States";
+    updatedFormData.cnty_hm = "";
+    
+    console.log("🏠 PROCESSED data to set:", {
+      streetAddress: updatedFormData.streetAddress,
+      city: updatedFormData.city,
+      region: updatedFormData.region,
+      postalCode: updatedFormData.postalCode,
+      country: updatedFormData.country
+    });
+    
+    // Update the state
+    setFormData(updatedFormData);
+    
+    console.log("🏠 State update called");
+    
+    // Debug after state update
     setTimeout(() => {
-      const countyField = document.getElementById('cnty_hm');
-      if (countyField) {
-        countyField.value = '';
-      }
-    }, 100);
+      console.log("🏠 AFTER setState (500ms later):");
+      debugAddressPopulation();
+      console.log("🏠 === ADDRESS SELECT DEBUG END ===");
+    }, 500);
     
-    // Clear any address-related errors
+    // Clear validation results and errors
+    setValidationResults(null);
     setErrors(prev => ({
       ...prev,
       streetAddress: "",
@@ -322,6 +452,9 @@ useEffect(() => {
       ...prev,
       ...processedData
     }));
+    
+    // Clear validation results since address changed
+    setValidationResults(null);
     
     // Manually force mailing county field to be empty if it exists in DOM
     setTimeout(() => {
@@ -346,13 +479,20 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check age validation first
+    const age = calculateAge(formData.birthMonth, formData.birthDay, formData.birthYear);
+    if (age !== null && age < 18) {
+      setShowAgeOverlay(true);
+      return;
+    }
+    
     // Force sync form data immediately from the DOM
     const updatedData = syncFormDataFromDOM(formData);
     
-    // Validate with updated data
+    // Basic form validation first
     const validationErrors = validateContactForm(updatedData, countryConfig, mailingCountryConfig);
     
-    // Stop if any errors found
+    // Stop if basic validation fails
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       applyErrorStyling(validationErrors);
@@ -360,19 +500,72 @@ useEffect(() => {
       return;
     }
     
-    // If validation passes, continue with submission
     setIsSubmitting(true);
     
     try {
-      console.log("💾 Contact info submission started with fields:", Object.keys(updatedData).join(", "));
+      console.log("💾 Contact info submission started");
       
       // Check authentication
       if (!currentUser || !currentUser.uid) {
         throw new Error("You must be logged in to save contact information. Please refresh and try again.");
       }
       
-      // Save form data
-      const saveResult = await saveContactInfo(updatedData);
+      let finalFormData = updatedData;
+      
+      // Step 1: Validate addresses with PostGrid if enabled
+      if (ENABLE_ADDRESS_VALIDATION) {
+        console.log("📮 Validating addresses with PostGrid...");
+        setIsValidatingAddresses(true);
+        
+        try {
+          const addressValidation = await addressValidationService.validateFormAddresses(updatedData);
+          
+          // DON'T set validation results to state - this was causing the UI flash
+          // setValidationResults(addressValidation); // REMOVED THIS LINE
+          
+          if (addressValidation.hasErrors) {
+            // Show error popup for validation issues
+            const userWantsToContinue = window.confirm(
+              `Address validation found issues:\n${addressValidation.errors.join('\n')}\n\nDo you want to continue anyway?`
+            );
+            
+            if (!userWantsToContinue) {
+              setIsSubmitting(false);
+              setIsValidatingAddresses(false);
+              return;
+            }
+          }
+          
+          // Apply any corrected addresses silently
+          finalFormData = addressValidationService.applyCorrectedAddresses(updatedData, addressValidation);
+          
+          // Show user what was corrected if any corrections were made (optional popup)
+          if (addressValidation.homeAddress?.correctedAddress || addressValidation.mailingAddress?.correctedAddress) {
+            const corrections = [];
+            if (addressValidation.homeAddress?.correctedAddress) {
+              corrections.push('Home address was corrected for better delivery');
+            }
+            if (addressValidation.mailingAddress?.correctedAddress) {
+              corrections.push('Mailing address was corrected for better delivery');
+            }
+            
+            // Optional: You can remove this alert too if you want it completely silent
+            alert(`Address validation complete:\n${corrections.join('\n')}`);
+          }
+          
+          console.log("✅ Address validation completed successfully");
+          
+        } catch (validationError) {
+          console.warn("Address validation failed, continuing with original addresses:", validationError);
+          // Continue with original addresses if validation fails
+        } finally {
+          setIsValidatingAddresses(false);
+        }
+      }
+      
+      // Step 2: Save form data
+      console.log("💾 Saving contact info to backend...");
+      const saveResult = await saveContactInfo(finalFormData);
       
       if (!saveResult) {
         throw new Error("Server error while saving contact information.");
@@ -380,9 +573,9 @@ useEffect(() => {
       
       console.log("✅ Contact info saved successfully!");
       
-      // Call the onNext callback provided by the parent component
+      // Step 3: Proceed to next step
       if (onNext) {
-        const success = await onNext(updatedData);
+        const success = await onNext(finalFormData);
         if (!success) {
           throw new Error("Failed to proceed to next step");
         }
@@ -409,6 +602,18 @@ useEffect(() => {
     }
   };
 
+  const handleAgeOverlayClose = () => {
+    setShowAgeOverlay(false);
+    // Reset the date fields
+    setFormData(prev => ({
+      ...prev,
+      birthMonth: "",
+      birthDay: "",
+      birthYear: "",
+      dateOfBirth: ""
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -425,6 +630,32 @@ useEffect(() => {
       marginRight: 'calc(-50vw + 50%)',
       position: 'relative'
     }}>
+      {/* Simple Age Overlay */}
+      {showAgeOverlay && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pt-20">
+          <div className="bg-white rounded-lg shadow-lg p-10 max-w-lg mx-4 border">
+            <div className="text-center">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-6">Age Requirement</h3>
+              <p className="text-gray-600 mb-8 leading-relaxed text-lg">
+                You must be at least 18 years old to register. If you're interested otherwise, please contact our support team at{" "}
+                <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline font-medium">
+                  support@alcor.com
+                </a>{" "}
+                or call{" "}
+                <a href="tel:8005551234" className="text-[#775684] hover:underline font-medium">
+                  (800) 555-1234
+                </a>.
+              </p>
+              <button
+                onClick={handleAgeOverlayClose}
+                className="bg-[#775684] text-white px-8 py-4 rounded-lg font-medium hover:bg-[#664573] transition-colors text-lg"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full mx-auto px-2 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
         <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
           {/* Personal Information */}
@@ -613,7 +844,7 @@ useEffect(() => {
                 <div className="ml-4 pt-2 md:pt-3">
                   <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Address Information</h2>
                   <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
-                    Your residential address and optional mailing address.
+                    Start typing to search with Google Places. Addresses will be validated when you continue.
                   </p>
                 </div>
               </div>
@@ -622,7 +853,7 @@ useEffect(() => {
                 {/* Home address with Google Places Autocomplete */}
                 <div className="md:col-span-2">
                   <div className="address-autocomplete-field">
-                    <AddressAutocompleteV2
+                    <AddressAutocompleteV3
                       id="streetAddress"
                       name="streetAddress"
                       label="Home Address"
@@ -757,7 +988,7 @@ useEffect(() => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
                     <div className="md:col-span-2">
                       <div className="address-autocomplete-field">
-                        <AddressAutocomplete
+                        <AddressAutocompleteV3
                           id="mailingStreetAddress"
                           name="mailingStreetAddress"
                           label="Mailing Address"
@@ -765,7 +996,7 @@ useEffect(() => {
                           onAddressSelect={handleMailingAddressSelect}
                           required={true}
                           disabled={isSubmitting}
-                          errorMessage={errors.mailingStreetAddress ? "Required field" : ""}
+                          errorMessage={errors.mailingStreetAddress}
                           placeholder="Start typing your mailing address..."
                           isError={!!errors.mailingStreetAddress}
                         />
@@ -883,7 +1114,7 @@ useEffect(() => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Processing...
+                  {isValidatingAddresses ? 'Validating Addresses...' : 'Processing...'}
                 </>
               ) : (
                 <>

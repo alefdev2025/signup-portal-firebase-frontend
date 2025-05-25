@@ -106,16 +106,25 @@ export const handleSameMailingAddress = (value, formData) => {
 
 // Handle address selection data
 export const processAddressData = (addressData, isMailingAddress = false) => {
-  const prefix = isMailingAddress ? 'mailing' : '';
-  const countyField = isMailingAddress ? 'cnty_ml' : 'cnty_hm';
-  
-  const processedData = {};
-  processedData[`${prefix}StreetAddress`] = addressData.streetAddress || addressData.formattedAddress;
-  processedData[`${prefix}City`] = addressData.city || "";
-  processedData[`${prefix}Region`] = addressData.region || addressData.regionShort || "";
-  processedData[`${prefix}PostalCode`] = addressData.postalCode || "";
-  processedData[`${prefix}Country`] = addressData.country || "United States";
-  processedData[countyField] = ""; // Always set county to empty string
-  
-  return processedData;
+  if (isMailingAddress) {
+    // Mailing address fields
+    return {
+      mailingStreetAddress: addressData.streetAddress || addressData.formattedAddress || "",
+      mailingCity: addressData.city || "",
+      mailingRegion: addressData.region || addressData.regionShort || "",
+      mailingPostalCode: addressData.postalCode || "",
+      mailingCountry: addressData.country || "United States",
+      cnty_ml: "" // Always set county to empty string
+    };
+  } else {
+    // Home address fields
+    return {
+      streetAddress: addressData.streetAddress || addressData.formattedAddress || "",
+      city: addressData.city || "",
+      region: addressData.region || addressData.regionShort || "",
+      postalCode: addressData.postalCode || "",
+      country: addressData.country || "United States",
+      cnty_hm: "" // Always set county to empty string
+    };
+  }
 };

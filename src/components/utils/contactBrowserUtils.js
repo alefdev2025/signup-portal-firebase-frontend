@@ -1,5 +1,3 @@
-// File: utils/contactBrowserUtils.js
-
 // Detect if browser is Safari
 export const isSafari = () => {
     const userAgent = navigator.userAgent.toLowerCase();
