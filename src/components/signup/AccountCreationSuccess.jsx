@@ -1,38 +1,35 @@
-// File: components/signup/AccountCreationSuccess.jsx
+// File: components/signup/AccountCreationSuccess.jsx - FIXED
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useSignupFlow } from '../../contexts/SignupFlowContext';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { saveSignupState } from '../../services/storage';
 import alcorFullLogo from '../../assets/images/navy-alcor-logo.png';
 
 const AccountCreationSuccess = ({ currentUser, onNext }) => {
-  const navigate = useNavigate();
+  const { goToNextStep } = useSignupFlow();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Function to directly set backend data and navigate
-  const updateBackendAndNavigate = async () => {
-    console.log("Updating backend data and navigating");
+  // ONLY update backend when user clicks continue, not on render
+  const handleContinue = async () => {
+    console.log("Continue button clicked");
     setIsLoading(true);
     setError(null);
     
     try {
       if (!currentUser || !currentUser.uid) {
-        console.error("No current user or user ID available");
         throw new Error("User authentication required");
       }
       
-      // Get user document reference
       const userDocRef = doc(db, "users", currentUser.uid);
       
       console.log("Updating user document in Firestore...");
-      // Directly update/create the document with progress 1
       await setDoc(userDocRef, {
         email: currentUser.email,
         displayName: currentUser.displayName || "New Member",
         signupStep: "contact_info",
-        signupProgress: 1,
+        signupProgress: 1, // Mark that account creation is complete
         lastUpdated: new Date(),
         ...(await getDoc(userDocRef)).data() // Preserve existing data
       }, { merge: true });
@@ -52,32 +49,25 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
       saveSignupState(signupState);
       console.log("Local state updated with progress 1");
       
-      // Only navigate once everything is complete
-      console.log("Navigating to step 1");
-      navigate('/signup?step=1&force=true', { replace: true });
+      // Navigate to next step
+      if (onNext) {
+        onNext();
+      } else {
+        goToNextStep();
+      }
       
     } catch (error) {
       console.error("Error updating backend:", error);
       setError("There was an issue updating your progress. Please try again.");
+    } finally {
       setIsLoading(false);
-      
-      // Don't navigate automatically on error - let user retry
-    }
-  };
-  
-  const handleContinue = () => {
-    console.log("Continue button clicked");
-    // Don't call updateBackendAndNavigate() here
-    // Instead, use the onNext prop
-    if (onNext) {
-      onNext();
     }
   };
   
   return (
     <div className="w-full max-w-3xl px-2 sm:px-0">
       <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-sm p-6 sm:p-8 mb-8 border border-gray-100 max-w-[85%] sm:max-w-none mx-auto">
-        {/* More compact top section with success icon and text */}
+        {/* Success header */}
         <div className="flex items-center mb-6">
           <div className="bg-gradient-to-br from-[#0C2340] to-[#26396A] rounded-full p-2 sm:p-2.5 shadow-sm mr-3 sm:mr-4 flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,7 +111,7 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
           </div>
         </div>
         
-        {/* Info text with logo */}
+        {/* Info section */}
         <div className="flex justify-between items-center bg-[#0C2340]/5 rounded-xl p-5 mb-8">
           <p className="text-gray-600 text-sm pr-4">
             You can continue with your membership application below.
@@ -130,7 +120,7 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
           <img src={alcorFullLogo} alt="Alcor Logo" className="h-12 hidden sm:block" />
         </div>
         
-        {/* Show error message if there is one */}
+        {/* Error message */}
         {error && (
           <div className="bg-red-50 border border-red-100 text-red-700 p-4 rounded-lg mb-6 text-sm">
             <p className="flex items-center">

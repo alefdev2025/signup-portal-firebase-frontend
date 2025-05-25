@@ -1,6 +1,6 @@
-// src/components/modals/AccountLinkingModal.jsx
+// src/components/modals/AccountLinkingModal.jsx - ROUTER-FREE VERSION
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// REMOVED: import { useNavigate } from 'react-router-dom';
 
 const AccountLinkingModal = ({ 
   isOpen, 
@@ -9,7 +9,7 @@ const AccountLinkingModal = ({
   onLinkAccounts, 
   isLoading 
 }) => {
-  const navigate = useNavigate();
+  // REMOVED: const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   
@@ -70,12 +70,14 @@ const AccountLinkingModal = ({
     }
   };
   
-  // Navigate to login page if user prefers that
+  // ROUTER-FREE: Navigate to login page using native JavaScript
   const handleGoToLogin = () => {
     console.log("===== REDIRECTING TO LOGIN PAGE =====");
-    console.log("Target URL:", `/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
+    const targetUrl = `/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`;
+    console.log("Target URL:", targetUrl);
     
-    navigate(`/login?email=${encodeURIComponent(email)}&continue=signup&provider=password&linkAccounts=true`);
+    // ROUTER-FREE: Use native navigation
+    window.location.href = targetUrl;
     console.log("Navigation triggered, closing modal");
     onClose();
   };
@@ -86,6 +88,13 @@ const AccountLinkingModal = ({
     // Close the modal and let the user continue with the form
     onClose();
     console.log("Modal closed, user returning to signup form");
+  };
+  
+  // ROUTER-FREE: Handle forgot password navigation
+  const handleForgotPassword = () => {
+    console.log("===== REDIRECTING TO RESET PASSWORD =====");
+    // ROUTER-FREE: Use native navigation
+    window.location.href = '/reset-password';
   };
   
   if (!isOpen) return null;
@@ -169,7 +178,7 @@ const AccountLinkingModal = ({
           <button
             type="button"
             className="text-blue-500 hover:underline"
-            onClick={() => navigate('/reset-password')}
+            onClick={handleForgotPassword}
           >
             Forgot your password?
           </button>

@@ -1,10 +1,10 @@
-// File: pages/signup/AccountSuccessStep.jsx
+// File: pages/signup/AccountSuccessStep.jsx - ZERO RELOAD VERSION
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useSignupFlow } from '../../contexts/SignupFlowContext';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../services/firebase";
 import { useUser } from "../../contexts/UserContext";
-import { isAccountCreated, setForceNavigation } from "../../services/storage";
+import { isAccountCreated } from "../../services/storage";
 // Import the new API function
 import { updateSignupProgressAPI } from "../../services/auth";
 
@@ -12,7 +12,7 @@ import { updateSignupProgressAPI } from "../../services/auth";
 import AccountCreationSuccess from "../../components/signup/AccountCreationSuccess";
 
 const AccountSuccessStep = () => {
-  const navigate = useNavigate();
+  const { goToNextStep, navigateToStep } = useSignupFlow();
   const { currentUser, refreshUserProgress } = useUser();
   const [loading, setLoading] = useState(true);
   
@@ -24,13 +24,12 @@ const AccountSuccessStep = () => {
     console.log("Account created:", isAccountCreated());
   }, [currentUser]);
   
-  // Check if user is authenticated and account creation success flag is set
+  // ZERO RELOAD: Simplified auth check that doesn't trigger unnecessary refreshes
   useEffect(() => {
     const checkAuth = async () => {
       if (!currentUser) {
-        console.log("No user authenticated, redirecting to signup");
-        // Redirect unauthenticated users back to account creation
-        navigate('/signup', { replace: true });
+        console.log("No user authenticated, navigating back to account creation");
+        navigateToStep(0);
         return;
       }
       
@@ -60,18 +59,13 @@ const AccountSuccessStep = () => {
           
           console.log("Database updated with success step completion");
           
-          // Refresh user progress
-          if (typeof refreshUserProgress === 'function') {
-            await refreshUserProgress();
-          }
+          // ZERO RELOAD: Don't call refreshUserProgress here - the UserContext 
+          // already has the correct state from the verification process
+          console.log("Skipping refresh to prevent reload - UserContext already has correct state");
         } else if (userDoc.exists()) {
           console.log("User document exists:", userDoc.data());
-          
-          // REMOVED: Auto-forwarding logic to allow back navigation
-          // Users should be able to freely navigate to previous steps
         }
         
-        // If we made it here, user should see the success page
         console.log("User should see the success page, setting loading=false");
         setLoading(false);
       } catch (error) {
@@ -84,9 +78,9 @@ const AccountSuccessStep = () => {
     if (currentUser) {
       checkAuth();
     }
-  }, [currentUser, navigate, refreshUserProgress]);
+  }, [currentUser, navigateToStep]);
   
-  // UPDATED: Function to handle continuing to next step using the API
+  // ZERO RELOAD: Simplified continue handler that doesn't trigger unnecessary refreshes
   const handleContinue = async () => {
     if (!currentUser) return;
     
@@ -98,21 +92,14 @@ const AccountSuccessStep = () => {
       
       if (!result.success) {
         console.error("Failed to update progress:", result.error);
-        // Show an error message to the user if needed
         return;
       }
       
-      // Refresh user progress from backend
-      if (typeof refreshUserProgress === 'function') {
-        await refreshUserProgress();
-      }
+      console.log("API update successful, navigating to contact step");
       
-      console.log("API update successful, setting force navigation and redirecting");
-      // Set force navigation to bypass route guards
-      setForceNavigation(2);
-      
-      // Navigate to contact info step
-      navigate('/signup/contact', { replace: true });
+      // ZERO RELOAD: Don't call refreshUserProgress here - just navigate
+      // The UserContext will pick up the new state when the next step loads
+      goToNextStep();
     } catch (error) {
       console.error("Error updating progress:", error);
     }

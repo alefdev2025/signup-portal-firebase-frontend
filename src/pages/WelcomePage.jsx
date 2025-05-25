@@ -1,4 +1,4 @@
-// File: pages/WelcomePage.jsx
+// File: pages/WelcomePage.jsx - FIXED NAVIGATION
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveBanner from "../components/ResponsiveBanner";
@@ -54,36 +54,27 @@ const WelcomePage = () => {
     clearAllState();
   }, []);
 
-  const goToSignup = async () => {  // Make this async
+  // SIMPLIFIED: Use React Router navigation for clean signup start
+  const goToSignup = async () => {
     try {
       console.log("Get Started button clicked, clearing state and redirecting");
+      
       // Clear all localStorage items
-      localStorage.removeItem('alcor_signup_state');
-      localStorage.removeItem('alcor_verification_state');
-      localStorage.removeItem('alcor_form_data');
-      localStorage.removeItem('emailForSignIn');
-      localStorage.removeItem('account_creation_success');
-      localStorage.removeItem('force_active_step');
-      localStorage.removeItem('force_timestamp');
-      localStorage.removeItem('just_verified');
-      localStorage.removeItem('verification_timestamp');
+      localStorage.clear(); // Clear everything for a fresh start
       
-      // Set hasNavigatedRef to false explicitly via localStorage
-      localStorage.setItem('has_navigated', 'false');
-      
-      // First, ensure the user is fully logged out and wait for completion
+      // First, ensure the user is fully logged out
       await logout();
       
       // Add a flag to indicate a fresh start
       localStorage.setItem('fresh_signup', 'true');
       
-      // Force a hard reload to ensure all React state is cleared
-      // This is important to reset the auth state completely
-      window.location.href = '/signup?fresh=true';
+      // Navigate to signup using React Router (clean navigation)
+      navigate('/signup');
+      
     } catch (error) {
       console.error("Error in goToSignup:", error);
-      // Still try to navigate even if there's an error
-      window.location.href = '/signup?fresh=true';
+      // Fallback to direct navigation
+      navigate('/signup');
     }
   };
   
@@ -96,10 +87,7 @@ const WelcomePage = () => {
     }
   };
 
-  // Define the card data with content and specific styling for each card
-  const iconGradientId = "icon-gradient";
-  
-  // Define the card data with content and specific styling for each card
+  // Card data remains the same
   const cardData = [
     {
       id: 'new-membership',
@@ -180,7 +168,7 @@ const WelcomePage = () => {
         showStar={true}
         showProgressBar={false}
         steps={steps}
-        isWelcomePage={true} // Use the new prop to enable welcome page styling
+        isWelcomePage={true}
       />
       
       {/* Main Content - Cards */}
@@ -193,16 +181,13 @@ const WelcomePage = () => {
           
           {/* Cards in horizontal layout on desktop */}
           <div className="grid md:grid-cols-3 gap-8 md:gap-10">
-            {/* Map through the card data to create each card */}
             {cardData.map((card) => (
               <div 
                 key={card.id}
                 className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-11/12 sm:w-9/12 md:w-full mx-auto md:mx-0`}
               >
-                {/* Card Header - No gradient bar, just spacing */}
                 <div className="h-4"></div>
                 
-                {/* Card Content */}
                 <div className="p-5 sm:p-8 flex-1">
                   <div className={`w-14 sm:w-20 h-14 sm:h-20 rounded-full flex items-center justify-center mb-5 bg-white shadow-sm border ${card.borderColor} mx-auto`}>
                     {card.iconPath}
@@ -214,7 +199,6 @@ const WelcomePage = () => {
                   <p className="text-gray-600 mb-6 text-base sm:text-lg text-center">{card.description}</p>
                 </div>
                 
-                {/* Card Footer */}
                 <div className="px-4 sm:px-8 pb-8 mt-auto">
                   <button 
                     onClick={card.buttonAction}
@@ -226,7 +210,6 @@ const WelcomePage = () => {
                     </svg>
                   </button>
                   
-                  {/* Star accent at the bottom instead of logo */}
                   <div className="flex justify-center">
                     <div className={`text-center ${card.starClasses}`}>
                       <div className="flex justify-center items-center space-x-2">
