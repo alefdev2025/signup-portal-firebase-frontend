@@ -181,141 +181,165 @@ const AccountCreationForm = ({
   };
 
   // Wrap Google sign-in to check terms acceptance first - fixed to use local state
-  const handleGoogleSignInWithTermsCheck = () => {
+  const handleGoogleSignInWithTermsCheck = async () => {
+    console.log("🚀 Google button clicked!");
+    console.log("Terms accepted:", formData.termsAccepted);
+    console.log("handleGoogleSignIn type:", typeof handleGoogleSignIn);
+    
     // First check if terms are accepted
     if (!formData.termsAccepted) {
-      // Set error for terms acceptance using local handler
+      console.log("❌ Terms not accepted");
       if (setErrors) {
         setErrors(prev => ({
           ...prev,
           termsAccepted: "You must accept the Terms of Use and Privacy Policy to continue"
         }));
       }
-      
-      // Show inline error for Google button
       setGoogleButtonError(true);
       return;
     }
-
-    // If terms are accepted, proceed with Google sign-in
+  
+    console.log("✅ Terms accepted, proceeding...");
     setGoogleButtonError(false);
-    setIsGoogleSigningIn(true); // Just disable the button without changing text
+    setIsGoogleSigningIn(true);
     
-    // Call the parent handler
-    handleGoogleSignIn().finally(() => {
-      // Always reset the button state
+    try {
+      console.log("📞 About to call handleGoogleSignIn...");
+      
+      // Call the parent handler and await it properly
+      const result = await handleGoogleSignIn();
+      
+      console.log("✅ Google sign-in completed successfully:", result);
+      
+    } catch (error) {
+      console.error("❌ Google sign-in error:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      // Show error to user
+      if (setErrors) {
+        setErrors(prev => ({
+          ...prev,
+          general: error.message || "Google sign-in failed. Please try again."
+        }));
+      }
+    } finally {
+      console.log("🔄 Resetting button state");
       setIsGoogleSigningIn(false);
-    });
+    }
   };
   
   // Display verification form if needed
   if (verificationStep === "verification") {
     return (
-      <form onSubmit={onSubmitForm} className="w-full pt-16 sm:pt-0 space-y-10 sm:space-y-6">
-        <div className="mb-10 sm:mb-10">
-          <label htmlFor="verificationCode" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-4">
-            Verification Code
-          </label>
-          <input 
-            type="text" 
-            id="verificationCode"
-            name="verificationCode"
-            value={formData.verificationCode}
-            onChange={handleFormChange}
-            placeholder="Enter the 6-digit code" 
-            className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
-            disabled={isSubmitting || resendingCode}
-            autoComplete="one-time-code"
-            maxLength={6}
-          />
-          {errors.verificationCode && <p className="text-red-500 text-xs sm:text-sm mt-2 sm:mt-3">{errors.verificationCode}</p>}
-        </div>
-        
-        <div className="text-sm sm:text-base text-gray-600 mb-12 sm:mb-8">
-          <p>A verification code has been sent to <strong>{formData.email}</strong>.</p>
-          <div className="mt-8 sm:mt-4 flex flex-col sm:flex-row sm:space-x-4 space-y-5 sm:space-y-0 sm:justify-between">
-            <button 
-              type="button" 
-              onClick={handleResendCode}
-              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
+      <>
+        <form onSubmit={onSubmitForm} className="w-full pt-16 sm:pt-0 space-y-10 sm:space-y-6">
+          <div className="mb-10 sm:mb-10">
+            <label htmlFor="verificationCode" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-4">
+              Verification Code
+            </label>
+            <input 
+              type="text" 
+              id="verificationCode"
+              name="verificationCode"
+              value={formData.verificationCode}
+              onChange={handleFormChange}
+              placeholder="Enter the 6-digit code" 
+              className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
               disabled={isSubmitting || resendingCode}
+              autoComplete="one-time-code"
+              maxLength={6}
+            />
+            {errors.verificationCode && <p className="text-red-500 text-xs sm:text-sm mt-2 sm:mt-3">{errors.verificationCode}</p>}
+          </div>
+          
+          <div className="text-sm sm:text-base text-gray-600 mb-12 sm:mb-8">
+            <p>A verification code has been sent to <strong>{formData.email}</strong>.</p>
+            <div className="mt-8 sm:mt-4 flex flex-col sm:flex-row sm:space-x-4 space-y-5 sm:space-y-0 sm:justify-between">
+              <button 
+                type="button" 
+                onClick={handleResendCode}
+                className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
+                disabled={isSubmitting || resendingCode}
+              >
+                {resendingCode ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-4 sm:h-5 w-4 sm:w-5 text-[#0C2340]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#0C2340]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Resend code
+                  </>
+                )}
+              </button>
+              <button 
+                type="button" 
+                onClick={changeEmail}
+                className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
+                disabled={isSubmitting || resendingCode}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#f39c12]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Change email
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-12 sm:mt-0">
+            <button 
+              type="submit"
+              disabled={isSubmitting || resendingCode}
+              style={{
+                backgroundColor: "#6f2d74",
+                color: "white"
+              }}
+              className="w-full py-3 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-16 sm:mb-8 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
             >
-              {resendingCode ? (
+              {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-4 sm:h-5 w-4 sm:w-5 text-[#0C2340]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-3 h-4 sm:h-5 w-4 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Sending...
+                  Verifying...
                 </>
               ) : (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#0C2340]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <span className="mr-2">Verify</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 sm:h-5 w-4 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
-                  Resend code
                 </>
               )}
             </button>
-            <button 
-              type="button" 
-              onClick={changeEmail}
-              className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
-              disabled={isSubmitting || resendingCode}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#f39c12]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              Change email
-            </button>
+            
+            {/* Logo below the verify button - Only visible on mobile */}
+            <div className="flex justify-center mt-6 mb-10 sm:hidden">
+              <img 
+                src={navyAlcorLogo} 
+                alt="Alcor Logo" 
+                className="h-16" 
+              />
+            </div>
           </div>
-        </div>
+        </form>
         
-        <div className="mt-12 sm:mt-0">
-          <button 
-            type="submit"
-            disabled={isSubmitting || resendingCode}
-            style={{
-              backgroundColor: "#6f2d74",
-              color: "white"
-            }}
-            className="w-full py-3 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-16 sm:mb-8 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-4 sm:h-5 w-4 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Verifying...
-              </>
-            ) : (
-              <>
-                <span className="mr-2">Verify</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 sm:h-5 w-4 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </>
-            )}
-          </button>
-          
-          {/* Logo below the verify button - Only visible on mobile */}
-          <div className="flex justify-center mt-6 mb-10 sm:hidden">
-            <img 
-              src={navyAlcorLogo} 
-              alt="Alcor Logo" 
-              className="h-16" 
-            />
-          </div>
-        </div>
-        
-        {/* Help Panel Component */}
+        {/* Help Panel Component - positioned fixed to viewport */}
         <HelpPanel 
           showHelpInfo={showHelpInfo} 
           toggleHelpInfo={toggleHelpInfo} 
           helpItems={accountCreationHelpContent} 
         />
-      </form>
+      </>
     );
   }
   
@@ -492,7 +516,7 @@ const AccountCreationForm = ({
         directContent={modalType === 'terms' ? termsContent : privacyContent}
       />
       
-      {/* Help Panel Component */}
+      {/* Help Panel Component - positioned fixed to viewport */}
       <HelpPanel 
         showHelpInfo={showHelpInfo} 
         toggleHelpInfo={toggleHelpInfo} 

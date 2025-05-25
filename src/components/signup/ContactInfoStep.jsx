@@ -1,10 +1,9 @@
-// Fixed ContactInfoStep.jsx with Robust Navigation
-
+// File: components/signup/ContactInfoStep.jsx - Updated for SignupFlow System
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
+import { useSignupFlow } from "../../contexts/SignupFlowContext";
 import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
-import { getStepFormData, saveFormData, setForceNavigation } from "../../services/storage";
+import { getStepFormData, saveFormData } from "../../services/storage";
 
 import ContactInfoPage from "./ContactInfoPage";
 
@@ -12,17 +11,17 @@ import ContactInfoPage from "./ContactInfoPage";
 const LOG_TO_TERMINAL = (message) => {
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/log?t=${Date.now()}`, false); // Synchronous request
+    xhr.open('POST', `/api/log?t=${Date.now()}`, false);
     xhr.send(`[CONTACT STEP] ${message}`);
-    console.log(`[CONTACT STEP] ${message}`); // Also log to console
+    console.log(`[CONTACT STEP] ${message}`);
   } catch (e) {
     // Ignore errors
   }
 };
 
 const ContactInfoStep = () => {
-  const navigate = useNavigate();
   const { currentUser, refreshUserProgress } = useUser();
+  const { navigateToStep, goToNextStep, currentStepIndex, canAccessStep } = useSignupFlow();
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({});
   
@@ -30,9 +29,9 @@ const ContactInfoStep = () => {
   useEffect(() => {
     const init = async () => {
       if (!currentUser) {
-        LOG_TO_TERMINAL("No user authenticated, redirecting to signup");
-        // Redirect unauthenticated users back to account creation
-        navigate('/signup', { replace: true });
+        LOG_TO_TERMINAL("No user authenticated, redirecting to account creation");
+        // Navigate back to account creation step
+        navigateToStep(0, { force: true, reason: 'not_authenticated' });
         return;
       }
       
@@ -40,6 +39,7 @@ const ContactInfoStep = () => {
         // Load any saved form data for this step from local storage
         const savedData = getStepFormData("contact_info");
         if (savedData) {
+          LOG_TO_TERMINAL("Loading saved form data");
           setFormData(savedData);
         }
         
@@ -48,13 +48,19 @@ const ContactInfoStep = () => {
         const progressResult = await getUserProgressAPI();
         
         if (progressResult.success) {
-          LOG_TO_TERMINAL("User progress:", progressResult);
+          LOG_TO_TERMINAL(`User progress: step ${progressResult.step}`);
           
-          // If user hasn't completed previous step, redirect back
-          if (progressResult.step < 1) {
-            LOG_TO_TERMINAL("User has not completed previous step, redirecting");
-            navigate('/signup/success', { replace: true });
+          // Contact info is step 2, so check if user hasn't completed step 1 (success page)
+          if (progressResult.step < 2) {
+            LOG_TO_TERMINAL("User has not completed previous step, redirecting to success");
+            navigateToStep(1, { force: true, reason: 'incomplete_previous_step' });
             return;
+          }
+          
+          // If user has already completed this step and moved further, allow them to be here
+          // but load their existing data
+          if (progressResult.step > 2) {
+            LOG_TO_TERMINAL("User has already completed this step, loading existing data");
           }
         } else {
           console.error("Error getting user progress:", progressResult.error);
@@ -68,73 +74,52 @@ const ContactInfoStep = () => {
     };
     
     init();
-  }, [currentUser, navigate]);
+  }, [currentUser, navigateToStep]);
   
-  // Handle going back to previous step - ROBUST IMPLEMENTATION
+  // Handle going back to previous step
   const handleBack = () => {
     LOG_TO_TERMINAL("ContactInfoStep: Back button clicked");
     
-    // Use multiple navigation methods to ensure reliable navigation
-    try {
-      // 1. Set force navigation flag in localStorage (highest priority)
-      setForceNavigation(1); // 1 = success step
-      LOG_TO_TERMINAL("Set force navigation flag to step 1 (success)");
-      
-      // 2. Direct URL based navigation - most reliable fallback
-      const directPath = '/signup/success';
-      LOG_TO_TERMINAL(`Using direct navigation to ${directPath}`);
-      
-      // 3. Try React Router navigation first
-      try {
-        LOG_TO_TERMINAL("Attempting React Router navigation");
-        navigate(directPath, { replace: true });
-      } catch (routerError) {
-        LOG_TO_TERMINAL(`React Router navigation failed: ${routerError.message}`);
-        
-        // 4. Fallback to direct location change
-        LOG_TO_TERMINAL("Falling back to direct window.location change");
-        window.location.href = directPath;
-      }
-    } catch (error) {
-      LOG_TO_TERMINAL(`ERROR during back navigation: ${error.message}`);
-      
-      // Last resort emergency fallback
-      window.location.href = '/signup/success';
-    }
+    // Use SignupFlow navigation system
+    navigateToStep(1, { reason: 'user_back_button' }); // Go back to success step
   };
   
   // Handle form submission and proceeding to next step
   const handleNext = async (stepData) => {
-    if (!currentUser) return false;
+    if (!currentUser) {
+      LOG_TO_TERMINAL("No current user - cannot proceed");
+      return false;
+    }
     
     try {
       LOG_TO_TERMINAL("Saving contact info and proceeding to next step");
       
       // Save form data locally
       saveFormData("contact_info", stepData);
+      LOG_TO_TERMINAL("Form data saved locally");
       
       // Update progress via API
+      LOG_TO_TERMINAL("Updating progress via API...");
       const progressResult = await updateSignupProgressAPI("package", 3);
       
       if (!progressResult.success) {
         throw new Error(progressResult.error || "Failed to update progress");
       }
       
-      // Refresh user progress from context
-      if (typeof refreshUserProgress === 'function') {
-        await refreshUserProgress();
+      LOG_TO_TERMINAL("Progress updated successfully, proceeding to next step");
+      
+      // Use goToNextStep() like the account creation does
+      const navigationSuccess = goToNextStep();
+      
+      if (navigationSuccess) {
+        LOG_TO_TERMINAL("Navigation to next step successful");
+        return true;
+      } else {
+        LOG_TO_TERMINAL("Navigation failed");
+        return false;
       }
-      
-      // Set force navigation to ensure reliable navigation
-      setForceNavigation(3); // 3 = package step
-      LOG_TO_TERMINAL("Set force navigation flag to step 3 (package)");
-      
-      // Navigate to next step
-      LOG_TO_TERMINAL("Navigating to package page");
-      navigate('/signup/package', { replace: true });
-      return true;
     } catch (error) {
-      LOG_TO_TERMINAL(`Error saving contact info: ${error.message}`);
+      LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
       console.error("Error saving contact info:", error);
       return false;
     }
@@ -145,6 +130,7 @@ const ContactInfoStep = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
+        <p className="ml-4 text-xl text-gray-700">Loading your information...</p>
       </div>
     );
   }

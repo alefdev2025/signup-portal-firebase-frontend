@@ -1,4 +1,4 @@
-// src/contexts/SignupFlowContext.jsx - SIMPLE WORKING VERSION
+// Progressive Navigation Support - Account Creation is One-Way
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useUser } from './UserContext';
 
@@ -18,7 +18,9 @@ export const SignupFlowProvider = ({ children }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Simple tracking to prevent loops
+  // Track navigation state
+  const stepHistory = useRef([0]); // Start with account creation
+  const navigationEnabled = useRef(false); // Enable after account creation
   const verificationHandled = useRef(false);
   const lastProcessedUser = useRef(null);
   
@@ -33,6 +35,9 @@ export const SignupFlowProvider = ({ children }) => {
     }
   };
 
+  // URL paths for deep linking (only after account creation)
+  const stepPaths = ['', '/success', '/contact', '/package', '/funding', '/membership'];
+
   const getMaxAllowedStep = () => {
     if (!currentUser) return 0;
     if (signupState?.signupCompleted) return -1;
@@ -43,9 +48,45 @@ export const SignupFlowProvider = ({ children }) => {
     return maxStep;
   };
 
-  // Pure content navigation
+  // Enable navigation after account creation is complete
+  const enableNavigation = () => {
+    if (!navigationEnabled.current) {
+      navigationEnabled.current = true;
+      log('Navigation enabled - user can now use back/forward buttons');
+      
+      // Set initial history state for the welcome page → signup transition
+      window.history.replaceState(
+        { type: 'signup_entry', fromWelcome: true },
+        '',
+        '/signup'
+      );
+    }
+  };
+
+  // Update browser history with URL for deep linking
+  const updateBrowserHistory = (stepIndex) => {
+    if (!navigationEnabled.current || stepIndex === 0) {
+      // Don't update URLs for account creation step
+      return;
+    }
+    
+    const path = `/signup${stepPaths[stepIndex]}`;
+    
+    window.history.pushState(
+      { 
+        stepIndex, 
+        type: 'signup_step',
+        canGoBack: true
+      }, 
+      '', 
+      path
+    );
+    
+    log(`Updated URL to: ${path}`);
+  };
+
   const navigateToStep = (stepIndex, options = {}) => {
-    const { force = false, reason = 'user_action' } = options;
+    const { force = false, reason = 'user_action', trackHistory = true } = options;
     
     log(`Navigation request: step ${stepIndex}, force: ${force}, reason: ${reason}`);
     
@@ -72,11 +113,79 @@ export const SignupFlowProvider = ({ children }) => {
       return false;
     }
     
-    log(`PURE CONTENT SWAP to step ${stepIndex}: ${SIGNUP_STEPS[stepIndex].id}`);
+    log(`CONTENT SWAP to step ${stepIndex}: ${SIGNUP_STEPS[stepIndex].id}`);
+    
+    // Update current step
     setCurrentStepIndex(stepIndex);
+    
+    // Enable navigation once they move past account creation
+    if (stepIndex >= 1) {
+      enableNavigation();
+    }
+    
+    // Track in history and update URL (only if navigation is enabled)
+    if (trackHistory && reason !== 'browser_back') {
+      stepHistory.current.push(stepIndex);
+      updateBrowserHistory(stepIndex);
+    }
     
     return true;
   };
+
+  // Handle browser back/forward button
+  useEffect(() => {
+    const handleBrowserNavigation = (event) => {
+      log(`Browser navigation detected. Navigation enabled: ${navigationEnabled.current}`);
+      
+      // If navigation isn't enabled yet (still on account creation)
+      if (!navigationEnabled.current) {
+        log('Navigation not enabled - going back to welcome page');
+        // Go back to welcome page
+        window.location.href = '/';
+        return;
+      }
+      
+      // Check if this is our signup navigation or going back to welcome
+      if (event.state) {
+        if (event.state.type === 'signup_entry' && event.state.fromWelcome) {
+          log('Back to welcome page from signup');
+          window.location.href = '/';
+          return;
+        }
+        
+        if (event.state.type === 'signup_step') {
+          log(`Browser navigation to step: ${event.state.stepIndex}`);
+          
+          // Navigate to the step without adding to history
+          navigateToStep(event.state.stepIndex, { 
+            reason: 'browser_back', 
+            trackHistory: false,
+            force: true 
+          });
+          return;
+        }
+      }
+      
+      // Fallback: parse from URL
+      const path = window.location.pathname.replace('/signup', '');
+      const targetStep = Math.max(1, stepPaths.indexOf(path)); // Never go to step 0 from URL
+      
+      if (targetStep > 0) {
+        log(`Parsed step from URL: ${targetStep}`);
+        navigateToStep(targetStep, { 
+          reason: 'browser_navigation', 
+          trackHistory: false,
+          force: true 
+        });
+      }
+    };
+    
+    window.addEventListener('popstate', handleBrowserNavigation);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBrowserNavigation);
+    };
+  }, []);
 
   const transitionToStep = async (stepIndex, options = {}) => {
     if (localStorage.getItem('block_navigation') === 'true' && !options.force) {
@@ -92,11 +201,10 @@ export const SignupFlowProvider = ({ children }) => {
     return success;
   };
 
-  // Handle verification state change - SIMPLE VERSION THAT WORKS
+  // Handle verification state change
   useEffect(() => {
     if (isLoading) return;
     
-    // Reset verification handling if user changes
     if (lastProcessedUser.current !== currentUser?.uid) {
       verificationHandled.current = false;
       lastProcessedUser.current = currentUser?.uid;
@@ -115,7 +223,7 @@ export const SignupFlowProvider = ({ children }) => {
       return;
     }
     
-    // Handle just verified users ONCE with simple content swap
+    // Handle just verified users
     if (signupState?.signupStep === 'success' && 
         signupState?.signupProgress === 1 && 
         !verificationHandled.current) {
@@ -123,13 +231,11 @@ export const SignupFlowProvider = ({ children }) => {
       log('Detected verified user with success state - CONTENT SWAP to success step');
       verificationHandled.current = true;
       
-      // Simple content swap
-      setCurrentStepIndex(1);
-      
+      // This will enable navigation and add to history
+      navigateToStep(1, { reason: 'just_verified' });
       return;
     }
     
-    // Handle completed signup
     if (signupState?.signupCompleted) {
       log('Signup completed - redirecting to member portal');
       window.location.href = '/member-portal';
@@ -170,6 +276,10 @@ export const SignupFlowProvider = ({ children }) => {
       return false;
     },
     
+    // Navigation state
+    canGoBack: () => navigationEnabled.current && stepHistory.current.length > 1,
+    isNavigationEnabled: () => navigationEnabled.current,
+    
     canAccessStep: (stepIndex) => stepIndex <= getMaxAllowedStep(),
     isStepCompleted: (stepIndex) => stepIndex < (signupState?.signupProgress || 0),
     getStepProgress: () => ({
@@ -188,7 +298,5 @@ export const SignupFlowProvider = ({ children }) => {
 
 export const useSignupFlow = () => {
   const context = useContext(SignupFlowContext);
-  // Don't throw error if context is not available - just return null
-  // This allows components to use the hook conditionally
   return context;
 };

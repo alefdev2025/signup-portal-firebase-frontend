@@ -5,6 +5,7 @@ import { debugLogger, DebugPanel } from '../../components/debug/logs';
 // REMOVED: import { useSearchParams } from 'react-router-dom';
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../services/firebase";
+import { useSignupFlow } from "../../contexts/SignupFlowContext";
 
 // Import auth-related functions
 import { 
@@ -74,6 +75,8 @@ const AccountCreationStep = () => {
   const [isLinking, setIsLinking] = useState(false);
   // REMOVED: const [searchParams, setSearchParams] = useSearchParams();
   const [isLinkingInProgress, setIsLinkingInProgress] = useState(false);
+
+  const { navigateToStep } = useSignupFlow();
   
   const [formData, setFormData] = useState({
     name: "New Member",
@@ -650,7 +653,74 @@ const AccountCreationStep = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    console.log("Google sign in - simple operations only");
+    console.log("Starting Google sign-in process...");
+    
+    // Check terms acceptance first
+    if (!formData.termsAccepted) {
+      setErrors(prev => ({
+        ...prev,
+        termsAccepted: "You must accept the Terms of Use and Privacy Policy to continue"
+      }));
+      return;
+    }
+    
+    if (isSubmitting) {
+      console.log("Prevented - already submitting");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    console.log("Set isSubmitting to true");
+    
+    setErrors({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      termsAccepted: "",
+      verificationCode: "",
+      general: ""
+    });
+    
+    try {
+      console.log("Calling signInWithGoogle");
+      // This line opens the popup!
+      const result = await signInWithGoogle({ maintainSession: true });
+      
+      console.log("Google sign-in result:", result);
+      
+      if (result.success) {
+        console.log("Google sign-in successful!");
+        
+        localStorage.setItem('just_verified', 'true');
+        localStorage.setItem('verification_timestamp', Date.now().toString());
+        
+        // Navigate to success step (step 1) using your SignupFlow routing
+        navigateToStep(1, { reason: 'google_signin_success', force: true });
+        
+        console.log("✅ Google sign-in completed - navigating to success step");
+      } else if (result.accountConflict) {
+        // Handle account conflicts like in your original
+        const email = result.email || result.existingEmail || '';
+        console.log("Account conflict detected for:", email);
+        
+        localStorage.setItem('linkingEmail', email);
+        localStorage.setItem('showLinkingModal', 'true');
+        
+        setLinkingEmail(email);
+        setShowLinkingModal(true);
+      }
+      
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || "Failed to sign in with Google. Please try again."
+      }));
+    } finally {
+      setIsSubmitting(false);
+      console.log("Google sign-in process completed");
+    }
   };
 
   // RENDER

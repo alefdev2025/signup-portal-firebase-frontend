@@ -95,15 +95,6 @@ export default function SinglePageSignup() {
               <StepComponent />
             </div>
           </div>
-          
-          {/* Debug info */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 p-4 bg-gray-200 rounded text-sm">
-              <strong>Debug:</strong> Step {currentStepIndex} ({currentStep.id}) - 
-              Progress: {progress.completed}/{progress.total} - 
-              Loading: {isLoading.toString()} - AuthResolved: {authResolved.toString()}
-            </div>
-          )}
         </div>
       </div>
     </div>
