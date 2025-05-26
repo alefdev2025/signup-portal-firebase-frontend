@@ -130,7 +130,8 @@ export const fundingOptions = {
     ],
     detailsSection: {
       title: "Basic Membership & Future Funding",
-      subtitle: "By selecting this option, you'll start the process of a cryopreservation contract, taking time to decide on your preferred funding method. We'll connect you with our team that can help you consider your funding options."
+      subtitle: "",
+      description: "By selecting this option, you'll start the process of a cryopreservation contract, taking time to decide on your preferred funding method. We'll connect you with our team that can help you consider your funding options."
     }
   }
 };

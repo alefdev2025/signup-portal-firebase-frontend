@@ -1,7 +1,7 @@
 // File: pages/components/BasicMembershipCards.jsx
 import React from "react";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
-import { formatCurrency } from "./FundingCardsData";
+import { formatCurrency } from "../utils/formatCurrency"
 
 const BasicMembershipCards = ({ packageInfo, animationComplete, content }) => {
   const displayCost = packageInfo && packageInfo.annualCost 
