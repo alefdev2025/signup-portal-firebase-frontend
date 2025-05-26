@@ -9,6 +9,7 @@ const FundingDetailsSection = ({
   dropdownOpen,
   policyResourcesExpanded,
   animationComplete,
+  validationErrors,
   onSelectInsuranceSubOption,
   onToggleDropdown,
   onTogglePolicyResources,
@@ -35,6 +36,7 @@ const FundingDetailsSection = ({
             policyDetails={policyDetails}
             dropdownOpen={dropdownOpen}
             policyResourcesExpanded={policyResourcesExpanded}
+            validationErrors={validationErrors}
             onSelectInsuranceSubOption={onSelectInsuranceSubOption}
             onToggleDropdown={onToggleDropdown}
             onTogglePolicyResources={onTogglePolicyResources}
@@ -61,6 +63,7 @@ const InsuranceDetailsContent = ({
   policyDetails,
   dropdownOpen,
   policyResourcesExpanded,
+  validationErrors,
   onSelectInsuranceSubOption,
   onToggleDropdown,
   onTogglePolicyResources,
@@ -150,6 +153,7 @@ const InsuranceDetailsContent = ({
           <ExistingPolicyContent 
             subOption={option.detailsSection.subOptions.existing}
             policyDetails={policyDetails}
+            validationErrors={validationErrors}
             onPolicyDetailChange={onPolicyDetailChange}
             marcellusStyle={marcellusStyle}
           />
@@ -221,7 +225,7 @@ const NewPolicyContent = ({ subOption, policyResourcesExpanded, onTogglePolicyRe
   );
 };
 
-const ExistingPolicyContent = ({ subOption, policyDetails, onPolicyDetailChange, marcellusStyle }) => {
+const ExistingPolicyContent = ({ subOption, policyDetails, validationErrors, onPolicyDetailChange, marcellusStyle }) => {
   return (
     <div className="mt-8">
       <h4 className="text-2xl font-bold text-[#775684] mb-8 flex items-center">
@@ -237,7 +241,7 @@ const ExistingPolicyContent = ({ subOption, policyDetails, onPolicyDetailChange,
       </p>
       <div className="space-y-8 mt-8">
         {subOption.form.fields.map((field) => (
-          <div key={field.id}>
+          <div key={field.id} className="relative">
             <label htmlFor={field.id} className="block text-gray-800 font-bold text-xl mb-4">
               {field.label}
             </label>
@@ -250,7 +254,9 @@ const ExistingPolicyContent = ({ subOption, policyDetails, onPolicyDetailChange,
                   name={field.id}
                   value={policyDetails[field.id]}
                   onChange={onPolicyDetailChange}
-                  className="w-full pl-12 px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684]"
+                  className={`w-full pl-12 px-6 py-4 text-xl border-2 rounded-lg focus:ring-[#775684] focus:border-[#775684] ${
+                    validationErrors && validationErrors[field.id] ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'
+                  }`}
                   placeholder={field.placeholder}
                   style={marcellusStyle}
                 />
@@ -262,10 +268,24 @@ const ExistingPolicyContent = ({ subOption, policyDetails, onPolicyDetailChange,
                 name={field.id}
                 value={policyDetails[field.id]}
                 onChange={onPolicyDetailChange}
-                className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684]"
+                className={`w-full px-6 py-4 text-xl border-2 rounded-lg focus:ring-[#775684] focus:border-[#775684] ${
+                  validationErrors && validationErrors[field.id] ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'
+                }`}
                 placeholder={field.placeholder}
                 style={marcellusStyle}
               />
+            )}
+            
+            {/* Tooltip when validation error exists for this field */}
+            {validationErrors && validationErrors[field.id] && (
+              <div className="absolute top-0 right-0 z-20 transform translate-x-1 -translate-y-3">
+                <div className="bg-white border border-gray-200 text-gray-800 px-3 py-2 rounded shadow-lg text-sm flex items-center space-x-2">
+                  <div className="bg-orange-500 text-white rounded w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold">!</span>
+                  </div>
+                  <span>Please fill out this field.</span>
+                </div>
+              </div>
             )}
           </div>
         ))}

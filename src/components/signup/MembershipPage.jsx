@@ -1,5 +1,6 @@
 // File: components/signup/MembershipPage.jsx
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
 import MembershipSummary from "./MembershipSummary";
@@ -8,6 +9,7 @@ import PaymentOptions from "./PaymentOptions";
 import IceCodeSection from "./IceCodeSection";
 import LifetimeMembershipSection from "./LifetimeMembershipSection";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
+import iceLogo from "../../assets/images/ICE-logo-temp.png";
 
 // Import membership service
 import membershipService from "../../services/membership";
@@ -48,6 +50,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   // Page state management
   const [currentPage, setCurrentPage] = useState('membership'); // 'membership', 'summary', 'docusign'
   const [showHelpInfo, setShowHelpInfo] = useState(false);
+  const [showIceInfo, setShowIceInfo] = useState(false); // ICE popup state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -241,6 +244,78 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   // Toggle help panel
   const toggleHelpInfo = () => {
     setShowHelpInfo(prev => !prev);
+  };
+  
+  // Test function
+  console.log('MembershipPage render - showIceInfo:', showIceInfo);
+  
+  // Toggle ICE info modal with DOM manipulation
+  const toggleIceInfo = () => {
+    if (showIceInfo) {
+      // Close modal
+      setShowIceInfo(false);
+      // Remove any existing overlay
+      const existingOverlay = document.getElementById('ice-modal-overlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+        console.log('Overlay removed');
+      }
+    } else {
+      // Open modal
+      setShowIceInfo(true);
+      
+      // Create overlay element directly in DOM
+      setTimeout(() => {
+        // Remove any existing overlay first
+        const existingOverlay = document.getElementById('ice-modal-overlay');
+        if (existingOverlay) {
+          existingOverlay.remove();
+        }
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'ice-modal-overlay';
+        overlay.style.cssText = `
+          position: fixed !important;
+          top: 0px !important;
+          left: 0px !important;
+          right: 0px !important;
+          bottom: 0px !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          background: black !important;
+          opacity: 0.8 !important;
+          z-index: 2147483647 !important;
+          display: block !important;
+          pointer-events: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          outline: none !important;
+        `;
+        
+        overlay.addEventListener('click', (e) => {
+          console.log('Overlay clicked');
+          setShowIceInfo(false);
+          overlay.remove();
+        });
+        
+        document.body.appendChild(overlay);
+        console.log('Dark overlay added to DOM:', overlay);
+        console.log('Overlay computed style:', window.getComputedStyle(overlay));
+        
+        // Force a repaint
+        overlay.offsetHeight;
+      }, 100);
+    }
+  };
+  
+  // Close ICE modal
+  const closeIceModal = () => {
+    setShowIceInfo(false);
+    const existingOverlay = document.getElementById('ice-modal-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
   };
   
   // Handler for back button from main form
@@ -503,132 +578,277 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   
   // Render main membership form
   return (
-    <div 
-      className="w-full bg-gray-100" 
-      style={{
-        width: '100vw',
-        marginLeft: 'calc(-50vw + 50%)',
-        marginRight: 'calc(-50vw + 50%)',
-        position: 'relative',
-        ...marcellusStyle
-      }}
-    >
-      <div className="w-full mx-auto px-4 sm:px-6 md:px-8 py-8 max-w-[90%] md:max-w-[80%] lg:max-w-[70%]">
-        <div className="mb-8">
-          {/* Header */}
+    <div>
+      <div 
+        className="w-full bg-gray-100" 
+        style={{
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
+          marginRight: 'calc(-50vw + 50%)',
+          position: 'relative',
+          ...marcellusStyle
+        }}
+      >
+        <div className="w-full mx-auto px-4 sm:px-6 md:px-8 py-8 max-w-[90%] md:max-w-[80%] lg:max-w-[70%]">
           <div className="mb-8">
-            {costs && costs.discountAmount > 0 && (
-              <div className="text-center mb-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
-                  <div className="flex items-center text-green-800">
-                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="font-semibold">ICE Discount Applied: Save {formatCurrency(costs.discountAmount)}</span>
+            {/* Header */}
+            <div className="mb-8">
+              {costs && costs.discountAmount > 0 && (
+                <div className="text-center mb-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
+                    <div className="flex items-center text-green-800">
+                      <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="font-semibold">ICE Discount Applied: Save {formatCurrency(costs.discountAmount)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Payment Options */}
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#323053] mb-6 flex flex-col sm:flex-row sm:items-center">
-              <div className="flex items-center mb-2 sm:mb-0">
-                <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 md:w-10 md:h-10 mr-2" />
-                Select your payment frequency:
-              </div>
-              <span className="text-2xl md:text-3xl text-[#775684] sm:ml-4">
-                {costs && costs.discountAmount > 0 ? (
-                  <>
-                    <span className="line-through text-gray-400 text-xl mr-2">{formatCurrency(costs.baseCost)}</span>
-                    {formatCurrency(costs.finalAnnualCost)}
-                  </>
-                ) : (
-                  formatCurrency(costs?.baseCost || getAnnualCost())
-                )} USD/year
-              </span>
-            </h2>
-            
-            <PaymentOptions
-              paymentFrequency={paymentFrequency}
-              onPaymentFrequencyChange={handlePaymentFrequencyChange}
-              costs={costs}
-              formatCurrency={formatCurrency}
-              getMonthlyCost={getMonthlyCost}
-              getQuarterlyCost={getQuarterlyCost}
-              getAnnualCost={getAnnualCost}
-              iceCodeValid={iceCodeValid}
-              marcellusStyle={marcellusStyle}
-            />
-          </div>
+            {/* Payment Options */}
+            <div className="mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#323053] mb-6 flex flex-col sm:flex-row sm:items-center">
+                <div className="flex items-center mb-2 sm:mb-0">
+                  <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 md:w-10 md:h-10 mr-2" />
+                  Select your payment frequency:
+                </div>
+                <span className="text-2xl md:text-3xl text-[#775684] sm:ml-4">
+                  {costs && costs.discountAmount > 0 ? (
+                    <>
+                      <span className="line-through text-gray-400 text-xl mr-2">{formatCurrency(costs.baseCost)}</span>
+                      {formatCurrency(costs.finalAnnualCost)}
+                    </>
+                  ) : (
+                    formatCurrency(costs?.baseCost || getAnnualCost())
+                  )} USD/year
+                </span>
+              </h2>
+              
+              <PaymentOptions
+                paymentFrequency={paymentFrequency}
+                onPaymentFrequencyChange={handlePaymentFrequencyChange}
+                costs={costs}
+                formatCurrency={formatCurrency}
+                getMonthlyCost={getMonthlyCost}
+                getQuarterlyCost={getQuarterlyCost}
+                getAnnualCost={getAnnualCost}
+                iceCodeValid={iceCodeValid}
+                marcellusStyle={marcellusStyle}
+              />
+            </div>
 
-          {/* ICE Code Section */}
-          <IceCodeSection
-            iceCode={iceCode}
-            handleIceCodeChange={handleIceCodeChange}
-            isValidatingCode={isValidatingCode}
-            iceCodeValid={iceCodeValid}
-            iceCodeInfo={iceCodeInfo}
-            costs={costs}
-            formatCurrency={formatCurrency}
-            marcellusStyle={marcellusStyle}
-          />
-        </div>
-        
-        {/* Lifetime Membership Checkbox Section */}
-        <LifetimeMembershipSection
-          interestedInLifetime={interestedInLifetime}
-          setInterestedInLifetime={setInterestedInLifetime}
-        />
-        
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            onClick={handleBackClick}
-            className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
-            style={marcellusStyle}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back
-          </button>
+            {/* ICE Code Section */}
+            <div className="mb-8 mt-12">
+              {/* TEST BUTTON - REMOVE AFTER TESTING */}
+              <button
+                onClick={() => {
+                  console.log('TEST BUTTON CLICKED!');
+                  toggleIceInfo();
+                }}
+                style={{
+                  backgroundColor: 'red',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  marginBottom: '20px',
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
+              >
+                TEST DARK OVERLAY
+              </button>
+              
+              <IceCodeSection
+                iceCode={iceCode}
+                handleIceCodeChange={handleIceCodeChange}
+                iceCodeValid={iceCodeValid}
+                iceCodeInfo={iceCodeInfo}
+                isValidatingCode={isValidatingCode}
+                costs={costs}
+                formatCurrency={formatCurrency}
+                marcellusStyle={marcellusStyle}
+                setShowIceInfo={toggleIceInfo}
+                onShowIceInfo={toggleIceInfo}
+                showIceModal={toggleIceInfo}
+              />
+            </div>
+          </div>
           
-          <button
-            onClick={handleNext}
-            disabled={isSubmitting || !paymentFrequency || (iceCode.trim() && iceCodeValid === false)}
-            className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
-              paymentFrequency && !(iceCode.trim() && iceCodeValid === false) ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            } disabled:opacity-70`}
-            style={marcellusStyle}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                Continue
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </>
-            )}
-          </button>
+          {/* Lifetime Membership Checkbox Section */}
+          <LifetimeMembershipSection
+            interestedInLifetime={interestedInLifetime}
+            setInterestedInLifetime={setInterestedInLifetime}
+          />
+          
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={handleBackClick}
+              className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
+              style={marcellusStyle}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Back
+            </button>
+            
+            <button
+              onClick={handleNext}
+              disabled={isSubmitting || !paymentFrequency || (iceCode.trim() && iceCodeValid === false)}
+              className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
+                paymentFrequency && !(iceCode.trim() && iceCodeValid === false) ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              } disabled:opacity-70`}
+              style={marcellusStyle}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
+        
+        <HelpPanel 
+          showHelpInfo={showHelpInfo} 
+          toggleHelpInfo={toggleHelpInfo} 
+          helpItems={membershipHelpContent} 
+        />
       </div>
-      
-      <HelpPanel 
-        showHelpInfo={showHelpInfo} 
-        toggleHelpInfo={toggleHelpInfo} 
-        helpItems={membershipHelpContent} 
-      />
+
+      {/* ICE Info Modal - NO OVERLAY IN REACT */}
+      {showIceInfo && createPortal(
+        <div 
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999999,
+            width: '100%',
+            maxWidth: '48rem',
+            backgroundColor: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            overflow: 'hidden'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+            <div 
+              style={{
+                background: 'linear-gradient(90deg, #6f2d74 0%, #8a4099 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1.5rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <img 
+                  src={iceLogo} 
+                  alt="ICE Logo" 
+                  style={{ height: '2.5rem', marginRight: '1rem', filter: 'brightness(0) invert(1)' }}
+                  onError={(e) => {
+                    e.target.src = alcorStar;
+                  }}
+                />
+                <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+                  What's an ICE Code?
+                </h2>
+              </div>
+              
+              <button
+                onClick={closeIceModal}
+                style={{
+                  color: 'white',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.5rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '2rem' }}>
+              <div style={{ color: '#374151', fontSize: '1.125rem', lineHeight: '1.75' }}>
+                <p style={{ marginBottom: '1.5rem' }}>
+                  <strong>ICE (Independent Cryonics Educator)</strong> codes are special discount codes provided by certified educators who help spread awareness about cryonics and Alcor's services. ICE educators receive 50% of your first-year dues as compensation for successful referrals.
+                </p>
+                
+                <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '1rem', fontSize: '1.25rem' }}>
+                    Discount Levels
+                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
+                    <span style={{ color: '#374151', fontWeight: '500' }}>Non-Alcor Member ICE:</span>
+                    <span style={{ color: '#111827', fontWeight: 'bold' }}>10% off first year</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
+                    <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Member ICE:</span>
+                    <span style={{ color: '#111827', fontWeight: 'bold' }}>25% off first year</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Cryopreservation Member ICE:</span>
+                    <span style={{ color: '#111827', fontWeight: 'bold' }}>50% off first year</span>
+                  </div>
+                </div>
+                
+                <p style={{ marginBottom: '1.5rem' }}>
+                  If you learned about Alcor from an ICE educator and received a discount code, enter it below to save on your membership dues! The discount applies to your first year of membership only.
+                </p>
+                
+                <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1rem' }}>
+                  <h4 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.75rem', fontSize: '1.125rem' }}>
+                    How it works:
+                  </h4>
+                  <ol style={{ listStyleType: 'decimal', listStylePosition: 'inside', color: '#374151', margin: 0, padding: 0 }}>
+                    <li style={{ marginBottom: '0.5rem' }}>Enter your ICE code during signup</li>
+                    <li style={{ marginBottom: '0.5rem' }}>Your discount is automatically applied</li>
+                    <li style={{ marginBottom: '0.5rem' }}>ICE educator receives 50% of your first-year dues as compensation</li>
+                    <li>You save money on your first year!</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ borderTop: '1px solid #e5e7eb', padding: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeIceModal}
+                style={{
+                  backgroundColor: '#0c2340',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '0.5rem 1.5rem',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>,
+        document.body
+      )}
     </div>
   );
 }

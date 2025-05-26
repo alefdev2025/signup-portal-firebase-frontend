@@ -61,6 +61,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  const [packageInfo, setPackageInfo] = useState(null);
  const [dropdownOpen, setDropdownOpen] = useState(false);
  const [animationComplete, setAnimationComplete] = useState(false);
+ const [validationErrors, setValidationErrors] = useState({});
  
  // Add state for insurance sub-option
  const [insuranceSubOption, setInsuranceSubOption] = useState(initialData?.insuranceSubOption || "existing");
@@ -157,12 +158,16 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  // Handler for selecting an option
  const selectOption = (option) => {
    setSelectedOption(option);
+   // Clear validation errors when option changes
+   setValidationErrors({});
  };
  
  // Handler for selecting insurance sub-option
  const selectInsuranceSubOption = (subOption) => {
    setInsuranceSubOption(subOption);
    setDropdownOpen(false);
+   // Clear validation errors when sub-option changes
+   setValidationErrors({});
  };
  
  // Toggle the dropdown
@@ -177,6 +182,15 @@ export default function FundingPage({ initialData, onBack, onNext }) {
      ...prev,
      [name]: value
    }));
+   
+   // Clear validation error for this field when user starts typing
+   if (validationErrors[name]) {
+     setValidationErrors(prev => {
+       const newErrors = { ...prev };
+       delete newErrors[name];
+       return newErrors;
+     });
+   }
  };
  
  const handleBackClick = () => {
@@ -191,13 +205,35 @@ export default function FundingPage({ initialData, onBack, onNext }) {
   }
 };
 
+// Get available funding options and check if basic membership
+const availableOptions = getAvailableFundingOptions(packageInfo);
+const hasBasicMembership = packageInfo && packageInfo.preservationType === "basic";
+
+// Check if we need insurance company field
+const needsInsuranceCompany = !hasBasicMembership && selectedOption === "insurance" && insuranceSubOption === "existing";
+const isInsuranceCompanyMissing = needsInsuranceCompany && !policyDetails.insuranceCompany.trim();
+
 // Handler for next button
 const handleNext = async () => {
-  // For basic membership, don't require a selection
-  const hasBasicMembership = packageInfo && packageInfo.preservationType === "basic";
+  // Clear any existing errors
+  setError(null);
   
   // If not basic membership and no option selected, return
-  if (!hasBasicMembership && !selectedOption) return;
+  if (!hasBasicMembership && !selectedOption) {
+    return;
+  }
+  
+  // Check if insurance company is required but missing
+  if (isInsuranceCompanyMissing) {
+    setValidationErrors({ insuranceCompany: true });
+    // Scroll to the insurance company field to draw attention
+    const insuranceField = document.getElementById('insuranceCompany');
+    if (insuranceField) {
+      insuranceField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      insuranceField.focus();
+    }
+    return;
+  }
   
   setIsSubmitting(true);
   console.log("FundingPage: Handle next button clicked");
@@ -205,8 +241,6 @@ const handleNext = async () => {
   try {
     // Create data object with all details
     const data = {
-      // For basic membership, send 'none' since no funding is required for preservation
-      // For other packages, use selected option or default to 'later'
       fundingMethod: hasBasicMembership ? 'none' : (selectedOption || 'later'),
       selectionDate: new Date().toISOString()
     };
@@ -216,13 +250,12 @@ const handleNext = async () => {
       data.insuranceSubOption = insuranceSubOption;
       
       if (insuranceSubOption === "existing") {
-        data.policyNumber = policyDetails.policyNumber;
-        data.insuranceCompany = policyDetails.insuranceCompany;
-        data.coverageAmount = policyDetails.coverageAmount;
+        // Only send insurance company (the only required field)
+        data.insuranceCompany = policyDetails.insuranceCompany.trim();
       }
     }
     
-    console.log("Sending funding data:", data); // Debug log
+    console.log("Sending funding data:", data);
     
     // Validate data with backend
     const validationResult = await fundingService.validateFundingData(data);
@@ -253,9 +286,10 @@ const handleNext = async () => {
     }
     
     return true;
+    
   } catch (error) {
     console.error("Error in handleNext:", error);
-    alert(error.message || "Failed to save funding information. Please try again.");
+    setError(error.message || "Failed to save funding information. Please try again.");
     setIsSubmitting(false);
     return false;
   }
@@ -267,9 +301,9 @@ const handleNext = async () => {
    fontSize: "1.05rem"
  };
  
- // Get available funding options and check if basic membership
- const availableOptions = getAvailableFundingOptions(packageInfo);
- const hasBasicMembership = packageInfo && packageInfo.preservationType === "basic";
+ // Add validation logic for button state - but keep button always enabled like ContactInfoPage
+ const hasValidationErrors = Object.keys(validationErrors).length > 0;
+ const isFormValid = hasBasicMembership || selectedOption;
  
  return (
    <div 
@@ -327,6 +361,7 @@ const handleNext = async () => {
                dropdownOpen={dropdownOpen}
                policyResourcesExpanded={policyResourcesExpanded}
                animationComplete={animationComplete}
+               validationErrors={validationErrors}
                onSelectInsuranceSubOption={selectInsuranceSubOption}
                onToggleDropdown={toggleDropdown}
                onTogglePolicyResources={togglePolicyResources}
@@ -334,6 +369,8 @@ const handleNext = async () => {
                marcellusStyle={marcellusStyle}
              />
            )}
+           
+
          </div>
        )}
        
@@ -354,9 +391,9 @@ const handleNext = async () => {
          <button 
            type="button"
            onClick={handleNext}
-           disabled={isSubmitting || isLoading || (!hasBasicMembership && !selectedOption)}
+           disabled={isSubmitting || isLoading}
            className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
-             (hasBasicMembership || selectedOption) ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+             (isSubmitting || isLoading) ? "bg-gray-400 text-white cursor-not-allowed" : "bg-[#775684] text-white hover:bg-[#664573]"
            } disabled:opacity-70`}
            style={marcellusStyle}
          >

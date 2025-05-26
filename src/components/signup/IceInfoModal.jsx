@@ -8,8 +8,8 @@ export default function IceInfoModal({ showIceInfo, setShowIceInfo }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Semi-transparent backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-70 transition-opacity" onClick={() => setShowIceInfo(false)}></div>
+      {/* Transparent backdrop */}
+      <div className="fixed inset-0 bg-transparent transition-opacity" onClick={() => setShowIceInfo(false)}></div>
       
       {/* Modal container */}
       <div className="relative flex min-h-screen items-center justify-center p-4">
@@ -59,7 +59,7 @@ export default function IceInfoModal({ showIceInfo, setShowIceInfo }) {
                   <strong>ICE (Independent Cryonics Educator)</strong> codes are special discount codes provided by certified educators who help spread awareness about cryonics and Alcor's services. ICE educators receive 50% of your first-year dues as compensation for successful referrals.
                 </p>
                 
-                <div className="bg-gray-100 border border-gray-300 rounded-lg p-6">
+                <div className="bg-white border border-gray-300 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-800 mb-4 text-2xl">
                     Discount Levels
                   </h3>
@@ -83,7 +83,7 @@ export default function IceInfoModal({ showIceInfo, setShowIceInfo }) {
                   If you learned about Alcor from an ICE educator and received a discount code, enter it below to save on your membership dues! The discount applies to your first year of membership only.
                 </p>
                 
-                <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
+                <div className="bg-white border border-gray-300 rounded-lg p-4">
                   <h4 className="font-semibold text-gray-800 mb-3 text-xl">
                     How it works:
                   </h4>
