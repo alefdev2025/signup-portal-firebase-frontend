@@ -1,89 +1,94 @@
-// File: components/FundingCard.jsx
-import React from 'react';
-import alcorStar from "../assets/images/alcor-star.png";
-import alcorYellowStar from "../assets/images/alcor-yellow-star.png";
+// File: pages/components/FundingCard.jsx
+import React from "react";
+import alcorStarSelected from "../../assets/images/alcor-star.png";
 
 const FundingCard = ({ 
   option, 
-  title, 
-  description, 
-  tag, 
-  icon, 
-  bgColor, 
-  iconBgColor,
-  selected, 
-  onSelect,
-  pricing,
-  benefits
+  isSelected, 
+  onSelect, 
+  packageInfo, 
+  animationComplete, 
+  animationDelay,
+  getDynamicPricing 
 }) => {
+  const delayStyle = {
+    transitionDelay: `${animationDelay}ms`
+  };
+
+  const dynamicCost = getDynamicPricing(option.id, packageInfo);
+
   return (
-    <div onClick={() => onSelect(option)} className="cursor-pointer">
-      <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selected ? 'ring-2 ring-[#775684]' : 'ring-1 ring-gray-400'}`}>
-        {/* SELECTED indicator */}
-        <div className="bg-white border-b border-gray-200">
-          {selected && (
-            <div className="text-center py-3.5">
-              <span className="text-white px-5 py-1.5 text-base font-black tracking-wider uppercase bg-[#775684] rounded-md">
-                Selected
-              </span>
-            </div>
-          )}
-          {!selected && <div className="h-14"></div>}
+    <div 
+      onClick={onSelect} 
+      className={`cursor-pointer h-full transform transition-all duration-500 ease-in-out hover:scale-[1.02] ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${isSelected ? "" : "hover:shadow-lg"}`}
+      style={delayStyle}
+    >
+      <div className={`rounded-3xl overflow-hidden h-full flex flex-col shadow-md ${isSelected ? "border border-[#65417c]" : "border-2 border-transparent"} relative`}>
+        {/* Selected Indicator */}
+        <div className="h-12 w-full bg-white flex items-center justify-center">
+          <div className={`flex items-center ${isSelected ? "bg-[#15263f] text-white px-3 py-1 rounded-sm" : "text-transparent"}`}>
+            {isSelected && (
+              <img src={alcorStarSelected} alt="Selected" className="w-5 h-5 mr-2" />
+            )}
+            <span className="font-bold text-sm tracking-widest">
+              SELECTED
+            </span>
+          </div>
         </div>
         
-        {/* Card header - INVERTED: top is white, bottom is colored */}
-        <div className="p-0">
-          {/* White section for title and description */}
-          <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-8 md:pt-4 md:pl-4 text-gray-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center justify-start w-full">
-                <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0" />
-                <h3 className="text-2xl font-semibold text-gray-900">{title}</h3>
+        <div className="flex-1 flex flex-col">
+          {/* Header Section */}
+          <div className="bg-white px-8 py-6">
+            <div className="flex items-start mb-2">
+              <div className="mr-4 bg-white border border-[#775684] rounded-lg p-2" style={{ width: '68px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={option.icon} alt={option.title} className="max-w-[75%] max-h-[75%] object-contain" />
               </div>
-              <div className={`${iconBgColor} p-3 rounded-md ml-3 flex-shrink-0`}>
-                <img src={icon} alt={title} className="w-8 h-8" />
+              <div className="flex flex-col">
+                <h3 className="text-2xl font-semibold text-gray-800">{option.title}</h3>
+                <div className={`${option.badge.bgColor} ${option.badge.textColor} font-bold py-1 px-4 mt-2 text-center text-sm tracking-wider rounded-full inline-block`}>
+                  {option.badge.text}
+                </div>
               </div>
             </div>
+          </div>
+          
+          {/* Description & Pricing Section */}
+          <div className="bg-white px-8 py-6 border-t border-gray-200">
+            <p className="text-gray-700 text-xl mb-6">
+              {option.description}
+            </p>
             
-            {tag && (
-              <div className="mt-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${
-                  tag === 'MOST POPULAR' 
-                    ? 'bg-yellow-400 text-gray-800' 
-                    : 'bg-white border border-gray-300 text-gray-700'
-                }`}>
-                  {tag}
+            <div className="pt-2">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-gray-600 text-xl">
+                  {option.pricing.costLabel || "Typical Cost:"}
+                </span>
+                <span className={`${option.pricing.costColor} font-bold text-xl`}>
+                  {dynamicCost}
                 </span>
               </div>
-            )}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 text-xl">
+                  {option.pricing.complexityLabel || "Complexity:"}
+                </span>
+                <span className={`${option.pricing.costColor} font-bold text-xl`}>
+                  {option.pricing.complexity}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Benefits Section */}
+          <div className="bg-white px-8 py-4 text-gray-800 flex-grow border-t border-gray-200">
+            <h4 className="font-semibold text-lg mb-3 text-gray-800">Benefits:</h4>
             
-            <p className="text-gray-600 mt-6">
-              {description}
-            </p>
-          </div>
-          
-          {/* White section for pricing info */}
-          <div className="bg-white p-4 sm:p-6 md:p-8 border-t border-gray-200">
-            {pricing.map((item, index) => (
-              <div key={index} className="flex justify-between items-center mb-2 last:mb-0">
-                <span className="text-gray-700 text-lg">{item.label}:</span>
-                <span className="font-bold text-gray-900 text-xl">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* What's Included - with colored background */}
-        <div className={`${bgColor} p-4 sm:p-6 md:p-8 border-t border-gray-600`}>
-          <h4 className="text-white text-xl font-semibold mb-5">Benefits:</h4>
-          
-          <div className="space-y-4 pl-4 text-gray-200 text-lg">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="flex items-center">
-                <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                <span>{benefit}</span>
-              </div>
-            ))}
+            <ul className="mb-4 space-y-2">
+              {option.benefits.map((benefit, index) => (
+                <li key={index} className="flex items-center">
+                  <span className="text-gray-800 text-xl">{benefit}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

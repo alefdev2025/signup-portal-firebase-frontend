@@ -1,12 +1,13 @@
-// File: pages/signup/MembershipPage.jsx
+// File: components/signup/MembershipPage.jsx
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
 import MembershipSummary from "./MembershipSummary";
 import MembershipDocuSign from "./MembershipDocuSign";
+import PaymentOptions from "./PaymentOptions";
+import IceCodeSection from "./IceCodeSection";
+import LifetimeMembershipSection from "./LifetimeMembershipSection";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
-import iceLogo from "../../assets/images/ICE-logo-temp.png";
-import navyALogo from "../../assets/images/navy-a-logo.png";
 
 // Import membership service
 import membershipService from "../../services/membership";
@@ -41,7 +42,7 @@ const membershipHelpContent = [
   }
 ];
 
-export default function MembershipPage({ initialData, onBack, onNext }) {
+export default function MembershipPage({ initialData, onBack, onNext, preloadedMembershipData = null, preloadedPackageData = null }) {
   const { user } = useUser();
   
   // Page state management
@@ -57,7 +58,6 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
   const [iceCodeValid, setIceCodeValid] = useState(initialData?.iceCodeValid || null);
   const [iceCodeInfo, setIceCodeInfo] = useState(initialData?.iceCodeInfo || null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [showIceInfo, setShowIceInfo] = useState(false);
   const [interestedInLifetime, setInterestedInLifetime] = useState(initialData?.interestedInLifetime || false);
   
   // Package info state
@@ -79,31 +79,55 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
         setIsLoading(true);
         setError(null);
         
-        // Fetch user's age and membership cost from pricing service (like PackagePage does)
-        const pricingResult = await getMembershipCost();
-        console.log("MembershipPage: getMembershipCost() result:", pricingResult);
-        if (pricingResult?.success) {
-          console.log("MembershipPage: User's age from backend:", pricingResult.age);
-          console.log("MembershipPage: Annual dues from backend:", pricingResult.annualDues);
-          console.log("MembershipPage: Membership cost from backend:", pricingResult.membershipCost);
+        // Use preloaded membership data if available
+        if (preloadedMembershipData) {
+          console.log("MembershipPage: Using preloaded membership data:", preloadedMembershipData);
+          setMembershipAge(preloadedMembershipData.age || 36);
+          setMembershipCost(preloadedMembershipData.membershipCost || 540);
           
-          setMembershipAge(pricingResult.age || 36);
-          setMembershipCost(pricingResult.membershipCost || 540);
-          
-          // Store the membership costs from the pricing service
+          // Store the membership costs from the preloaded data
           setMembershipCosts({
-            annualDues: pricingResult.annualDues,
-            monthlyDues: pricingResult.monthlyDues,
-            duesMultiplier: pricingResult.duesMultiplier,
-            membershipCost: pricingResult.membershipCost
+            annualDues: preloadedMembershipData.annualDues,
+            monthlyDues: preloadedMembershipData.monthlyDues,
+            duesMultiplier: preloadedMembershipData.duesMultiplier,
+            membershipCost: preloadedMembershipData.membershipCost
           });
         } else {
-          console.log("MembershipPage: Failed to get data from backend, using defaults");
-          console.error("MembershipPage: Error from pricing service:", pricingResult.error);
+          // Fetch user's age and membership cost from pricing service (like PackagePage does)
+          const pricingResult = await getMembershipCost();
+          console.log("MembershipPage: getMembershipCost() result:", pricingResult);
+          if (pricingResult?.success) {
+            console.log("MembershipPage: User's age from backend:", pricingResult.age);
+            console.log("MembershipPage: Annual dues from backend:", pricingResult.annualDues);
+            console.log("MembershipPage: Membership cost from backend:", pricingResult.membershipCost);
+            
+            setMembershipAge(pricingResult.age || 36);
+            setMembershipCost(pricingResult.membershipCost || 540);
+            
+            // Store the membership costs from the pricing service
+            setMembershipCosts({
+              annualDues: pricingResult.annualDues,
+              monthlyDues: pricingResult.monthlyDues,
+              duesMultiplier: pricingResult.duesMultiplier,
+              membershipCost: pricingResult.membershipCost
+            });
+          } else {
+            console.log("MembershipPage: Failed to get data from backend, using defaults");
+            console.error("MembershipPage: Error from pricing service:", pricingResult.error);
+          }
         }
         
-        // If initialData contains package info, use it
-        if (initialData && initialData.packageType && initialData.preservationType) {
+        // Use preloaded package data if available
+        if (preloadedPackageData) {
+          console.log("MembershipPage: Using preloaded package data:", preloadedPackageData);
+          setPackageInfo({
+            packageType: preloadedPackageData.packageType,
+            preservationType: preloadedPackageData.preservationType,
+            preservationEstimate: preloadedPackageData.preservationEstimate,
+            annualCost: preloadedPackageData.annualCost
+          });
+        } else if (initialData && initialData.packageType && initialData.preservationType) {
+          // If initialData contains package info, use it
           setPackageInfo({
             packageType: initialData.packageType,
             preservationType: initialData.preservationType,
@@ -132,12 +156,14 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
           }
         }
         
-        // Load membership costs - this might be redundant now
-        const costsResult = await membershipService.getMembershipCosts();
-        if (costsResult.success) {
-          // Only update if we didn't get costs from pricing service
-          if (!membershipCosts) {
-            setMembershipCosts(costsResult.data);
+        // Load membership costs only if we don't have preloaded data
+        if (!preloadedMembershipData) {
+          const costsResult = await membershipService.getMembershipCosts();
+          if (costsResult.success) {
+            // Only update if we didn't get costs from pricing service
+            if (!membershipCosts) {
+              setMembershipCosts(costsResult.data);
+            }
           }
         }
         
@@ -150,7 +176,7 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
     };
     
     loadPackageInfo();
-  }, [initialData]);
+  }, [initialData, preloadedMembershipData, preloadedPackageData]);
   
   // Validate ICE code when it changes
   const validateIceCode = async (code) => {
@@ -524,272 +550,37 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
               </span>
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Monthly Option */}
-              <div 
-                onClick={() => handlePaymentFrequencyChange("monthly")}
-                className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                  paymentFrequency === "monthly" 
-                    ? "border-[#775684] bg-gray-50 shadow-md" 
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="text-center">
-                  <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                    Monthly
-                    <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                  </h4>
-                  
-                  <div className="mb-8">
-                    <div className="text-6xl font-bold text-gray-900 mb-2">
-                      {costs ? formatCurrency(costs.finalMonthlyCost) : formatCurrency(getMonthlyCost())}
-                    </div>
-                    <p className="text-gray-600 text-lg">
-                      <span className="font-semibold">USD</span> • First month
-                    </p>
-                    <p className="text-gray-500 text-base">
-                      Renews monthly
-                    </p>
-                    {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "monthly" && (
-                      <p className="text-green-600 text-sm font-medium mt-1">
-                        Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                      </p>
-                    )}
-                  </div>
-                  
-                  <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                    paymentFrequency === "monthly"
-                      ? "bg-[#775684] text-white"
-                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}>
-                    {paymentFrequency === "monthly" ? "Selected" : "Select Monthly"}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Quarterly Option */}
-              <div 
-                onClick={() => handlePaymentFrequencyChange("quarterly")}
-                className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                  paymentFrequency === "quarterly" 
-                    ? "border-[#775684] bg-gray-50 shadow-md" 
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="text-center">
-                  <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                    Quarterly
-                    <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                  </h4>
-                  
-                  <div className="mb-8">
-                    <div className="text-6xl font-bold text-gray-900 mb-2">
-                      {costs ? formatCurrency(costs.finalQuarterlyCost) : formatCurrency(getQuarterlyCost())}
-                    </div>
-                    <p className="text-gray-600 text-lg">
-                      <span className="font-semibold">USD</span> • Every 3 months
-                    </p>
-                    <p className="text-gray-500 text-base">
-                      Renews quarterly
-                    </p>
-                    {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "quarterly" && (
-                      <p className="text-green-600 text-sm font-medium mt-1">
-                        Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                      </p>
-                    )}
-                  </div>
-                  
-                  <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                    paymentFrequency === "quarterly"
-                      ? "bg-[#775684] text-white"
-                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}>
-                    {paymentFrequency === "quarterly" ? "Selected" : "Select Quarterly"}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Annual Option */}
-              <div 
-                onClick={() => handlePaymentFrequencyChange("annually")}
-                className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                  paymentFrequency === "annually" 
-                    ? "border-[#775684] bg-gray-50 shadow-md" 
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="text-center">
-                  <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                    Annual
-                    <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                  </h4>
-                  
-                  <div className="mb-8">
-                    <div className="text-6xl font-bold text-gray-900 mb-2">
-                      {costs ? formatCurrency(costs.finalAnnualCost) : formatCurrency(getAnnualCost())}
-                    </div>
-                    <p className="text-gray-600 text-lg">
-                      <span className="font-semibold">USD</span> • Per year
-                    </p>
-                    <p className="text-gray-500 text-base">
-                      Renews annually
-                    </p>
-                    {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "annually" && (
-                      <p className="text-green-600 text-sm font-medium mt-1">
-                        Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                      </p>
-                    )}
-                  </div>
-                  
-                  <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                    paymentFrequency === "annually"
-                      ? "bg-[#775684] text-white"
-                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}>
-                    {paymentFrequency === "annually" ? "Selected" : "Select Annual"}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <PaymentOptions
+              paymentFrequency={paymentFrequency}
+              onPaymentFrequencyChange={handlePaymentFrequencyChange}
+              costs={costs}
+              formatCurrency={formatCurrency}
+              getMonthlyCost={getMonthlyCost}
+              getQuarterlyCost={getQuarterlyCost}
+              getAnnualCost={getAnnualCost}
+              iceCodeValid={iceCodeValid}
+              marcellusStyle={marcellusStyle}
+            />
           </div>
 
-          {/* ICE Code Section - Updated with ICE logo */}
-          <div className="mb-8 mt-12">
-            <div className="bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] border border-gray-200 rounded-xl p-10 shadow-sm">
-              {/* Header with ICE Logo - Left Aligned */}
-              <div className="flex items-center mb-10">
-                <div className="bg-white w-20 h-20 rounded-lg flex items-center justify-center mr-6 shadow-lg border border-gray-200">
-                  <img 
-                    src={iceLogo} 
-                    alt="ICE Logo" 
-                    className="h-14 w-14 object-contain"
-                    onError={(e) => {
-                      // Fallback to gradient icon if ICE logo fails to load
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div 
-                    className="bg-gradient-to-br from-[#775684] to-[#5a4063] w-full h-full rounded-lg hidden items-center justify-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-3xl font-bold text-[#323053]">ICE Discount Code</h3>
-                    <button 
-                      onClick={() => setShowIceInfo(!showIceInfo)}
-                      className="bg-[#775684] text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#664573] transition-colors text-lg font-bold ml-1"
-                      title="What's an ICE Code?"
-                    >
-                      ?
-                    </button>
-                  </div>
-                  <p className="text-gray-600 mt-2 text-lg">Save money with your Independent Cryonics Educator discount (first year only)</p>
-                </div>
-              </div>
-
-              {/* Input Section - Left Aligned */}
-              <div className="max-w-md">
-                <div className="relative mb-6">
-                  <input
-                    type="text"
-                    value={iceCode}
-                    onChange={handleIceCodeChange}
-                    placeholder="Enter ICE discount code"
-                    className="w-full px-6 py-5 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684] pr-16 font-mono tracking-wider"
-                    style={{...marcellusStyle, fontFamily: 'monospace'}}
-                  />
-                  
-                  {/* Validation indicator */}
-                  <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
-                    {isValidatingCode ? (
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-3 border-b-3 border-[#775684]"></div>
-                    ) : iceCode.trim() && iceCodeValid === true ? (
-                      <svg className="h-9 w-9 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : iceCode.trim() && iceCodeValid === false ? (
-                      <svg className="h-9 w-9 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    ) : null}
-                  </div>
-                </div>
-                
-                {/* Demo codes hint */}
-                {!iceCode.trim() && (
-                  <div className="text-base text-gray-500">
-                    <p>Demo: ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
-                  </div>
-                )}
-              </div>
-              
-              {/* Validation messages - Full width below input */}
-              {iceCode.trim() && iceCodeValid === true && iceCodeInfo && (
-                <div className="bg-[#f0f2ff] border border-[#e0e3ff] rounded-lg p-6 mb-4">
-                  <div className="flex items-center mb-4">
-                    <svg className="h-6 w-6 text-black mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-black font-bold text-2xl">ICE Code Accepted</span>
-                  </div>
-                  <div className="text-black space-y-3 text-xl">
-                    <p>Your Discount: <span className="font-semibold text-2xl">25% ({formatCurrency(costs.discountAmount)}) - First Year Only</span></p>
-                    <p className="text-black text-lg mt-4">Complete a cryopreservation contract to increase your discount to 50%!</p>
-                  </div>
-                </div>
-              )}
-              
-              {iceCode.trim() && iceCodeValid === false && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-4">
-                  <div className="flex items-center">
-                    <svg className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span className="text-red-800 font-bold text-xl">Invalid ICE code</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* ICE Code Section */}
+          <IceCodeSection
+            iceCode={iceCode}
+            handleIceCodeChange={handleIceCodeChange}
+            isValidatingCode={isValidatingCode}
+            iceCodeValid={iceCodeValid}
+            iceCodeInfo={iceCodeInfo}
+            costs={costs}
+            formatCurrency={formatCurrency}
+            marcellusStyle={marcellusStyle}
+          />
         </div>
         
         {/* Lifetime Membership Checkbox Section */}
-        <div className="mb-8 bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] border border-gray-200 rounded-xl p-10 shadow-sm">
-          <div className="flex items-start">
-            <input
-              type="checkbox"
-              id="lifetime-membership-interest"
-              checked={interestedInLifetime}
-              onChange={(e) => setInterestedInLifetime(e.target.checked)}
-              className="mt-0.5 h-8 w-8 text-[#775684] focus:ring-[#775684] border-[#775684] rounded cursor-pointer accent-[#775684]"
-            />
-            <label 
-              htmlFor="lifetime-membership-interest" 
-              className="ml-5 cursor-pointer"
-            >
-              <span className="text-3xl text-gray-800 font-bold flex items-center">
-                I'm interested in Lifetime Membership
-                <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 ml-3" />
-              </span>
-              <p className="text-gray-600 mt-3 text-xl">
-                Pay once and never worry about membership dues again. We'll contact you with a personalized quote based on your age.
-              </p>
-              <p className="text-[#775684] mt-4 text-xl font-medium">
-                ✓ No future price increases &nbsp;&nbsp;• &nbsp;&nbsp;✓ One-time payment &nbsp;&nbsp;• &nbsp;&nbsp;✓ Peace of mind
-              </p>
-              <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
-                <p className="text-gray-700 text-xl">
-                  <strong className="text-xl">Note:</strong> If you select lifetime membership, you'll submit only a membership application today and won't start your membership. We'll contact you within 24-48 hours to finalize your lifetime membership arrangement.
-                </p>
-              </div>
-            </label>
-          </div>
-        </div>
+        <LifetimeMembershipSection
+          interestedInLifetime={interestedInLifetime}
+          setInterestedInLifetime={setInterestedInLifetime}
+        />
         
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-8">
@@ -832,114 +623,6 @@ export default function MembershipPage({ initialData, onBack, onNext }) {
           </button>
         </div>
       </div>
-      
-      {/* ICE Info Modal - Updated with ICE logo */}
-      {showIceInfo && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          {/* Semi-transparent backdrop */}
-          <div className="fixed inset-0 bg-black bg-opacity-70 transition-opacity" onClick={() => setShowIceInfo(false)}></div>
-          
-          {/* Modal container */}
-          <div className="relative flex min-h-screen items-center justify-center p-4">
-            {/* Modal content */}
-            <div className="relative w-full max-w-3xl rounded-lg bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-              {/* Header with purple gradient and ICE logo */}
-              <div 
-                className="flex items-center justify-between rounded-t-lg px-6 py-4"
-                style={{
-                  background: 'linear-gradient(90deg, #6f2d74 0%, #8a4099 100%)'
-                }}
-              >
-                <div className="flex items-center">
-                  <img 
-                    src={iceLogo} 
-                    alt="ICE Logo" 
-                    className="h-10 mr-4 filter brightness-0 invert"
-                    onError={(e) => {
-                      // Fallback to star icon if ICE logo fails to load
-                      e.target.src = alcorStar;
-                      e.target.className = "h-10 mr-4 filter brightness-0 invert";
-                    }}
-                  />
-                  <h2 className="text-3xl font-bold text-white flex items-center">
-                    What's an ICE Code?
-                    <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 ml-3 filter brightness-0 invert" />
-                  </h2>
-                </div>
-                
-                {/* Close button */}
-                <button
-                  onClick={() => setShowIceInfo(false)}
-                  className="text-white hover:text-gray-200 focus:outline-none"
-                  aria-label="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Content area with scrolling */}
-              <div className="max-h-[70vh] overflow-y-auto p-8">
-                <div className="prose prose-lg max-w-none">
-                  <div className="text-gray-700 space-y-6 text-lg">
-                    <p>
-                      <strong>ICE (Independent Cryonics Educator)</strong> codes are special discount codes provided by certified educators who help spread awareness about cryonics and Alcor's services. ICE educators receive 50% of your first-year dues as compensation for successful referrals.
-                    </p>
-                    
-                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-6">
-                      <h3 className="font-semibold text-gray-800 mb-4 text-2xl">
-                        Discount Levels
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center py-3 border-b border-gray-300">
-                          <span className="text-gray-700 font-medium text-lg">Non-Alcor Member ICE:</span>
-                          <span className="text-gray-900 font-bold text-lg">10% off first year</span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-gray-300">
-                          <span className="text-gray-700 font-medium text-lg">Alcor Member ICE:</span>
-                          <span className="text-gray-900 font-bold text-lg">25% off first year</span>
-                        </div>
-                        <div className="flex justify-between items-center py-3">
-                          <span className="text-gray-700 font-medium text-lg">Alcor Cryopreservation Member ICE:</span>
-                          <span className="text-gray-900 font-bold text-lg">50% off first year</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <p>
-                      If you learned about Alcor from an ICE educator and received a discount code, enter it below to save on your membership dues! The discount applies to your first year of membership only.
-                    </p>
-                    
-                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-800 mb-3 text-xl">
-                        How it works:
-                      </h4>
-                      <ol className="list-decimal list-inside text-gray-700 space-y-2 text-xl">
-                        <li>Enter your ICE code during signup</li>
-                        <li>Your discount is automatically applied</li>
-                        <li>ICE educator receives 50% of your first-year dues as compensation</li>
-                        <li>You save money on your first year!</li>
-                      </ol>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Footer with close button */}
-              <div className="border-t border-gray-200 p-6 flex justify-end">
-                <button
-                  onClick={() => setShowIceInfo(false)}
-                  style={{ backgroundColor: "#0c2340" }}
-                  className="px-6 py-2 rounded-full text-white font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       
       <HelpPanel 
         showHelpInfo={showHelpInfo} 

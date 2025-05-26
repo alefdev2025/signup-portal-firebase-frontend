@@ -1,17 +1,29 @@
 // File: pages/signup/PackageStep.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
+import { useSignupFlow } from "../../contexts/SignupFlowContext";
 import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
 import { savePackageInfo } from "../../services/package";
 import { getStepFormData, saveFormData } from "../../services/storage";
-import { getMembershipCost } from "../../services/pricing"; // Import the pricing service
+import { getMembershipCost } from "../../services/pricing";
 // Import your existing PackagePage component
 import PackagePage from "./PackagePage";
 
+// Global debug function that persists through navigation
+const LOG_TO_TERMINAL = (message) => {
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/log?t=${Date.now()}`, false);
+    xhr.send(`[PACKAGE STEP] ${message}`);
+    console.log(`[PACKAGE STEP] ${message}`);
+  } catch (e) {
+    // Ignore errors
+  }
+};
+
 const PackageStep = () => {
-  const navigate = useNavigate();
   const { currentUser, refreshUserProgress } = useUser();
+  const { navigateToStep, goToNextStep, currentStepIndex, canAccessStep } = useSignupFlow();
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({});
   const [membershipData, setMembershipData] = useState(null);
@@ -26,41 +38,44 @@ const PackageStep = () => {
     initializedRef.current = true;
     
     const init = async () => {
-      // Clear any existing force navigation flags to prevent re-renders
-      localStorage.removeItem('force_active_step');
-      localStorage.removeItem('force_timestamp');
-      
       if (!currentUser) {
-        console.log("No user authenticated, redirecting to signup");
-        // Redirect unauthenticated users back to account creation
-        navigate('/signup', { replace: true });
+        LOG_TO_TERMINAL("No user authenticated, redirecting to account creation");
+        // Navigate back to account creation step
+        navigateToStep(0, { force: true, reason: 'not_authenticated' });
         return;
       }
       
       try {
-        console.log("PackageStep: Starting initialization");
+        LOG_TO_TERMINAL("Starting initialization");
+        
+        // Load any saved form data for this step from local storage
+        const savedData = getStepFormData("package");
+        if (savedData) {
+          LOG_TO_TERMINAL("Loading saved form data");
+          setFormData(savedData);
+        }
         
         // Start all data fetching operations concurrently for better performance
         const progressPromise = getUserProgressAPI();
         const membershipPromise = getMembershipCost();
         
-        // Load any saved form data for this step from local storage
-        const savedData = getStepFormData("package");
-        if (savedData) {
-          setFormData(savedData);
-        }
-        
         // Check user's progress via API
         const progressResult = await progressPromise;
         
         if (progressResult.success) {
-          console.log("User progress:", progressResult);
+          LOG_TO_TERMINAL(`User progress: step ${progressResult.step}`);
           
-          // If user hasn't completed previous step, redirect back
-          if (progressResult.step < 2) {
-            console.log("User has not completed previous step, redirecting");
-            navigate('/signup/contact', { replace: true });
+          // Package is step 3, so check if user hasn't completed step 2 (contact)
+          if (progressResult.step < 3) {
+            LOG_TO_TERMINAL("User has not completed previous step, redirecting to contact");
+            navigateToStep(2, { force: true, reason: 'incomplete_previous_step' });
             return;
+          }
+          
+          // If user has already completed this step and moved further, allow them to be here
+          // but load their existing data
+          if (progressResult.step > 3) {
+            LOG_TO_TERMINAL("User has already completed this step, loading existing data");
           }
         } else {
           console.error("Error getting user progress:", progressResult.error);
@@ -75,12 +90,13 @@ const PackageStep = () => {
             membershipCost: membershipResult.membershipCost || 540,
             age: membershipResult.age || 36
           });
+          LOG_TO_TERMINAL("Membership data loaded successfully");
         } else {
           console.error("Error fetching membership cost:", membershipResult?.error);
           setError(membershipResult?.error || "Failed to calculate membership cost");
         }
         
-        console.log("PackageStep: Initialization complete");
+        LOG_TO_TERMINAL("Initialization complete");
       } catch (error) {
         console.error("Error initializing package step:", error);
         setError("An error occurred while loading your information. Please try again.");
@@ -93,23 +109,31 @@ const PackageStep = () => {
     
     // Cleanup function to prevent memory leaks
     return () => {
-      // Make sure any pending async operations are handled properly
-      console.log("PackageStep: Unmounting component");
+      LOG_TO_TERMINAL("Unmounting component");
     };
-  }, [currentUser, navigate]);
+  }, [currentUser, navigateToStep]);
   
   // Handle going back to previous step
   const handleBack = () => {
-    navigate('/signup/contact', { replace: true });
+    LOG_TO_TERMINAL("PackageStep: Back button clicked");
+    
+    // Use SignupFlow navigation system
+    navigateToStep(2, { reason: 'user_back_button' }); // Go back to contact step
   };
   
   // Handle form submission and proceeding to next step
   const handleNext = async (stepData) => {
-    if (!currentUser) return false;
+    if (!currentUser) {
+      LOG_TO_TERMINAL("No current user - cannot proceed");
+      return false;
+    }
     
     try {
+      LOG_TO_TERMINAL("Saving package info and proceeding to next step");
+      
       // Save form data locally
       saveFormData("package", stepData);
+      LOG_TO_TERMINAL("Form data saved locally");
       
       // Save package info via API
       const saveResult = await savePackageInfo(stepData);
@@ -118,23 +142,35 @@ const PackageStep = () => {
         throw new Error(saveResult.error || "Failed to save package information");
       }
       
-      // Update progress via API - use direct navigation instead of force flags
+      LOG_TO_TERMINAL("Package info saved to backend");
+      
+      // Update progress via API
+      LOG_TO_TERMINAL("Updating progress via API...");
       const progressResult = await updateSignupProgressAPI("funding", 4);
       
       if (!progressResult.success) {
         throw new Error(progressResult.error || "Failed to update progress");
       }
       
+      LOG_TO_TERMINAL("Progress updated successfully, proceeding to next step");
+      
       // Refresh user progress from context
       if (typeof refreshUserProgress === 'function') {
         await refreshUserProgress();
       }
       
-      // Navigate to next step WITHOUT setting force flags
-      console.log("PackageStep: Navigation to funding page");
-      navigate('/signup/funding', { replace: true });
-      return true;
+      // Use goToNextStep() like the contact step does
+      const navigationSuccess = goToNextStep();
+      
+      if (navigationSuccess) {
+        LOG_TO_TERMINAL("Navigation to next step successful");
+        return true;
+      } else {
+        LOG_TO_TERMINAL("Navigation failed");
+        return false;
+      }
     } catch (error) {
+      LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
       console.error("Error saving package info:", error);
       return false;
     }
@@ -143,13 +179,9 @@ const PackageStep = () => {
   // Show loading spinner while initializing
   if (loading) {
     return (
-      <div className="w-full max-w-6xl mx-auto mt-8 px-4 sm:px-6">
-        <div className="flex justify-center">
-          <div className="bg-white rounded-lg shadow-sm px-6 py-4 flex items-center" style={{ maxWidth: '300px' }}>
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#775684] border-opacity-50 border-t-[#775684] mr-3"></div>
-            <p className="text-gray-600 text-sm">Loading membership information...</p>
-          </div>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
+        <p className="ml-4 text-xl text-gray-700">Loading package information...</p>
       </div>
     );
   }
@@ -177,7 +209,7 @@ const PackageStep = () => {
     );
   }
   
-  console.log("PackageStep: Rendering PackagePage component");
+  LOG_TO_TERMINAL("Rendering PackagePage component");
   
   // Render the package selection form with proper handlers and pre-loaded membership data
   return (

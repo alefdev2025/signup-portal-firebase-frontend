@@ -389,39 +389,25 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     
     // BEFORE processing
     console.log("🏠 BEFORE - formData state:", {
+      firstName: formData.firstName,
+      lastName: formData.lastName, 
       city: formData.city,
       region: formData.region, 
       postalCode: formData.postalCode
     });
     
-    // Process the address data (your existing logic)
-    const updatedFormData = {
-      ...formData
-    };
+    // Only update the address-related fields, preserve everything else
+    setFormData(prev => ({
+      ...prev,  // Keep ALL existing form data
+      streetAddress: addressData.streetAddress || addressData.formattedAddress || "",
+      city: addressData.city || "",
+      region: addressData.region || "",
+      postalCode: addressData.postalCode || "",
+      country: addressData.country || "United States",
+      cnty_hm: ""  // Clear county field
+    }));
     
-    // Force remove county field
-    delete updatedFormData.cnty_hm;
-    
-    // Set all the address fields DIRECTLY
-    updatedFormData.streetAddress = addressData.streetAddress || addressData.formattedAddress || "";
-    updatedFormData.city = addressData.city || "";
-    updatedFormData.region = addressData.region || "";
-    updatedFormData.postalCode = addressData.postalCode || "";
-    updatedFormData.country = addressData.country || "United States";
-    updatedFormData.cnty_hm = "";
-    
-    console.log("🏠 PROCESSED data to set:", {
-      streetAddress: updatedFormData.streetAddress,
-      city: updatedFormData.city,
-      region: updatedFormData.region,
-      postalCode: updatedFormData.postalCode,
-      country: updatedFormData.country
-    });
-    
-    // Update the state
-    setFormData(updatedFormData);
-    
-    console.log("🏠 State update called");
+    console.log("🏠 State update called with address data only");
     
     // Debug after state update
     setTimeout(() => {
@@ -430,7 +416,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       console.log("🏠 === ADDRESS SELECT DEBUG END ===");
     }, 500);
     
-    // Clear validation results and errors
+    // Clear validation results and errors for address fields only
     setValidationResults(null);
     setErrors(prev => ({
       ...prev,
@@ -448,9 +434,11 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     console.log("Mailing address selected in parent component:", addressData);
     
     const processedData = processAddressData(addressData, true);
+    
+    // Only update mailing address fields, preserve everything else
     setFormData(prev => ({
-      ...prev,
-      ...processedData
+      ...prev,  // Keep ALL existing form data
+      ...processedData  // Apply only the mailing address updates
     }));
     
     // Clear validation results since address changed
@@ -464,7 +452,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       }
     }, 100);
     
-    // Clear any mailing address-related errors
+    // Clear any mailing address-related errors only
     setErrors(prev => ({
       ...prev,
       mailingStreetAddress: "",
