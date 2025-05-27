@@ -416,13 +416,13 @@ function PaymentForm({ userData, onBack, onComplete, paymentInfo }) {
                 {/* Desktop-only title section */}
                 <div className="hidden lg:block space-y-12 pt-20">
                   <div>
-                    <h2 className="text-lg text-gray-500 mb-6">
+                    <h2 className="text-lg mb-6" style={{ color: '#9ca3af' }}>
                       Subscribe to Membership - {currentPaymentInfo.frequency} - USD
                     </h2>
                     <div className="text-5xl font-bold text-gray-900 mb-4">
                       {formatCurrency(currentPaymentInfo.discountedAmount)}
                     </div>
-                    <div className="text-lg text-gray-600">
+                    <div style={{ color: '#9ca3af', fontSize: '1.125rem' }}>
                       per {currentPaymentInfo.frequency.toLowerCase()}
                     </div>
                   </div>
@@ -454,7 +454,7 @@ function PaymentForm({ userData, onBack, onComplete, paymentInfo }) {
                               ICE Code Discount ({currentPaymentInfo.iceCode})
                             </span>
                             <div className="text-sm text-[#673171] mt-2">
-                              First year only • {currentPaymentInfo.iceCodeInfo?.educatorName || 'ICE Educator'}
+                              First year only
                             </div>
                           </>
                         ) : (
@@ -514,7 +514,7 @@ function PaymentForm({ userData, onBack, onComplete, paymentInfo }) {
                               ICE Code Discount ({currentPaymentInfo.iceCode})
                             </span>
                             <div className="text-sm text-[#673171] mt-2">
-                              First year only • {currentPaymentInfo.iceCodeInfo?.educatorName || 'ICE Educator'}
+                              First year only
                             </div>
                           </>
                         ) : (
