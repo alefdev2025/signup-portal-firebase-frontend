@@ -5,13 +5,14 @@ import { useUser } from './UserContext';
 const SignupFlowContext = createContext(null);
 
 const SIGNUP_STEPS = [
-  { id: 'account', label: 'Account', component: 'AccountCreationStep' },
-  { id: 'success', label: 'Success', component: 'AccountSuccessStep' },
-  { id: 'contact', label: 'Contact Info', component: 'ContactInfoStep' },
-  { id: 'package', label: 'Package', component: 'PackageStep' },
-  { id: 'funding', label: 'Funding', component: 'FundingStep' },
-  { id: 'membership', label: 'Membership', component: 'MembershipStep' }
-];
+    { id: 'account', label: 'Account', component: 'AccountCreationStep' },
+    { id: 'success', label: 'Success', component: 'AccountSuccessStep' },
+    { id: 'contact', label: 'Contact Info', component: 'ContactInfoStep' },
+    { id: 'package', label: 'Package', component: 'PackageStep' },
+    { id: 'funding', label: 'Funding', component: 'FundingStep' },
+    { id: 'membership', label: 'Membership', component: 'MembershipStep' },
+    { id: 'docusign', label: 'DocuSign', component: 'DocuSignStep' }  // Add this line
+  ];
 
 export const SignupFlowProvider = ({ children }) => {
   const { currentUser, signupState, isLoading } = useUser();

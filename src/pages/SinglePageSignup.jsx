@@ -11,6 +11,7 @@ import ContactInfoStep from "../components/signup/ContactInfoStep";
 import PackageStep from "../components/signup/PackageStep";
 import FundingStep from "../components/signup/FundingStep";
 import MembershipStep from "../components/signup/MembershipStep";
+import DocuSignStep from "../components/signup/DocuSignStep";
 
 // Import the beautiful banner
 import ResponsiveBanner from "../components/ResponsiveBanner";
@@ -22,7 +23,8 @@ const STEP_COMPONENTS = {
   ContactInfoStep,
   PackageStep,
   FundingStep,
-  MembershipStep
+  MembershipStep,
+  DocuSignStep
 };
 
 export default function SinglePageSignup() {
@@ -66,6 +68,11 @@ export default function SinglePageSignup() {
         </div>
       </div>
     );
+  }
+
+  // Special handling for DocuSign step - render without banner and container
+  if (currentStep.id === 'docusign') {
+    return <StepComponent />;
   }
 
   return (

@@ -42,8 +42,8 @@ const MobileProgressCircles = ({
 
           {/* Active connector lines - one for each completed segment */}
           {Array.from({ length: activeStep }, (_, i) => {
-            const startColor = stepExactColors[i];
-            const endColor = stepExactColors[i + 1];
+            const startColor = stepExactColors[i] || "#5c3a6f"; // Fallback color
+            const endColor = stepExactColors[i + 1] || "#d09f53"; // Fallback color
             
             return (
               <div 
@@ -69,8 +69,8 @@ const MobileProgressCircles = ({
 
             let containerClasses = "w-7 h-7 rounded-full flex items-center justify-center relative";
             
-            // Get the exact color for this step
-            const baseColor = stepExactColors[index];
+            // Get the exact color for this step with fallback
+            const baseColor = stepExactColors[index] || stepExactColors[stepExactColors.length - 1] || "#d09f53";
             
             // Extract the RGB values from the hex color
             const r = parseInt(baseColor.substring(1, 3), 16);

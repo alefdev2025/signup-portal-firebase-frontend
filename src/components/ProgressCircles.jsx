@@ -42,8 +42,8 @@ const ProgressCircles = ({
 
           {/* Active connector lines - one for each completed segment */}
           {Array.from({ length: activeStep }, (_, i) => {
-            const startColor = stepExactColors[i];
-            const endColor = stepExactColors[i + 1];
+            const startColor = stepExactColors[i] || "#5c3a6f"; // Fallback color
+            const endColor = stepExactColors[i + 1] || "#d09f53"; // Fallback color
             
             return (
               <div 
@@ -67,8 +67,8 @@ const ProgressCircles = ({
             // Step 0 is always clickable if we've completed any steps
             const isClickable = (index === 0 && maxCompletedStep > 0) || (index <= maxCompletedStep);
             
-            // Get the exact color for this step
-            const baseColor = stepExactColors[index];
+            // Get the exact color for this step with fallback
+            const baseColor = stepExactColors[index] || stepExactColors[stepExactColors.length - 1] || "#d09f53";
             
             // Extract the RGB values from the hex color
             const r = parseInt(baseColor.substring(1, 3), 16);

@@ -45,7 +45,8 @@ const UserProvider = ({ children }) => {
           email: user.email,
           displayName: user.displayName || "New Member",
           signupStep: result.stepName || "account",
-          signupProgress: result.step || 0,
+          //signupProgress: result.step || 0,
+          signupProgress: (typeof result.step === 'object' ? result.step.step : result.step) || 0,
           signupCompleted: result.isCompleted || false,
           lastUpdated: new Date(),
           timestamp: Date.now()

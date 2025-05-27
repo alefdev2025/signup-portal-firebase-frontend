@@ -186,7 +186,7 @@ const MembershipStep = () => {
       
       // Update progress via API
       LOG_TO_TERMINAL("Updating progress via API...");
-      const progressResult = await updateSignupProgressAPI("payment", 6);
+      const progressResult = await updateSignupProgressAPI("docusign", 5);
       
       if (!progressResult.success) {
         throw new Error(progressResult.error || "Failed to update progress");

@@ -372,63 +372,67 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     setCurrentPage('membership');
   };
   
-  // Handler for proceeding from summary to DocuSign
-  const handleProceedToDocuSign = async () => {
-    setIsSubmitting(true);
+// In MembershipPage.jsx, update handleProceedToDocuSign:
+const handleProceedToDocuSign = async () => {
+  setIsSubmitting(true);
+  
+  try {
+    console.log("MembershipPage: Proceeding to DocuSign step...");
     
-    try {
-      // Validate ICE code one final time before saving
-      if (iceCode.trim()) {
-        console.log("Final validation of ICE code before save:", iceCode);
-        const finalValidation = await membershipService.validateIceCode(iceCode.trim());
-        
-        if (!finalValidation.valid) {
-          throw new Error("ICE code is no longer valid. Please check the code and try again.");
-        }
-        
-        // Update the ICE code info with the latest validation
-        setIceCodeInfo(finalValidation);
-        setIceCodeValid(true);
+    // Validate ICE code one final time before saving
+    if (iceCode.trim()) {
+      console.log("Final validation of ICE code before save:", iceCode);
+      const finalValidation = await membershipService.validateIceCode(iceCode.trim());
+      
+      if (!finalValidation.valid) {
+        throw new Error("ICE code is no longer valid. Please check the code and try again.");
       }
       
-      // Create data object with all details
-      const data = {
-        iceCode: interestedInLifetime ? "" : iceCode.trim(), // No ICE code for lifetime membership
-        paymentFrequency: interestedInLifetime ? null : paymentFrequency, // null when lifetime selected
-        iceCodeValid: interestedInLifetime ? null : (iceCode.trim() ? iceCodeValid : null),
-        iceCodeInfo: interestedInLifetime ? null : (iceCode.trim() ? iceCodeInfo : null),
-        interestedInLifetime: interestedInLifetime,
-        completionDate: new Date().toISOString()
-      };
-      
-      console.log("MembershipPage: Submitting data:", data);
-      
-      // Save membership data to backend
-      try {
-        const saveResult = await membershipService.saveMembershipSelection(data);
-        console.log("MembershipPage: Save result:", saveResult);
-        
-        if (!saveResult || !saveResult.success) {
-          throw new Error("Failed to save membership selection to backend");
-        }
-      } catch (error) {
-        console.error("Error saving membership selection:", error);
-        setError("Failed to save your membership selection. Please try again.");
-        return false;
-      }
-      
-      // Proceed to DocuSign page
-      setCurrentPage('docusign');
-      
-      return true;
-    } catch (error) {
-      console.error("Error in handleProceedToDocuSign:", error);
-      setError(error.message || "An error occurred while saving your selection");
-      return false;
-    } finally {
-      setIsSubmitting(false);
+      // Update the ICE code info with the latest validation
+      setIceCodeInfo(finalValidation);
+      setIceCodeValid(true);
     }
-  };
+    
+    // Create data object with all details
+    const data = {
+      iceCode: interestedInLifetime ? "" : iceCode.trim(),
+      paymentFrequency: interestedInLifetime ? null : paymentFrequency,
+      iceCodeValid: interestedInLifetime ? null : (iceCode.trim() ? iceCodeValid : null),
+      iceCodeInfo: interestedInLifetime ? null : (iceCode.trim() ? iceCodeInfo : null),
+      interestedInLifetime: interestedInLifetime,
+      completionDate: new Date().toISOString()
+    };
+    
+    console.log("MembershipPage: Submitting data:", data);
+    
+    // Save membership data to backend
+    try {
+      const saveResult = await membershipService.saveMembershipSelection(data);
+      console.log("MembershipPage: Save result:", saveResult);
+      
+      if (!saveResult || !saveResult.success) {
+        throw new Error("Failed to save membership selection to backend");
+      }
+    } catch (error) {
+      console.error("Error saving membership selection:", error);
+      setError("Failed to save your membership selection. Please try again.");
+      return false;
+    }
+    
+    // Navigate to DocuSign step instead of showing DocuSign directly
+    if (onNext) {
+      onNext(data);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in handleProceedToDocuSign:", error);
+    setError(error.message || "An error occurred while saving your selection");
+    return false;
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   
   // Handler for DocuSign completion
   const handleDocuSignComplete = () => {
