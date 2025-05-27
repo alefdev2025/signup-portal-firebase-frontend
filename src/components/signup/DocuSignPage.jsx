@@ -530,33 +530,30 @@ export default function DocuSignPage({
 
   if (error) {
     return (
-      <div className="w-screen h-screen fixed inset-0 bg-white flex flex-col" style={marcellusStyle}>
-        <SimpleBanner title="Sign Your Membership Agreement" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="bg-red-500 rounded-full p-4 w-fit mx-auto mb-6">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading</h2>
-            <p className="text-gray-600 text-lg mb-6">{error}</p>
-            
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={onBack}
-                className="px-6 py-3 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
-              >
-                Go Back
-              </button>
-              <button
-                onClick={handleRefreshPage}
-                className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
-              >
-                Refresh Page
-              </button>
-            </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-red-500 rounded-full p-4 w-fit mx-auto mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading</h2>
+          <p className="text-gray-600 text-lg mb-6">{error}</p>
+          
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={onBack}
+              className="px-6 py-3 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
+            >
+              Go Back
+            </button>
+            <button
+              onClick={handleRefreshPage}
+              className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
       </div>
@@ -564,156 +561,151 @@ export default function DocuSignPage({
   }
 
   return (
-    <div className="w-screen h-screen fixed inset-0 bg-white" style={marcellusStyle}>
-      <div className="w-full h-full flex flex-col">
-        {/* Simple Banner - Always show */}
-        <SimpleBanner title="Sign Your Membership Agreement" />
-        
-        {/* Status Section - Show when not signing or when iframe hasn't loaded */}
-        {(!showIframe || !iframeLoaded) && (
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-            {/* Status Icon */}
-            <div className="flex justify-center mb-8">
-              {statusDisplay.icon}
-            </div>
-            
-            {/* Status Title */}
-            <h2 className={`text-3xl font-bold mb-6 ${statusDisplay.color}`}>
-              {statusDisplay.title}
-            </h2>
-            
-            {/* Status Message */}
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              {statusDisplay.message}
-            </p>
-            
-            {/* Debug Information (only in development) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left text-sm">
-                <h4 className="font-semibold mb-2">Debug Info:</h4>
-                <p>Test Mode: {TEST_MODE ? 'Enabled' : 'Disabled'}</p>
-                <p>Status: {docuSignStatus}</p>
-                <p>Iframe Loaded: {iframeLoaded ? 'Yes' : 'No'}</p>
-                <p>Iframe Error: {iframeError ? 'Yes' : 'No'}</p>
-                <p>Show Iframe: {showIframe ? 'Yes' : 'No'}</p>
-                <p>Retry Count: {retryCountRef.current}</p>
-                {signingUrl && <p>Signing URL: {signingUrl.substring(0, 50)}...</p>}
-              </div>
-            )}
-            
-            {/* Action Buttons */}
-            <div className="flex justify-center space-x-6">
-              {/* TEST MODE: Show test completion button */}
-              {TEST_MODE && docuSignStatus === 'test_ready' && (
-                <>
-                  <button
-                    onClick={onBack}
-                    className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
-                  >
-                    Go Back
-                  </button>
-                  <button
-                    onClick={handleTestComplete}
-                    className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
-                  >
-                    Complete DocuSign
-                  </button>
-                </>
-              )}
-              
-              {docuSignStatus === 'error' && (
-                <>
-                  <button
-                    onClick={onBack}
-                    className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
-                  >
-                    Go Back
-                  </button>
-                  <button
-                    onClick={handleRetryDocuSign}
-                    className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    onClick={handleRefreshPage}
-                    className="px-8 py-4 border border-[#775684] text-[#775684] rounded-full font-medium text-lg hover:bg-[#775684] hover:text-white transition-all duration-300"
-                  >
-                    Refresh Page
-                  </button>
-                </>
-              )}
-              
-              {docuSignStatus === 'completed' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <div className="flex items-center text-green-800">
-                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="font-semibold text-xl">
-                      Welcome to Alcor! Your membership is now active.
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+    <div className="w-full h-full flex flex-col">
+      {/* Status Section - Show when not signing or when iframe hasn't loaded */}
+      {(!showIframe || !iframeLoaded) && (
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+          {/* Status Icon */}
+          <div className="flex justify-center mb-8">
+            {statusDisplay.icon}
           </div>
-        )}
-        
-        {/* DocuSign Embedded Iframe - FULL SCREEN (only shown when NOT in test mode) */}
-        {!TEST_MODE && showIframe && signingUrl && (
-          <div className="flex-1 relative w-full">
-            {/* Loading overlay - shows until iframe loads */}
-            {!iframeLoaded && (
-              <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mb-4"></div>
-                <p className="text-gray-600 text-lg">Loading signing interface...</p>
-                <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
-              </div>
+          
+          {/* Status Title */}
+          <h2 className={`text-3xl font-bold mb-6 ${statusDisplay.color}`}>
+            {statusDisplay.title}
+          </h2>
+          
+          {/* Status Message */}
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            {statusDisplay.message}
+          </p>
+          
+          {/* Debug Information (only in development) */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left text-sm">
+              <h4 className="font-semibold mb-2">Debug Info:</h4>
+              <p>Test Mode: {TEST_MODE ? 'Enabled' : 'Disabled'}</p>
+              <p>Status: {docuSignStatus}</p>
+              <p>Iframe Loaded: {iframeLoaded ? 'Yes' : 'No'}</p>
+              <p>Iframe Error: {iframeError ? 'Yes' : 'No'}</p>
+              <p>Show Iframe: {showIframe ? 'Yes' : 'No'}</p>
+              <p>Retry Count: {retryCountRef.current}</p>
+              {signingUrl && <p>Signing URL: {signingUrl.substring(0, 50)}...</p>}
+            </div>
+          )}
+          
+          {/* Action Buttons */}
+          <div className="flex justify-center space-x-6">
+            {/* TEST MODE: Show test completion button */}
+            {TEST_MODE && docuSignStatus === 'test_ready' && (
+              <>
+                <button
+                  onClick={onBack}
+                  className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleTestComplete}
+                  className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
+                >
+                  Complete DocuSign
+                </button>
+              </>
             )}
             
-            {/* Error overlay - shows if iframe fails to load */}
-            {iframeError && (
-              <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-                <div className="bg-red-500 rounded-full p-4 mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <p className="text-red-600 text-lg font-semibold mb-2">Failed to Load Signing Interface</p>
-                <p className="text-gray-600 mb-4">Please check your internet connection and try again</p>
+            {docuSignStatus === 'error' && (
+              <>
+                <button
+                  onClick={onBack}
+                  className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
+                >
+                  Go Back
+                </button>
                 <button
                   onClick={handleRetryDocuSign}
-                  className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+                  className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
                 >
-                  Retry Loading
+                  Try Again
                 </button>
-              </div>
+                <button
+                  onClick={handleRefreshPage}
+                  className="px-8 py-4 border border-[#775684] text-[#775684] rounded-full font-medium text-lg hover:bg-[#775684] hover:text-white transition-all duration-300"
+                >
+                  Refresh Page
+                </button>
+              </>
             )}
             
-            {/* Actual DocuSign iframe - MAXIMUM SIZE */}
-            <iframe
-              ref={iframeRef}
-              src={signingUrl}
-              className="w-full h-full border-0 block"
-              title="DocuSign Embedded Signing"
-              allow="camera; microphone; geolocation"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{ 
-                width: '100%',
-                height: '100%',
-                minHeight: '100%',
-                opacity: iframeLoaded ? 1 : 0,
-                transition: 'opacity 0.3s ease-in-out',
-                border: 'none',
-                outline: 'none'
-              }}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-            />
+            {docuSignStatus === 'completed' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="flex items-center text-green-800">
+                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="font-semibold text-xl">
+                    Welcome to Alcor! Your membership is now active.
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      
+      {/* DocuSign Embedded Iframe - FULL SCREEN (only shown when NOT in test mode) */}
+      {!TEST_MODE && showIframe && signingUrl && (
+        <div className="flex-1 relative w-full">
+          {/* Loading overlay - shows until iframe loads */}
+          {!iframeLoaded && (
+            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mb-4"></div>
+              <p className="text-gray-600 text-lg">Loading signing interface...</p>
+              <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
+            </div>
+          )}
+          
+          {/* Error overlay - shows if iframe fails to load */}
+          {iframeError && (
+            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
+              <div className="bg-red-500 rounded-full p-4 mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-600 text-lg font-semibold mb-2">Failed to Load Signing Interface</p>
+              <p className="text-gray-600 mb-4">Please check your internet connection and try again</p>
+              <button
+                onClick={handleRetryDocuSign}
+                className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+              >
+                Retry Loading
+              </button>
+            </div>
+          )}
+          
+          {/* Actual DocuSign iframe - MAXIMUM SIZE */}
+          <iframe
+            ref={iframeRef}
+            src={signingUrl}
+            className="w-full h-full border-0 block"
+            title="DocuSign Embedded Signing"
+            allow="camera; microphone; geolocation"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              minHeight: '100%',
+              opacity: iframeLoaded ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out',
+              border: 'none',
+              outline: 'none'
+            }}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+          />
+        </div>
+      )}
     </div>
   );
 }

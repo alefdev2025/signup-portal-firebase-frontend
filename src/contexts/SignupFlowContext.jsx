@@ -11,7 +11,9 @@ const SIGNUP_STEPS = [
     { id: 'package', label: 'Package', component: 'PackageStep' },
     { id: 'funding', label: 'Funding', component: 'FundingStep' },
     { id: 'membership', label: 'Membership', component: 'MembershipStep' },
-    { id: 'docusign', label: 'DocuSign', component: 'DocuSignStep' }  // Add this line
+    { id: 'docusign', label: 'DocuSign', component: 'DocuSignStep' },
+    { id: 'payment', label: 'Payment', component: 'PaymentStep' },        // FIXED: consistent format
+    { id: 'completion', label: 'Complete', component: 'CompletionStep' }   // FIXED: consistent format
   ];
 
 export const SignupFlowProvider = ({ children }) => {
