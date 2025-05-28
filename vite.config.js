@@ -31,7 +31,12 @@ writeToLog('VITE SERVER STARTED');
 
 export default defineConfig({
   plugins: [
-    react(),
+    // DISABLE FAST REFRESH to prevent CardElement destruction
+    react({
+      fastRefresh: false,
+      // Also disable some other development features that might interfere
+      jsxImportSource: undefined
+    }),
     {
       name: 'file-logger',
       configureServer(server) {
@@ -54,6 +59,10 @@ export default defineConfig({
     }
   ],
   server: {
-    port: 5173
+    port: 5173,
+    // Also disable HMR for payment pages
+    hmr: {
+      overlay: false
+    }
   }
 });

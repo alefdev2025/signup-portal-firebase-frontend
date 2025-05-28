@@ -9,6 +9,8 @@ import WelcomePage from "./pages/WelcomePage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPassword";
 import SinglePageSignup from "./pages/SinglePageSignup";
+import StandalonePaymentPage from './pages/PaymentPage';
+
 
 // Other components you might have
 // import CompletionSummary from "./components/CompletionSummary";
@@ -28,6 +30,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/__/auth/action" element={<ResetPasswordPage />} />
+
+          
+          <Route path="/payment" element={<StandalonePaymentPage />} />
           
           {/* Isolated signup flow - all signup paths go to the same component */}
           <Route path="/signup/*" element={

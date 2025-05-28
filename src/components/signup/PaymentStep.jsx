@@ -1,136 +1,169 @@
-// File: components/signup/PaymentStep.jsx - Step wrapper component
-import React, { useState, useEffect } from "react";
-import { useSignupFlow } from "../../contexts/SignupFlowContext";
-import { useUser } from "../../contexts/UserContext";
-import PaymentPage from "../signup/PaymentPage";
+// File: components/signup/PaymentStep.jsx - Navigate to standalone payment page
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSignupFlow } from '../../contexts/SignupFlowContext';
+import { useUser } from '../../contexts/UserContext';
 
-// Import services to get user data
-import { getContactInfo } from "../../services/contact";
-import membershipService from "../../services/membership";
-import { getMembershipCost } from "../../services/pricing";
+// Import services to verify user has required data
+import { getContactInfo } from '../../services/contact';
+import membershipService from '../../services/membership';
 
 export default function PaymentStep() {
-  const { goToNextStep, goToPrevStep } = useSignupFlow();
-  const { user } = useUser();
+  console.log("💳 PaymentStep mounting - will navigate to standalone payment page");
+  
+  const navigate = useNavigate();
+  const { currentUser } = useUser();
+  const { goToPrevStep } = useSignupFlow();
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userData, setUserData] = useState(null);
 
-  console.log("🟢 PaymentStep component mounting");
-
-  // Load user data on mount
   useEffect(() => {
-    const loadUserData = async () => {
+    const checkDataAndNavigate = async () => {
+      console.log("🔍 Checking if user has required data for payment...");
+      
+      if (!currentUser) {
+        console.log("❌ No authenticated user");
+        setError('Please complete authentication first');
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        setIsLoading(true);
-        setError(null);
+        // Check if user has contact info (required for payment)
+        const contactResult = await getContactInfo();
+        console.log("📞 Contact check result:", contactResult);
         
-        console.log("PaymentStep: Loading user data...");
+        if (!contactResult.success || !contactResult.contactInfo?.email) {
+          throw new Error('Please complete your contact information first');
+        }
+
+        // Check if user has membership selection (optional but helpful)
+        const membershipResult = await membershipService.getMembershipInfo();
+        console.log("🎫 Membership check result:", membershipResult);
         
-        // 1. Get contact information
-        let contactData = null;
-        try {
-          const contactResult = await getContactInfo();
-          if (contactResult.success && contactResult.contactInfo) {
-            contactData = contactResult.contactInfo;
-            console.log("PaymentStep: ✅ Contact data loaded:", contactData);
-          }
-        } catch (err) {
-          console.error("PaymentStep: Error loading contact info:", err);
-        }
-
-        // 2. Get membership information (for payment frequency, ICE discount, etc.)
-        let membershipData = null;
-        try {
-          const membershipResult = await membershipService.getMembershipInfo();
-          if (membershipResult.success && membershipResult.data) {
-            membershipData = membershipResult.data.membershipInfo;
-            console.log("PaymentStep: ✅ Membership data loaded:", membershipData);
-          }
-        } catch (err) {
-          console.error("PaymentStep: Error loading membership info:", err);
-        }
-
-        // 3. Get pricing information
-        let pricingData = null;
-        try {
-          const pricingResult = await getMembershipCost();
-          if (pricingResult?.success) {
-            pricingData = {
-              membershipCost: pricingResult.membershipCost || 540,
-              age: pricingResult.age,
-              annualDues: pricingResult.annualDues
-            };
-            console.log("PaymentStep: ✅ Pricing data loaded:", pricingData);
-          }
-        } catch (err) {
-          console.error("PaymentStep: Error loading pricing info:", err);
-        }
-
-        // Combine all data
-        const combinedUserData = {
-          user: user,
-          contactData: contactData,
-          membershipData: membershipData,
-          pricingData: pricingData
-        };
-
-        console.log("PaymentStep: Combined userData:", combinedUserData);
-        setUserData(combinedUserData);
+        console.log("✅ User data verified, navigating to payment page...");
+        
+        // Navigate to the standalone payment page
+        navigate('/payment', { replace: true });
         
       } catch (err) {
-        console.error("PaymentStep: Error loading data:", err);
-        setError("Failed to load payment information. Please try again.");
-      } finally {
+        console.error("❌ Error checking user data:", err);
+        setError(err.message || 'Unable to proceed to payment. Please complete previous steps.');
         setIsLoading(false);
       }
     };
 
-    loadUserData();
-  }, [user]);
+    // Small delay to prevent flash, then check and navigate
+    const timer = setTimeout(checkDataAndNavigate, 500);
+    
+    return () => clearTimeout(timer);
+  }, [currentUser, navigate]);
 
   const handleBack = () => {
-    console.log("PaymentStep: Going back to previous step");
+    console.log("👈 Going back to previous step");
     goToPrevStep();
   };
 
-  const handleComplete = () => {
-    console.log("PaymentStep: Payment completed, going to next step");
-    // Payment is complete, go to next step (or completion)
-    goToNextStep();
+  const handleRetry = () => {
+    console.log("🔄 Retrying navigation to payment page");
+    setIsLoading(true);
+    setError(null);
+    
+    // Retry after a brief delay
+    setTimeout(() => {
+      navigate('/payment', { replace: true });
+    }, 1000);
   };
 
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#775684]"></div>
-        <p className="mt-4 text-xl text-gray-600">Loading payment information...</p>
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-8 sm:px-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#673171] mb-6 mx-auto"></div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Preparing Payment
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Verifying your information and preparing the secure payment form...
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-6 mb-8">
-        <p className="text-red-700 text-lg">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          Retry
-        </button>
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-8 sm:px-8">
+            <div className="text-center">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-medium text-red-800 mb-2">
+                  Unable to Proceed to Payment
+                </h3>
+                <p className="text-red-700 mb-4">
+                  {error}
+                </p>
+                <div className="space-x-3">
+                  <button 
+                    onClick={handleRetry}
+                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                  <button 
+                    onClick={handleBack}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                <p className="mb-2">
+                  <strong>Need help?</strong> Make sure you've completed:
+                </p>
+                <ul className="text-left inline-block">
+                  <li>✅ Account creation and email verification</li>
+                  <li>✅ Contact information</li>
+                  <li>✅ Package selection</li>
+                  <li>✅ Membership preferences</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  console.log("PaymentStep: Rendering PaymentPage with userData:", userData);
-
+  // This shouldn't render since we navigate away, but just in case
   return (
-    <PaymentPage
-      userData={userData}
-      onBack={handleBack}
-      onComplete={handleComplete}
-    />
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-8 sm:px-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Redirecting to Payment...
+            </h2>
+            <p className="text-gray-600">
+              If you're not redirected automatically, 
+              <button 
+                onClick={() => navigate('/payment')}
+                className="text-[#673171] hover:underline ml-1"
+              >
+                click here
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
