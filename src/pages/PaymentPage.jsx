@@ -108,7 +108,7 @@ function CheckoutForm({ userData }) {
     };
   }, [membershipData, pricingData]);
 
-  // PRODUCTION APPROACH: Process payment with proper error handling
+  // FIXED: Process payment with proper payment method attachment
   const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
     
@@ -159,37 +159,67 @@ function CheckoutForm({ userData }) {
         throw new Error(pmError.message);
       }
 
-      // Step 2: Create payment intent on your backend
+      console.log('✅ Payment method created:', paymentMethod.id);
+
+      // Step 2: Create payment intent on your backend WITH payment method ID
       const paymentData = {
         amount: Math.round(paymentInfo.discountedAmount * 100),
         currency: 'usd',
         paymentFrequency: membershipData?.paymentFrequency || 'annually',
         iceCode: membershipData?.iceCode || null,
-        paymentMethodId: paymentMethod.id,
+        paymentMethodId: paymentMethod.id, // FIXED: Pass the payment method ID
         customerInfo: {
           email: contactData?.email,
           name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
         }
       };
 
+      console.log('🔄 Creating payment intent with payment method:', paymentMethod.id);
       const intentResult = await createPaymentIntent(paymentData);
       
       if (!intentResult.success) {
         throw new Error(intentResult.error || 'Failed to create payment intent');
       }
 
-      // Step 3: Confirm payment if needed
-      if (intentResult.clientSecret) {
-        const { error: confirmError } = await stripe.confirmCardPayment(
+      console.log('✅ Payment intent created:', intentResult.paymentIntentId);
+
+      // Step 3: Handle different payment intent responses
+      if (intentResult.requiresAction && intentResult.clientSecret) {
+        // Handle 3D Secure authentication
+        console.log('🔐 Handling 3D Secure authentication...');
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
           intentResult.clientSecret
         );
 
         if (confirmError) {
           throw new Error(confirmError.message);
         }
+
+        console.log('✅ 3D Secure authentication completed:', paymentIntent.id);
+        
+      } else if (intentResult.status === 'succeeded') {
+        // Payment completed immediately on backend
+        console.log('✅ Payment completed immediately');
+        
+      } else if (intentResult.clientSecret) {
+        // Standard confirmation flow with explicit payment method
+        console.log('🔄 Confirming payment with payment method...');
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          intentResult.clientSecret,
+          {
+            payment_method: paymentMethod.id // FIXED: Explicitly provide the payment method
+          }
+        );
+
+        if (confirmError) {
+          throw new Error(confirmError.message);
+        }
+
+        console.log('✅ Payment confirmed:', paymentIntent.id);
       }
 
-      // Step 4: Confirm on backend
+      // Step 4: Confirm on backend and create membership
+      console.log('🔄 Confirming payment on backend...');
       const confirmResult = await confirmPayment({
         paymentIntentId: intentResult.paymentIntentId,
         membershipData: {
@@ -203,6 +233,7 @@ function CheckoutForm({ userData }) {
         throw new Error('Payment succeeded but membership creation failed');
       }
 
+      console.log('✅ Membership created successfully');
       setPaymentStatus('completed');
       
       setTimeout(() => {
@@ -214,7 +245,25 @@ function CheckoutForm({ userData }) {
 
     } catch (err) {
       console.error('❌ Payment error:', err);
-      setError(err.message || 'Payment processing failed');
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Payment processing failed';
+      
+      if (err.message.includes('card_declined')) {
+        errorMessage = 'Your card was declined. Please try a different payment method.';
+      } else if (err.message.includes('insufficient_funds')) {
+        errorMessage = 'Insufficient funds. Please try a different payment method.';
+      } else if (err.message.includes('expired_card')) {
+        errorMessage = 'Your card has expired. Please use a different payment method.';
+      } else if (err.message.includes('incorrect_cvc')) {
+        errorMessage = 'Your card\'s security code is incorrect.';
+      } else if (err.message.includes('processing_error')) {
+        errorMessage = 'An error occurred while processing your card. Please try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
       isProcessingRef.current = false;
