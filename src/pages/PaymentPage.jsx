@@ -20,6 +20,11 @@ import { useUser } from "../contexts/UserContext";
 import navyAlcorLogo from "../assets/images/navy-alcor-logo.png";
 import alcorStar from "../assets/images/alcor-star.png";
 import whiteALogo from "../assets/images/white-a-logo.png";
+import yellowStar from "../assets/images/alcor-yellow-star.png";
+
+// Import Terms and Privacy Modal
+import TermsPrivacyModal from "../components/modals/TermsPrivacyModal";
+import HelpPanel from "../components/HelpPanel";
 
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
@@ -61,6 +66,13 @@ function CheckoutForm({ userData }) {
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('ready');
   const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'ach'
+  
+  // Modal state for terms and privacy
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState(null); // 'terms' or 'privacy'
+  
+  // Help panel state
+  const [showHelpInfo, setShowHelpInfo] = useState(false);
 
   // Store element reference when ready
   const handleCardReady = useCallback(() => {
@@ -92,13 +104,16 @@ function CheckoutForm({ userData }) {
     
     let amount = baseCost;
     let frequency = 'Annual';
+    let perText = 'per year';
     
     if (paymentFrequency === 'monthly') {
       amount = Math.round(baseCost / 12);
       frequency = 'Monthly';
+      perText = 'per month';
     } else if (paymentFrequency === 'quarterly') {
       amount = Math.round(baseCost / 4);
       frequency = 'Quarterly';
+      perText = 'per quarter';
     }
 
     let iceDiscount = 0;
@@ -118,6 +133,7 @@ function CheckoutForm({ userData }) {
       discountedAmount: Math.max(0, amount - iceDiscount),
       discount: iceDiscount,
       frequency,
+      perText,
       hasDiscount: hasIceDiscount,
       iceCode: membershipData.iceCode
     };
@@ -286,6 +302,120 @@ function CheckoutForm({ userData }) {
     }
   }, [stripe, elements, cardComplete, paymentMethod, paymentInfo, membershipData, contactData, navigate]);
 
+  // Toggle help panel
+  const toggleHelpInfo = () => {
+    setShowHelpInfo(prev => !prev);
+  };
+  
+  // Define page-specific help content
+  const paymentHelpContent = [
+    {
+      title: "Payment Processing",
+      content: "Complete your Alcor membership payment securely using your credit card or bank transfer (ACH)."
+    },
+    {
+      title: "Payment Methods",
+      content: "We accept all major credit cards (Visa, Mastercard, American Express, Discover) and ACH bank transfers for your convenience."
+    },
+    {
+      title: "Security & Privacy",
+      content: "All payments are processed securely through Stripe with 256-bit SSL encryption. Your financial information is never stored on our servers."
+    },
+    {
+      title: "Membership Activation",
+      content: "Your Alcor membership will be activated immediately upon successful payment confirmation."
+    },
+    {
+      title: "Need assistance?",
+      content: (
+        <>
+          Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        </>
+      )
+    }
+  ];
+
+  // Terms and Privacy modal functions
+  const openModal = (type) => {
+    setModalType(type);
+    setModalOpen(true);
+  };
+  
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalType(null);
+  };
+
+  // Terms of Use content
+  const termsContent = `
+    <h1>Terms of Use</h1>
+    <p><em>Last Updated: May 1, 2025</em></p>
+
+    <h2>1. Introduction</h2>
+    <p>Welcome to Alcor Cryonics ("we," "our," or "us"). This document outlines the terms and conditions for using our services and website.</p>
+    
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.</p>
+    
+    <h2>2. Definitions</h2>
+    <p>In these Terms, "Service" refers to our cryonics services, website, and related offerings. "User" or "you" refers to individuals accessing or using our Service.</p>
+    
+    <p>Suspendisse in justo eu magna luctus suscipit. Sed lectus. Integer euismod lacus luctus magna. Quisque cursus, metus vitae pharetra auctor, sem massa mattis sem, at interdum magna augue eget diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Morbi lacinia molestie dui.</p>
+    
+    <h2>3. Acceptance of Terms</h2>
+    <p>By accessing or using our Service, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, please do not use our Service.</p>
+    
+    <p>Praesent blandit dolor. Sed non quam. In vel mi sit amet augue congue elementum. Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris.</p>
+    
+    <h2>4. User Accounts</h2>
+    <p>When you create an account with us, you guarantee that the information you provide is accurate, complete, and current. Inaccurate, incomplete, or obsolete information may result in the termination of your account.</p>
+    
+    <p>Morbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam. Morbi mi. Quisque nisl felis, venenatis tristique, dignissim in, ultrices sit amet, augue. Proin sodales libero eget ante.</p>
+    
+    <h2>5. Service Usage</h2>
+    <p>You agree not to use our Service for any illegal or unauthorized purpose. You must not transmit worms, viruses, or any code of a destructive nature.</p>
+    
+    <p>Aenean laoreet. Vestibulum nisi lectus, commodo ac, facilisis ac, ultricies eu, pede. Ut orci risus, accumsan porttitor, cursus quis, aliquet eget, justo. Sed pretium blandit orci. Ut eu diam at pede suscipit sodales. Aenean lectus elit, fermentum non, convallis id, sagittis at, neque.</p>
+    
+    <h2>6. Changes to Terms</h2>
+    <p>We reserve the right to modify these Terms at any time. We will provide notice of significant changes as appropriate. Your continued use of our Service constitutes acceptance of any updates to these Terms.</p>
+  `;
+
+  // Privacy Policy content
+  const privacyContent = `
+    <h1>Privacy Policy</h1>
+    <p><em>Last Updated: May 1, 2025</em></p>
+
+    <h2>1. Introduction</h2>
+    <p>At Alcor Cryonics ("we," "our," or "us"), we respect your privacy and are committed to protecting it through our compliance with this policy.</p>
+    
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.</p>
+    
+    <h2>2. Information We Collect</h2>
+    <p>We collect several types of information from and about users of our website, including:</p>
+    
+    <ul>
+        <li>Personal information such as name, postal address, email address, telephone number, and any other identifier by which you may be contacted online or offline.</li>
+        <li>Information about your internet connection, the equipment you use to access our website, and usage details.</li>
+    </ul>
+    
+    <p>Suspendisse in justo eu magna luctus suscipit. Sed lectus. Integer euismod lacus luctus magna. Quisque cursus, metus vitae pharetra auctor, sem massa mattis sem, at interdum magna augue eget diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Morbi lacinia molestie dui.</p>
+    
+    <h2>3. How We Collect Information</h2>
+    <p>We collect information directly from you when you provide it to us and automatically as you navigate through the site.</p>
+    
+    <p>Praesent blandit dolor. Sed non quam. In vel mi sit amet augue congue elementum. Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris.</p>
+    
+    <h2>4. How We Use Your Information</h2>
+    <p>We use information that we collect about you or that you provide to us:</p>
+    
+    <ul>
+        <li>To present our website and its contents to you.</li>
+        <li>To provide you with information, products, or services that you request from us.</li>
+        <li>To fulfill any other purpose for which you provide it.</li>
+        <li>To notify you about changes to our website or any products or services we offer.</li>
+    </ul>
+  `;
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -324,29 +454,31 @@ function CheckoutForm({ userData }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Main Content */}
-      <div className="min-h-screen flex items-center justify-center py-8 px-6">
-        <div className="w-full max-w-7xl">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[600px]">
-            <div className="grid grid-cols-1 lg:grid-cols-5 min-h-[600px]">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Main Content */}
+        <div className="min-h-screen flex items-center justify-center py-8 px-6">
+          <div className="w-full max-w-7xl">
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[700px]">
+              <div className="grid grid-cols-1 lg:grid-cols-5 min-h-[700px]">
             
               {/* LEFT SIDE - Order Summary - ONLY ONE */}
-              <div className="lg:col-span-2 bg-white p-12 text-gray-900 flex flex-col border-r border-gray-100">
+              <div className="lg:col-span-2 bg-gray-50 p-12 text-gray-900 flex flex-col border-r border-gray-100">
                 <div className="mb-8">
-                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-12" />
+                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-16" />
                 </div>
                 
                 <div className="space-y-8 flex-grow">
                   <div>
-                    <h3 className="text-lg text-gray-600 mb-2">
-                      Subscribe to Membership - {paymentInfo.frequency} - USD
+                    <h3 className="text-lg text-gray-500 mb-2 flex items-center">
+                      Start Membership
+                      <img src={yellowStar} alt="" className="h-5 ml-2" />
                     </h3>
                     <div className="text-4xl font-bold mb-2 text-gray-900">
                       {formatCurrency(paymentInfo.originalAmount)}
                     </div>
-                    <p className="text-gray-600">
-                      per {paymentInfo.frequency.toLowerCase()}
+                    <p className="text-gray-500">
+                      {paymentInfo.perText}
                     </p>
                   </div>
 
@@ -356,11 +488,11 @@ function CheckoutForm({ userData }) {
                         <div className="font-medium text-gray-900">
                           Membership - {paymentInfo.frequency} - USD
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-gray-500 mt-1">
                           {paymentInfo.frequency} Membership Plan
                         </div>
-                        <div className="text-sm text-gray-600">
-                          Billed {paymentInfo.frequency.toLowerCase()}
+                        <div className="text-sm text-gray-500">
+                          Billed {paymentInfo.frequency.toLowerCase()}ly
                         </div>
                       </div>
                       <div className="text-lg font-medium text-gray-900">
@@ -374,7 +506,7 @@ function CheckoutForm({ userData }) {
                           <div className="font-medium text-purple-600">
                             ICE Code Discount ({paymentInfo.iceCode})
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
+                          <div className="text-sm text-gray-500 mt-1">
                             First year only • Member (Alcor Member ICE)
                           </div>
                         </div>
@@ -386,19 +518,19 @@ function CheckoutForm({ userData }) {
 
                     <div className="space-y-4 pt-6">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Subtotal</span>
+                        <span className="text-gray-500">Subtotal</span>
                         <span className="text-gray-900">{formatCurrency(paymentInfo.discountedAmount)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Tax</span>
+                        <span className="text-gray-500">Tax</span>
                         <span className="text-gray-900">$0.00</span>
                       </div>
                     </div>
 
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex justify-between items-center">
-                        <div className="text-xl font-bold text-gray-900">Total due today</div>
-                        <div className="text-2xl font-bold text-gray-900">
+                        <div className="text-2xl font-bold text-gray-900">Total due today</div>
+                        <div className="text-4xl font-bold text-gray-900">
                           {formatCurrency(paymentInfo.discountedAmount)}
                         </div>
                       </div>
@@ -409,9 +541,9 @@ function CheckoutForm({ userData }) {
                 {/* Bottom Star Decorations - At actual bottom */}
                 <div className="flex justify-center mt-auto pt-8">
                   <div className="flex justify-center items-center space-x-2">
-                    <img src={alcorStar} alt="Alcor Star" className="h-6 opacity-40" />
-                    <img src={alcorStar} alt="Alcor Star" className="h-10 opacity-60" />
-                    <img src={alcorStar} alt="Alcor Star" className="h-6 opacity-40" />
+                    <img src={yellowStar} alt="Yellow Star" className="h-7 opacity-70" />
+                    <img src={yellowStar} alt="Yellow Star" className="h-12 opacity-90" />
+                    <img src={yellowStar} alt="Yellow Star" className="h-7 opacity-70" />
                   </div>
                 </div>
               </div>
@@ -586,7 +718,7 @@ function CheckoutForm({ userData }) {
 
                     <button
                       type="submit"
-                      disabled={isLoading || (paymentMethod === 'card' && !cardComplete)}
+                      disabled={isLoading}
                       className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-8 rounded-full font-semibold text-lg disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
                     >
                       {isLoading ? (
@@ -599,6 +731,7 @@ function CheckoutForm({ userData }) {
                         </div>
                       ) : (
                         <>
+                          <img src={alcorStar} alt="" className="h-5 mr-3" />
                           {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -609,19 +742,68 @@ function CheckoutForm({ userData }) {
 
                     <p className="text-xs text-gray-500 text-center leading-relaxed">
                       By completing your purchase, you agree to our{' '}
-                      <a href="#" className="text-[#13273f] hover:underline">terms of service</a>{' '}
+                      <button 
+                        type="button" 
+                        onClick={() => openModal('terms')} 
+                        className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                      >
+                        terms of service
+                      </button>{' '}
                       and{' '}
-                      <a href="#" className="text-[#13273f] hover:underline">privacy policy</a>.
+                      <button 
+                        type="button" 
+                        onClick={() => openModal('privacy')} 
+                        className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                      >
+                        privacy policy
+                      </button>.
                       Your membership will be activated immediately upon successful payment.
                     </p>
                   </form>
                 </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      
+      {/* Terms and Privacy Modal */}
+      <TermsPrivacyModal 
+        isOpen={modalOpen}
+        onClose={closeModal}
+        type={modalType}
+        directContent={modalType === 'terms' ? termsContent : privacyContent}
+      />
+      
+      {/* Help Panel Component */}
+      <HelpPanel 
+        showHelpInfo={showHelpInfo} 
+        toggleHelpInfo={toggleHelpInfo} 
+        helpItems={paymentHelpContent} 
+      />
+      
+      {/* Help Button - Simple and explicit */}
+      <div 
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 10000,
+          width: '56px',
+          height: '56px',
+          backgroundColor: '#13273f',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          border: 'none'
+        }}
+        onClick={toggleHelpInfo}
+      >
+        <div style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>?</div>
+      </div>
+    </>
   );
 }
 
