@@ -1,4 +1,4 @@
-// PRODUCTION-READY Stripe Integration - How the pros do it
+// PRODUCTION-READY Stripe Integration with Improved Design - Fixed
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from '@stripe/stripe-js';
@@ -16,22 +16,36 @@ import { getMembershipCost } from "../services/pricing";
 import { createPaymentIntent, confirmPayment } from "../services/payment";
 import { useUser } from "../contexts/UserContext";
 
+// Import logo
+import navyAlcorLogo from "../assets/images/navy-alcor-logo.png";
+import alcorStar from "../assets/images/alcor-star.png";
+import whiteALogo from "../assets/images/white-a-logo.png";
+
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
     base: {
-      fontSize: '16px',
-      color: '#424770',
-      '::placeholder': { color: '#aab7c4' },
-      fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+      fontSize: '18px',
+      color: '#1f2937',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      '::placeholder': { 
+        color: '#9ca3af' 
+      },
+      lineHeight: '24px',
     },
-    invalid: { color: '#9e2146' },
+    invalid: { 
+      color: '#ef4444',
+      iconColor: '#ef4444'
+    },
+    complete: {
+      color: '#059669',
+      iconColor: '#059669'
+    },
   },
   hidePostalCode: false,
 };
 
-// SOLUTION: Use useRef to maintain element reference across re-renders
 function CheckoutForm({ userData }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -46,6 +60,7 @@ function CheckoutForm({ userData }) {
   const [error, setError] = useState(null);
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('ready');
+  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'ach'
 
   // Store element reference when ready
   const handleCardReady = useCallback(() => {
@@ -108,15 +123,11 @@ function CheckoutForm({ userData }) {
     };
   }, [membershipData, pricingData]);
 
-  // FIXED: Process payment with proper payment method attachment
+  // Process payment with proper payment method attachment
   const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
     
     console.log('🔄 Form submitted!');
-    console.log('Stripe ready:', !!stripe);
-    console.log('Elements ready:', !!elements);
-    console.log('Card complete:', cardComplete);
-    console.log('Is processing:', isProcessingRef.current);
 
     // Prevent double-processing
     if (isProcessingRef.current) {
@@ -124,9 +135,9 @@ function CheckoutForm({ userData }) {
       return;
     }
 
-    if (!stripe || !elements || !cardComplete) {
+    if (!stripe || !elements || (paymentMethod === 'card' && !cardComplete)) {
       console.log('❌ Blocked: Missing stripe, elements, or incomplete card');
-      setError('Please complete your card information');
+      setError('Please complete your payment information');
       return;
     }
 
@@ -135,113 +146,118 @@ function CheckoutForm({ userData }) {
     setError(null);
 
     try {
-      // Get element using stored reference first, fallback to elements
-      let cardElement = paymentElementRef.current;
-      if (!cardElement) {
-        cardElement = elements.getElement(CardElement);
-      }
-
-      if (!cardElement) {
-        throw new Error('Payment form not ready');
-      }
-
-      // Step 1: Create payment method
-      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
-          email: contactData?.email,
-        },
-      });
-
-      if (pmError) {
-        throw new Error(pmError.message);
-      }
-
-      console.log('✅ Payment method created:', paymentMethod.id);
-
-      // Step 2: Create payment intent on your backend WITH payment method ID
-      const paymentData = {
-        amount: Math.round(paymentInfo.discountedAmount * 100),
-        currency: 'usd',
-        paymentFrequency: membershipData?.paymentFrequency || 'annually',
-        iceCode: membershipData?.iceCode || null,
-        paymentMethodId: paymentMethod.id, // FIXED: Pass the payment method ID
-        customerInfo: {
-          email: contactData?.email,
-          name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
-        }
-      };
-
-      console.log('🔄 Creating payment intent with payment method:', paymentMethod.id);
-      const intentResult = await createPaymentIntent(paymentData);
-      
-      if (!intentResult.success) {
-        throw new Error(intentResult.error || 'Failed to create payment intent');
-      }
-
-      console.log('✅ Payment intent created:', intentResult.paymentIntentId);
-
-      // Step 3: Handle different payment intent responses
-      if (intentResult.requiresAction && intentResult.clientSecret) {
-        // Handle 3D Secure authentication
-        console.log('🔐 Handling 3D Secure authentication...');
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-          intentResult.clientSecret
-        );
-
-        if (confirmError) {
-          throw new Error(confirmError.message);
+      if (paymentMethod === 'card') {
+        // Get element using stored reference first, fallback to elements
+        let cardElement = paymentElementRef.current;
+        if (!cardElement) {
+          cardElement = elements.getElement(CardElement);
         }
 
-        console.log('✅ 3D Secure authentication completed:', paymentIntent.id);
-        
-      } else if (intentResult.status === 'succeeded') {
-        // Payment completed immediately on backend
-        console.log('✅ Payment completed immediately');
-        
-      } else if (intentResult.clientSecret) {
-        // Standard confirmation flow with explicit payment method
-        console.log('🔄 Confirming payment with payment method...');
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-          intentResult.clientSecret,
-          {
-            payment_method: paymentMethod.id // FIXED: Explicitly provide the payment method
-          }
-        );
-
-        if (confirmError) {
-          throw new Error(confirmError.message);
+        if (!cardElement) {
+          throw new Error('Payment form not ready');
         }
 
-        console.log('✅ Payment confirmed:', paymentIntent.id);
-      }
+        // Step 1: Create payment method
+        const { error: pmError, paymentMethod: pm } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: {
+            name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
+            email: contactData?.email,
+          },
+        });
 
-      // Step 4: Confirm on backend and create membership
-      console.log('🔄 Confirming payment on backend...');
-      const confirmResult = await confirmPayment({
-        paymentIntentId: intentResult.paymentIntentId,
-        membershipData: {
+        if (pmError) {
+          throw new Error(pmError.message);
+        }
+
+        console.log('✅ Payment method created:', pm.id);
+
+        // Step 2: Create payment intent on your backend WITH payment method ID
+        const paymentData = {
+          amount: Math.round(paymentInfo.discountedAmount * 100),
+          currency: 'usd',
           paymentFrequency: membershipData?.paymentFrequency || 'annually',
           iceCode: membershipData?.iceCode || null,
-          iceCodeInfo: membershipData?.iceCodeInfo || null
-        }
-      });
-      
-      if (!confirmResult.success) {
-        throw new Error('Payment succeeded but membership creation failed');
-      }
+          paymentMethodId: pm.id,
+          customerInfo: {
+            email: contactData?.email,
+            name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
+          }
+        };
 
-      console.log('✅ Membership created successfully');
-      setPaymentStatus('completed');
-      
-      setTimeout(() => {
-        navigate('/signup/success', { 
-          replace: true,
-          state: { paymentResult: confirmResult }
+        console.log('🔄 Creating payment intent with payment method:', pm.id);
+        const intentResult = await createPaymentIntent(paymentData);
+        
+        if (!intentResult.success) {
+          throw new Error(intentResult.error || 'Failed to create payment intent');
+        }
+
+        console.log('✅ Payment intent created:', intentResult.paymentIntentId);
+
+        // Step 3: Handle different payment intent responses
+        if (intentResult.requiresAction && intentResult.clientSecret) {
+          console.log('🔐 Handling 3D Secure authentication...');
+          const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+            intentResult.clientSecret
+          );
+
+          if (confirmError) {
+            throw new Error(confirmError.message);
+          }
+
+          console.log('✅ 3D Secure authentication completed:', paymentIntent.id);
+          
+        } else if (intentResult.status === 'succeeded') {
+          console.log('✅ Payment completed immediately');
+          
+        } else if (intentResult.clientSecret) {
+          console.log('🔄 Confirming payment with payment method...');
+          const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+            intentResult.clientSecret,
+            {
+              payment_method: pm.id
+            }
+          );
+
+          if (confirmError) {
+            throw new Error(confirmError.message);
+          }
+
+          console.log('✅ Payment confirmed:', paymentIntent.id);
+        }
+
+        // Step 4: Confirm on backend and create membership
+        console.log('🔄 Confirming payment on backend...');
+        const confirmResult = await confirmPayment({
+          paymentIntentId: intentResult.paymentIntentId,
+          membershipData: {
+            paymentFrequency: membershipData?.paymentFrequency || 'annually',
+            iceCode: membershipData?.iceCode || null,
+            iceCodeInfo: membershipData?.iceCodeInfo || null
+          }
         });
-      }, 2000);
+        
+        if (!confirmResult.success) {
+          throw new Error('Payment succeeded but membership creation failed');
+        }
+
+        console.log('✅ Membership created successfully');
+        setPaymentStatus('completed');
+        
+        setTimeout(() => {
+          navigate('/signup/success', { 
+            replace: true,
+            state: { paymentResult: confirmResult }
+          });
+        }, 2000);
+
+      } else {
+        // Handle ACH payment
+        console.log('🔄 Processing ACH payment...');
+        // ACH payment logic would go here
+        throw new Error('ACH payment not yet implemented');
+      }
 
     } catch (err) {
       console.error('❌ Payment error:', err);
@@ -268,7 +284,7 @@ function CheckoutForm({ userData }) {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
-  }, [stripe, elements, cardComplete, paymentInfo, membershipData, contactData, navigate]);
+  }, [stripe, elements, cardComplete, paymentMethod, paymentInfo, membershipData, contactData, navigate]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -288,160 +304,319 @@ function CheckoutForm({ userData }) {
 
   if (paymentStatus === 'completed') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-green-500 rounded-full p-4 mb-8 mx-auto w-20 h-20 flex items-center justify-center">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gradient-to-br from-[#12243c] to-[#4b3965] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-12 text-center max-w-md mx-auto">
+          <div className="bg-gradient-to-r from-green-400 to-green-500 rounded-full p-6 mb-8 mx-auto w-24 h-24 flex items-center justify-center shadow-lg">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-green-600 mb-4">Payment Successful!</h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-md mx-auto">
-            Your payment has been processed successfully.
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Complete!</h2>
+          <p className="text-lg text-gray-600 mb-6">
+            Welcome to Alcor! Your membership is now active.
           </p>
+          <div className="animate-pulse text-sm text-gray-500">
+            Redirecting you to your dashboard...
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-bold text-gray-900">Complete Your Payment</h1>
-            <button
-              onClick={() => navigate('/signup', { replace: true })}
-              disabled={isLoading}
-              className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
+      <div className="min-h-screen flex items-center justify-center py-8 px-6">
+        <div className="w-full max-w-7xl">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-5 min-h-[600px]">
             
-            {/* Order Summary */}
-            <div className="bg-gray-50 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8">Order Summary</h2>
-              
-              <div className="space-y-6">
-                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+              {/* LEFT SIDE - Order Summary - ONLY ONE */}
+              <div className="lg:col-span-2 bg-white p-12 text-gray-900 flex flex-col border-r border-gray-100">
+                <div className="mb-8">
+                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-12" />
+                </div>
+                
+                <div className="space-y-8 flex-grow">
                   <div>
-                    <div className="font-medium text-gray-900">
-                      Membership - {paymentInfo.frequency}
+                    <h3 className="text-lg text-gray-600 mb-2">
+                      Subscribe to Membership - {paymentInfo.frequency} - USD
+                    </h3>
+                    <div className="text-4xl font-bold mb-2 text-gray-900">
+                      {formatCurrency(paymentInfo.originalAmount)}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {paymentInfo.frequency} Plan
-                    </div>
+                    <p className="text-gray-600">
+                      per {paymentInfo.frequency.toLowerCase()}
+                    </p>
                   </div>
-                  <div className="font-medium text-gray-900">
-                    {formatCurrency(paymentInfo.originalAmount)}
+
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          Membership - {paymentInfo.frequency} - USD
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {paymentInfo.frequency} Membership Plan
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Billed {paymentInfo.frequency.toLowerCase()}
+                        </div>
+                      </div>
+                      <div className="text-lg font-medium text-gray-900">
+                        {formatCurrency(paymentInfo.originalAmount)}
+                      </div>
+                    </div>
+
+                    {paymentInfo.hasDiscount && (
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-purple-600">
+                            ICE Code Discount ({paymentInfo.iceCode})
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            First year only • Member (Alcor Member ICE)
+                          </div>
+                        </div>
+                        <div className="text-lg font-medium text-purple-600">
+                          -{formatCurrency(paymentInfo.discount)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4 pt-6">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="text-gray-900">{formatCurrency(paymentInfo.discountedAmount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tax</span>
+                        <span className="text-gray-900">$0.00</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-6">
+                      <div className="flex justify-between items-center">
+                        <div className="text-xl font-bold text-gray-900">Total due today</div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          {formatCurrency(paymentInfo.discountedAmount)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {paymentInfo.hasDiscount && (
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-[#673171]">
-                        ICE Code Discount ({paymentInfo.iceCode})
-                      </div>
-                      <div className="text-sm text-[#673171]">First year only</div>
-                    </div>
-                    <div className="font-medium text-[#673171]">
-                      -{formatCurrency(paymentInfo.discount)}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-4 border-t border-gray-300">
-                  <div className="text-xl font-bold text-gray-900">Total</div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {formatCurrency(paymentInfo.discountedAmount)}
+                {/* Bottom Star Decorations - At actual bottom */}
+                <div className="flex justify-center mt-auto pt-8">
+                  <div className="flex justify-center items-center space-x-2">
+                    <img src={alcorStar} alt="Alcor Star" className="h-6 opacity-40" />
+                    <img src={alcorStar} alt="Alcor Star" className="h-10 opacity-60" />
+                    <img src={alcorStar} alt="Alcor Star" className="h-6 opacity-40" />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Payment Form */}
-            <div className="p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8">Payment Details</h2>
+              {/* RIGHT SIDE - Payment Form - ONLY ONE */}
+              <div className="lg:col-span-3 p-12 flex flex-col justify-center">
+                <div className="max-w-lg mx-auto w-full">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-10">Payment Information</h2>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={contactData?.email || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                    readOnly
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Card Information
-                  </label>
-                  <div
-                    style={{
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.375rem',
-                      padding: '1.25rem',
-                      backgroundColor: 'white',
-                      minHeight: '4rem',
-                    }}
-                  >
-                    <CardElement 
-                      options={CARD_ELEMENT_OPTIONS}
-                      onReady={handleCardReady}
-                      onChange={handleCardChange}
-                    />
-                  </div>
-                  
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M12 17h.01M12 3v6m6 6v6M6 9v6" />
-                      </svg>
-                      <div className="text-sm text-yellow-700">
-                        <strong>Test Mode:</strong> Use card number 4242 4242 4242 4242 with any future expiry date and CVC.
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-4">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={contactData?.email || ''}
+                          className="w-full px-5 py-5 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                          readOnly
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm text-red-700">{error}</span>
+                    {/* Payment Method Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-4">
+                        Payment method
+                      </label>
+                      <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="card"
+                              name="paymentMethod"
+                              value="card"
+                              checked={paymentMethod === 'card'}
+                              onChange={() => setPaymentMethod('card')}
+                              className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
+                            />
+                            <label htmlFor="card" className="flex items-center cursor-pointer">
+                              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
+                              </svg>
+                              <span className="font-medium">Card</span>
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-6" />
+                            <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-6" />
+                            <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-6" />
+                            <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-6" />
+                          </div>
+                        </div>
+                        
+                        <hr className="border-gray-200" />
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="ach"
+                              name="paymentMethod"
+                              value="ach"
+                              checked={paymentMethod === 'ach'}
+                              onChange={() => setPaymentMethod('ach')}
+                              className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
+                            />
+                            <label htmlFor="ach" className="flex items-center cursor-pointer">
+                              <div className="bg-[#0052cc] text-white px-2 py-1 rounded text-xs font-bold mr-2">
+                                SEPA
+                              </div>
+                              <span className="font-medium">Direct Debit</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={isLoading || !cardComplete}
-                  className="w-full bg-[#673171] text-white py-3 px-4 rounded-md font-medium hover:bg-[#5a2a61] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                  onClick={() => console.log('Button clicked! Disabled:', isLoading || !cardComplete)}
-                >
-                  {isLoading ? 'Processing...' : `Pay ${formatCurrency(paymentInfo.discountedAmount)}`}
-                </button>
+                    {paymentMethod === 'card' ? (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-4">
+                          Card Information
+                        </label>
+                        <div className="border-2 border-gray-200 rounded-xl p-5 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
+                          <CardElement 
+                            options={CARD_ELEMENT_OPTIONS}
+                            onReady={handleCardReady}
+                            onChange={handleCardChange}
+                          />
+                        </div>
+                        
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                          <div className="flex items-start">
+                            <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div className="text-sm text-blue-700">
+                              <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-4">
+                            Bank Account Information
+                          </label>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-2">
+                                Routing Number
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="9 digits"
+                                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-2">
+                                Account Number
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Account number"
+                                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-2">
+                                Account Type
+                              </label>
+                              <select className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
+                                <option value="checking">Checking</option>
+                                <option value="savings">Savings</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                          <div className="flex items-start">
+                            <svg className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <div className="text-sm text-amber-700">
+                              <strong>ACH Payment Note:</strong> Bank transfers typically take 3-5 business days to process. Your membership will be activated once payment is confirmed.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                <p className="text-xs text-gray-500 text-center">
-                  By completing your purchase, you agree to our terms of service and privacy policy.
-                </p>
-              </form>
+                    {error && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start">
+                          <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm text-red-700 font-medium">{error}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || (paymentMethod === 'card' && !cardComplete)}
+                      className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-8 rounded-full font-semibold text-lg disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
+                        </div>
+                      ) : (
+                        <>
+                          {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-xs text-gray-500 text-center leading-relaxed">
+                      By completing your purchase, you agree to our{' '}
+                      <a href="#" className="text-[#13273f] hover:underline">terms of service</a>{' '}
+                      and{' '}
+                      <a href="#" className="text-[#13273f] hover:underline">privacy policy</a>.
+                      Your membership will be activated immediately upon successful payment.
+                    </p>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -523,10 +698,11 @@ function PaymentPageLoader() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#673171] mb-4 mx-auto"></div>
-          <p className="text-gray-600">Loading payment information...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#12243c] border-t-transparent mb-6 mx-auto"></div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Payment</h3>
+          <p className="text-gray-600">Preparing your secure checkout...</p>
         </div>
       </div>
     );
@@ -534,18 +710,21 @@ function PaymentPageLoader() {
 
   if (error || !userData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-            <h3 className="text-lg font-medium text-red-800 mb-2">Unable to Load Payment</h3>
-            <p className="text-red-700 mb-4">{error || 'Failed to load payment data'}</p>
-            <button 
-              onClick={() => navigate('/signup')}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Back to Signup
-            </button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md mx-auto">
+          <div className="bg-red-100 rounded-full p-4 mb-6 mx-auto w-16 h-16 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Unable to Load Payment</h3>
+          <p className="text-gray-600 mb-8">{error || 'Failed to load payment data'}</p>
+          <button 
+            onClick={() => navigate('/signup')}
+            className="bg-gradient-to-r from-[#12243c] to-[#4b3965] text-white px-8 py-3 rounded-xl font-semibold hover:from-[#0f1e33] hover:to-[#402f56] transition-all duration-200 transform hover:scale-105 shadow-lg"
+          >
+            Back to Signup
+          </button>
         </div>
       </div>
     );
