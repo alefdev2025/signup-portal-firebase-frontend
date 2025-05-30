@@ -259,14 +259,12 @@ function CheckoutForm({ userData }) {
         }
 
         console.log('Membership created successfully');
-        setPaymentStatus('completed');
         
-        setTimeout(() => {
-          navigate('/signup/success', { 
-            replace: true,
-            state: { paymentResult: confirmResult }
-          });
-        }, 2000);
+        // Navigate immediately to welcome member page
+        navigate('/welcome-member', { 
+          replace: true,
+          state: { paymentResult: confirmResult }
+        });
 
       } else {
         // Handle ACH payment

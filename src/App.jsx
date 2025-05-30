@@ -10,7 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPassword";
 import SinglePageSignup from "./pages/SinglePageSignup";
 import StandalonePaymentPage from './pages/PaymentPage';
-
+import WelcomeMember from './pages/WelcomeMember';
 
 // Other components you might have
 // import CompletionSummary from "./components/CompletionSummary";
@@ -31,8 +31,9 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/__/auth/action" element={<ResetPasswordPage />} />
 
-          
+          {/* Payment and member welcome pages */}
           <Route path="/payment" element={<StandalonePaymentPage />} />
+          <Route path="/welcome-member" element={<WelcomeMember />} />
           
           {/* Isolated signup flow - all signup paths go to the same component */}
           <Route path="/signup/*" element={
