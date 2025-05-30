@@ -1,4 +1,4 @@
-// PRODUCTION-READY Stripe Integration with Improved Design - Fixed
+// PRODUCTION-READY Stripe Integration - Fixed All Syntax Errors
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from '@stripe/stripe-js';
@@ -19,12 +19,12 @@ import { useUser } from "../contexts/UserContext";
 // Import logo
 import navyAlcorLogo from "../assets/images/navy-alcor-logo.png";
 import alcorStar from "../assets/images/alcor-star.png";
-import whiteALogo from "../assets/images/white-a-logo.png";
+import whiteALogoNoText from "../assets/images/alcor-white-logo-no-text.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
 
 // Import Terms and Privacy Modal
 import TermsPrivacyModal from "../components/modals/TermsPrivacyModal";
-import HelpPanel from "../components/HelpPanel";
+import HelpPanel from "../components/signup/HelpPanel";
 
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
@@ -56,7 +56,7 @@ function CheckoutForm({ userData }) {
   const elements = useElements();
   const navigate = useNavigate();
   
-  // Critical: Use refs to persist across re-renders
+  // Refs to persist across re-renders
   const paymentElementRef = useRef(null);
   const isProcessingRef = useRef(false);
   const componentMountedRef = useRef(true);
@@ -65,11 +65,11 @@ function CheckoutForm({ userData }) {
   const [error, setError] = useState(null);
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('ready');
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'ach'
+  const [paymentMethod, setPaymentMethod] = useState('card');
   
-  // Modal state for terms and privacy
+  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(null); // 'terms' or 'privacy'
+  const [modalType, setModalType] = useState(null);
   
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
@@ -78,12 +78,12 @@ function CheckoutForm({ userData }) {
   const handleCardReady = useCallback(() => {
     if (elements) {
       paymentElementRef.current = elements.getElement(CardElement);
-      console.log('✅ CardElement reference stored');
+      console.log('CardElement reference stored');
     }
   }, [elements]);
 
   const handleCardChange = useCallback((event) => {
-    console.log('🔄 Card change:', event.complete, event.error?.message);
+    console.log('Card change:', event.complete, event.error?.message);
     setCardComplete(event.complete);
     if (event.error) {
       setError(event.error.message);
@@ -92,7 +92,7 @@ function CheckoutForm({ userData }) {
     }
   }, []);
 
-  // Memoize user data to prevent unnecessary re-renders
+  // Memoize user data
   const contactData = useMemo(() => userData?.contactData || {}, [userData?.contactData]);
   const membershipData = useMemo(() => userData?.membershipData || {}, [userData?.membershipData]);
   const pricingData = useMemo(() => userData?.pricingData || { membershipCost: 540 }, [userData?.pricingData]);
@@ -139,20 +139,20 @@ function CheckoutForm({ userData }) {
     };
   }, [membershipData, pricingData]);
 
-  // Process payment with proper payment method attachment
+  // Process payment
   const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
     
-    console.log('🔄 Form submitted!');
+    console.log('Form submitted!');
 
     // Prevent double-processing
     if (isProcessingRef.current) {
-      console.log('❌ Blocked: Already processing');
+      console.log('Blocked: Already processing');
       return;
     }
 
     if (!stripe || !elements || (paymentMethod === 'card' && !cardComplete)) {
-      console.log('❌ Blocked: Missing stripe, elements, or incomplete card');
+      console.log('Blocked: Missing stripe, elements, or incomplete card');
       setError('Please complete your payment information');
       return;
     }
@@ -163,7 +163,7 @@ function CheckoutForm({ userData }) {
 
     try {
       if (paymentMethod === 'card') {
-        // Get element using stored reference first, fallback to elements
+        // Get card element
         let cardElement = paymentElementRef.current;
         if (!cardElement) {
           cardElement = elements.getElement(CardElement);
@@ -173,7 +173,7 @@ function CheckoutForm({ userData }) {
           throw new Error('Payment form not ready');
         }
 
-        // Step 1: Create payment method
+        // Create payment method
         const { error: pmError, paymentMethod: pm } = await stripe.createPaymentMethod({
           type: 'card',
           card: cardElement,
@@ -187,9 +187,9 @@ function CheckoutForm({ userData }) {
           throw new Error(pmError.message);
         }
 
-        console.log('✅ Payment method created:', pm.id);
+        console.log('Payment method created:', pm.id);
 
-        // Step 2: Create payment intent on your backend WITH payment method ID
+        // Create payment intent
         const paymentData = {
           amount: Math.round(paymentInfo.discountedAmount * 100),
           currency: 'usd',
@@ -202,18 +202,18 @@ function CheckoutForm({ userData }) {
           }
         };
 
-        console.log('🔄 Creating payment intent with payment method:', pm.id);
+        console.log('Creating payment intent with payment method:', pm.id);
         const intentResult = await createPaymentIntent(paymentData);
         
         if (!intentResult.success) {
           throw new Error(intentResult.error || 'Failed to create payment intent');
         }
 
-        console.log('✅ Payment intent created:', intentResult.paymentIntentId);
+        console.log('Payment intent created:', intentResult.paymentIntentId);
 
-        // Step 3: Handle different payment intent responses
+        // Handle payment intent response
         if (intentResult.requiresAction && intentResult.clientSecret) {
-          console.log('🔐 Handling 3D Secure authentication...');
+          console.log('Handling 3D Secure authentication...');
           const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
             intentResult.clientSecret
           );
@@ -222,13 +222,13 @@ function CheckoutForm({ userData }) {
             throw new Error(confirmError.message);
           }
 
-          console.log('✅ 3D Secure authentication completed:', paymentIntent.id);
+          console.log('3D Secure authentication completed:', paymentIntent.id);
           
         } else if (intentResult.status === 'succeeded') {
-          console.log('✅ Payment completed immediately');
+          console.log('Payment completed immediately');
           
         } else if (intentResult.clientSecret) {
-          console.log('🔄 Confirming payment with payment method...');
+          console.log('Confirming payment with payment method...');
           const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
             intentResult.clientSecret,
             {
@@ -240,11 +240,11 @@ function CheckoutForm({ userData }) {
             throw new Error(confirmError.message);
           }
 
-          console.log('✅ Payment confirmed:', paymentIntent.id);
+          console.log('Payment confirmed:', paymentIntent.id);
         }
 
-        // Step 4: Confirm on backend and create membership
-        console.log('🔄 Confirming payment on backend...');
+        // Confirm on backend
+        console.log('Confirming payment on backend...');
         const confirmResult = await confirmPayment({
           paymentIntentId: intentResult.paymentIntentId,
           membershipData: {
@@ -258,7 +258,7 @@ function CheckoutForm({ userData }) {
           throw new Error('Payment succeeded but membership creation failed');
         }
 
-        console.log('✅ Membership created successfully');
+        console.log('Membership created successfully');
         setPaymentStatus('completed');
         
         setTimeout(() => {
@@ -270,15 +270,14 @@ function CheckoutForm({ userData }) {
 
       } else {
         // Handle ACH payment
-        console.log('🔄 Processing ACH payment...');
-        // ACH payment logic would go here
+        console.log('Processing ACH payment...');
         throw new Error('ACH payment not yet implemented');
       }
 
     } catch (err) {
-      console.error('❌ Payment error:', err);
+      console.error('Payment error:', err);
       
-      // Enhanced error handling with specific messages
+      // Enhanced error handling
       let errorMessage = 'Payment processing failed';
       
       if (err.message.includes('card_declined')) {
@@ -288,7 +287,7 @@ function CheckoutForm({ userData }) {
       } else if (err.message.includes('expired_card')) {
         errorMessage = 'Your card has expired. Please use a different payment method.';
       } else if (err.message.includes('incorrect_cvc')) {
-        errorMessage = 'Your card\'s security code is incorrect.';
+        errorMessage = 'Your card security code is incorrect.';
       } else if (err.message.includes('processing_error')) {
         errorMessage = 'An error occurred while processing your card. Please try again.';
       } else if (err.message) {
@@ -307,7 +306,7 @@ function CheckoutForm({ userData }) {
     setShowHelpInfo(prev => !prev);
   };
   
-  // Define page-specific help content
+  // Help content
   const paymentHelpContent = [
     {
       title: "Payment Processing",
@@ -328,14 +327,14 @@ function CheckoutForm({ userData }) {
     {
       title: "Need assistance?",
       content: (
-        <>
+        <span>
           Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
-        </>
+        </span>
       )
     }
   ];
 
-  // Terms and Privacy modal functions
+  // Modal functions
   const openModal = (type) => {
     setModalType(type);
     setModalOpen(true);
@@ -346,7 +345,7 @@ function CheckoutForm({ userData }) {
     setModalType(null);
   };
 
-  // Terms of Use content
+  // Terms content
   const termsContent = `
     <h1>Terms of Use</h1>
     <p><em>Last Updated: May 1, 2025</em></p>
@@ -380,7 +379,7 @@ function CheckoutForm({ userData }) {
     <p>We reserve the right to modify these Terms at any time. We will provide notice of significant changes as appropriate. Your continued use of our Service constitutes acceptance of any updates to these Terms.</p>
   `;
 
-  // Privacy Policy content
+  // Privacy content
   const privacyContent = `
     <h1>Privacy Policy</h1>
     <p><em>Last Updated: May 1, 2025</em></p>
@@ -454,313 +453,376 @@ function CheckoutForm({ userData }) {
   }
 
   return (
-    <>
+    <div>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Main Content */}
-        <div className="min-h-screen flex items-center justify-center py-8 px-6">
-          <div className="w-full max-w-7xl">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[700px]">
-              <div className="grid grid-cols-1 lg:grid-cols-5 min-h-[700px]">
+        {/* Top Header Bar */}
+        <div className="py-4 px-8 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+          {/* Additional diagonal gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+          
+          <div className="w-full flex justify-between items-center relative z-10">
+            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-20" />
+            <h1 className="text-xl sm:text-2xl font-semibold text-white">Activate Membership</h1>
+          </div>
+        </div>
+        
+        <div className="flex items-start justify-center pt-12 px-6">
+          <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-0">
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden lg:h-[850px] max-w-sm sm:max-w-none mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
             
-              {/* LEFT SIDE - Order Summary - ONLY ONE */}
-              <div className="lg:col-span-2 bg-gray-50 p-12 text-gray-900 flex flex-col border-r border-gray-100">
-                <div className="mb-8">
-                  <img src={navyAlcorLogo} alt="Alcor Logo" className="h-16" />
-                </div>
-                
-                <div className="space-y-8 flex-grow">
-                  <div>
-                    <h3 className="text-lg text-gray-500 mb-2 flex items-center">
-                      Start Membership
-                      <img src={yellowStar} alt="" className="h-5 ml-2" />
-                    </h3>
-                    <div className="text-4xl font-bold mb-2 text-gray-900">
-                      {formatCurrency(paymentInfo.originalAmount)}
+                {/* LEFT SIDE - Order Summary with Custom Gradient */}
+<div className="lg:col-span-2 bg-gradient-to-br from-[#0a1629] to-[#1e2650] p-8 text-white flex flex-col relative overflow-hidden">
+                  {/* Additional diagonal gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+                  
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="mt-4 mb-8">
+                      <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                        Activate Membership
+                        <img src={alcorStar} alt="Alcor Star" className="h-7 ml-1" />
+                      </h2>
                     </div>
-                    <p className="text-gray-500">
-                      {paymentInfo.perText}
-                    </p>
-                  </div>
+                    
+                    <div className="space-y-6 flex-grow">
+                      {/* Grouped Summary Items - Membership, Discount, and Tax */}
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 space-y-6">
+                        {/* Main Membership */}
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-1 flex items-center">
+                              Alcor Membership
+                              <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
+                            </h3>
+                            <p className="text-white/70 text-sm mb-2">{paymentInfo.frequency} Plan</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-white">
+                              {formatCurrency(paymentInfo.originalAmount)}
+                            </div>
+                          </div>
+                        </div>
 
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          Membership - {paymentInfo.frequency} - USD
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {paymentInfo.frequency} Membership Plan
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Billed {paymentInfo.frequency.toLowerCase()}ly
+                        {/* ICE Code Discount */}
+                        {paymentInfo.hasDiscount && (
+                          <>
+                            <hr className="border-white/20 my-4" />
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold text-white mb-1">ICE Code Discount</h3>
+                                <p className="text-white/70 text-sm mb-2">Code: {paymentInfo.iceCode}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-300">
+                                  -{formatCurrency(paymentInfo.discount)}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Tax Section */}
+                        <hr className="border-white/20 my-4" />
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-1">Tax</h3>
+                            <p className="text-white/70 text-sm mb-2">No tax applicable</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-white">
+                              $0.00
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-lg font-medium text-gray-900">
-                        {formatCurrency(paymentInfo.originalAmount)}
+
+                      {/* Total Section */}
+                      <div className="mt-8 pt-6">
+                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-6 border border-white/30">
+                          <div className="flex justify-between items-center">
+                            <div className="text-lg font-semibold text-white">Total Due Today</div>
+                            <div className="text-3xl font-bold text-white">
+                              {formatCurrency(paymentInfo.discountedAmount)}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {paymentInfo.hasDiscount && (
-                      <div className="flex justify-between items-start">
+                    {/* Security Info at Bottom */}
+                    <div className="mt-auto pt-8">
+                      <div className="mb-6 flex justify-center">
+                        <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12 opacity-90" />
+                      </div>
+                      <div className="flex items-start text-white/60 text-xs leading-relaxed">
+                        <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
                         <div>
-                          <div className="font-medium text-purple-600">
-                            ICE Code Discount ({paymentInfo.iceCode})
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            First year only • Member (Alcor Member ICE)
-                          </div>
-                        </div>
-                        <div className="text-lg font-medium text-purple-600">
-                          -{formatCurrency(paymentInfo.discount)}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-4 pt-6">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Subtotal</span>
-                        <span className="text-gray-900">{formatCurrency(paymentInfo.discountedAmount)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Tax</span>
-                        <span className="text-gray-900">$0.00</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-6">
-                      <div className="flex justify-between items-center">
-                        <div className="text-2xl font-bold text-gray-900">Total due today</div>
-                        <div className="text-4xl font-bold text-gray-900">
-                          {formatCurrency(paymentInfo.discountedAmount)}
+                          Your payment is secured with 256-bit SSL encryption. All transactions are processed by Stripe, a certified PCI Level 1 service provider.
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Bottom Star Decorations - At actual bottom */}
-                <div className="flex justify-center mt-auto pt-8">
-                  <div className="flex justify-center items-center space-x-2">
-                    <img src={yellowStar} alt="Yellow Star" className="h-7 opacity-70" />
-                    <img src={yellowStar} alt="Yellow Star" className="h-12 opacity-90" />
-                    <img src={yellowStar} alt="Yellow Star" className="h-7 opacity-70" />
+                {/* RIGHT SIDE - Payment Form with Internal Scrolling (Desktop Only) */}
+                <div className="lg:col-span-3 lg:h-full lg:overflow-hidden">
+                  <div className="lg:h-full lg:overflow-y-auto p-12">
+                    <div className="max-w-lg mx-auto w-full">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-10">Payment Information</h2>
+
+                      <form onSubmit={handleSubmit} className="space-y-8 pb-8">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-4">
+                            Email Address
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="email"
+                              value={contactData?.email || ''}
+                              className="w-full px-5 py-5 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                              readOnly
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Payment Method Selection */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-4">
+                            Payment method
+                          </label>
+                          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  id="card"
+                                  name="paymentMethod"
+                                  value="card"
+                                  checked={paymentMethod === 'card'}
+                                  onChange={() => setPaymentMethod('card')}
+                                  className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
+                                />
+                                <label htmlFor="card" className="flex items-center cursor-pointer">
+                                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
+                                  </svg>
+                                  <span className="font-medium">Card</span>
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-6" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-6" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-6" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-6" />
+                              </div>
+                            </div>
+                            
+                            <hr className="border-gray-200" />
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  id="ach"
+                                  name="paymentMethod"
+                                  value="ach"
+                                  checked={paymentMethod === 'ach'}
+                                  onChange={() => setPaymentMethod('ach')}
+                                  className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
+                                />
+                                <label htmlFor="ach" className="flex items-center cursor-pointer">
+                                  <div className="bg-[#0052cc] text-white px-2 py-1 rounded text-xs font-bold mr-2">
+                                    SEPA
+                                  </div>
+                                  <span className="font-medium">Direct Debit</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {paymentMethod === 'card' ? (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-4">
+                              Card Information
+                            </label>
+                            <div className="border-2 border-gray-200 rounded-xl p-5 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
+                              <CardElement 
+                                options={CARD_ELEMENT_OPTIONS}
+                                onReady={handleCardReady}
+                                onChange={handleCardChange}
+                              />
+                            </div>
+                            
+                            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                              <div className="flex items-start">
+                                <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="text-sm text-blue-700">
+                                  <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-4">
+                                Bank Account Information
+                              </label>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Routing Number
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="9 digits"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Account Number
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Account number"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Account Type
+                                  </label>
+                                  <select className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
+                                    <option value="checking">Checking</option>
+                                    <option value="savings">Savings</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Bank Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Your bank name"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Account Holder Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Full name on account"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    IBAN
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="International Bank Account Number"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    BIC/SWIFT Code
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Bank identifier code"
+                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                              <div className="flex items-start">
+                                <svg className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                <div className="text-sm text-amber-700">
+                                  <strong>SEPA Payment Note:</strong> Bank transfers typically take 1-3 business days to process. Your membership will be activated once payment is confirmed.
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {error && (
+                          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                            <div className="flex items-start">
+                              <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="text-sm text-red-700 font-medium">{error}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-8 rounded-full font-semibold text-lg disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center justify-center">
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
+                            </div>
+                          ) : (
+                            <span className="flex items-center">
+                              <img src={alcorStar} alt="" className="h-5 mr-3" />
+                              {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+
+                        <p className="text-xs text-gray-500 text-center leading-relaxed">
+                          By completing your purchase, you agree to our{' '}
+                          <button 
+                            type="button" 
+                            onClick={() => openModal('terms')} 
+                            className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                          >
+                            terms of service
+                          </button>{' '}
+                          and{' '}
+                          <button 
+                            type="button" 
+                            onClick={() => openModal('privacy')} 
+                            className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                          >
+                            privacy policy
+                          </button>.
+                          Your membership will be activated immediately upon successful payment.
+                        </p>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* RIGHT SIDE - Payment Form - ONLY ONE */}
-              <div className="lg:col-span-3 p-12 flex flex-col justify-center">
-                <div className="max-w-lg mx-auto w-full">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-10">Payment Information</h2>
-
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-4">
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          value={contactData?.email || ''}
-                          className="w-full px-5 py-5 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                          readOnly
-                        />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Payment Method Selection */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-4">
-                        Payment method
-                      </label>
-                      <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <input
-                              type="radio"
-                              id="card"
-                              name="paymentMethod"
-                              value="card"
-                              checked={paymentMethod === 'card'}
-                              onChange={() => setPaymentMethod('card')}
-                              className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
-                            />
-                            <label htmlFor="card" className="flex items-center cursor-pointer">
-                              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
-                              </svg>
-                              <span className="font-medium">Card</span>
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-6" />
-                            <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-6" />
-                            <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-6" />
-                            <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-6" />
-                          </div>
-                        </div>
-                        
-                        <hr className="border-gray-200" />
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <input
-                              type="radio"
-                              id="ach"
-                              name="paymentMethod"
-                              value="ach"
-                              checked={paymentMethod === 'ach'}
-                              onChange={() => setPaymentMethod('ach')}
-                              className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
-                            />
-                            <label htmlFor="ach" className="flex items-center cursor-pointer">
-                              <div className="bg-[#0052cc] text-white px-2 py-1 rounded text-xs font-bold mr-2">
-                                SEPA
-                              </div>
-                              <span className="font-medium">Direct Debit</span>
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {paymentMethod === 'card' ? (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-4">
-                          Card Information
-                        </label>
-                        <div className="border-2 border-gray-200 rounded-xl p-5 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
-                          <CardElement 
-                            options={CARD_ELEMENT_OPTIONS}
-                            onReady={handleCardReady}
-                            onChange={handleCardChange}
-                          />
-                        </div>
-                        
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                          <div className="flex items-start">
-                            <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div className="text-sm text-blue-700">
-                              <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-4">
-                            Bank Account Information
-                          </label>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Routing Number
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="9 digits"
-                                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Account Number
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Account number"
-                                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Account Type
-                              </label>
-                              <select className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
-                                <option value="checking">Checking</option>
-                                <option value="savings">Savings</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                          <div className="flex items-start">
-                            <svg className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            <div className="text-sm text-amber-700">
-                              <strong>ACH Payment Note:</strong> Bank transfers typically take 3-5 business days to process. Your membership will be activated once payment is confirmed.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {error && (
-                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <div className="flex items-start">
-                          <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-sm text-red-700 font-medium">{error}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-8 rounded-full font-semibold text-lg disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
-                        </div>
-                      ) : (
-                        <>
-                          <img src={alcorStar} alt="" className="h-5 mr-3" />
-                          {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-xs text-gray-500 text-center leading-relaxed">
-                      By completing your purchase, you agree to our{' '}
-                      <button 
-                        type="button" 
-                        onClick={() => openModal('terms')} 
-                        className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
-                      >
-                        terms of service
-                      </button>{' '}
-                      and{' '}
-                      <button 
-                        type="button" 
-                        onClick={() => openModal('privacy')} 
-                        className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
-                      >
-                        privacy policy
-                      </button>.
-                      Your membership will be activated immediately upon successful payment.
-                    </p>
-                  </form>
-                </div>
             </div>
           </div>
         </div>
@@ -774,36 +836,13 @@ function CheckoutForm({ userData }) {
         directContent={modalType === 'terms' ? termsContent : privacyContent}
       />
       
-      {/* Help Panel Component */}
+      {/* Help Panel Component - Always rendered so pink button is visible */}
       <HelpPanel 
         showHelpInfo={showHelpInfo} 
         toggleHelpInfo={toggleHelpInfo} 
         helpItems={paymentHelpContent} 
       />
-      
-      {/* Help Button - Simple and explicit */}
-      <div 
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          zIndex: 10000,
-          width: '56px',
-          height: '56px',
-          backgroundColor: '#13273f',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          border: 'none'
-        }}
-        onClick={toggleHelpInfo}
-      >
-        <div style={{ color: 'white', fontSize: '24px', fontWeight: 'bold' }}>?</div>
-      </div>
-    </>
+    </div>
   );
 }
 
