@@ -16,6 +16,59 @@ import DemoPasswordPage from './pages/DemoPasswordPage';
 // Import demo service
 import { checkDemoAuth } from './services/demo';
 
+// Debug info component
+function DebugInfo() {
+  const [debugInfo, setDebugInfo] = useState({});
+  
+  useEffect(() => {
+    const info = {
+      devicePixelRatio: window.devicePixelRatio,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      userAgent: navigator.userAgent.substring(0, 50) + '...',
+      hostname: window.location.hostname,
+      mode: import.meta.env.MODE,
+      isDev: import.meta.env.DEV,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    setDebugInfo(info);
+    console.log('🔍 DEBUG INFO:', info);
+  }, []);
+  
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '10px',
+      right: '10px',
+      background: 'rgba(0,0,0,0.9)',
+      color: 'white',
+      padding: '12px',
+      fontSize: '11px',
+      borderRadius: '8px',
+      zIndex: 9999,
+      maxWidth: '280px',
+      fontFamily: 'monospace',
+      lineHeight: '1.3',
+      border: '1px solid rgba(255,255,255,0.2)'
+    }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#00ff00' }}>🔍 DEBUG PANEL</div>
+      <div><strong>DPR:</strong> {debugInfo.devicePixelRatio}</div>
+      <div><strong>Window:</strong> {debugInfo.innerWidth}×{debugInfo.innerHeight}</div>
+      <div><strong>Screen:</strong> {debugInfo.screenWidth}×{debugInfo.screenHeight}</div>
+      <div><strong>Host:</strong> {debugInfo.hostname}</div>
+      <div><strong>Mode:</strong> {debugInfo.mode}</div>
+      <div><strong>Dev:</strong> {debugInfo.isDev?.toString()}</div>
+      <div><strong>Time:</strong> {debugInfo.timestamp}</div>
+      <div style={{ marginTop: '8px', fontSize: '10px', color: '#aaa' }}>
+        {debugInfo.userAgent}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   console.log('[APP] App component rendering');
   
@@ -70,6 +123,7 @@ function App() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <DebugInfo />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0C2340] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -81,18 +135,22 @@ function App() {
   // Show password page if protection is enabled and user is not authenticated
   if (shouldProtect && !isAuthenticated) {
     return (
-      <DemoPasswordPage 
-        onAuthenticated={() => {
-          console.log('[APP] Demo authentication successful');
-          setIsAuthenticated(true);
-        }} 
-      />
+      <div>
+        <DebugInfo />
+        <DemoPasswordPage 
+          onAuthenticated={() => {
+            console.log('[APP] Demo authentication successful');
+            setIsAuthenticated(true);
+          }} 
+        />
+      </div>
     );
   }
 
   // Main app - only renders after authentication (or if protection is disabled)
   return (
     <BrowserRouter>
+      <DebugInfo />
       <UserProvider>
         <Routes>
           {/* Welcome page at root */}

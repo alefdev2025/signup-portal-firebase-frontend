@@ -30,39 +30,15 @@ function writeToLog(message) {
 writeToLog('VITE SERVER STARTED');
 
 export default defineConfig({
-  plugins: [
-    // DISABLE FAST REFRESH to prevent CardElement destruction
-    react({
-      fastRefresh: false,
-      // Also disable some other development features that might interfere
-      jsxImportSource: undefined
-    }),
-    {
-      name: 'file-logger',
-      configureServer(server) {
-        // Log server start
-        writeToLog('🔴 FILE LOGGER ACTIVATED 🔴');
-        
-        server.middlewares.use((req, res, next) => {
-          if (req.url.startsWith('/api/log')) {
-            let body = '';
-            req.on('data', chunk => { body += chunk.toString(); });
-            req.on('end', () => {
-              writeToLog(`CLIENT: ${body}`);
-              res.end('OK');
-            });
-          } else {
-            next();
-          }
-        });
-      }
-    }
-  ],
+  plugins: [react()],
   server: {
     port: 5173,
-    // Also disable HMR for payment pages
     hmr: {
       overlay: false
     }
+  },
+  // Standard Stripe configuration that actually works
+  optimizeDeps: {
+    include: ['@stripe/stripe-js']
   }
 });

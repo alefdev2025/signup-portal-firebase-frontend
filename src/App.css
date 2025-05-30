@@ -1,8 +1,57 @@
+/* Force proper viewport dimensions */
+html {
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow-x: hidden !important;
+}
+
+body {
+  width: 100vw !important;
+  min-height: 100vh !important;
+  overflow-x: hidden !important;
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100% !important;
+  min-height: 100vh !important;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base global styles for the app */
+@layer base {
+  html, body {
+    font-size: 16px;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  *, *::before, *::after {
+    box-sizing: inherit;
+  }
+
+  body {
+    @apply font-sans m-0 min-h-screen;
+  }
+
+  a {
+    @apply text-brand-gold hover:underline font-medium;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-white;
+  }
+
+  button {
+    @apply rounded-lg px-4 py-2 font-medium transition duration-150 ease-in-out;
+  }
 }
 
 .logo {

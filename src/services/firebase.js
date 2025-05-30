@@ -17,10 +17,17 @@ const firebaseConfig = {
 // Set the region for your Firebase functions
 const FIREBASE_REGION = import.meta.env.VITE_FIREBASE_REGION || 'us-central1';
 
+// Add this right after the firebaseConfig object:
+console.log('🔥 FIREBASE DEBUG:');
+console.log('Project ID from env:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
+console.log('Full firebaseConfig:', firebaseConfig);
+console.log('Functions region:', FIREBASE_REGION);
+
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app, FIREBASE_REGION);
+
 
 export { auth, db, functions };

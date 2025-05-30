@@ -3,20 +3,34 @@
 @tailwind utilities;
 
 /* Base global styles for the app */
-body {
-  @apply font-sans m-0 min-h-screen; /* remove bg-brand-dark */
-}
-/* Links */
-a {
-  @apply text-brand-gold hover:underline font-medium;
-}
+@layer base {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
 
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-  @apply font-semibold text-white;
-}
+  *, *::before, *::after {
+    box-sizing: inherit;
+  }
 
-/* Buttons */
-button {
-  @apply rounded-lg px-4 py-2 font-medium transition duration-150 ease-in-out;
+  body {
+    @apply font-sans m-0 min-h-screen;
+  }
+
+  a {
+    @apply text-brand-gold hover:underline font-medium;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-white;
+  }
+
+  button {
+    @apply rounded-lg px-4 py-2 font-medium transition duration-150 ease-in-out;
+  }
 }
