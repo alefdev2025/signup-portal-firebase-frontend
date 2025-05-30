@@ -401,10 +401,13 @@ export const resetPassword = async (email) => {
       }
       
       // Get Firebase functions
-      const sendPasswordResetLinkFn = httpsCallable(functions, 'sendPasswordResetLink');
+      const authCoreFn = httpsCallable(functions, 'authCore');
       
-      // Call the cloud function
-      const result = await sendPasswordResetLinkFn({ email });
+      // Call the consolidated auth function
+      const result = await authCoreFn({ 
+        action: 'sendPasswordResetLink',
+        email 
+      });
       
       // Always return success for security reasons
       // console.log("Password reset email sent for:", email);
@@ -447,11 +450,14 @@ export async function requestEmailVerification(email, name) {
         
         // Pre-check for Google accounts before sending verification codes
         // console.log("Pre-checking if this email belongs to a Google account...");
-        const checkAuthMethodFn = httpsCallable(functions, 'checkAuthMethod');
+        const authCoreFn = httpsCallable(functions, 'authCore');
         
         try {
             // console.log("Calling checkAuthMethod with email:", email);
-            const authMethodResult = await checkAuthMethodFn({ email });
+            const authMethodResult = await authCoreFn({ 
+              action: 'checkAuthMethod',
+              email 
+            });
             
             // console.log("checkAuthMethod raw result:", authMethodResult);
             
@@ -519,12 +525,15 @@ export async function requestEmailVerification(email, name) {
         // If we get here, it's either a new user or an existing user with password auth
         // Get the Firebase function for email verification
         // console.log("Getting Firebase function: createEmailVerification");
-        const createEmailVerification = httpsCallable(functions, 'createEmailVerification');
         
         // Call the function with a timeout
         // console.log("Calling createEmailVerification with:", { email, name });
         const result = await Promise.race([
-            createEmailVerification({ email, name }),
+            authCoreFn({ 
+              action: 'createEmailVerification',
+              email, 
+              name 
+            }),
             new Promise((_, reject) => 
                 setTimeout(() => {
                     // console.log("Request timed out after 15 seconds");
@@ -560,7 +569,10 @@ export async function requestEmailVerification(email, name) {
             
             try {
                 // console.log("Sending email to checkAuthMethod:", email);
-                const authMethodResult = await checkAuthMethodFn({ email });
+                const authMethodResult = await authCoreFn({ 
+                  action: 'checkAuthMethod',
+                  email 
+                });
                 
                 // console.log("checkAuthMethod raw result:", authMethodResult);
                 
@@ -844,8 +856,11 @@ export const checkUserStep = async (data) => {
       console.log("Using Firebase function fallback to check user step");
       try {
         // Call checkUserStep Cloud Function directly with just the userId
-        const checkUserStepFn = httpsCallable(functions, 'checkUserStep');
-        const result = await checkUserStepFn({ userId });
+        const authCoreFn = httpsCallable(functions, 'authCore');
+        const result = await authCoreFn({ 
+          action: 'checkUserStep',
+          userId 
+        });
         
         if (result.data && result.data.success) {
           return {
@@ -1115,9 +1130,10 @@ export async function createNewUser(verificationResult, email, name, password) {
       
       // Call the Firebase function to create a new user
       // console.log("DEBUG: Calling createNewUser cloud function");
-      const createNewUserFn = httpsCallable(functions, 'createNewUser');
+      const authCoreFn = httpsCallable(functions, 'authCore');
       
-      const result = await createNewUserFn({
+      const result = await authCoreFn({
+        action: 'createNewUser',
         email,
         name,
         password,
@@ -1221,9 +1237,10 @@ export async function signInExistingUser(verificationResult, email, password) {
       // Call the cloud function to update records and get user state
       // console.log("DEBUG: Calling signInExistingUser cloud function");
       try {
-        const signInExistingUserFn = httpsCallable(functions, 'signInExistingUser');
+        const authCoreFn = httpsCallable(functions, 'authCore');
         
-        const result = await signInExistingUserFn({
+        const result = await authCoreFn({
+          action: 'signInExistingUser',
           email,
           password, // The function won't use this but maintains API consistency
           verificationId: verificationResult.verificationId
@@ -1698,8 +1715,11 @@ export const getAndNavigateToCurrentStep = async (navigate) => {
       console.log("Getting current step from backend for navigation");
       
       // Call checkUserStep Cloud Function directly
-      const checkUserStepFn = httpsCallable(functions, 'checkUserStep');
-      const result = await checkUserStepFn({ userId: user.uid });
+      const authCoreFn = httpsCallable(functions, 'authCore');
+      const result = await authCoreFn({ 
+        action: 'checkUserStep',
+        userId: user.uid 
+      });
       
       if (result.data && result.data.success) {
         const step = result.data.step;

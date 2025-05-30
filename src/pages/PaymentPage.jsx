@@ -203,6 +203,7 @@ function CheckoutForm({ userData }) {
         };
 
         console.log('Creating payment intent with payment method:', pm.id);
+        console.log('🚀 SENDING TO BACKEND:', JSON.stringify(paymentData, null, 2));
         const intentResult = await createPaymentIntent(paymentData);
         
         if (!intentResult.success) {

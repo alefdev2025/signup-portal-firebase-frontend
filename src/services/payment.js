@@ -10,64 +10,80 @@ const TIMEOUT_MS = 15000;
  * @param {object} paymentData The payment data
  * @returns {Promise<object>} Payment intent result
  */
-export const createPaymentIntent = async (paymentData) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error("User must be authenticated to create payment");
-    }
-    
-    const token = await user.getIdToken();
-    
-    console.log("Creating payment intent:", paymentData);
-    
-    const fetchPromise = fetch(`${API_BASE_URL}/payment/create-intent`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+ export const createPaymentIntent = async (paymentData) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User must be authenticated to create payment");
+      }
+      
+      const token = await user.getIdToken();
+      
+      console.log("Creating payment intent:", paymentData);
+      
+      // Build request body conditionally
+      const requestBody = {
         amount: paymentData.amount, // Amount in cents
         currency: paymentData.currency || 'usd',
         paymentFrequency: paymentData.paymentFrequency || 'annually',
-        iceCode: paymentData.iceCode || null,
+        paymentMethodId: paymentData.paymentMethodId,
         customerInfo: {
           email: paymentData.customerInfo.email,
           name: paymentData.customerInfo.name,
-          phone: paymentData.customerInfo.phone
+          phone: paymentData.customerInfo.phone || null
         }
-      })
-    });
-    
-    const response = await Promise.race([
-      fetchPromise,
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
-      )
-    ]);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Server error: ${response.status}`);
+      };
+  
+      // Only include iceCode if it has a value
+      if (paymentData.iceCode && paymentData.iceCode.trim() !== '') {
+        requestBody.iceCode = paymentData.iceCode;
+      }
+      
+      const fetchPromise = fetch(`${API_BASE_URL}/payment/create-intent`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const response = await Promise.race([
+        fetchPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
+        )
+      ]);
+      
+      if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = await response.text();
+          }
+          console.log('🔥 BACKEND ERROR RESPONSE:', errorData);
+          console.log('🔥 STATUS:', response.status);
+          console.log('🔥 ERROR DETAILS:', errorData.details);
+          throw new Error(errorData.error || `Server error: ${response.status}`);
+        }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create payment intent');
+      }
+      
+      return {
+        success: true,
+        clientSecret: result.clientSecret,
+        paymentIntentId: result.paymentIntentId
+      };
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      throw error;
     }
-    
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to create payment intent');
-    }
-    
-    return {
-      success: true,
-      clientSecret: result.clientSecret,
-      paymentIntentId: result.paymentIntentId
-    };
-  } catch (error) {
-    console.error("Error creating payment intent:", error);
-    throw error;
-  }
-};
+  };
 
 /**
  * Confirm payment and create membership
