@@ -123,7 +123,7 @@ export const debugLogger = {
       alert('Logs sent to terminal');
     };
     
-    document.body.appendChild(logButton);
+    //document.body.appendChild(logButton);
     return logButton;
   },
   
@@ -153,7 +153,7 @@ export const debugLogger = {
       this.printToConsole();
     };
     
-    document.body.appendChild(printButton);
+    //document.body.appendChild(printButton);
     return printButton;
   }
 };

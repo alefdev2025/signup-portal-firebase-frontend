@@ -329,26 +329,29 @@ const ResponsiveBanner = ({
         </div>
         
         {/* Progress bar section - using the separated component with corrected step mapping */}
-        {false && showProgressBar && !isLoading && (
-          <ProgressCircles
-            steps={steps}
-            activeStep={activeProgressDot}
-            maxCompletedStep={maxCompletedProgressDot}
-            onStepClick={handleStepClick}
-          />
-        )}
-        
-        {/* Spacer to maintain banner height when progress circles are hidden */}
-        {showProgressBar && (
-          <div className="py-4 px-10 bg-gray-100">
-            {/* Empty spacer div to maintain consistent banner height */}
+        {/* Progress bar section - only show on desktop and for Account Created onwards */}
+        {showProgressBar && activeStep >= 1 && !isLoading && (
+          <div className="-mt-12">
+            <ProgressCircles
+              steps={steps}
+              activeStep={activeProgressDot}
+              maxCompletedStep={maxCompletedProgressDot}
+              onStepClick={handleStepClick}
+            />
           </div>
         )}
         
-        {/* Loading indicator for progress bar */}
-        {false && showProgressBar && isLoading && (
-          <div className="py-4 px-10 bg-gray-100 flex justify-center items-center">
+        {/* Loading indicator for progress bar - only on desktop */}
+        {showProgressBar && activeStep >= 1 && isLoading && (
+          <div className="py-4 px-10 bg-gray-100 flex justify-center items-center -mt-12">
             <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+        
+        {/* Spacer to maintain banner height when progress circles are hidden - only on desktop */}
+        {showProgressBar && activeStep < 1 && (
+          <div className="py-4 px-10 bg-gray-100">
+            {/* Empty spacer div to maintain consistent banner height */}
           </div>
         )}
         
