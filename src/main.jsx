@@ -1,13 +1,11 @@
-// main.jsx - Remove StrictMode to eliminate double renders
+// main.jsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import './index.css' // if you have global styles
+import './index.css' // COMMENTED OUT
 
-//ReactDOM.createRoot(document.getElementById('root')).render(
-//  // REMOVED: React.StrictMode that was causing double renders
-//  <App />
-//)
+console.log('=== VIEWPORT DEBUG ===');
+console.log('Initial viewport:', window.innerWidth, 'x', window.innerHeight);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

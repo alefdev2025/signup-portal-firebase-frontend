@@ -1,3 +1,29 @@
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  html {
+    zoom: 0.5 !important;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5), (min-resolution: 144dpi) {
+  html {
+    zoom: 0.67 !important;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.25), (min-resolution: 120dpi) {
+  html {
+    zoom: 0.8 !important;
+  }
+}
+
+/* Disable browser auto-scaling - CRITICAL FIX FOR DEPLOYMENT ZOOM */
+html {
+  -webkit-text-size-adjust: none !important;
+  -moz-text-size-adjust: none !important;
+  -ms-text-size-adjust: none !important;
+  text-size-adjust: none !important;
+}
+
 /* Force proper viewport dimensions */
 html {
   width: 100vw !important;

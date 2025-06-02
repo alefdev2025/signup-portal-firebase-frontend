@@ -199,7 +199,7 @@ const AccountCreationStep = () => {
         formData.email: ${formData.email}
       `);
     };
-    document.body.appendChild(debugButton);
+    //document.body.appendChild(debugButton);
     
     return () => {
       if (document.body.contains(debugButton)) {

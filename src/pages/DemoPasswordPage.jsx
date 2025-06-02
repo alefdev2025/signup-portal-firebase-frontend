@@ -14,6 +14,14 @@ const DemoPasswordPage = ({ onAuthenticated }) => {
     setLoading(true);
     setError('');
 
+    // Check what's actually scaling
+    console.log('devicePixelRatio:', window.devicePixelRatio);
+    console.log('viewport width:', window.innerWidth);
+    console.log('document width:', document.documentElement.clientWidth);
+    console.log('html computed font-size:', getComputedStyle(document.documentElement).fontSize);
+    console.log('html zoom:', getComputedStyle(document.documentElement).zoom);
+    console.log('body transform:', getComputedStyle(document.body).transform);
+
     try {
       console.log('Attempting demo authentication...');
       

@@ -1,7 +1,7 @@
 // File: pages/components/FundingCard.jsx
 import React from "react";
 import alcorStarSelected from "../../assets/images/alcor-star.png";
-import alcorYellowStar from "/Users/nikkiolson/Development/Alcor/alcor-signup-portal/src/assets/images/alcor-yellow-star.png";
+import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 
 const FundingCard = ({ 
   option, 

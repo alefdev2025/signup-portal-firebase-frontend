@@ -224,7 +224,7 @@ const ResponsiveBanner = ({
 
   // Styling
   const gradientStyle = {
-    background: 'linear-gradient(90deg, #13233e 0%, #2D3050 40%, #49355B 80%, #654a54 100%)'
+    background: 'linear-gradient(90deg, #0a1629 0%, #1e2650 100%)'
   };
 
   const getLogoPositioningClass = () => {
@@ -242,10 +242,7 @@ const ResponsiveBanner = ({
   };
 
   const getTopPaddingClass = () => {
-    if (isLoginPage && !isWelcomePage) return "pt-8 md:pt-14";
-    if (isWelcomePage) return "pt-16";
-    if (isSignupPage) return "pt-10";
-    return "pt-16";
+    return "pt-8 md:pt-14";
   };
   
   const logoPositioningClass = getLogoPositioningClass();
@@ -275,68 +272,28 @@ const ResponsiveBanner = ({
           }}
         >
           {/* Top section with logo and heading */}
-          <div className="flex items-center justify-between mb-6 pt-4">
+          <div className="flex items-center justify-between mb-4 pt-3">
             <div className="flex items-center">
               <img 
                 src={logo} 
                 alt="Alcor Logo" 
-                className={isWelcomePage && !isLoginPage ? "h-12" : "h-14"}
+                className={isWelcomePage && !isLoginPage ? "h-10" : "h-12"}
               />
             </div>
             
             <div className="flex items-center">
               <h1 className="flex items-center">
-                <span className="text-2xl font-bold">
+                <span className="text-xl font-bold">
                   {displayHeading}
                 </span>
-                {showStar && <img src={yellowStar} alt="" className="h-6 ml-0.5" />}
+                {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
               </h1>
             </div>
           </div>
-          
-          {/* Subtext */}
-          {(isWelcomePage || (isSignupPage && !showProgressBar) || isLoginPage) && (
-            <div className="mb-6">
-              <p className="text-base text-white/80 leading-tight text-center">
-                {displaySubText}
-              </p>
-            </div>
-          )}
-          
-          {/* Mobile Progress Bar */}
-          {showProgressBar && !isLoading && (
-            <MobileProgressCircles 
-              steps={steps}
-              activeStep={activeProgressDot}
-              maxCompletedStep={maxCompletedProgressDot}
-              onStepClick={handleStepClick}
-            />
-          )}
-          
-          {/* Loading indicator */}
-          {showProgressBar && isLoading && (
-            <div className="flex justify-center items-center py-4">
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          )}
         </div>
-        
-        {/* Sign up text section */}
-        {showSteps && !isWelcomePage && (
-          <div className="bg-transparent text-black px-4 pt-10 pb-6 flex flex-col items-center text-center" style={marcellusStyle}>
-            <div className="flex items-center justify-center mb-3">
-              <span className="text-2xl font-semibold">Sign up → Step {stepNumber}:</span>
-              <span className="flex items-center ml-2">
-                <img src={yellowStar} alt="" className="h-8 mr-1" />
-                <span className="font-semibold text-2xl">{stepName}</span>
-              </span>
-            </div>
-            <p className="text-base text-gray-600 max-w-xs mx-auto">{displaySubText}</p>
-          </div>
-        )}
       </div>
       
-      {/* Desktop Banner */}
+      {/* Desktop Banner - consistent height regardless of progress bar visibility */}
       <div 
         className={`hidden md:block ${shouldUseGradient ? '' : 'bg-[#13263f]'}`}
         style={{
@@ -344,10 +301,11 @@ const ResponsiveBanner = ({
           ...(shouldUseGradient ? gradientStyle : {})
         }}
       >
+        {/* Main Banner Content - dynamic padding based on page type */}
         <div 
-          className={`text-white px-10 ${topPaddingClass} ${isWelcomePage ? 'pb-24' : showProgressBar ? 'pb-10' : 'pb-20'} relative`}
+          className={`text-white px-10 ${topPaddingClass} pb-20 relative`}
         >
-          {/* Logo */}
+          {/* Logo at the top with conditional positioning - now using logoSizeClass */}
           <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
             <img 
               src={logo} 
@@ -356,31 +314,22 @@ const ResponsiveBanner = ({
             />
           </div>
           
-          {/* Banner content */}
+          {/* Banner content - alignment based on textAlignment prop */}
           <div className={`${alignmentClasses.containerClass} max-w-4xl ${alignmentClasses.subtextClass}`}>
-            {showSteps && !isWelcomePage && (
-              <p className="text-lg flex items-center justify-center text-white/80 mb-2">
-                <span>Sign up → Step {stepNumber}:</span> 
-                <span className="flex items-center ml-1">
-                  <img src={yellowStar} alt="" className="h-5 mr-1" />
-                  {stepName}
-                </span>
-              </p>
-            )}
             <h1 className={`flex items-center ${alignmentClasses.headingClass}`}>
-              <span className={`${isWelcomePage ? "text-4xl md:text-5xl" : "text-4xl md:text-5xl"} font-bold min-w-max`}>
+              <span className={`${isWelcomePage ? "text-4xl md:text-5xl font-bold" : "text-4xl md:text-5xl font-bold"} min-w-max`}>
                 {displayHeading}
               </span>
               {showStar && <img src={yellowStar} alt="" className="h-9 ml-1" />}
             </h1>
-            <p className={`${showProgressBar ? "text-xl md:text-2xl mt-3" : "text-xl md:text-2xl mt-4"} text-white/80 ${alignmentClasses.subtextClass}`}>
+            <p className={`text-xl md:text-2xl mt-4 text-white/80 ${alignmentClasses.subtextClass}`}>
               {displaySubText}
             </p>
           </div>
         </div>
         
-        {/* Progress bar */}
-        {showProgressBar && !isLoading && (
+        {/* Progress bar section - using the separated component with corrected step mapping */}
+        {false && showProgressBar && !isLoading && (
           <ProgressCircles
             steps={steps}
             activeStep={activeProgressDot}
@@ -389,14 +338,21 @@ const ResponsiveBanner = ({
           />
         )}
         
-        {/* Loading indicator */}
-        {showProgressBar && isLoading && (
+        {/* Spacer to maintain banner height when progress circles are hidden */}
+        {showProgressBar && (
+          <div className="py-4 px-10 bg-gray-100">
+            {/* Empty spacer div to maintain consistent banner height */}
+          </div>
+        )}
+        
+        {/* Loading indicator for progress bar */}
+        {false && showProgressBar && isLoading && (
           <div className="py-4 px-10 bg-gray-100 flex justify-center items-center">
             <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
         
-        {/* Error message */}
+        {/* Error message if backend check fails */}
         {backendError && (
           <div className="py-2 px-10 bg-red-50 text-red-600 text-sm text-center">
             Error checking step status. Please refresh the page.

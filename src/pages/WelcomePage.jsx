@@ -1,4 +1,4 @@
-// File: pages/WelcomePage.jsx - FIXED: Only logout on explicit visit
+// File: pages/WelcomePage.jsx - Smaller text and boxes
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveBanner from "../components/ResponsiveBanner";
@@ -18,6 +18,7 @@ const WelcomePage = () => {
   useEffect(() => {
     const clearAllState = async () => {
       console.log("Clearing all state on WelcomePage mount - ALWAYS logging out");
+
       try {
         // Clear all localStorage items
         localStorage.removeItem('alcor_signup_state');
@@ -119,7 +120,7 @@ const WelcomePage = () => {
     }
   };
 
-  // Card data remains the same
+  // Card data with smaller sizes
   const cardData = [
     {
       id: 'new-membership',
@@ -128,7 +129,7 @@ const WelcomePage = () => {
       buttonText: 'Get Started',
       buttonAction: goToSignup,
       iconPath: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
           <defs>
             <linearGradient id="newMemberGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#d59560" />
@@ -150,7 +151,7 @@ const WelcomePage = () => {
       buttonText: 'Continue Sign Up',
       buttonAction: () => goToLogin(true),
       iconPath: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
           <defs>
             <linearGradient id="continueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#d59560" />
@@ -172,7 +173,7 @@ const WelcomePage = () => {
       buttonText: 'Sign In',
       buttonAction: () => goToLogin(false),
       iconPath: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
           <defs>
             <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#d59560" />
@@ -203,41 +204,41 @@ const WelcomePage = () => {
         isWelcomePage={true}
       />
       
-      {/* Main Content - Cards */}
-      <div className="flex-grow px-8 sm:px-12 py-6 md:p-10 flex justify-center">
-        <div className="w-full max-w-6xl md:mx-auto">
-          {/* Section Title - Mobile Only */}
-          <h2 className="text-2xl font-bold text-[#13273f] my-8 text-center md:hidden">
+      {/* Main Content - Cards with smaller sizing */}
+      <div className="flex-grow px-6 sm:px-8 py-4 md:p-8 flex justify-center">
+        <div className="w-full max-w-5xl md:mx-auto">
+          {/* Section Title - Mobile Only with smaller text */}
+          <h2 className="text-xl font-bold text-[#13273f] my-6 text-center md:hidden">
             Select from the following options
           </h2>
           
-          {/* Cards in horizontal layout on desktop */}
-          <div className="grid md:grid-cols-3 gap-8 md:gap-10">
+          {/* Cards in horizontal layout on desktop with smaller spacing */}
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {cardData.map((card) => (
               <div 
                 key={card.id}
                 className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-11/12 sm:w-9/12 md:w-full mx-auto md:mx-0`}
               >
-                <div className="h-4"></div>
+                <div className="h-3"></div>
                 
-                <div className="p-5 sm:p-8 flex-1">
-                  <div className={`w-14 sm:w-20 h-14 sm:h-20 rounded-full flex items-center justify-center mb-5 bg-white shadow-sm border ${card.borderColor} mx-auto`}>
+                <div className="p-4 sm:p-6 flex-1">
+                  <div className={`w-12 sm:w-16 h-12 sm:h-16 rounded-full flex items-center justify-center mb-4 bg-white shadow-sm border ${card.borderColor} mx-auto`}>
                     {card.iconPath}
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0C2340] mb-4 flex items-center justify-center">
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0C2340] mb-3 flex items-center justify-center">
                     {card.title}
-                    <img src={yellowStar} alt="" className="h-7 sm:h-9 ml-2" />
+                    <img src={yellowStar} alt="" className="h-5 sm:h-6 ml-2" />
                   </h3>
-                  <p className="text-gray-600 mb-6 text-base sm:text-lg text-center">{card.description}</p>
+                  <p className="text-gray-600 mb-5 text-sm sm:text-base text-center leading-relaxed">{card.description}</p>
                 </div>
                 
-                <div className="px-4 sm:px-8 pb-8 mt-auto">
+                <div className="px-4 sm:px-6 pb-6 mt-auto">
                   <button 
                     onClick={card.buttonAction}
-                    className={`w-full py-3 sm:py-4 px-4 sm:px-8 rounded-full font-semibold text-base sm:text-lg ${card.buttonClasses} flex items-center justify-center transition-all duration-300 shadow-sm mb-4`}
+                    className={`w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full font-semibold text-sm sm:text-base ${card.buttonClasses} flex items-center justify-center transition-all duration-300 shadow-sm mb-3`}
                   >
                     {card.buttonText}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -245,9 +246,9 @@ const WelcomePage = () => {
                   <div className="flex justify-center">
                     <div className={`text-center ${card.starClasses}`}>
                       <div className="flex justify-center items-center space-x-2">
-                        <img src={yellowStar} alt="Alcor Star" className="h-6 opacity-70" />
-                        <img src={yellowStar} alt="Alcor Star" className="h-10 opacity-90" />
-                        <img src={yellowStar} alt="Alcor Star" className="h-6 opacity-70" />
+                        <img src={yellowStar} alt="Alcor Star" className="h-4 opacity-70" />
+                        <img src={yellowStar} alt="Alcor Star" className="h-7 opacity-90" />
+                        <img src={yellowStar} alt="Alcor Star" className="h-4 opacity-70" />
                       </div>
                     </div>
                   </div>
