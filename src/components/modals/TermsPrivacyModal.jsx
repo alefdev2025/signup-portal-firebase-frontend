@@ -1,303 +1,100 @@
-// File: components/modals/TermsPrivacyModal.jsx
+// File: components/modals/TermsPrivacyModal.jsx - COMPLETE WORKING VERSION
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import alcorLogo from "../../assets/images/alcor-white-logo-no-text.png";
 
-/**
- * Modal component for displaying Terms of Use or Privacy Policy content
- * @param {Object} props - Component props
- * @param {boolean} props.isOpen - Whether the modal is open
- * @param {Function} props.onClose - Function to call when closing the modal
- * @param {string} props.type - Type of content to display ('terms' or 'privacy')
- * @param {string} props.contentUrl - URL to fetch content from (optional)
- * @param {string} props.directContent - HTML content to display directly (optional, takes precedence over contentUrl)
- */
-const TermsPrivacyModal = ({ isOpen, onClose, type, contentUrl, directContent }) => {
+const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   
   // Title based on type
   const title = type === 'terms' ? 'Terms of Use' : 'Privacy Policy';
   
-  // Effect to fetch content when the modal opens
+  // Effect to load content when modal opens
   useEffect(() => {
     if (isOpen) {
-      // If direct content is provided, use it immediately
-      if (directContent) {
-        setContent(directContent);
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      
-      if (contentUrl) {
-        // Fetch content from URL or file
-        fetch(contentUrl)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`Failed to fetch: ${response.status}`);
-            }
-            return response.text();
-          })
-          .then(data => {
-            setContent(data);
-            setLoading(false);
-          })
-          .catch(err => {
-            console.error("Error loading content:", err);
-            // Use placeholder content as a fallback
-            setContent(getPlaceholderContent(type));
-            setLoading(false);
-          });
-      } else {
-        // If no contentUrl is provided, use placeholder content
-        setContent(getPlaceholderContent(type));
-        setLoading(false);
-      }
+      setContent(getPlaceholderContent(type));
+      setLoading(false);
     }
-  }, [isOpen, contentUrl, directContent, type]);
+  }, [isOpen, type]);
 
-  // Create modal styles that override everything
+  // Handle escape key and prevent body scroll
   useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
-      const style = document.createElement('style');
-      style.textContent = `
-        .terms-modal-overlay {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          z-index: 1000000 !important;
-          background-color: rgba(0, 0, 0, 0.15) !important;
-          overflow-y: auto !important;
-          padding: 16px !important;
-        }
-        
-        .terms-modal-container {
-          display: flex !important;
-          min-height: calc(100vh - 32px) !important;
-          align-items: flex-start !important;
-          justify-content: center !important;
-          padding-top: 60px !important;
-        }
-        
-        .terms-modal-content {
-          position: relative !important;
-          width: 65vw !important;
-          max-width: 850px !important;
-          max-height: 85vh !important;
-          background-color: white !important;
-          border-radius: 8px !important;
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
-          display: flex !important;
-          flex-direction: column !important;
-          margin: auto !important;
-        }
-        
-        .terms-modal-header {
-          background: linear-gradient(90deg, #6f2d74 0%, #8a4099 100%) !important;
-          border-top-left-radius: 8px !important;
-          border-top-right-radius: 8px !important;
-          padding: 16px 24px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: space-between !important;
-          flex-shrink: 0 !important;
-        }
-        
-        .terms-modal-logo {
-          height: 40px !important;
-          margin-right: 16px !important;
-        }
-        
-        .terms-modal-title {
-          margin: 0 !important;
-          font-size: 24px !important;
-          font-weight: bold !important;
-          color: white !important;
-        }
-        
-        .terms-modal-close {
-          background: none !important;
-          border: none !important;
-          color: white !important;
-          cursor: pointer !important;
-          padding: 8px !important;
-          border-radius: 50% !important;
-          transition: background-color 0.2s !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-        
-        .terms-modal-close:hover {
-          background-color: rgba(255, 255, 255, 0.2) !important;
-        }
-        
-        .terms-modal-body {
-          flex: 1 !important;
-          overflow-y: auto !important;
-          padding: 32px 48px !important;
-          background-color: white !important;
-        }
-        
-        .terms-modal-body h1 {
-          font-size: 28px !important;
-          font-weight: bold !important;
-          color: #1f2937 !important;
-          margin: 0 0 16px 0 !important;
-        }
-        
-        .terms-modal-body h2 {
-          font-size: 20px !important;
-          font-weight: 600 !important;
-          color: #374151 !important;
-          margin: 24px 0 12px 0 !important;
-        }
-        
-        .terms-modal-body p {
-          font-size: 16px !important;
-          line-height: 1.7 !important;
-          color: #4b5563 !important;
-          margin: 0 0 16px 0 !important;
-        }
-        
-        .terms-modal-body ul {
-          margin: 16px 0 !important;
-          padding-left: 24px !important;
-        }
-        
-        .terms-modal-body li {
-          font-size: 16px !important;
-          line-height: 1.7 !important;
-          color: #4b5563 !important;
-          margin-bottom: 8px !important;
-        }
-        
-        .terms-modal-footer {
-          border-top: 1px solid #e5e7eb !important;
-          padding: 24px !important;
-          display: flex !important;
-          justify-content: flex-end !important;
-          background-color: #f9fafb !important;
-          border-bottom-left-radius: 8px !important;
-          border-bottom-right-radius: 8px !important;
-          flex-shrink: 0 !important;
-        }
-        
-        .terms-modal-close-btn {
-          background-color: #0c2340 !important;
-          color: white !important;
-          border: none !important;
-          padding: 12px 32px !important;
-          border-radius: 9999px !important;
-          font-weight: 500 !important;
-          cursor: pointer !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-          transition: all 0.2s !important;
-          font-size: 16px !important;
-        }
-        
-        .terms-modal-close-btn:hover {
-          opacity: 0.9 !important;
-          transform: translateY(-1px) !important;
-        }
-        
-        .terms-modal-spinner {
-          display: flex !important;
-          justify-content: center !important;
-          align-items: center !important;
-          height: 256px !important;
-        }
-        
-        .terms-modal-spinner div {
-          width: 48px !important;
-          height: 48px !important;
-          border: 3px solid #e5e7eb !important;
-          border-top: 3px solid #9f5fa6 !important;
-          border-radius: 50% !important;
-          animation: spin 1s linear infinite !important;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-          .terms-modal-content {
-            width: 90vw !important;
-            max-height: 90vh !important;
-          }
-          
-          .terms-modal-container {
-            padding-top: 30px !important;
-          }
-          
-          .terms-modal-body {
-            padding: 24px !important;
-          }
-          
-          .terms-modal-header {
-            padding: 12px 16px !important;
-          }
-          
-          .terms-modal-title {
-            font-size: 20px !important;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-      
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden';
-      
-      return () => {
-        document.head.removeChild(style);
-        document.body.style.overflow = '';
-      };
+      document.addEventListener('keydown', handleEscape);
+      // Store the current scroll position and prevent scrolling
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
     }
-  }, [isOpen]);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      if (isOpen) {
+        // Restore scroll position
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    };
+  }, [isOpen, onClose]);
   
   // Function to get placeholder content based on type
   const getPlaceholderContent = (type) => {
-    const commonSections = `
-      <h2>1. Introduction</h2>
-      <p>Welcome to Alcor Cryonics ("we," "our," or "us"). This document outlines the terms and conditions for using our services and website.</p>
-      
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula.</p>
-      
-      <h2>2. Definitions</h2>
-      <p>In these Terms, "Service" refers to our cryonics services, website, and related offerings. "User" or "you" refers to individuals accessing or using our Service.</p>
-    `;
-    
     if (type === 'terms') {
       return `
         <h1>Terms of Use</h1>
-        <p><em>Last updated: May 1, 2025</em></p>
+        <p class="date">Ultimo renovatum: Mensis Maius 1, 2025</p>
+
+        <h2>1. Acceptance of Terms</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
         
-        ${commonSections}
+        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
         
-        <h2>3. User Accounts</h2>
-        <p>When you create an account with us, you guarantee that the information you provide is accurate, complete, and current.</p>
+        <h2>2. Definitions and Terms</h2>
+        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
         
-        <h2>4. Service Usage</h2>
-        <p>You agree not to use our Service for any illegal or unauthorized purpose. You must not transmit worms, viruses, or any code of a destructive nature.</p>
+        <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur.</p>
+        
+        <h2>3. Service Usage</h2>
+        <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.</p>
+        
+        <p>Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.</p>
       `;
     } else { // Privacy Policy
       return `
         <h1>Privacy Policy</h1>
-        <p><em>Last updated: May 1, 2025</em></p>
+        <p class="date">Ultimo renovatum: Mensis Maius 1, 2025</p>
+
+        <h2>1. Introduction</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
         
-        ${commonSections}
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
         
-        <h2>3. Information Collection</h2>
-        <p>We collect personal information that you voluntarily provide when using our Service, including but not limited to name, email address, and phone number.</p>
+        <h2>2. Information We Collect</h2>
+        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt:</p>
         
-        <h2>4. Use of Information</h2>
-        <p>We use collected information to provide and improve our Service, communicate with you, and comply with legal obligations.</p>
+        <ul>
+          <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</li>
+          <li>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
+          <li>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</li>
+        </ul>
+        
+        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+        
+        <h2>3. How We Collect Information</h2>
+        <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.</p>
+        
+        <p>Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus.</p>
       `;
     }
   };
@@ -306,45 +103,205 @@ const TermsPrivacyModal = ({ isOpen, onClose, type, contentUrl, directContent })
   if (!isOpen) return null;
   
   const modalContent = (
-    <div className="terms-modal-overlay" onClick={onClose}>
-      <div className="terms-modal-container">
-        <div className="terms-modal-content" onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <div className="terms-modal-header">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <img src={alcorLogo} alt="Alcor Logo" className="terms-modal-logo" />
-              <h2 className="terms-modal-title">{title}</h2>
+    <div 
+      className={`modal-backdrop ${isOpen ? 'modal-backdrop-open' : ''}`}
+      onClick={onClose}
+    >
+      <style>{`
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 999999;
+          padding: 20px;
+          transition: background-color 200ms;
+        }
+        .modal-backdrop-open {
+          background-color: rgba(0, 0, 0, 0.6);
+        }
+        .modal-content {
+          opacity: 0;
+          transform: scale(0.9);
+          transition: opacity 200ms, transform 200ms;
+        }
+        .modal-backdrop-open .modal-content {
+          opacity: 1;
+          transform: scale(1);
+        }
+      `}</style>
+      
+      <div 
+        className="modal-content"
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          width: window.innerWidth <= 768 ? '95vw' : '65vw',
+          maxWidth: '850px',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          background: 'linear-gradient(90deg, #6f2d74 0%, #8a4099 100%)',
+          borderTopLeftRadius: '12px',
+          borderTopRightRadius: '12px',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img src={alcorLogo} alt="Alcor Logo" style={{ height: '40px', marginRight: '16px' }} />
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'white' }}>{title}</h2>
+          </div>
+          <button 
+            onClick={onClose} 
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '50%',
+              transition: 'background-color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            aria-label="Close"
+          >
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Body */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '32px 48px',
+          backgroundColor: 'white'
+        }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                border: '3px solid #e5e7eb',
+                borderTop: '3px solid #6f2d74',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
             </div>
-            <button onClick={onClose} className="terms-modal-close" aria-label="Close">
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          ) : (
+            <div 
+              style={{
+                fontSize: '14px',
+                lineHeight: 1.6,
+                color: '#4b5563'
+              }}
+              dangerouslySetInnerHTML={{ __html: content }} 
+            />
+          )}
           
-          {/* Body */}
-          <div className="terms-modal-body">
-            {loading ? (
-              <div className="terms-modal-spinner">
-                <div></div>
-              </div>
-            ) : (
-              <div dangerouslySetInnerHTML={{ __html: content }} />
-            )}
-          </div>
-          
-          {/* Footer */}
-          <div className="terms-modal-footer">
-            <button onClick={onClose} className="terms-modal-close-btn">
-              Close
-            </button>
-          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            .modal-content h1 {
+              font-size: 28px;
+              font-weight: bold;
+              color: #1f2937;
+              margin: 0 0 8px 0;
+            }
+            .modal-content h2 {
+              font-size: 18px;
+              font-weight: 600;
+              color: #374151;
+              margin: 24px 0 12px 0;
+            }
+            .modal-content p {
+              font-size: 14px;
+              line-height: 1.6;
+              color: #4b5563;
+              margin: 0 0 16px 0;
+            }
+            .modal-content .date {
+              font-style: italic;
+              color: #6b7280;
+              font-size: 14px;
+              margin-bottom: 24px;
+            }
+            .modal-content ul {
+              margin: 16px 0;
+              padding-left: 24px;
+            }
+            .modal-content li {
+              font-size: 14px;
+              line-height: 1.6;
+              color: #4b5563;
+              margin-bottom: 8px;
+            }
+          `}</style>
+        </div>
+        
+        {/* Footer */}
+        <div style={{
+          borderTop: '1px solid #e5e7eb',
+          padding: '24px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          backgroundColor: '#f9fafb',
+          borderBottomLeftRadius: '12px',
+          borderBottomRightRadius: '12px'
+        }}>
+          <button 
+            onClick={onClose} 
+            style={{
+              backgroundColor: '#6f2d74',
+              color: 'white',
+              border: 'none',
+              padding: '12px 32px',
+              borderRadius: '9999px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(111, 45, 116, 0.3)',
+              transition: 'all 0.2s ease',
+              fontSize: '16px'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#5a2460';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(111, 45, 116, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#6f2d74';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 14px rgba(111, 45, 116, 0.3)';
+            }}
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
   );
 
-  // Portal to document.body to escape any container constraints
+  // Portal to document.body
   return typeof document !== 'undefined' 
     ? createPortal(modalContent, document.body)
     : null;

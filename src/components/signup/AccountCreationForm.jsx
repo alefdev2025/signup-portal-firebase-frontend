@@ -64,76 +64,6 @@ const AccountCreationForm = ({
   console.log("Form data:", formData);
   console.log("Errors:", errors);
   
-  // Terms of Use content
-  const termsContent = `
-    <h1>Terms of Use</h1>
-    <p><em>Last Updated: May 1, 2025</em></p>
-
-    <h2>1. Introduction</h2>
-    <p>Welcome to Alcor Cryonics ("we," "our," or "us"). This document outlines the terms and conditions for using our services and website.</p>
-    
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.</p>
-    
-    <h2>2. Definitions</h2>
-    <p>In these Terms, "Service" refers to our cryonics services, website, and related offerings. "User" or "you" refers to individuals accessing or using our Service.</p>
-    
-    <p>Suspendisse in justo eu magna luctus suscipit. Sed lectus. Integer euismod lacus luctus magna. Quisque cursus, metus vitae pharetra auctor, sem massa mattis sem, at interdum magna augue eget diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Morbi lacinia molestie dui.</p>
-    
-    <h2>3. Acceptance of Terms</h2>
-    <p>By accessing or using our Service, you acknowledge that you have read, understood, and agree to be bound by these Terms. If you do not agree to these Terms, please do not use our Service.</p>
-    
-    <p>Praesent blandit dolor. Sed non quam. In vel mi sit amet augue congue elementum. Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris.</p>
-    
-    <h2>4. User Accounts</h2>
-    <p>When you create an account with us, you guarantee that the information you provide is accurate, complete, and current. Inaccurate, incomplete, or obsolete information may result in the termination of your account.</p>
-    
-    <p>Morbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam. Morbi mi. Quisque nisl felis, venenatis tristique, dignissim in, ultrices sit amet, augue. Proin sodales libero eget ante.</p>
-    
-    <h2>5. Service Usage</h2>
-    <p>You agree not to use our Service for any illegal or unauthorized purpose. You must not transmit worms, viruses, or any code of a destructive nature.</p>
-    
-    <p>Aenean laoreet. Vestibulum nisi lectus, commodo ac, facilisis ac, ultricies eu, pede. Ut orci risus, accumsan porttitor, cursus quis, aliquet eget, justo. Sed pretium blandit orci. Ut eu diam at pede suscipit sodales. Aenean lectus elit, fermentum non, convallis id, sagittis at, neque.</p>
-    
-    <h2>6. Changes to Terms</h2>
-    <p>We reserve the right to modify these Terms at any time. We will provide notice of significant changes as appropriate. Your continued use of our Service constitutes acceptance of any updates to these Terms.</p>
-  `;
-
-  // Privacy Policy content
-  const privacyContent = `
-    <h1>Privacy Policy</h1>
-    <p><em>Last Updated: May 1, 2025</em></p>
-
-    <h2>1. Introduction</h2>
-    <p>At Alcor Cryonics ("we," "our," or "us"), we respect your privacy and are committed to protecting it through our compliance with this policy.</p>
-    
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.</p>
-    
-    <h2>2. Information We Collect</h2>
-    <p>We collect several types of information from and about users of our website, including:</p>
-    
-    <ul>
-        <li>Personal information such as name, postal address, email address, telephone number, and any other identifier by which you may be contacted online or offline.</li>
-        <li>Information about your internet connection, the equipment you use to access our website, and usage details.</li>
-    </ul>
-    
-    <p>Suspendisse in justo eu magna luctus suscipit. Sed lectus. Integer euismod lacus luctus magna. Quisque cursus, metus vitae pharetra auctor, sem massa mattis sem, at interdum magna augue eget diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Morbi lacinia molestie dui.</p>
-    
-    <h2>3. How We Collect Information</h2>
-    <p>We collect information directly from you when you provide it to us and automatically as you navigate through the site.</p>
-    
-    <p>Praesent blandit dolor. Sed non quam. In vel mi sit amet augue congue elementum. Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris.</p>
-    
-    <h2>4. How We Use Your Information</h2>
-    <p>We use information that we collect about you or that you provide to us:</p>
-    
-    <ul>
-        <li>To present our website and its contents to you.</li>
-        <li>To provide you with information, products, or services that you request from us.</li>
-        <li>To fulfill any other purpose for which you provide it.</li>
-        <li>To notify you about changes to our website or any products or services we offer.</li>
-    </ul>
-  `;
-  
   // Function to open the modal
   const openModal = (type) => {
     setModalType(type);
@@ -551,7 +481,7 @@ const AccountCreationForm = ({
           isOpen={modalOpen}
           onClose={closeModal}
           type={modalType}
-          directContent={modalType === 'terms' ? termsContent : privacyContent}
+          // Remove the directContent prop completely
         />
         
         {/* Help Panel Component - positioned fixed to viewport */}
