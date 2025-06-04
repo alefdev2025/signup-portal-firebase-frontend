@@ -138,6 +138,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     setShowHelpInfo(prev => !prev);
   };
 
+
   // Age validation effect
   useEffect(() => {
     const age = calculateAge(formData.birthMonth, formData.birthDay, formData.birthYear);
@@ -148,9 +149,24 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     }
   }, [formData.birthMonth, formData.birthDay, formData.birthYear]);
 
+  /*useEffect(() => {
+    const handleCustomAddressUpdate = (event) => {
+      console.log("🎯 Received custom address update event:", event.detail);
+      handleAddressSelect(event.detail);
+    };
+  
+    // Listen for the custom event
+    document.addEventListener('addressAutocompleteUpdate', handleCustomAddressUpdate);
+    
+    return () => {
+      document.removeEventListener('addressAutocompleteUpdate', handleCustomAddressUpdate);
+    };
+  }, []);*/
+
   useEffect(() => {
     const handleCustomAddressUpdate = (event) => {
       console.log("🎯 Received custom address update event:", event.detail);
+      console.log("🎯 Event detail structure:", JSON.stringify(event.detail, null, 2));
       handleAddressSelect(event.detail);
     };
   

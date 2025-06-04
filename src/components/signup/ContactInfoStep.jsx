@@ -11,7 +11,6 @@ import ContactInfoPage from "./ContactInfoPage";
 const LOG_TO_TERMINAL = (message) => {
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/log?t=${Date.now()}`, false);
     xhr.send(`[CONTACT STEP] ${message}`);
     console.log(`[CONTACT STEP] ${message}`);
   } catch (e) {

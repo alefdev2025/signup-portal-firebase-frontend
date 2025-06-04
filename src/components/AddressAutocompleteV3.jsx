@@ -1,49 +1,6 @@
 // File: components/AddressAutocompleteV3.jsx
-// Simplified version - focuses on working with React properly
+// NO BULLSHIT - Just a working Google Places autocomplete
 import React, { useState, useEffect, useRef } from 'react';
-
-// Custom styles for Google Places dropdown
-const autocompleteStyles = `
-  .pac-container {
-    border-radius: 8px;
-    margin-top: 4px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(119, 86, 132, 0.3);
-    font-family: system-ui, -apple-system, sans-serif;
-    z-index: 9999;
-  }
-  
-  .pac-item {
-    padding: 12px 14px;
-    font-size: 16px !important;
-    line-height: 1.5;
-    cursor: pointer;
-  }
-  
-  .pac-item:hover {
-    background-color: rgba(243, 244, 246, 1);
-  }
-  
-  .pac-item-selected {
-    background-color: rgba(243, 244, 246, 1);
-  }
-  
-  .pac-item-query {
-    font-size: 18px !important;
-    font-weight: 500;
-    color: #333333;
-  }
-  
-  .pac-matched {
-    font-weight: 600;
-    color: #775684 !important;
-  }
-  
-  .pac-secondary-text {
-    font-size: 16px !important;
-    color: rgba(107, 114, 128, 1);
-  }
-`;
 
 const AddressAutocompleteV3 = ({
   id,
@@ -55,141 +12,96 @@ const AddressAutocompleteV3 = ({
   disabled = false,
   errorMessage = "",
   placeholder = "Start typing your address...",
-  isError = false,
-  className = ""
+  isError = false
 }) => {
-  // State management
   const [inputValue, setInputValue] = useState(defaultValue);
-  
-  // Refs
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
-  const scriptLoadedRef = useRef(false);
-  
-  // API key
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  // Add custom styles
+  // Load Google Maps and initialize autocomplete
   useEffect(() => {
-    if (!document.getElementById('google-places-custom-styles')) {
-      const styleElement = document.createElement('style');
-      styleElement.id = 'google-places-custom-styles';
-      styleElement.innerHTML = autocompleteStyles;
-      document.head.appendChild(styleElement);
-    }
-  }, []);
-
-  // Load Google Maps script
-  useEffect(() => {
+    console.log("🔄 Loading Google Maps...", { apiKey: !!apiKey });
     if (!apiKey) {
-      console.warn('Google Maps API key not found. Address autocomplete will not work.');
+      console.error("❌ No API key found");
       return;
     }
 
-    if (scriptLoadedRef.current || window.google?.maps?.places) {
+    const loadGoogleMaps = () => {
       if (window.google?.maps?.places) {
-        scriptLoadedRef.current = true;
-        initializePlaces();
+        console.log("✅ Google Maps already loaded");
+        initAutocomplete();
+        return;
       }
-      return;
-    }
 
-    const scriptId = 'google-maps-script';
-    if (document.getElementById(scriptId)) {
-      // Script already exists, wait for it to load
-      const checkGoogleMaps = setInterval(() => {
-        if (window.google?.maps?.places) {
-          clearInterval(checkGoogleMaps);
-          scriptLoadedRef.current = true;
-          initializePlaces();
-        }
-      }, 100);
-      return;
-    }
+      if (document.getElementById('google-maps-script')) {
+        console.log("📜 Script already exists, waiting...");
+        return;
+      }
 
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.onload = () => {
-      scriptLoadedRef.current = true;
-      initializePlaces();
+      console.log("📜 Creating Google Maps script...");
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.onload = () => {
+        console.log("✅ Google Maps script loaded");
+        initAutocomplete();
+      };
+      script.onerror = () => {
+        console.error("❌ Failed to load Google Maps script");
+      };
+      document.head.appendChild(script);
     };
-    script.onerror = () => {
-      console.error('Failed to load Google Maps script');
-    };
-    document.head.appendChild(script);
-  }, [apiKey]);
 
-  // Initialize Places Autocomplete
-  const initializePlaces = () => {
-    if (!inputRef.current || !window.google?.maps?.places) return;
-
-    try {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'us' },
-        fields: [
-          'address_components',
-          'formatted_address',
-          'geometry',
-          'place_id',
-          'types'
-        ]
+    const initAutocomplete = () => {
+      console.log("🔄 Initializing autocomplete...", { 
+        inputRef: !!inputRef.current, 
+        googleMaps: !!window.google?.maps?.places 
       });
 
-      autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
-      console.log("Google Places Autocomplete initialized successfully");
-    } catch (error) {
-      console.error("Error initializing Google Places:", error);
-    }
-  };
+      if (!inputRef.current || !window.google?.maps?.places) {
+        console.error("❌ Missing requirements for autocomplete");
+        return;
+      }
 
-  // Re-initialize when input ref changes
-  useEffect(() => {
-    if (scriptLoadedRef.current && inputRef.current) {
-      initializePlaces();
-    }
+      try {
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ['address'],
+          componentRestrictions: { country: 'us' }
+        });
 
-    return () => {
-      if (autocompleteRef.current && window.google) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
+        console.log("✅ Simple autocomplete initialized successfully");
+        
+        // Test if it's working
+        setTimeout(() => {
+          console.log("🔍 Checking PAC containers:", document.querySelectorAll('.pac-container').length);
+        }, 2000);
+      } catch (error) {
+        console.error("❌ Autocomplete init failed:", error);
       }
     };
-  }, [inputRef.current]);
 
-  // Update input value when defaultValue changes (fixes auto-population)
-  useEffect(() => {
-    console.log("AddressAutocomplete: defaultValue changed to:", defaultValue);
-    setInputValue(defaultValue || "");
-  }, [defaultValue]);
+    loadGoogleMaps();
+  }, [apiKey]);
 
-  // Handle place selection from Google Places
   const handlePlaceSelect = () => {
     if (!autocompleteRef.current) return;
 
     const place = autocompleteRef.current.getPlace();
-    console.log("Place selected:", place);
+    if (!place?.address_components) return;
 
-    if (!place || !place.address_components) {
-      console.warn("No place data available");
-      return;
-    }
-
-    const addressData = parseGooglePlaceData(place);
+    const addressData = parseAddress(place);
     setInputValue(addressData.formattedAddress);
 
-    console.log("✅ Parsed address data:", addressData);
-
-    // Call parent callback with parsed address data
     if (onAddressSelect) {
-      console.log("🚀 Calling onAddressSelect with:", addressData);
       onAddressSelect(addressData);
     }
+
+    console.log("✅ Address selected:", addressData);
   };
 
-  // Parse Google Places data into our format
-  const parseGooglePlaceData = (place) => {
+  const parseAddress = (place) => {
     const components = {};
     
     place.address_components.forEach(component => {
@@ -203,17 +115,9 @@ const AddressAutocompleteV3 = ({
       }
       if (types.includes('locality')) {
         components.city = component.long_name;
-      } else if (types.includes('sublocality_level_1') && !components.city) {
-        components.city = component.long_name;
-      }
-      if (types.includes('administrative_area_level_2')) {
-        components.county = component.long_name;
       }
       if (types.includes('administrative_area_level_1')) {
-        // FIXED: Use short_name for region to match your form expectations
-        components.region = component.short_name;  // e.g., "WA"
-        components.regionShort = component.short_name;  // e.g., "WA" 
-        components.regionLong = component.long_name;   // e.g., "Washington"
+        components.region = component.short_name;
       }
       if (types.includes('postal_code')) {
         components.postalCode = component.long_name;
@@ -227,74 +131,68 @@ const AddressAutocompleteV3 = ({
       .filter(Boolean)
       .join(' ');
 
-    const result = {
+    return {
       formattedAddress: place.formatted_address,
       streetAddress: streetAddress || place.formatted_address,
       city: components.city || '',
-      cnty_hm: '', // Always empty - we don't auto-fill county to avoid confusion
       region: components.region || '',
-      regionLong: components.regionLong || '',
       postalCode: components.postalCode || '',
       country: components.country || 'United States',
-      placeId: place.place_id,
-      geometry: place.geometry
+      cnty_hm: ''
     };
-
-    console.log("📍 Address components parsed:", {
-      streetNumber: components.streetNumber,
-      route: components.route,
-      city: components.city,
-      region: components.region, // This should be "WA" not "Washington"
-      postalCode: components.postalCode,
-      country: components.country,
-      cnty_hm: components.county // Will be cleared
-    });
-
-    return result;
   };
 
   const handleInputChange = (e) => {
     const value = e.target.value;
+    console.log("🔍 Input changed to:", value);
     setInputValue(value);
-
-    // If input is cleared, reset address data
-    if (!value && onAddressSelect) {
-      const emptyData = {
-        streetAddress: '',
-        formattedAddress: '',
-        city: '',
-        cnty_hm: '',
-        region: '',
-        postalCode: '',
-        country: 'United States'
-      };
+    
+    // Check for PAC containers after typing and fix their positioning
+    setTimeout(() => {
+      const containers = document.querySelectorAll('.pac-container');
+      console.log(`🔍 Found ${containers.length} PAC containers after typing "${value}"`);
       
-      onAddressSelect(emptyData);
-    }
+      containers.forEach((container, i) => {
+        console.log(`Container ${i}:`, {
+          display: getComputedStyle(container).display,
+          visibility: getComputedStyle(container).visibility,
+          childCount: container.children.length
+        });
+        
+        // FIX POSITIONING - This was missing!
+        if (inputRef.current && container.children.length > 0) {
+          const inputRect = inputRef.current.getBoundingClientRect();
+          container.style.position = 'fixed';
+          container.style.zIndex = '99999';
+          container.style.top = (inputRect.bottom + 4) + 'px';
+          container.style.left = inputRect.left + 'px';
+          container.style.width = inputRect.width + 'px';
+          console.log(`🔧 Fixed position for container ${i}: top=${inputRect.bottom + 4}px, left=${inputRect.left}px`);
+        }
+      });
+    }, 500);
   };
 
-  // Handle manual input without autocomplete selection
   const handleInputBlur = () => {
-    // If user typed an address but didn't select from autocomplete
-    if (inputValue && inputValue !== defaultValue) {
-      console.log("Manual address entered:", inputValue);
-      
-      // Try to parse basic address info from manual input
+    // If user typed manually without selecting from dropdown
+    if (inputValue && onAddressSelect) {
       const manualData = {
         streetAddress: inputValue,
         formattedAddress: inputValue,
         city: '',
-        cnty_hm: '',
         region: '',
         postalCode: '',
-        country: 'United States'
+        country: 'United States',
+        cnty_hm: ''
       };
-      
-      if (onAddressSelect) {
-        onAddressSelect(manualData);
-      }
+      onAddressSelect(manualData);
     }
   };
+
+  // Update input when defaultValue changes
+  useEffect(() => {
+    setInputValue(defaultValue || "");
+  }, [defaultValue]);
 
   return (
     <div className="w-full">
@@ -321,17 +219,14 @@ const AddressAutocompleteV3 = ({
             focus:outline-none focus:ring-1 focus:ring-[#775684] 
             ${isError ? 'border-red-600 bg-red-50' : 'border-[#775684]/30'}
             ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
-            ${className}
           `}
           style={{
             backgroundColor: disabled ? '#f3f4f6' : '#FFFFFF',
             borderColor: isError ? '#dc2626' : 'rgba(119, 86, 132, 0.3)'
           }}
           autoComplete="street-address"
-          aria-label={label}
         />
         
-        {/* Address icon */}
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#775684]" style={{ pointerEvents: 'none' }}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -340,21 +235,33 @@ const AddressAutocompleteV3 = ({
         </div>
       </div>
       
-      {/* Error message */}
       {errorMessage && (
         <div className="mt-2">
           <span className="text-sm text-red-600">{errorMessage}</span>
         </div>
       )}
-      
-      {/* Debug info (remove in production) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-1 text-xs text-gray-400">
-          API Key: {apiKey ? 'Loaded' : 'Missing'} | 
-          Script: {scriptLoadedRef.current ? 'Loaded' : 'Loading'} | 
-          Autocomplete: {autocompleteRef.current ? 'Ready' : 'Not Ready'}
-        </div>
-      )}
+
+      <style jsx>{`
+        .pac-container {
+          z-index: 9999 !important;
+          border-radius: 8px;
+          border: 1px solid rgba(119, 86, 132, 0.3);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        .pac-item {
+          padding: 12px 14px;
+          font-size: 16px;
+          cursor: pointer;
+        }
+        .pac-item:hover {
+          background-color: #f3f4f6;
+        }
+        .pac-matched {
+          font-weight: 600;
+          color: #775684;
+        }
+      `}</style>
     </div>
   );
 };
