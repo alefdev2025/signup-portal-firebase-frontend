@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PasswordField from './PasswordField';
 import navyAlcorLogo from '../../assets/images/navy-a-logo.png';
 import TermsPrivacyModal from '../modals/TermsPrivacyModal';
@@ -30,6 +30,16 @@ const AccountCreationForm = ({
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
+  
+  // Reset scroll position when verification step changes
+  useEffect(() => {
+    if (verificationStep === "verification") {
+      // Try multiple scroll methods for better mobile compatibility
+      document.body.scrollTop = 0; // For Safari
+      document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+      window.scrollTo(0, 0); // Fallback
+    }
+  }, [verificationStep]);
   
   // Toggle help panel
   const toggleHelpInfo = () => {
@@ -160,12 +170,15 @@ const AccountCreationForm = ({
     }
   };
   
+  // Check if passwords match
+  const passwordsMatch = passwordState && confirmPasswordState && passwordState === confirmPasswordState;
+  
   // Display verification form if needed
   if (verificationStep === "verification") {
     return (
       <>
         {/* White container box for verification form */}
-        <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] px-4 py-4 sm:w-full sm:max-w-2xl sm:mx-auto sm:relative sm:left-auto sm:right-auto sm:ml-auto sm:mr-auto sm:px-0 sm:py-0 bg-white rounded-xl shadow-md overflow-hidden">
           <form onSubmit={onSubmitForm} className="p-8 space-y-10 sm:space-y-6">
             <div className="mb-10 sm:mb-10">
               <label htmlFor="verificationCode" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-4">
@@ -407,12 +420,12 @@ const AccountCreationForm = ({
             {/* Get Started Button */}
             <button 
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !passwordsMatch}
               style={{
                 backgroundColor: "#31314f", 
                 color: "white"
               }}
-              className="w-full py-4 sm:py-5 px-6 rounded-full font-semibold text-lg sm:text-lg mb-8 sm:mb-4 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
+              className="w-full py-4 sm:py-5 px-6 rounded-full font-semibold text-lg sm:text-lg mb-8 sm:mb-4 flex items-center justify-center hover:opacity-90 shadow-sm"
             >
               {isSubmitting ? (
                 <>

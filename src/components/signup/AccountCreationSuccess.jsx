@@ -65,8 +65,8 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
   };
   
   return (
-    <div className="w-full max-w-3xl px-2 sm:px-0">
-      <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-sm p-6 sm:p-8 mb-8 border border-gray-100 max-w-[85%] sm:max-w-none mx-auto">
+    <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] px-4 py-4 sm:w-full sm:max-w-3xl sm:mx-auto sm:relative sm:left-auto sm:right-auto sm:ml-auto sm:mr-auto sm:px-0 sm:py-0">
+      <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-sm p-6 sm:p-8 mb-8 border border-gray-100">
         {/* Success header */}
         <div className="flex items-center mb-6">
           <div className="bg-gradient-to-br from-[#0C2340] to-[#26396A] rounded-full p-2 sm:p-2.5 shadow-sm mr-3 sm:mr-4 flex-shrink-0">
@@ -150,7 +150,8 @@ const AccountCreationSuccess = ({ currentUser, onNext }) => {
             </>
           ) : (
             <>
-              Continue to Contact Information
+              <span className="sm:hidden">Continue</span>
+              <span className="hidden sm:inline">Continue to Contact Information</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
