@@ -613,29 +613,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                         e.preventDefault();
                         e.stopPropagation();
                         console.log("🔝 Mobile: Change selection button clicked - scrolling to top");
-                        
-                        // Try multiple scroll methods
-                        try {
-                          // Method 1: Standard smooth scroll
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                          
-                          // Method 2: Fallback - instant scroll
-                          setTimeout(() => {
-                            window.scrollTo(0, 0);
-                          }, 100);
-                          
-                          // Method 3: Document element scroll
-                          setTimeout(() => {
-                            document.documentElement.scrollTop = 0;
-                            document.body.scrollTop = 0;
-                          }, 200);
-                          
-                        } catch (error) {
-                          console.error("Scroll error:", error);
-                          // Final fallback
-                          window.location.hash = '';
-                          window.scrollTo(0, 0);
-                        }
+                        // Scroll to top of page smoothly
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="text-[#775684] font-medium hover:underline focus:outline-none flex items-center transition-transform duration-300 hover:translate-y-[-2px] cursor-pointer"
                     >

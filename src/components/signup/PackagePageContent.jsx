@@ -3,6 +3,13 @@ import React from "react";
 import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 
+// ============================================
+// SECTION 1: PLAN OPTIONS DATA CONFIGURATION
+// ============================================
+// Font family to match ContactInfoPage
+const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+// This object defines all the package options available to users
 export const planOptions = {
   neuro: {
     title: "Neuropreservation",
@@ -10,8 +17,8 @@ export const planOptions = {
     long: "Preserves the brain's neural connections that define your identity.",
     baseEstimate: 80000,
     internationalEstimate: 90000,
-    titleBgColor: "bg-[#323053]",
-    iconBgColor: "bg-[#454575]",
+    titleBgColor: "bg-[#323053]",    // Purple background for headers
+    iconBgColor: "bg-[#454575]",     // Lighter purple for icon containers
     icon: (
       <img src={alcorStar} alt="Neuro Icon" className="h-5 w-5" />
     )
@@ -22,8 +29,8 @@ export const planOptions = {
     long: "Complete body preservation for potential full restoration.",
     baseEstimate: 220000,
     internationalEstimate: 230000,
-    titleBgColor: "bg-[#1a2342]",
-    iconBgColor: "bg-[#293253]",
+    titleBgColor: "bg-[#1a2342]",    // Dark blue background
+    iconBgColor: "bg-[#293253]",     // Lighter blue for icon containers
     icon: (
       <img src={alcorStar} alt="Whole Body Icon" className="h-5 w-5" />
     )
@@ -33,19 +40,22 @@ export const planOptions = {
     short: "Join now, decide on your cryopreservation type later.",
     long: "Basic membership with flexibility to upgrade later.",
     baseEstimate: 0,
-    internationalEstimate: 0, // No surcharge for basic membership
-    titleBgColor: "bg-[#11243a]",
-    iconBgColor: "bg-[#1c324c]",
+    internationalEstimate: 0,        // No surcharge for basic membership
+    titleBgColor: "bg-[#11243a]",    // Darkest blue background
+    iconBgColor: "bg-[#1c324c]",     // Medium blue for icon containers
     icon: (
       <img src={alcorStar} alt="Basic Membership Icon" className="h-5 w-5" />
     )
   }
 };
 
-// International surcharge constant
+// International pricing surcharge constant
 export const INTERNATIONAL_SURCHARGE = 10000;
 
-// Update help content for export
+// ============================================
+// SECTION 2: HELP CONTENT CONFIGURATION
+// ============================================
+// Content for the help panel that can be toggled
 export const packageHelpContent = [
   {
     title: "Preservation Package",
@@ -69,9 +79,13 @@ export const packageHelpContent = [
   }
 ];
 
-// Loading Component
+// ============================================
+// SECTION 3: LOADING COMPONENT
+// ============================================
+// Shows while pricing data is being calculated
 export const LoadingComponent = ({ USE_UPDATED_VERSION }) => {
   return USE_UPDATED_VERSION ? (
+    // Updated version loading style
     <div className="mt-4">
       <div className="bg-white shadow-sm rounded-lg p-4 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-3 border-b-3 border-[#775684] mr-3"></div>
@@ -79,6 +93,7 @@ export const LoadingComponent = ({ USE_UPDATED_VERSION }) => {
       </div>
     </div>
   ) : (
+    // Original version loading style
     <div className="text-center py-12">
       <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
       <p className="mt-4 text-xl text-gray-600">Calculating pricing...</p>
@@ -86,9 +101,13 @@ export const LoadingComponent = ({ USE_UPDATED_VERSION }) => {
   );
 };
 
-// Error Component
+// ============================================
+// SECTION 4: ERROR COMPONENT
+// ============================================
+// Displays error messages when something goes wrong
 export const ErrorComponent = ({ error, USE_UPDATED_VERSION }) => {
   return USE_UPDATED_VERSION ? (
+    // Updated version error style
     <div className="mt-4 opacity-0 animate-fadeIn" style={{ animation: "fadeIn 0.5s forwards" }}>
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <p className="text-red-700">{error}</p>
@@ -96,6 +115,7 @@ export const ErrorComponent = ({ error, USE_UPDATED_VERSION }) => {
       </div>
     </div>
   ) : (
+    // Original version error style
     <div className="bg-red-50 border border-red-200 rounded-md p-6 mb-8 opacity-0 animate-fadeIn" style={{ animation: "fadeIn 0.5s forwards" }}>
       <p className="text-red-700 text-lg">{error}</p>
       <p className="text-red-600 mt-2">Please try refreshing the page or contact support if this issue persists.</p>
@@ -103,7 +123,11 @@ export const ErrorComponent = ({ error, USE_UPDATED_VERSION }) => {
   );
 };
 
-// Updated Version Option Card Component
+// ============================================
+// SECTION 5: UPDATED VERSION OPTION CARD
+// ============================================
+// This component is used when USE_UPDATED_VERSION = true
+// Features: Inverted color scheme on desktop (white on top, color on bottom)
 export const UpdatedVersionOptionCard = ({ 
   option, 
   selectedOption, 
@@ -116,9 +140,14 @@ export const UpdatedVersionOptionCard = ({
   const planOption = planOptions[option];
   
   return (
-    <div onClick={() => selectOption(option)} className="cursor-pointer transform transition duration-300 hover:scale-[1.02]" style={{...fadeInStyle, ...getAnimationDelay(option === "neuro" ? 0 : option === "wholebody" ? 1 : 2)}}>
-      <div className={`rounded-2xl md:rounded-3xl overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"} transition-all duration-300`}>
-        {/* SELECTED indicator */}
+    <div 
+      onClick={() => selectOption(option)} 
+      className="cursor-pointer transform transition duration-300 hover:scale-[1.02]" 
+      style={{...fadeInStyle, ...getAnimationDelay(option === "neuro" ? 0 : option === "wholebody" ? 1 : 2)}}
+    >
+      <div className={`rounded-2xl md:rounded-t-[2rem] md:rounded-b-3xl overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : "ring-1 ring-gray-400"} transition-all duration-300`}>
+        
+        {/* ===== SELECTED INDICATOR ===== */}
         <div className="bg-white border-b border-gray-200">
           {selectedOption === option && (
             <div className="text-center py-3.5">
@@ -130,41 +159,42 @@ export const UpdatedVersionOptionCard = ({
           {selectedOption !== option && <div className="h-14"></div>}
         </div>
         
-        {/* Card header - INVERTED: top is white, bottom is colored */}
-        <div className="p-0">
-          {/* White section for title and description */}
-          <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-8 md:pt-4 md:pl-4 text-gray-800">
+        {/* ===== MOBILE LAYOUT (COLORED ON TOP) ===== */}
+        <div className="md:hidden">
+          {/* Mobile: Colored header section */}
+          <div className={`${planOption.titleBgColor} p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 text-white`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center justify-start w-full">
                 <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 mr-1 -mt-1 ml-0 animate-pulse" style={{animationDuration: '3s'}} />
-                <h3 className="text-2xl font-semibold text-gray-900">{planOption.title}</h3>
+                <h3 className="text-2xl font-semibold text-white">{planOption.title}</h3>
               </div>
-              <div className={`${planOption.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
+              {/* Mobile icon container and icon */}
+              <div className={`${planOption.iconBgColor} p-3 rounded-md ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12 md:p-8 md:rounded-xl`}>
                 {option === "neuro" && (
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-8 h-8 md:w-24 md:h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 )}
                 {option === "wholebody" && (
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-8 h-8 md:w-24 md:h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
                 {option === "basic" && (
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-8 h-8 md:w-24 md:h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                   </svg>
                 )}
               </div>
             </div>
             
-            <p className="text-gray-600 mt-6">
+            <p className="text-gray-300 mt-6">
               {planOption.short}
             </p>
           </div>
           
-          {/* White section for pricing info */}
-          <div className="bg-white p-4 sm:p-6 md:p-8 border-t border-gray-200">
+          {/* Mobile: White pricing section */}
+          <div className="bg-white p-4 sm:p-6 border-t border-gray-200">
             <div className="flex justify-between items-center pt-4">
               <span className="text-gray-700 text-lg">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
               <span className="font-bold text-gray-900 text-xl">
@@ -179,85 +209,213 @@ export const UpdatedVersionOptionCard = ({
               </span>
             </div>
           </div>
+          
+          {/* Mobile: White "What's Included" section */}
+          <div className="bg-white p-4 sm:p-6 border-t border-gray-200">
+            <h4 className="text-gray-800 text-xl font-semibold mb-5">What's Included:</h4>
+            
+            <div className="space-y-4 pl-4 text-gray-700 text-lg">
+              {option === "neuro" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Standby Service</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Neuro Cryopreservation</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Long-Term Storage</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Possible Revival</span>
+                  </div>
+                </>
+              )}
+              {option === "wholebody" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Standby Service</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Full Body Cryopreservation</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Long-Term Storage</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Possible Revival</span>
+                  </div>
+                </>
+              )}
+              {option === "basic" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Member Events & Resources</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Pet Preservation Options</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Add on Cryopreservation Anytime</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
+                    <span>Consultation Services</span>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <p className="mt-8 pt-4 border-t border-gray-200 text-gray-600 text-lg">
+              {planOption.long}
+            </p>
+          </div>
         </div>
         
-        {/* What's Included - with colored background */}
-        <div className={`${planOption.titleBgColor} p-4 sm:p-6 md:p-8 border-t border-gray-600`}>
-          <h4 className="text-white text-xl font-semibold mb-5">What's Included:</h4>
-          
-          <div className="space-y-4 pl-4 text-gray-200 text-lg">
-            {option === "neuro" && (
-              <>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Standby Service</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Neuro Cryopreservation</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Long-Term Storage</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
-                </div>
-              </>
-            )}
-            {option === "wholebody" && (
-              <>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Standby Service</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Full Body Cryopreservation</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Long-Term Storage</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
-                </div>
-              </>
-            )}
-            {option === "basic" && (
-              <>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Member Events & Resources</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Pet Preservation Options</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Add on Cryopreservation Anytime</span>
-                </div>
-                <div className="flex items-center transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-2 filter brightness-0 invert" />
-                  <span>Consultation Services</span>
-                </div>
-              </>
-            )}
+        {/* ===== DESKTOP LAYOUT (INVERTED - WHITE ON TOP) ===== */}
+        <div className="hidden md:block">
+          {/* Desktop: White section for title and description */}
+          <div className="bg-white p-4 pt-2 pl-2 sm:p-6 sm:pt-3 sm:pl-3 md:p-6 md:pt-3 md:pl-3 text-gray-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start w-full">
+                <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 md:w-10 md:h-10 mr-1 md:mr-2 -mt-1 ml-0 animate-pulse" style={{animationDuration: '3s'}} />
+                <h3 className="text-2xl md:text-xs font-semibold text-gray-900">{planOption.title}</h3>
+              </div>
+              {/* Desktop icon container and icon */}
+              <div className={`${planOption.iconBgColor} p-4 md:p-6 rounded-md md:rounded-lg ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
+                {option === "neuro" && (
+                  <svg className="w-10 h-10 md:w-20 md:h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                )}
+                {option === "wholebody" && (
+                  <svg className="w-10 h-10 md:w-20 md:h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
+                {option === "basic" && (
+                  <svg className="w-10 h-10 md:w-20 md:h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            
+            <p className="text-gray-600 mt-6 md:mt-4 md:text-xs">
+              {planOption.short}
+            </p>
           </div>
           
-          <p className="mt-8 pt-4 border-t border-gray-600 text-gray-300 text-lg">
-            {planOption.long}
-          </p>
+          {/* Desktop: Colored section for pricing info */}
+          <div className={`${planOption.titleBgColor} p-4 sm:p-6 md:p-6 border-t border-gray-600`}>
+            <div className="flex justify-between items-center pt-4 md:pt-2">
+              <span className="text-gray-300 text-lg md:text-xs">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
+              <span className="font-bold text-white text-xl md:text-sm">
+                {option === "basic" ? `${getPackagePrice("standard")}/year` : `${calculatePreservationEstimate(option)?.toLocaleString()}`}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center mt-2 md:mb-0">
+              <span className="text-gray-300 text-lg md:text-xs">{option === "basic" ? "Preservation:" : "Membership:"}</span>
+              <span className="font-bold text-white text-xl md:text-sm">
+                {option === "basic" ? "Not required" : `${getPackagePrice("standard")}/year`}
+              </span>
+            </div>
+          </div>
+          
+          {/* Desktop: What's Included - with colored background */}
+          <div className={`${planOption.titleBgColor} p-4 sm:p-6 md:p-6 border-t border-gray-600`}>
+            <h4 className="text-white text-xl md:text-lg font-semibold mb-5 md:mb-3">What's Included: (ICONS BELOW THIS?)</h4>
+            
+            <div className="space-y-4 md:space-y-2 pl-4 text-gray-200 text-lg md:text-sm">
+              {option === "neuro" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Standby Service</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Neuro Cryopreservation</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Long-Term Storage</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Possible Revival</span>
+                  </div>
+                </>
+              )}
+              {option === "wholebody" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Standby Service</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Full Body Cryopreservation</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Long-Term Storage</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Possible Revival</span>
+                  </div>
+                </>
+              )}
+              {option === "basic" && (
+                <>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Member Events & Resources</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Pet Preservation Options</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Add on Cryopreservation Anytime</span>
+                  </div>
+                  <div className="flex items-center transform transition duration-300 hover:translate-x-1">
+                    <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
+                    <span>Consultation Services</span>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <p className="mt-4 md:mt-3 pt-3 md:pt-2 border-t border-gray-600 text-gray-300 text-lg md:text-sm font-light">
+              {planOption.long}
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Original Version Option Card Component
+// ============================================
+// SECTION 6: ORIGINAL VERSION OPTION CARD
+// ============================================
+// This component is used when USE_UPDATED_VERSION = false (CURRENTLY ACTIVE)
+// Features: Traditional color scheme (colored on top for desktop)
 export const OriginalVersionOptionCard = ({ 
   option, 
   selectedOption, 
@@ -270,9 +428,14 @@ export const OriginalVersionOptionCard = ({
   const planOption = planOptions[option];
   
   return (
-    <div onClick={() => selectOption(option)} className="cursor-pointer" style={{...fadeInStyle, ...getAnimationDelay(option === "neuro" ? 0 : option === "wholebody" ? 1 : 2)}}>
-      <div className={`rounded-lg overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01]`} style={{ height: "830px" }}>
-        {/* SELECTED indicator */}
+    <div 
+      onClick={() => selectOption(option)} 
+      className="cursor-pointer h-full" 
+      style={{...fadeInStyle, ...getAnimationDelay(option === "neuro" ? 0 : option === "wholebody" ? 1 : 2)}}
+    >
+      <div className={`rounded-lg md:rounded-t-[2rem] md:rounded-b-lg overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01] flex flex-col h-full`}>
+        
+        {/* ===== SELECTED INDICATOR ===== */}
         <div className="bg-white border-b border-gray-200" style={{ height: "60px" }}>
           {selectedOption === option && (
             <div className="text-center py-3.5">
@@ -283,12 +446,13 @@ export const OriginalVersionOptionCard = ({
           )}
         </div>
         
-        {/* Card header with colored background that extends only to "What's Included" */}
-        <div className={`${planOption.titleBgColor} text-white p-7 pl-5`} style={{ height: "380px" }}>
-          {/* Header content */}
+        {/* ===== MOBILE LAYOUT (COLORED HEADER) ===== */}
+        <div className={`md:hidden ${planOption.titleBgColor} text-white p-7 pl-5`} style={{ fontFamily: SYSTEM_FONT }}>
+          {/* Mobile header content */}
           <div className="flex items-center">
             <img src={alcorYellowStar} alt="Alcor Star" className="w-8 h-8 mr-2 animate-pulse" style={{animationDuration: '3s'}} />
             <h3 className="text-2xl font-bold">{planOption.title}</h3>
+            {/* Mobile icon container */}
             <div className={`ml-auto ${planOption.iconBgColor} p-3 rounded-full transform transition duration-300 hover:rotate-12`}>
               {option === "neuro" && (
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -312,6 +476,7 @@ export const OriginalVersionOptionCard = ({
             {planOption.short}
           </p>
           
+          {/* Mobile pricing info */}
           <div className="flex justify-between items-center mt-10 pt-5 border-t border-gray-700">
             <span className="text-gray-400 text-xl">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
             <span className="font-bold text-2xl">
@@ -327,11 +492,63 @@ export const OriginalVersionOptionCard = ({
           </div>
         </div>
         
-        {/* What's Included section with white background */}
-        <div className="bg-white p-7" style={{ height: "390px" }}>
+        {/* ===== DESKTOP LAYOUT (WHITE HEADER) ===== */}
+        {/* Reduced height and adjusted spacing to minimize gap */}
+        <div className="hidden md:block bg-white p-7 md:p-4 pl-5 md:pl-3" style={{ fontFamily: SYSTEM_FONT }}>
+          {/* Desktop header content - CHANGED HERE */}
+          <div className="flex items-center">
+            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 md:w-5 md:h-5 mr-2 md:mr-1 animate-pulse" style={{animationDuration: '3s'}} />
+            <h3 style={{ fontSize: '22px' }} className="font-normal text-gray-900">{planOption.title}</h3>
+            
+            {/* ===== DESKTOP ICON CONTAINER - MEDIUM SIZE ===== */}
+            {/* Reduced to md:p-4 for medium container */}
+            {/* Reduced icon size to md:w-8 md:h-8 */}
+            <div className={`ml-auto ${planOption.iconBgColor} p-3 md:p-4 rounded-full md:rounded-lg transform transition duration-300 hover:rotate-12`}>
+              {option === "neuro" && (
+                <svg className="w-7 h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
+              {option === "wholebody" && (
+                <svg className="w-7 h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+              {option === "basic" && (
+                <svg className="w-7 h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+              )}
+            </div>
+          </div>
+          
+          {/* Reduced margins significantly - CHANGED HERE */}
+          <p style={{ fontSize: '18px' }} className="text-gray-600 mt-4 md:mt-3 mb-6 md:mb-4 font-light">
+            {planOption.short}
+          </p>
+          
+          {/* Desktop pricing info - even smaller text - CHANGED HERE */}
+          <div className="flex justify-between items-center mt-3 md:mt-7 pt-2 md:pt-1 border-t border-gray-300">
+            <span style={{ fontSize: '16px' }} className="text-gray-500 font-light">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
+            <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
+              {option === "basic" ? `${getPackagePrice("standard")}/year` : `${calculatePreservationEstimate(option)?.toLocaleString()}`}
+            </span>
+          </div>
+          
+          {/* Minimal bottom margin to close gap with next section - CHANGED HERE */}
+          <div className="flex justify-between items-center mt-6 md:mt-4 mb-4">
+            <span style={{ fontSize: '16px' }} className="text-gray-500 font-light">{option === "basic" ? "Preservation:" : "Membership:"}</span>
+            <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
+              {option === "basic" ? "Not required" : `${getPackagePrice("standard")}/year`}
+            </span>
+          </div>
+        </div>
+        
+        {/* ===== MOBILE: WHAT'S INCLUDED (WHITE BACKGROUND) ===== */}
+        <div className="md:hidden bg-white p-7" style={{ fontFamily: SYSTEM_FONT }}>
           <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
           
-          <div className="space-y-6 pl-5 text-lg text-gray-700" style={{ minHeight: "240px" }}>
+          <div className="space-y-6 pl-5 text-lg text-gray-700">
             {option === "neuro" && (
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
@@ -398,12 +615,88 @@ export const OriginalVersionOptionCard = ({
             </p>
           </div>
         </div>
+        
+        {/* ===== DESKTOP: WHAT'S INCLUDED (COLORED BACKGROUND) ===== */}
+        {/* Fixed min-height to ensure all cards are the same */}
+        <div className={`hidden md:block ${planOption.titleBgColor} text-white pt-6 px-5 pb-6 flex-grow`} style={{ fontFamily: SYSTEM_FONT, minHeight: "320px" }}>
+          <h4 className="text-white mb-4 text-lg font-normal">What's Included:</h4>
+          
+          <div className="space-y-4 pl-5 text-gray-200 text-base font-light">
+            {option === "neuro" && (
+              <>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Standby Service</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Neuro Cryopreservation</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Long-Term Storage</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Possible Revival</span>
+                </div>
+              </>
+            )}
+            {option === "wholebody" && (
+              <>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Standby Service</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Full Body Cryopreservation</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Long-Term Storage</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Possible Revival</span>
+                </div>
+              </>
+            )}
+            {option === "basic" && (
+              <>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Member Events & Resources</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Pet Preservation Options</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Add on Cryopreservation Anytime</span>
+                </div>
+                <div className="flex items-start transform transition duration-300 hover:translate-x-1">
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Consultation Services</span>
+                </div>
+              </>
+            )}
+          </div>
+            
+          <p className="mt-6 pt-4 border-t border-gray-600 text-gray-300 text-base font-light">
+            {planOption.long}
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
-// Mobile Selection Summary Component
+// ============================================
+// SECTION 7: MOBILE SELECTION SUMMARY
+// ============================================
+// Shows selected option summary on mobile devices only
 export const MobileSelectionSummary = ({ 
   selectedOption, 
   getSelectedOptionName, 
@@ -417,7 +710,7 @@ export const MobileSelectionSummary = ({
   const planOption = planOptions[selectedOption];
   
   return (
-    <div className={`mt-5 p-4 sm:p-6 bg-white rounded-xl ${USE_UPDATED_VERSION ? 'md:rounded-2xl' : 'rounded-lg'} border border-gray-200 shadow-sm md:hidden transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(3)}}>
+    <div className={`mt-5 p-4 sm:p-6 bg-white rounded-xl ${USE_UPDATED_VERSION ? 'md:rounded-2xl' : 'rounded-lg'} border border-gray-200 shadow-sm md:hidden transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(3), fontFamily: SYSTEM_FONT}}>
       <div className="flex flex-col">
         <h4 className="text-gray-800 font-bold text-lg mb-3">Your Selection</h4>
         
@@ -479,10 +772,13 @@ export const MobileSelectionSummary = ({
   );
 };
 
-// Important Information Component
+// ============================================
+// SECTION 8: IMPORTANT INFORMATION
+// ============================================
+// Information panel about pricing and insurance
 export const ImportantInformation = ({ membershipAge, fadeInStyle, getAnimationDelay, USE_UPDATED_VERSION }) => {
   return (
-    <div className={`mt-5 p-4 sm:p-6 bg-gray-50 rounded-xl ${USE_UPDATED_VERSION ? 'md:rounded-2xl' : 'rounded-lg'} border border-gray-200 transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(4)}}>
+    <div className={`mt-5 p-4 sm:p-6 bg-gray-50 rounded-xl ${USE_UPDATED_VERSION ? 'md:rounded-2xl' : 'rounded-lg'} border border-gray-200 transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(4), fontFamily: SYSTEM_FONT}}>
       <div className="flex items-start">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 mr-2 flex-shrink-0 mt-0.5 animate-bounce" style={{animationDuration: '2s'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -498,7 +794,10 @@ export const ImportantInformation = ({ membershipAge, fadeInStyle, getAnimationD
   );
 };
 
-// Navigation Buttons Component
+// ============================================
+// SECTION 9: NAVIGATION BUTTONS
+// ============================================
+// Back and Continue buttons at the bottom of the page
 export const NavigationButtons = ({ 
   handleBackClick, 
   handleNext, 
@@ -510,6 +809,7 @@ export const NavigationButtons = ({
 }) => {
   return (
     <div className="flex justify-between mt-8 mb-6 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
+      {/* Back Button */}
       <button
         type="button"
         onClick={handleBackClick}
@@ -522,6 +822,7 @@ export const NavigationButtons = ({
         Back
       </button>
       
+      {/* Continue Button */}
       <button 
         type="button"
         onClick={handleNext}
@@ -542,7 +843,7 @@ export const NavigationButtons = ({
           <>
             Continue
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
             </svg>
           </>
         )}
@@ -551,7 +852,10 @@ export const NavigationButtons = ({
   );
 };
 
-// Global Styles Component
+// ============================================
+// SECTION 10: GLOBAL STYLES
+// ============================================
+// Injects necessary CSS animations into the document
 export const GlobalStyles = () => {
   // Add global CSS animations
   const globalStyles = document.createElement('style');
