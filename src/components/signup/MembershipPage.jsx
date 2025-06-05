@@ -55,11 +55,10 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   
   // Form state
   const [iceCode, setIceCode] = useState(initialData?.iceCode || "");
-  const [paymentFrequency, setPaymentFrequency] = useState(initialData?.paymentFrequency || "annually");
+  const [paymentFrequency, setPaymentFrequency] = useState(initialData?.paymentFrequency || "quarterly");
   const [iceCodeValid, setIceCodeValid] = useState(initialData?.iceCodeValid || null);
   const [iceCodeInfo, setIceCodeInfo] = useState(initialData?.iceCodeInfo || null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [interestedInLifetime, setInterestedInLifetime] = useState(initialData?.interestedInLifetime || false);
   
   // Package info state
   const [packageInfo, setPackageInfo] = useState(null);
@@ -234,38 +233,15 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     }, 500);
   };
   
-  // Handle payment frequency change - updated to clear lifetime when frequency is selected
+  // Handle payment frequency change
   const handlePaymentFrequencyChange = (frequency) => {
     setPaymentFrequency(frequency);
-    
-    // If a payment frequency is selected, clear lifetime interest
-    if (frequency && interestedInLifetime) {
-      setInterestedInLifetime(false);
-    }
-  };
-  
-  // Handle lifetime membership change - updated to clear payment frequency and ICE code when lifetime is selected
-  const handleLifetimeMembershipChange = (e) => {
-    const isChecked = e.target.checked;
-    setInterestedInLifetime(isChecked);
-    
-    // If lifetime is selected, clear payment frequency and ICE code data
-    if (isChecked) {
-      setPaymentFrequency(null);
-      // Clear ICE code related data since it doesn't apply to lifetime membership
-      setIceCode("");
-      setIceCodeValid(null);
-      setIceCodeInfo(null);
-    } else {
-      // If lifetime is deselected, default back to annually
-      setPaymentFrequency("annually");
-    }
   };
   
   // Form validation helper
   const isFormValid = () => {
-    // Either a payment frequency is selected OR lifetime is selected
-    const hasValidSelection = paymentFrequency || interestedInLifetime;
+    // Payment frequency must be selected
+    const hasValidSelection = !!paymentFrequency;
     
     // ICE code validation (if entered, must be valid)
     const iceCodeValidation = !iceCode.trim() || iceCodeValid === true;
@@ -372,67 +348,67 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     setCurrentPage('membership');
   };
   
-// In MembershipPage.jsx, update handleProceedToDocuSign:
-const handleProceedToDocuSign = async () => {
-  setIsSubmitting(true);
-  
-  try {
-    console.log("MembershipPage: Proceeding to DocuSign step...");
+  // In MembershipPage.jsx, update handleProceedToDocuSign:
+  const handleProceedToDocuSign = async () => {
+    setIsSubmitting(true);
     
-    // Validate ICE code one final time before saving
-    if (iceCode.trim()) {
-      console.log("Final validation of ICE code before save:", iceCode);
-      const finalValidation = await membershipService.validateIceCode(iceCode.trim());
-      
-      if (!finalValidation.valid) {
-        throw new Error("ICE code is no longer valid. Please check the code and try again.");
-      }
-      
-      // Update the ICE code info with the latest validation
-      setIceCodeInfo(finalValidation);
-      setIceCodeValid(true);
-    }
-    
-    // Create data object with all details
-    const data = {
-      iceCode: interestedInLifetime ? "" : iceCode.trim(),
-      paymentFrequency: interestedInLifetime ? null : paymentFrequency,
-      iceCodeValid: interestedInLifetime ? null : (iceCode.trim() ? iceCodeValid : null),
-      iceCodeInfo: interestedInLifetime ? null : (iceCode.trim() ? iceCodeInfo : null),
-      interestedInLifetime: interestedInLifetime,
-      completionDate: new Date().toISOString()
-    };
-    
-    console.log("MembershipPage: Submitting data:", data);
-    
-    // Save membership data to backend
     try {
-      const saveResult = await membershipService.saveMembershipSelection(data);
-      console.log("MembershipPage: Save result:", saveResult);
+      console.log("MembershipPage: Proceeding to DocuSign step...");
       
-      if (!saveResult || !saveResult.success) {
-        throw new Error("Failed to save membership selection to backend");
+      // Validate ICE code one final time before saving
+      if (iceCode.trim()) {
+        console.log("Final validation of ICE code before save:", iceCode);
+        const finalValidation = await membershipService.validateIceCode(iceCode.trim());
+        
+        if (!finalValidation.valid) {
+          throw new Error("ICE code is no longer valid. Please check the code and try again.");
+        }
+        
+        // Update the ICE code info with the latest validation
+        setIceCodeInfo(finalValidation);
+        setIceCodeValid(true);
       }
+      
+      // Create data object with all details
+      const data = {
+        iceCode: iceCode.trim(),
+        paymentFrequency: paymentFrequency,
+        iceCodeValid: iceCode.trim() ? iceCodeValid : null,
+        iceCodeInfo: iceCode.trim() ? iceCodeInfo : null,
+        interestedInLifetime: false,
+        completionDate: new Date().toISOString()
+      };
+      
+      console.log("MembershipPage: Submitting data:", data);
+      
+      // Save membership data to backend
+      try {
+        const saveResult = await membershipService.saveMembershipSelection(data);
+        console.log("MembershipPage: Save result:", saveResult);
+        
+        if (!saveResult || !saveResult.success) {
+          throw new Error("Failed to save membership selection to backend");
+        }
+      } catch (error) {
+        console.error("Error saving membership selection:", error);
+        setError("Failed to save your membership selection. Please try again.");
+        return false;
+      }
+      
+      // Navigate to DocuSign step instead of showing DocuSign directly
+      if (onNext) {
+        onNext(data);
+      }
+      
+      return true;
     } catch (error) {
-      console.error("Error saving membership selection:", error);
-      setError("Failed to save your membership selection. Please try again.");
+      console.error("Error in handleProceedToDocuSign:", error);
+      setError(error.message || "An error occurred while saving your selection");
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    // Navigate to DocuSign step instead of showing DocuSign directly
-    if (onNext) {
-      onNext(data);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error in handleProceedToDocuSign:", error);
-    setError(error.message || "An error occurred while saving your selection");
-    return false;
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
   
   // Handler for DocuSign completion
   const handleDocuSignComplete = () => {
@@ -441,11 +417,11 @@ const handleProceedToDocuSign = async () => {
     // If onNext prop is provided, use it (for step integration)
     if (onNext) {
       const finalData = {
-        iceCode: interestedInLifetime ? "" : iceCode.trim(),
-        paymentFrequency: interestedInLifetime ? null : paymentFrequency,
-        iceCodeValid: interestedInLifetime ? null : (iceCode.trim() ? iceCodeValid : null),
-        iceCodeInfo: interestedInLifetime ? null : (iceCode.trim() ? iceCodeInfo : null),
-        interestedInLifetime: interestedInLifetime,
+        iceCode: iceCode.trim(),
+        paymentFrequency: paymentFrequency,
+        iceCodeValid: iceCode.trim() ? iceCodeValid : null,
+        iceCodeInfo: iceCode.trim() ? iceCodeInfo : null,
+        interestedInLifetime: false,
         docuSignCompleted: true,
         completionDate: new Date().toISOString()
       };
@@ -472,45 +448,6 @@ const handleProceedToDocuSign = async () => {
   
   const getQuarterlyCost = () => {
     return Math.round(getAnnualCost() / 4);
-  };
-  
-  // Calculate lifetime membership cost based on age
-  const getLifetimeCost = () => {
-    // Get user's age - prioritize membershipAge from pricing service, then other sources
-    const userAge = membershipAge || user?.age || initialData?.age || 40; // Default to 40 if no age available
-    
-    console.log("MembershipPage: getLifetimeCost calculation:", {
-      membershipAge: membershipAge,
-      userAge_from_context: user?.age,
-      userAge_from_initialData: initialData?.age,
-      final_userAge: userAge
-    });
-    
-    // Calculate years remaining (assuming life expectancy of 80)
-    const yearsRemaining = Math.max(80 - userAge, 10); // Minimum 10 years
-    
-    // Get the annual membership cost (should be around $540)
-    const annualCost = getAnnualCost();
-    
-    // Debug logging
-    console.log("Lifetime calculation debug:", {
-      userAge,
-      yearsRemaining,
-      annualCost,
-      calculation: yearsRemaining * annualCost
-    });
-    
-    // Lifetime cost calculation: Years Remaining × Annual Membership Cost
-    let lifetimeCost = yearsRemaining * annualCost;
-    
-    // Apply ICE discount to first year only if valid
-    if (iceCodeValid && iceCodeInfo) {
-      // Calculate the discount amount for one year (25% of annual cost)
-      const firstYearDiscount = annualCost * 0.25;
-      lifetimeCost = lifetimeCost - firstYearDiscount;
-    }
-    
-    return Math.round(lifetimeCost);
   };
   
   // Calculate costs with ICE discount
@@ -549,11 +486,11 @@ const handleProceedToDocuSign = async () => {
   
   // Prepare membership data for child components
   const membershipData = {
-    iceCode: interestedInLifetime ? "" : iceCode.trim(),
-    paymentFrequency: interestedInLifetime ? null : paymentFrequency,
-    iceCodeValid: interestedInLifetime ? null : iceCodeValid,
-    iceCodeInfo: interestedInLifetime ? null : iceCodeInfo,
-    interestedInLifetime: interestedInLifetime
+    iceCode: iceCode.trim(),
+    paymentFrequency: paymentFrequency,
+    iceCodeValid: iceCodeValid,
+    iceCodeInfo: iceCodeInfo,
+    interestedInLifetime: false
   };
   
   const packageData = {
@@ -616,7 +553,7 @@ const handleProceedToDocuSign = async () => {
   return (
     <div>
       <div 
-        className="w-full bg-gray-100" 
+        className="w-full bg-gray-50" 
         style={{
           width: '100vw',
           marginLeft: 'calc(-50vw + 50%)',
@@ -629,337 +566,339 @@ const handleProceedToDocuSign = async () => {
           <div className="mb-8">
             {/* Header */}
             <div className="mb-8">
-              {costs && costs.discountAmount > 0 && !interestedInLifetime && (
-                <div className="text-center mb-6">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
-                    <div className="flex items-center text-green-800">
-                      <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="font-semibold">ICE Discount Applied: Save {formatCurrency(costs.discountAmount)}</span>
-                    </div>
+              {costs && costs.discountAmount > 0 && (
+                <div className="text-center">
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2 inline-flex items-center">
+                    <svg className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-green-800 font-semibold">ICE Discount Applied: Save {formatCurrency(costs.discountAmount)} on your first year</span>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Lifetime Selection Indicator */}
-            {interestedInLifetime && (
-              <div className="mb-8 bg-green-50 border border-green-200 rounded-lg p-6">
-                <div className="flex items-center">
-                  <svg className="h-6 w-6 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-green-800 font-bold text-xl">Lifetime Membership Selected</span>
-                </div>
-                <p className="text-green-700 mt-2 text-lg">
-                  You'll receive a personalized lifetime membership quote after submitting your application.
-                </p>
-              </div>
-            )}
-
             {/* Payment Options */}
-            {!interestedInLifetime && (
-              <div className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-[#323053] mb-6 flex flex-col sm:flex-row sm:items-center">
-                  <div className="flex items-center mb-2 sm:mb-0">
-                    <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 md:w-10 md:h-10 mr-2" />
-                    Select your payment frequency:
-                  </div>
-                  <span className="text-2xl md:text-3xl text-[#775684] sm:ml-4">
-                    {costs && costs.discountAmount > 0 ? (
-                      <>
-                        <span className="line-through text-gray-400 text-xl mr-2">{formatCurrency(costs.baseCost)}</span>
-                        {formatCurrency(costs.finalAnnualCost)}
-                      </>
-                    ) : (
-                      formatCurrency(costs?.baseCost || getAnnualCost())
-                    )} USD/year
-                  </span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Monthly Option */}
-                  <div 
-                    onClick={() => !interestedInLifetime && handlePaymentFrequencyChange("monthly")}
-                    className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                      interestedInLifetime 
-                        ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed" 
-                        : paymentFrequency === "monthly" 
-                          ? "border-[#775684] bg-gray-50 shadow-md" 
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                        Monthly
-                        <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                      </h4>
-                      
-                      <div className="mb-8">
-                        <div className="text-6xl font-bold text-gray-900 mb-2">
-                          {costs ? formatCurrency(costs.finalMonthlyCost) : formatCurrency(getMonthlyCost())}
-                        </div>
-                        <p className="text-gray-600 text-lg">
-                          <span className="font-semibold">USD</span> • First month
-                        </p>
-                        <p className="text-gray-500 text-base">
-                          Renews monthly
-                        </p>
-                        {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "monthly" && (
-                          <p className="text-green-600 text-sm font-medium mt-1">
-                            Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                          </p>
-                        )}
-                      </div>
-                      
-                      <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                        paymentFrequency === "monthly"
-                          ? "bg-[#775684] text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}>
-                        {paymentFrequency === "monthly" ? "Selected" : "Select Monthly"}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Quarterly Option */}
-                  <div 
-                    onClick={() => !interestedInLifetime && handlePaymentFrequencyChange("quarterly")}
-                    className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                      interestedInLifetime 
-                        ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed" 
-                        : paymentFrequency === "quarterly" 
-                          ? "border-[#775684] bg-gray-50 shadow-md" 
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                        Quarterly
-                        <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                      </h4>
-                      
-                      <div className="mb-8">
-                        <div className="text-6xl font-bold text-gray-900 mb-2">
-                          {costs ? formatCurrency(costs.finalQuarterlyCost) : formatCurrency(getQuarterlyCost())}
-                        </div>
-                        <p className="text-gray-600 text-lg">
-                          <span className="font-semibold">USD</span> • Every 3 months
-                        </p>
-                        <p className="text-gray-500 text-base">
-                          Renews quarterly
-                        </p>
-                        {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "quarterly" && (
-                          <p className="text-green-600 text-sm font-medium mt-1">
-                            Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                          </p>
-                        )}
-                      </div>
-                      
-                      <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                        paymentFrequency === "quarterly"
-                          ? "bg-[#775684] text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}>
-                        {paymentFrequency === "quarterly" ? "Selected" : "Select Quarterly"}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Annual Option */}
-                  <div 
-                    onClick={() => !interestedInLifetime && handlePaymentFrequencyChange("annually")}
-                    className={`relative cursor-pointer rounded-xl border p-8 transition-all duration-300 hover:shadow-lg transform hover:scale-[1.02] ${
-                      interestedInLifetime 
-                        ? "border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed" 
-                        : paymentFrequency === "annually" 
-                          ? "border-[#775684] bg-gray-50 shadow-md" 
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center" style={marcellusStyle}>
-                        Annual
-                        <img src={alcorStar} alt="Alcor Star" className="w-7 h-7 ml-1" />
-                      </h4>
-                      
-                      <div className="mb-8">
-                        <div className="text-6xl font-bold text-gray-900 mb-2">
-                          {costs ? formatCurrency(costs.finalAnnualCost) : formatCurrency(getAnnualCost())}
-                        </div>
-                        <p className="text-gray-600 text-lg">
-                          <span className="font-semibold">USD</span> • Per year
-                        </p>
-                        <p className="text-gray-500 text-base">
-                          Renews annually
-                        </p>
-                        {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "annually" && (
-                          <p className="text-green-600 text-sm font-medium mt-1">
-                            Saving {formatCurrency(costs.discountAmount)}/year with ICE code!
-                          </p>
-                        )}
-                      </div>
-                      
-                      <button className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 ${
-                        paymentFrequency === "annually"
-                          ? "bg-[#775684] text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}>
-                        {paymentFrequency === "annually" ? "Selected" : "Select Annual"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ICE Code Section - Only show if NOT lifetime membership */}
-            {!interestedInLifetime && (
-              <div className="mb-8 mt-12">
-                <div className="bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] border border-gray-200 rounded-xl p-10 shadow-sm">
-                  {/* Header with ICE Logo - Left Aligned */}
-                  <div className="flex items-center mb-10">
-                    <div className="bg-white w-20 h-20 rounded-lg flex items-center justify-center mr-6 shadow-lg border border-gray-200">
-                      <img 
-                        src={iceLogo} 
-                        alt="ICE Logo" 
-                        className="h-14 w-14 object-contain"
-                        onError={(e) => {
-                          // Fallback to gradient icon if ICE logo fails to load
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div 
-                        className="bg-gradient-to-br from-[#775684] to-[#5a4063] w-full h-full rounded-lg hidden items-center justify-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            <div className="mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Monthly Option */}
+                <div 
+                  onClick={() => handlePaymentFrequencyChange("monthly")}
+                  className="relative cursor-pointer transition-all duration-300"
+                >
+                  <div className={`
+                    relative rounded-2xl p-6 h-full
+                    bg-white
+                    ${paymentFrequency === "monthly" 
+                      ? "ring-2 ring-[#775684] shadow-xl" 
+                      : "ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
+                    }
+                    transform transition-all duration-300 hover:-translate-y-1
+                  `}>
+                    {/* Selected indicator */}
+                    {paymentFrequency === "monthly" && (
+                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                         </svg>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-3xl font-bold text-[#323053]">ICE Discount Code</h3>
-                        <button 
-                          onClick={() => toggleIceInfo()}
-                          className="bg-[#775684] text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#664573] transition-colors text-lg font-bold ml-1"
-                          title="What's an ICE Code?"
-                        >
-                          ?
-                        </button>
-                      </div>
-                      <p className="text-gray-600 mt-2 text-lg">Save money with your Independent Cryonics Educator discount (first year only)</p>
-                    </div>
-                  </div>
-
-                  {/* Input Section - Left Aligned */}
-                  <div className="max-w-md">
-                    <div className="relative mb-6">
-                      <input
-                        type="text"
-                        value={iceCode}
-                        onChange={handleIceCodeChange}
-                        placeholder="Enter ICE discount code"
-                        className="w-full px-6 py-5 text-xl border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684] pr-16 font-mono tracking-wider"
-                        style={{...marcellusStyle, fontFamily: 'monospace'}}
-                      />
-                      
-                      {/* Validation indicator */}
-                      <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
-                        {isValidatingCode ? (
-                          <div className="animate-spin rounded-full h-8 w-8 border-t-3 border-b-3 border-[#775684]"></div>
-                        ) : iceCode.trim() && iceCodeValid === true ? (
-                          <svg className="h-9 w-9 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : iceCode.trim() && iceCodeValid === false ? (
-                          <svg className="h-9 w-9 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        ) : null}
-                      </div>
-                    </div>
-                    
-                    {/* Demo codes hint */}
-                    {!iceCode.trim() && (
-                      <div className="text-base text-gray-500">
-                        <p>Demo: ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
                       </div>
                     )}
+                    
+                    {/* Card content */}
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="text-center mb-6">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
+                          Monthly
+                        </h4>
+                        <p className="text-sm text-gray-500">Flexible payment plan</p>
+                      </div>
+                      
+                      {/* Price section */}
+                      <div className="flex-grow flex flex-col justify-center mb-6">
+                        <div className="text-center">
+                          <div className="flex items-baseline justify-center">
+                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+                              {costs ? formatCurrency(costs.finalMonthlyCost).replace('$', '') : getMonthlyCost()}
+                            </span>
+                            <span className="text-2xl text-gray-500 ml-2">USD</span>
+                          </div>
+                          <p className="text-gray-500 mt-2">per month</p>
+                          
+                          {/* Discount badge */}
+                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "monthly" && (
+                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Save {formatCurrency(costs.discountAmount)}/year
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* CTA Button */}
+                      <button className={`
+                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
+                        ${paymentFrequency === "monthly"
+                          ? "bg-[#775684] text-white shadow-md"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }
+                      `}>
+                        {paymentFrequency === "monthly" ? "Selected" : "Choose Monthly"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quarterly Option */}
+                <div 
+                  onClick={() => handlePaymentFrequencyChange("quarterly")}
+                  className="relative cursor-pointer transition-all duration-300"
+                >
+                  <div className={`
+                    relative rounded-2xl p-6 h-full
+                    ${paymentFrequency === "quarterly" 
+                      ? "bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] ring-2 ring-[#775684] shadow-xl" 
+                      : "bg-white ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
+                    }
+                    transform transition-all duration-300 hover:-translate-y-1
+                  `}>
+                    {/* Selected indicator */}
+                    {paymentFrequency === "quarterly" && (
+                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    
+                    {/* Card content */}
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="text-center mb-6">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
+                          Quarterly
+                        </h4>
+                        <p className="text-sm text-gray-500">Best value for most</p>
+                      </div>
+                      
+                      {/* Price section */}
+                      <div className="flex-grow flex flex-col justify-center mb-6">
+                        <div className="text-center">
+                          <div className="flex items-baseline justify-center">
+                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+                              {costs ? formatCurrency(costs.finalQuarterlyCost).replace('$', '') : getQuarterlyCost()}
+                            </span>
+                            <span className="text-2xl text-gray-500 ml-2">USD</span>
+                          </div>
+                          <p className="text-gray-500 mt-2">every 3 months</p>
+                          
+                          {/* Discount badge */}
+                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "quarterly" && (
+                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Save {formatCurrency(costs.discountAmount)}/year
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* CTA Button */}
+                      <button className={`
+                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
+                        ${paymentFrequency === "quarterly"
+                          ? "bg-[#775684] text-white shadow-md"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }
+                      `}>
+                        {paymentFrequency === "quarterly" ? "Selected" : "Choose Quarterly"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Annual Option */}
+                <div 
+                  onClick={() => handlePaymentFrequencyChange("annually")}
+                  className="relative cursor-pointer transition-all duration-300"
+                >
+                  <div className={`
+                    relative rounded-2xl p-6 h-full
+                    bg-white
+                    ${paymentFrequency === "annually" 
+                      ? "ring-2 ring-[#775684] shadow-xl" 
+                      : "ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
+                    }
+                    transform transition-all duration-300 hover:-translate-y-1
+                  `}>
+                    {/* Selected indicator */}
+                    {paymentFrequency === "annually" && (
+                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    
+                    {/* Card content */}
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="text-center mb-6">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
+                          Annual
+                        </h4>
+                        <p className="text-sm text-gray-500">Pay once per year</p>
+                      </div>
+                      
+                      {/* Price section */}
+                      <div className="flex-grow flex flex-col justify-center mb-6">
+                        <div className="text-center">
+                          <div className="flex items-baseline justify-center">
+                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+                              {costs ? formatCurrency(costs.finalAnnualCost).replace('$', '') : getAnnualCost()}
+                            </span>
+                            <span className="text-2xl text-gray-500 ml-2">USD</span>
+                          </div>
+                          <p className="text-gray-500 mt-2">per year</p>
+                          
+                          {/* Discount badge */}
+                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "annually" && (
+                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Save {formatCurrency(costs.discountAmount)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* CTA Button */}
+                      <button className={`
+                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
+                        ${paymentFrequency === "annually"
+                          ? "bg-[#775684] text-white shadow-md"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }
+                      `}>
+                        {paymentFrequency === "annually" ? "Selected" : "Choose Annual"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ICE Code Section */}
+            <div className="mb-8">
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                {/* Header with ICE Logo */}
+                <div className="flex items-center mb-6">
+                  <div className="bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] w-16 h-16 rounded-lg flex items-center justify-center mr-4 shadow-sm border border-gray-200">
+                    <img 
+                      src={iceLogo} 
+                      alt="ICE Logo" 
+                      className="h-12 w-12 object-contain"
+                      onError={(e) => {
+                        // Fallback to gradient icon if ICE logo fails to load
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div 
+                      className="bg-gradient-to-br from-[#775684] to-[#5a4063] w-full h-full rounded-lg hidden items-center justify-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-2xl font-bold text-[#323053]">Have an ICE Code?</h3>
+                      <button 
+                        onClick={() => toggleIceInfo()}
+                        className="bg-gray-100 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center hover:bg-gray-200 transition-colors text-sm font-bold"
+                        title="What's an ICE Code?"
+                      >
+                        ?
+                      </button>
+                    </div>
+                    <p className="text-gray-600 mt-1">Save 25% on your first year with a referral code</p>
+                  </div>
+                </div>
+
+                {/* Input Section */}
+                <div className="max-w-md">
+                  <div className="relative mb-4">
+                    <input
+                      type="text"
+                      value={iceCode}
+                      onChange={handleIceCodeChange}
+                      placeholder="Enter discount code"
+                      className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:ring-[#775684] focus:border-[#775684] pr-12 font-mono tracking-wide"
+                      style={{...marcellusStyle, fontFamily: 'monospace'}}
+                    />
+                    
+                    {/* Validation indicator */}
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      {isValidatingCode ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#775684]"></div>
+                      ) : iceCode.trim() && iceCodeValid === true ? (
+                        <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : iceCode.trim() && iceCodeValid === false ? (
+                        <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      ) : null}
+                    </div>
                   </div>
                   
-                  {/* Validation messages - Full width below input */}
+                  {/* Demo codes hint */}
+                  {!iceCode.trim() && (
+                    <div className="text-sm text-gray-500">
+                      <p>Demo codes: ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
+                    </div>
+                  )}
+                  
+                  {/* Validation messages */}
                   {iceCode.trim() && iceCodeValid === true && iceCodeInfo && (
-                    <div className="bg-[#f0f2ff] border border-[#e0e3ff] rounded-lg p-6 mb-4">
-                      <div className="flex items-center mb-4">
-                        <svg className="h-6 w-6 text-black mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                      <div className="flex items-center">
+                        <svg className="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="text-black font-bold text-2xl">ICE Code Accepted</span>
-                      </div>
-                      <div className="text-black space-y-3 text-xl">
-                        <p>Your Discount: <span className="font-semibold text-2xl">25% ({formatCurrency(costs.discountAmount)}) - First Year Only</span></p>
-                        <p className="text-black text-lg mt-4">Complete a cryopreservation contract to increase your discount to 50%!</p>
+                        <span className="text-green-800 font-semibold">Code accepted! You'll save 25% on your first year.</span>
                       </div>
                     </div>
                   )}
                   
                   {iceCode.trim() && iceCodeValid === false && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
                       <div className="flex items-center">
-                        <svg className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-5 w-5 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        <span className="text-red-800 font-bold text-xl">Invalid ICE code</span>
+                        <span className="text-red-800 font-semibold">Invalid code. Please check and try again.</span>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
-          
-          {/* Lifetime Membership Checkbox Section */}
-          <div className="mb-8 bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] border border-gray-200 rounded-xl p-10 shadow-sm">
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="lifetime-membership-interest"
-                checked={interestedInLifetime}
-                onChange={handleLifetimeMembershipChange}
-                className="mt-0.5 h-8 w-8 text-[#775684] focus:ring-[#775684] border-[#775684] rounded cursor-pointer accent-[#775684]"
-              />
-              <label 
-                htmlFor="lifetime-membership-interest" 
-                className="ml-5 cursor-pointer"
-              >
-                <span className="text-3xl text-gray-800 font-bold flex items-center">
-                  I'm interested in Lifetime Membership
-                  <img src={alcorStar} alt="Alcor Star" className="w-8 h-8 ml-3" />
-                </span>
-                <p className="text-gray-600 mt-3 text-xl">
-                  Pay once and never worry about membership dues again. We'll contact you with a personalized quote based on your age.
-                </p>
-                <p className="text-[#775684] mt-4 text-xl font-medium">
-                  ✓ No future price increases &nbsp;&nbsp;• &nbsp;&nbsp;✓ One-time payment &nbsp;&nbsp;• &nbsp;&nbsp;✓ Peace of mind
-                </p>
-                <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
-                  <p className="text-gray-700 text-xl">
-                    <strong className="text-xl">Note:</strong> If you select lifetime membership, you'll submit only a membership application today and won't start your membership. We'll contact you within 24-48 hours to finalize your lifetime membership arrangement.
-                  </p>
-                </div>
-              </label>
             </div>
           </div>
           
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between mt-12">
             <button
               type="button"
               onClick={handleBackClick}
-              className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
+              className="py-3 px-6 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md"
               style={marcellusStyle}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -971,7 +910,7 @@ const handleProceedToDocuSign = async () => {
             <button
               onClick={handleNext}
               disabled={isSubmitting || !isFormValid()}
-              className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
+              className={`py-3 px-6 rounded-full font-semibold flex items-center transition-all duration-300 shadow-md hover:shadow-lg ${
                 isFormValid() ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
               } disabled:opacity-70`}
               style={marcellusStyle}
@@ -986,7 +925,7 @@ const handleProceedToDocuSign = async () => {
                 </>
               ) : (
                 <>
-                  Continue
+                  Continue to Review
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
@@ -1003,7 +942,7 @@ const handleProceedToDocuSign = async () => {
         />
       </div>
 
-      {/* ICE Info Modal - NO OVERLAY IN REACT */}
+      {/* ICE Info Modal */}
       {showIceInfo && createPortal(
         <div 
           style={{
@@ -1021,104 +960,110 @@ const handleProceedToDocuSign = async () => {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-            <div 
+          <div 
+            style={{
+              background: 'linear-gradient(90deg, #775684 0%, #8a4099 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1.5rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src={iceLogo} 
+                alt="ICE Logo" 
+                style={{ height: '2.5rem', marginRight: '1rem', filter: 'brightness(0) invert(1)' }}
+                onError={(e) => {
+                  e.target.src = alcorStar;
+                }}
+              />
+              <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: 'white', margin: 0, display: 'flex', alignItems: 'center' }}>
+                What's an ICE Code?
+                <img src={alcorStar} alt="Alcor Star" style={{ width: '2rem', height: '2rem', marginLeft: '0.75rem', filter: 'brightness(0) invert(1)' }} />
+              </h2>
+            </div>
+            
+            <button
+              onClick={closeIceModal}
               style={{
-                background: 'linear-gradient(90deg, #6f2d74 0%, #8a4099 100%)',
+                color: 'white',
+                background: 'none',
+                border: 'none',
+                fontSize: '2rem',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                width: '40px',
+                height: '40px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '1.5rem'
+                justifyContent: 'center'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <img 
-                  src={iceLogo} 
-                  alt="ICE Logo" 
-                  style={{ height: '2.5rem', marginRight: '1rem', filter: 'brightness(0) invert(1)' }}
-                  onError={(e) => {
-                    e.target.src = alcorStar;
-                  }}
-                />
-                <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: 'white', margin: 0, display: 'flex', alignItems: 'center' }}>
-                  What's an ICE Code?
-                  <img src={alcorStar} alt="Alcor Star" style={{ width: '2rem', height: '2rem', marginLeft: '0.75rem', filter: 'brightness(0) invert(1)' }} />
-                </h2>
+              ×
+            </button>
+          </div>
+          
+          <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '2rem' }}>
+            <div style={{ color: '#374151', fontSize: '1.125rem', lineHeight: '1.75' }}>
+              <p style={{ marginBottom: '1.5rem' }}>
+                <strong>ICE (Independent Cryonics Educator)</strong> codes are special discount codes provided by certified educators who help spread awareness about cryonics and Alcor's services. ICE educators receive 50% of your first-year dues as compensation for successful referrals.
+              </p>
+              
+              <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '1rem', fontSize: '1.25rem' }}>
+                  Discount Levels
+                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Non-Alcor Member ICE:</span>
+                  <span style={{ color: '#111827', fontWeight: 'bold' }}>10% off first year</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Member ICE:</span>
+                  <span style={{ color: '#111827', fontWeight: 'bold' }}>25% off first year</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Cryopreservation Member ICE:</span>
+                  <span style={{ color: '#111827', fontWeight: 'bold' }}>50% off first year</span>
+                </div>
               </div>
               
-              <button
-                onClick={closeIceModal}
-                style={{
-                  color: 'white',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  padding: '0.5rem'
-                }}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '2rem' }}>
-              <div style={{ color: '#374151', fontSize: '1.125rem', lineHeight: '1.75' }}>
-                <p style={{ marginBottom: '1.5rem' }}>
-                  <strong>ICE (Independent Cryonics Educator)</strong> codes are special discount codes provided by certified educators who help spread awareness about cryonics and Alcor's services. ICE educators receive 50% of your first-year dues as compensation for successful referrals.
-                </p>
-                
-                <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '1rem', fontSize: '1.25rem' }}>
-                    Discount Levels
-                  </h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
-                    <span style={{ color: '#374151', fontWeight: '500' }}>Non-Alcor Member ICE:</span>
-                    <span style={{ color: '#111827', fontWeight: 'bold' }}>10% off first year</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #d1d5db', marginBottom: '0.75rem' }}>
-                    <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Member ICE:</span>
-                    <span style={{ color: '#111827', fontWeight: 'bold' }}>25% off first year</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#374151', fontWeight: '500' }}>Alcor Cryopreservation Member ICE:</span>
-                    <span style={{ color: '#111827', fontWeight: 'bold' }}>50% off first year</span>
-                  </div>
-                </div>
-                
-                <p style={{ marginBottom: '1.5rem' }}>
-                  If you learned about Alcor from an ICE educator and received a discount code, enter it below to save on your membership dues! The discount applies to your first year of membership only.
-                </p>
-                
-                <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1rem' }}>
-                  <h4 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.75rem', fontSize: '1.125rem' }}>
-                    How it works:
-                  </h4>
-                  <ol style={{ listStyleType: 'decimal', listStylePosition: 'inside', color: '#374151', margin: 0, padding: 0, fontSize: '1.125rem' }}>
-                    <li style={{ marginBottom: '0.5rem' }}>Enter your ICE code during signup</li>
-                    <li style={{ marginBottom: '0.5rem' }}>Your discount is automatically applied</li>
-                    <li style={{ marginBottom: '0.5rem' }}>ICE educator receives 50% of your first-year dues as compensation</li>
-                    <li>You save money on your first year!</li>
-                  </ol>
-                </div>
+              <p style={{ marginBottom: '1.5rem' }}>
+                If you learned about Alcor from an ICE educator and received a discount code, enter it to save on your membership dues! The discount applies to your first year of membership only.
+              </p>
+              
+              <div style={{ backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '0.5rem', padding: '1rem' }}>
+                <h4 style={{ fontWeight: '600', color: '#1f2937', marginBottom: '0.75rem', fontSize: '1.125rem' }}>
+                  How it works:
+                </h4>
+                <ol style={{ listStyleType: 'decimal', listStylePosition: 'inside', color: '#374151', margin: 0, padding: 0, fontSize: '1.125rem' }}>
+                  <li style={{ marginBottom: '0.5rem' }}>Enter your ICE code during signup</li>
+                  <li style={{ marginBottom: '0.5rem' }}>Your discount is automatically applied</li>
+                  <li style={{ marginBottom: '0.5rem' }}>ICE educator receives 50% of your first-year dues as compensation</li>
+                  <li>You save money on your first year!</li>
+                </ol>
               </div>
             </div>
-            
-            <div style={{ borderTop: '1px solid #e5e7eb', padding: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={closeIceModal}
-                style={{
-                  backgroundColor: '#0c2340',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '9999px',
-                  padding: '0.5rem 1.5rem',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>,
+          </div>
+          
+          <div style={{ borderTop: '1px solid #e5e7eb', padding: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={closeIceModal}
+              style={{
+                backgroundColor: '#775684',
+                color: 'white',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '0.75rem 2rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>,
         document.body
       )}
     </div>
