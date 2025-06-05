@@ -1,4 +1,4 @@
-// File: components/ResponsiveBanner.jsx - ROUTER-FREE VERSION WITH IMAGE BACKGROUND
+// File: components/ResponsiveBanner.jsx - COMPACT VERSION WITH CENTERED PROGRESS
 import React, { useState, useEffect } from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
@@ -10,8 +10,8 @@ import MobileProgressCircles from "./MobileProgressCircles";
 import { checkUserStep } from "../services/auth";
 
 /**
- * Router-Free Responsive Banner Component with Image Background
- * Uses SignupFlowContext for internal navigation and native JS for external navigation
+ * Compact Responsive Banner Component with Centered Progress Steps
+ * Layout: Logo (left) | Progress Steps (center) | Title (right)
  */
 const ResponsiveBanner = ({ 
   logo = alcorWhiteLogo,
@@ -25,8 +25,8 @@ const ResponsiveBanner = ({
   isWelcomePage = false,
   useGradient = false,
   textAlignment = "default",
-  backgroundImage = astronautImage, // New prop for custom background image
-  useImageBackground = true, // New prop to toggle image background
+  backgroundImage = astronautImage,
+  useImageBackground = true,
 }) => {
   // ROUTER-FREE: Use SignupFlowContext for internal navigation (optional)
   const signupFlowContext = useSignupFlow();
@@ -141,9 +141,6 @@ const ResponsiveBanner = ({
   };
 
   // Content calculations
-  const stepNumber = activeStep <= 1 ? 1 : activeStep;
-  const stepName = activeStep <= 1 ? steps[0] : steps[stepToProgressMap[activeStep]];
-  
   const getHeading = () => {
     if (heading) return heading;
     
@@ -153,7 +150,7 @@ const ResponsiveBanner = ({
       case 2: return "Contact information";
       case 3: return "Package selection";
       case 4: return "Funding Options";
-      case 5: return "Start Your Membership";
+      case 5: return "Start Membership";
       default: return "Become a member";
     }
   };
@@ -162,61 +159,18 @@ const ResponsiveBanner = ({
     if (subText) return subText;
     
     switch(activeStep) {
-      case 0: return "Sign up process takes on average 5 minutes.";
-      case 1: return "Your account has been successfully created.";
-      case 2: return "Building your membership application.";
-      case 3: return "Choose your cryopreservation package.";
-      case 4: return "Let us know your cryopreservation funding preference.";
-      case 5: return "Review and confirm your membership details.";
-      default: return "Sign up process takes on average 5 minutes.";
+      case 0: return "5 minute sign up";
+      case 1: return "Success!";
+      case 2: return "Building application";
+      case 3: return "Choose package";
+      case 4: return "Set up funding";
+      case 5: return "Review details";
+      default: return "5 minute sign up";
     }
   };
   
   const displayHeading = getHeading();
   const displaySubText = getSubText();
-
-  // Text alignment logic
-  const getTextAlignmentClasses = () => {
-    if (isLoginPage || textAlignment === "center") {
-      return {
-        containerClass: "text-center",
-        headingClass: "justify-center",
-        subtextClass: "mx-auto",
-      };
-    }
-    
-    if (isSignupPage) {
-      return {
-        containerClass: "text-center",
-        headingClass: "justify-center",
-        subtextClass: "mx-auto",
-      };
-    }
-    
-    if (isWelcomePage && textAlignment === "default") {
-      return {
-        containerClass: "text-left",
-        headingClass: "justify-start",
-        subtextClass: "",
-      };
-    }
-    
-    if (textAlignment === "left") {
-      return {
-        containerClass: "text-left",
-        headingClass: "justify-start",
-        subtextClass: "",
-      };
-    }
-    
-    return {
-      containerClass: "text-center",
-      headingClass: "justify-center",
-      subtextClass: "mx-auto",
-    };
-  };
-  
-  const alignmentClasses = getTextAlignmentClasses();
 
   // Styling
   const gradientStyle = {
@@ -237,35 +191,9 @@ const ResponsiveBanner = ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(19, 38, 63, 0.85)', // Dark overlay to ensure text readability
+    backgroundColor: 'rgba(19, 38, 63, 0.85)',
     zIndex: 1,
   };
-
-  const getLogoPositioningClass = () => {
-    if (isSignupPage || isLoginPage) return "justify-start";
-    if (isWelcomePage && textAlignment === "default") return "justify-start";
-    if (textAlignment === "center") return "justify-center";
-    if (textAlignment === "left") return "justify-start";
-    return "justify-center";
-  };
-
-  const getLogoSizeClass = () => {
-    if (isSignupPage || isLoginPage) return "h-16 md:h-20";
-    if (isWelcomePage) return "h-12 md:h-16";
-    return "h-16 md:h-20";
-  };
-
-  const getTopPaddingClass = () => {
-    return "pt-8 md:pt-14";
-  };
-  
-  const logoPositioningClass = getLogoPositioningClass();
-  const logoSizeClass = getLogoSizeClass();
-  const topPaddingClass = getTopPaddingClass();
-  
-  console.log("- maxCompletedStep:", maxCompletedStep);
-  console.log("- activeStep:", activeStep);
-  console.log("- progressIndex:", getProgressIndexFromStep(activeStep));
 
   const maxCompletedProgressDot = stepToProgressMap[maxCompletedStep] || 0;
   const activeProgressDot = getProgressIndexFromStep(activeStep);
@@ -274,9 +202,11 @@ const ResponsiveBanner = ({
     fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
   };
 
+
+
   return (
     <div className="banner-container" style={marcellusStyle}>
-      {/* Mobile Banner */}
+      {/* Mobile Banner - Keep existing mobile design */}
       <div className="md:hidden">
         <div 
           className={`text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'py-8' : 'py-8'} relative overflow-hidden`}
@@ -285,10 +215,8 @@ const ResponsiveBanner = ({
             ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
           }}
         >
-          {/* Dark overlay for image background */}
           {shouldUseImage && <div style={overlayStyle}></div>}
           
-          {/* Top section with logo and heading */}
           <div className="flex items-center justify-between mb-4 pt-3" style={{ position: 'relative', zIndex: 2 }}>
             <div className="flex items-center">
               <img 
@@ -310,74 +238,68 @@ const ResponsiveBanner = ({
         </div>
       </div>
       
-      {/* Desktop Banner - consistent height regardless of progress bar visibility */}
+      {/* Desktop Banner - Compact single-row layout */}
       <div 
-        className="hidden md:block"
+        className="hidden md:block w-full text-white shadow-lg flex-shrink-0"
         style={{
           ...marcellusStyle,
           ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
         }}
       >
-        {/* Dark overlay for image background */}
         {shouldUseImage && <div style={overlayStyle}></div>}
         
-        {/* Main Banner Content - dynamic padding based on page type */}
+        {/* Single row with three sections */}
         <div 
-          className={`text-white px-10 ${topPaddingClass} pb-20 relative`}
+          className="px-6 py-6 flex items-center justify-between"
           style={{ position: 'relative', zIndex: 2 }}
         >
-          {/* Logo at the top with conditional positioning */}
-          <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
+          {/* Left: Logo */}
+          <div className="flex items-center flex-shrink-0">
             <img 
               src={logo} 
               alt="Alcor Logo" 
-              className={logoSizeClass}
+              className="h-12 md:h-16 lg:h-20"
             />
           </div>
           
-          {/* Banner content - alignment based on textAlignment prop */}
-          <div className={`${alignmentClasses.containerClass} max-w-4xl ${alignmentClasses.subtextClass}`}>
-            <h1 className={`flex items-center ${alignmentClasses.headingClass}`}>
-              <span className={`${isWelcomePage ? "text-4xl md:text-5xl font-bold" : "text-4xl md:text-5xl font-bold"} min-w-max`}>
-                {displayHeading}
-              </span>
-              {showStar && <img src={yellowStar} alt="" className="h-9 ml-1" />}
-            </h1>
-            <p className={`text-xl md:text-2xl mt-4 text-white/90 ${alignmentClasses.subtextClass}`}>
-              {displaySubText}
-            </p>
+          {/* Center: Progress Steps (if applicable) */}
+          <div className="flex-1 flex justify-center items-center">
+            {showProgressBar && activeStep >= 1 && !isLoading ? (
+              <div className="w-full max-w-2xl">
+                <ProgressCircles
+                  steps={steps}
+                  activeStep={activeProgressDot}
+                  maxCompletedStep={maxCompletedProgressDot}
+                  onStepClick={handleStepClick}
+                />
+              </div>
+            ) : (
+              // Empty space to maintain layout when no progress bar
+              <div className="w-full"></div>
+            )}
+          </div>
+          
+          {/* Right: Title and subtitle */}
+          <div className="flex items-center flex-shrink-0">
+            <div className="text-right">
+              <h1 className="flex items-center justify-end">
+                <span className="text-xl md:text-2xl lg:text-3xl font-bold">
+                  {displayHeading}
+                </span>
+                {showStar && <img src={yellowStar} alt="" className="h-7 md:h-8 lg:h-10 ml-2" />}
+              </h1>
+              {displaySubText && (
+                <p className="text-sm md:text-base text-white/80 mt-1">
+                  {displaySubText}
+                </p>
+              )}
+            </div>
           </div>
         </div>
         
-        {/* Progress bar section */}
-        {showProgressBar && activeStep >= 1 && !isLoading && (
-          <div className="-mt-12" style={{ position: 'relative', zIndex: 2 }}>
-            <ProgressCircles
-              steps={steps}
-              activeStep={activeProgressDot}
-              maxCompletedStep={maxCompletedProgressDot}
-              onStepClick={handleStepClick}
-            />
-          </div>
-        )}
-        
-        {/* Loading indicator for progress bar */}
-        {showProgressBar && activeStep >= 1 && isLoading && (
-          <div className="py-4 px-10 bg-gray-100 flex justify-center items-center -mt-12" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-        
-        {/* Spacer to maintain banner height when progress circles are hidden */}
-        {showProgressBar && activeStep < 1 && (
-          <div className="py-4 px-10 bg-gray-100" style={{ position: 'relative', zIndex: 2 }}>
-            {/* Empty spacer div to maintain consistent banner height */}
-          </div>
-        )}
-        
         {/* Error message if backend check fails */}
         {backendError && (
-          <div className="py-2 px-10 bg-red-50 text-red-600 text-sm text-center" style={{ position: 'relative', zIndex: 2 }}>
+          <div className="py-2 px-6 bg-red-50 text-red-600 text-sm text-center" style={{ position: 'relative', zIndex: 2 }}>
             Error checking step status. Please refresh the page.
           </div>
         )}

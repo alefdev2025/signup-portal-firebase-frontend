@@ -19,9 +19,6 @@ export const planOptions = {
     internationalEstimate: 90000,
     titleBgColor: "bg-[#323053]",    // Purple background for headers
     iconBgColor: "bg-[#454575]",     // Lighter purple for icon containers
-    gradientStyle: {
-      background: 'linear-gradient(135deg, #443660 0%, #785683 25%, #996a68 50%, #ba8267 75%, #d29f4f 100%)'
-    },
     icon: (
       <img src={alcorStar} alt="Neuro Icon" className="h-5 w-5" />
     )
@@ -34,9 +31,6 @@ export const planOptions = {
     internationalEstimate: 230000,
     titleBgColor: "bg-[#1a2342]",    // Dark blue background
     iconBgColor: "bg-[#293253]",     // Lighter blue for icon containers
-    gradientStyle: {
-      background: 'linear-gradient(135deg, #162740 0%, #443660 70%, #785683 100%)'
-    },
     icon: (
       <img src={alcorStar} alt="Whole Body Icon" className="h-5 w-5" />
     )
@@ -49,10 +43,6 @@ export const planOptions = {
     internationalEstimate: 0,        // No surcharge for basic membership
     titleBgColor: "bg-[#11243a]",    // Darkest blue background
     iconBgColor: "bg-[#1c324c]",     // Medium blue for icon containers
-    gradientStyle: {
-      //background: 'linear-gradient(135deg, #162740 0%, #443660 30%, #785683 60%, #996a68 80%, #ba8267 100%)'
-      background: 'linear-gradient(135deg, #443660 0%, #785683 25%, #996a68 50%, #ba8267 75%, #d29f4f 100%)'
-    },
     icon: (
       <img src={alcorStar} alt="Basic Membership Icon" className="h-5 w-5" />
     )
@@ -206,16 +196,16 @@ export const UpdatedVersionOptionCard = ({
           {/* Mobile: White pricing section */}
           <div className="bg-white p-4 sm:p-6 border-t border-gray-200">
             <div className="flex justify-between items-center pt-4">
-              <span className="text-gray-700 text-lg">Preservation:</span>
+              <span className="text-gray-700 text-lg">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
               <span className="font-bold text-gray-900 text-xl">
-                {option === "basic" ? "Not required" : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
+                {option === "basic" ? `$${getPackagePrice("standard")}/year` : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
               </span>
             </div>
             
             <div className="flex justify-between items-center mt-2">
-              <span className="text-gray-700 text-lg">Membership:</span>
+              <span className="text-gray-700 text-lg">{option === "basic" ? "Preservation:" : "Membership:"}</span>
               <span className="font-bold text-gray-900 text-xl">
-                `${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month`
+                {option === "basic" ? "Not required" : `$${getPackagePrice("standard")}/year`}
               </span>
             </div>
           </div>
@@ -277,7 +267,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
-                    <span>Add Cryopreservation Anytime</span>
+                    <span>Add on Cryopreservation Anytime</span>
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
@@ -303,7 +293,7 @@ export const UpdatedVersionOptionCard = ({
                 <h3 className="text-2xl md:text-xs font-semibold text-gray-900">{planOption.title}</h3>
               </div>
               {/* Desktop icon container and icon */}
-              <div className="p-4 md:p-6 rounded-md md:rounded-lg ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 35%, #785683 30%, #996a68 50%, #d4a574 100%)' }}>
+              <div className={`${planOption.iconBgColor} p-4 md:p-6 rounded-md md:rounded-lg ml-3 flex-shrink-0 transform transition duration-300 hover:rotate-12`}>
                 {option === "neuro" && (
                   <svg className="w-10 h-10 md:w-20 md:h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -328,25 +318,25 @@ export const UpdatedVersionOptionCard = ({
           </div>
           
           {/* Desktop: Colored section for pricing info */}
-          <div className="p-4 sm:p-6 md:p-6 border-t border-gray-600" style={{ ...planOption.gradientStyle }}>
+          <div className={`${planOption.titleBgColor} p-4 sm:p-6 md:p-6 border-t border-gray-600`}>
             <div className="flex justify-between items-center pt-4 md:pt-2">
-              <span className="text-gray-300 text-lg md:text-xs">Preservation:</span>
+              <span className="text-gray-300 text-lg md:text-xs">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
               <span className="font-bold text-white text-xl md:text-sm">
-                {option === "basic" ? "Not required" : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
+                {option === "basic" ? `${getPackagePrice("standard")}/year` : `${calculatePreservationEstimate(option)?.toLocaleString()}`}
               </span>
             </div>
             
             <div className="flex justify-between items-center mt-2 md:mb-0">
-              <span className="text-gray-300 text-lg md:text-xs">Membership:</span>
+              <span className="text-gray-300 text-lg md:text-xs">{option === "basic" ? "Preservation:" : "Membership:"}</span>
               <span className="font-bold text-white text-xl md:text-sm">
-                `${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month`
+                {option === "basic" ? "Not required" : `${getPackagePrice("standard")}/year`}
               </span>
             </div>
           </div>
           
           {/* Desktop: What's Included - with colored background */}
-          <div className="p-4 sm:p-6 md:p-6 border-t border-gray-600" style={{ ...planOption.gradientStyle }}>
-            <h4 className="text-white text-xl md:text-md font-semibold mb-5 md:mb-3">What's Included: (ICONS BELOW THIS?)</h4>
+          <div className={`${planOption.titleBgColor} p-4 sm:p-6 md:p-6 border-t border-gray-600`}>
+            <h4 className="text-white text-xl md:text-lg font-semibold mb-5 md:mb-3">What's Included: (ICONS BELOW THIS?)</h4>
             
             <div className="space-y-4 md:space-y-2 pl-4 text-gray-200 text-lg md:text-sm">
               {option === "neuro" && (
@@ -401,7 +391,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                    <span>Add Cryopreservation Anytime</span>
+                    <span>Add on Cryopreservation Anytime</span>
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
@@ -457,7 +447,7 @@ export const OriginalVersionOptionCard = ({
           {selectedOption !== option && <div className="h-[60px]"></div>}
         </div>
         
-        {/* ===== MOBILE LAYOUT (COLORED HEADER) - UNCHANGED ===== */}
+        {/* ===== MOBILE LAYOUT (COLORED HEADER) ===== */}
         <div className={`md:hidden ${planOption.titleBgColor} text-white p-7 pl-5`} style={{ fontFamily: SYSTEM_FONT }}>
           {/* Mobile header content */}
           <div className="flex items-center">
@@ -489,82 +479,70 @@ export const OriginalVersionOptionCard = ({
           
           {/* Mobile pricing info */}
           <div className="flex justify-between items-center mt-10 pt-5 border-t border-gray-700">
-            <span className="text-gray-400 text-xl">Preservation:</span>
+            <span className="text-gray-400 text-xl">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
             <span className="font-bold text-2xl">
-              {option === "basic" ? "Not required" : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
+              {option === "basic" ? `$${getPackagePrice("standard")}/year` : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
             </span>
           </div>
           
           <div className="flex justify-between items-center mt-4 mb-8">
-            <span className="text-gray-400 text-xl">Membership:</span>
+            <span className="text-gray-400 text-xl">{option === "basic" ? "Preservation:" : "Membership:"}</span>
             <span className="font-bold text-2xl">
-              `${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month`
+              {option === "basic" ? "Not required" : `$${getPackagePrice("standard")}/year`}
             </span>
           </div>
         </div>
         
-        {/* ===== DESKTOP LAYOUT (WHITE HEADER) - UPDATED WITH MORE SPACE ===== */}
-        <div className="hidden md:block bg-white p-7 md:px-10 md:pt-10 md:pb-8 pl-5 md:pl-10" style={{ fontFamily: SYSTEM_FONT }}>
+        {/* ===== DESKTOP LAYOUT (WHITE HEADER) ===== */}
+        {/* Increased internal padding from edges on desktop */}
+        <div className="hidden md:block bg-white p-7 md:px-8 md:pt-8 md:pb-5 pl-5 md:pl-8" style={{ fontFamily: SYSTEM_FONT }}>
           {/* Desktop header content */}
           <div className="flex items-center">
             {/* Desktop icon container moved before star and title */}
-            <div className="p-3.5 md:p-3.5 rounded-full md:rounded-lg transform transition duration-300 hover:rotate-12 mr-3.5" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+            <div className={`${planOption.iconBgColor} p-3 md:p-3 rounded-full md:rounded-lg transform transition duration-300 hover:rotate-12 mr-3`}>
               {option === "neuro" && (
-                <svg className="w-7 h-7 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-7 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               )}
               {option === "wholebody" && (
-                <svg className="w-7 h-7 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-7 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               )}
               {option === "basic" && (
-                <svg className="w-7 h-7 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-7 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                 </svg>
               )}
             </div>
-            <h3 style={{ fontSize: '20px' }} className="font-normal text-gray-900">{planOption.title}</h3>
+            <h3 style={{ fontSize: '20px' }} className="font-normal text-gray-900 mr-2">{planOption.title}</h3>
+            <img src={alcorYellowStar} alt="Alcor Star" className="w-12 h-12 md:w-6 md:h-6 animate-pulse" style={{animationDuration: '3s'}} />
           </div>
           
-          {/* More vertical spacing */}
-          <p style={{ fontSize: '16px' }} className="text-gray-600 mt-6 md:mt-5 mb-8 md:mb-7 font-light">
+          {/* Reduced vertical spacing */}
+          <p style={{ fontSize: '16px' }} className="text-gray-600 mt-4 md:mt-3 mb-6 md:mb-5 font-light">
             {planOption.short}
           </p>
           
-          {/* Desktop pricing info - with subtext for first two cards */}
-          <div className="mt-8 md:mt-8 pt-4 md:pt-4 border-t border-gray-300">
-            <div className="flex justify-between items-center">
-              <span style={{ fontSize: '16px', fontWeight: '500' }} className="text-gray-500">Preservation:</span>
-              <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
-                {option === "basic" ? "Not required" : `$${calculatePreservationEstimate(option)?.toLocaleString()}`}
-              </span>
-            </div>
-            
-            {/* Add subtext for all options */}
-            {(option === "neuro" || option === "wholebody") && (
-              <div className="flex justify-end mt-1">
-                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Typically $50-$250/month with life insurance</span>
-              </div>
-            )}
-            {option === "basic" && (
-              <div className="flex justify-end mt-1">
-                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Pet preservation availble as a basic member for an additional cost</span>
-              </div>
-            )}
+          {/* Desktop pricing info - reduced spacing */}
+          <div className="flex justify-between items-center mt-6 md:mt-6 pt-3 md:pt-2 border-t border-gray-300">
+            <span style={{ fontSize: '16px' }} className="text-gray-500 font-light">{option === "basic" ? "Annual Cost:" : "Preservation:"}</span>
+            <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
+              {option === "basic" ? `${getPackagePrice("standard")}/year` : `${calculatePreservationEstimate(option)?.toLocaleString()}`}
+            </span>
           </div>
           
-          {/* Increased bottom margin for more space */}
-          <div className="flex justify-between items-center mt-6 md:mt-5 mb-6">
-            <span style={{ fontSize: '16px', fontWeight: '500' }} className="text-gray-500">Membership:</span>
+          {/* Reduced bottom margin for less vertical space */}
+          <div className="flex justify-between items-center mt-5 md:mt-4 mb-4">
+            <span style={{ fontSize: '16px' }} className="text-gray-500 font-light">{option === "basic" ? "Preservation:" : "Membership:"}</span>
             <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
-              `${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month`
+              {option === "basic" ? "Not required" : `${getPackagePrice("standard")}/year`}
             </span>
           </div>
         </div>
         
-        {/* ===== MOBILE: WHAT'S INCLUDED (WHITE BACKGROUND) - UNCHANGED ===== */}
+        {/* ===== MOBILE: WHAT'S INCLUDED (WHITE BACKGROUND) ===== */}
         <div className="md:hidden bg-white p-7" style={{ fontFamily: SYSTEM_FONT }}>
           <h4 className="text-gray-800 mb-6 text-xl font-semibold">What's Included:</h4>
           
@@ -621,7 +599,7 @@ export const OriginalVersionOptionCard = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                  <span>Add Cryopreservation Anytime</span>
+                  <span>Add on Cryopreservation Anytime</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
@@ -636,33 +614,28 @@ export const OriginalVersionOptionCard = ({
           </div>
         </div>
         
-{/* ===== DESKTOP: WHAT'S INCLUDED (COLORED BACKGROUND) - UPDATED WITHOUT BOTTOM TEXT ===== */}
-<div className="hidden md:block text-white pt-8 px-10 pb-8 flex-grow" style={{ 
-  fontFamily: SYSTEM_FONT, 
-  minHeight: "220px", 
-  ...(option === "neuro" ? { background: 'linear-gradient(135deg, #785683 0%, #162740 30%, #443660 100%)' } : 
-      option === "basic" ? { background: 'linear-gradient(135deg, #443660 0%, #162740 30%, #443660 100%)' } : 
-      planOption.gradientStyle)
-}}>
-          <h4 className="text-white mb-6 text-sm font-normal">What's Included:</h4>
+        {/* ===== DESKTOP: WHAT'S INCLUDED (COLORED BACKGROUND) ===== */}
+        {/* Increased min-height and adjusted padding for taller cards */}
+        <div className={`hidden md:block ${planOption.titleBgColor} text-white pt-8 px-6 pb-8 flex-grow`} style={{ fontFamily: SYSTEM_FONT, minHeight: "380px" }}>
+          <h4 className="text-white mb-6 text-lg font-normal">What's Included:</h4>
           
-          <div className="space-y-5 pl-5 text-gray-200 text-sm font-light">
+          <div className="space-y-5 pl-5 text-gray-200 text-base font-light">
             {option === "neuro" && (
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Standby Service</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Neuro Cryopreservation</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Long-Term Storage</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Possible Revival</span>
                 </div>
               </>
@@ -670,19 +643,19 @@ export const OriginalVersionOptionCard = ({
             {option === "wholebody" && (
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Standby Service</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Full Body Cryopreservation</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Long-Term Storage</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Possible Revival</span>
                 </div>
               </>
@@ -690,25 +663,28 @@ export const OriginalVersionOptionCard = ({
             {option === "basic" && (
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Member Events & Resources</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Pet Preservation Options</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Add Cryopreservation Anytime</span>
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <span>Add on Cryopreservation Anytime</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
-                  <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
+                  <img src={alcorStar} alt="Star" className="w-5 h-5 mr-3 mt-0.5 filter brightness-0 invert" />
                   <span>Consultation Services</span>
                 </div>
               </>
             )}
           </div>
-          {/* Removed the paragraph with planOption.long text that was below the list */}
+            
+          <p className="mt-8 pt-5 border-t border-gray-600 text-gray-300 text-base font-light">
+            {planOption.long}
+          </p>
         </div>
       </div>
     </div>
@@ -766,7 +742,7 @@ export const MobileSelectionSummary = ({
             {/* Annual Membership Fee */}
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Annual Membership:</span>
-              <span className="font-medium">$${getPackagePrice("standard")}/year</span>
+              <span className="font-medium">${getPackagePrice("standard")}/year</span>
             </div>
             
             {/* Preservation Cost (if applicable) */}

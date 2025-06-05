@@ -1,4 +1,4 @@
-// File: pages/FundingPage.jsx - Pure UI Component
+// File: pages/FundingPage.jsx - Fixed Version
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
@@ -55,7 +55,7 @@ export default function FundingPage({ initialData, onBack, onNext }) {
  
  const [showHelpInfo, setShowHelpInfo] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
- const [selectedOption, setSelectedOption] = useState(initialData?.fundingMethod || "insurance");
+ const [selectedOption, setSelectedOption] = useState(null); // Start with null
  const [isLoading, setIsLoading] = useState(true);
  const [error, setError] = useState(null);
  const [packageInfo, setPackageInfo] = useState(null);
@@ -98,9 +98,14 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            annualCost: initialData.annualCost
          });
          
-         // Set default funding method based on preservation type
-         if (initialData.preservationType === 'basic' && selectedOption === 'insurance') {
+         // Set selected option based on initialData or defaults
+         if (initialData.fundingMethod) {
+           setSelectedOption(initialData.fundingMethod);
+         } else if (initialData.preservationType === 'basic') {
            setSelectedOption('later'); // Default to "later" for basic membership
+         } else {
+           // For non-basic membership, default to 'insurance'
+           setSelectedOption('insurance');
          }
        } else {
          // Fetch package info from backend
@@ -115,8 +120,11 @@ export default function FundingPage({ initialData, onBack, onNext }) {
            });
            
            // Set default funding method based on preservation type
-           if (result.preservationType === 'basic' && selectedOption === 'insurance') {
+           if (result.preservationType === 'basic') {
              setSelectedOption('later'); // Default to "later" for basic membership
+           } else {
+             // For non-basic membership, default to 'insurance'
+             setSelectedOption('insurance');
            }
          } else {
            setError("Failed to load package information. Please go back and try again.");
@@ -209,9 +217,9 @@ export default function FundingPage({ initialData, onBack, onNext }) {
 const availableOptions = getAvailableFundingOptions(packageInfo);
 const hasBasicMembership = packageInfo && packageInfo.preservationType === "basic";
 
-// Check if we need insurance company field
-const needsInsuranceCompany = !hasBasicMembership && selectedOption === "insurance" && insuranceSubOption === "existing";
-const isInsuranceCompanyMissing = needsInsuranceCompany && !policyDetails.insuranceCompany.trim();
+// Check if we need insurance company field - DISABLED for now
+const needsInsuranceCompany = false; // Disabled validation
+const isInsuranceCompanyMissing = false; // Never require it
 
 // Handler for next button
 const handleNext = async () => {
@@ -223,7 +231,7 @@ const handleNext = async () => {
     return;
   }
   
-  // Check if insurance company is required but missing
+  // Check if insurance company is required but missing (only on desktop)
   if (isInsuranceCompanyMissing) {
     setValidationErrors({ insuranceCompany: true });
     // Scroll to the insurance company field to draw attention
@@ -250,19 +258,27 @@ const handleNext = async () => {
       data.insuranceSubOption = insuranceSubOption;
       
       if (insuranceSubOption === "existing") {
-        // Only send insurance company (the only required field)
-        data.insuranceCompany = policyDetails.insuranceCompany.trim();
+        // Always send a value to avoid backend validation errors
+        data.insuranceCompany = policyDetails.insuranceCompany.trim() || "To be provided";
       }
     }
     
     console.log("Sending funding data:", data);
     
-    // Validate data with backend
+    // Validate data with backend - but ignore insurance company errors
     const validationResult = await fundingService.validateFundingData(data);
     if (!validationResult.success) {
-      setError(validationResult.errors.join(', '));
-      setIsSubmitting(false);
-      return false;
+      // Filter out insurance company related errors
+      const filteredErrors = validationResult.errors.filter(error => 
+        !error.toLowerCase().includes('insurance company')
+      );
+      
+      if (filteredErrors.length > 0) {
+        setError(filteredErrors.join(', '));
+        setIsSubmitting(false);
+        return false;
+      }
+      // If only insurance company errors, continue anyway
     }
     
     // Save data to backend

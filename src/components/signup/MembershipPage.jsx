@@ -5,6 +5,7 @@ import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
 import MembershipSummary from "./MembershipSummary";
 import MembershipDocuSign from "./MembershipDocuSign";
+import PaymentOptions from "./PaymentOptions";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
 import iceLogo from "../../assets/images/ICE-logo-temp.png";
 import navyALogo from "../../assets/images/navy-a-logo.png";
@@ -580,216 +581,17 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
 
             {/* Payment Options */}
             <div className="mb-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Monthly Option */}
-                <div 
-                  onClick={() => handlePaymentFrequencyChange("monthly")}
-                  className="relative cursor-pointer transition-all duration-300"
-                >
-                  <div className={`
-                    relative rounded-2xl p-6 h-full
-                    bg-white
-                    ${paymentFrequency === "monthly" 
-                      ? "ring-2 ring-[#775684] shadow-xl" 
-                      : "ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
-                    }
-                    transform transition-all duration-300 hover:-translate-y-1
-                  `}>
-                    {/* Selected indicator */}
-                    {paymentFrequency === "monthly" && (
-                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {/* Card content */}
-                    <div className="flex flex-col h-full">
-                      {/* Header */}
-                      <div className="text-center mb-6">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
-                          Monthly
-                        </h4>
-                        <p className="text-sm text-gray-500">Flexible payment plan</p>
-                      </div>
-                      
-                      {/* Price section */}
-                      <div className="flex-grow flex flex-col justify-center mb-6">
-                        <div className="text-center">
-                          <div className="flex items-baseline justify-center">
-                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-                              {costs ? formatCurrency(costs.finalMonthlyCost).replace('$', '') : getMonthlyCost()}
-                            </span>
-                            <span className="text-2xl text-gray-500 ml-2">USD</span>
-                          </div>
-                          <p className="text-gray-500 mt-2">per month</p>
-                          
-                          {/* Discount badge */}
-                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "monthly" && (
-                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Save {formatCurrency(costs.discountAmount)}/year
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* CTA Button */}
-                      <button className={`
-                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
-                        ${paymentFrequency === "monthly"
-                          ? "bg-[#775684] text-white shadow-md"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        }
-                      `}>
-                        {paymentFrequency === "monthly" ? "Selected" : "Choose Monthly"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Quarterly Option */}
-                <div 
-                  onClick={() => handlePaymentFrequencyChange("quarterly")}
-                  className="relative cursor-pointer transition-all duration-300"
-                >
-                  <div className={`
-                    relative rounded-2xl p-6 h-full
-                    ${paymentFrequency === "quarterly" 
-                      ? "bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] ring-2 ring-[#775684] shadow-xl" 
-                      : "bg-white ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
-                    }
-                    transform transition-all duration-300 hover:-translate-y-1
-                  `}>
-                    {/* Selected indicator */}
-                    {paymentFrequency === "quarterly" && (
-                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {/* Card content */}
-                    <div className="flex flex-col h-full">
-                      {/* Header */}
-                      <div className="text-center mb-6">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
-                          Quarterly
-                        </h4>
-                        <p className="text-sm text-gray-500">Best value for most</p>
-                      </div>
-                      
-                      {/* Price section */}
-                      <div className="flex-grow flex flex-col justify-center mb-6">
-                        <div className="text-center">
-                          <div className="flex items-baseline justify-center">
-                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-                              {costs ? formatCurrency(costs.finalQuarterlyCost).replace('$', '') : getQuarterlyCost()}
-                            </span>
-                            <span className="text-2xl text-gray-500 ml-2">USD</span>
-                          </div>
-                          <p className="text-gray-500 mt-2">every 3 months</p>
-                          
-                          {/* Discount badge */}
-                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "quarterly" && (
-                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Save {formatCurrency(costs.discountAmount)}/year
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* CTA Button */}
-                      <button className={`
-                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
-                        ${paymentFrequency === "quarterly"
-                          ? "bg-[#775684] text-white shadow-md"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        }
-                      `}>
-                        {paymentFrequency === "quarterly" ? "Selected" : "Choose Quarterly"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Annual Option */}
-                <div 
-                  onClick={() => handlePaymentFrequencyChange("annually")}
-                  className="relative cursor-pointer transition-all duration-300"
-                >
-                  <div className={`
-                    relative rounded-2xl p-6 h-full
-                    bg-white
-                    ${paymentFrequency === "annually" 
-                      ? "ring-2 ring-[#775684] shadow-xl" 
-                      : "ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-lg"
-                    }
-                    transform transition-all duration-300 hover:-translate-y-1
-                  `}>
-                    {/* Selected indicator */}
-                    {paymentFrequency === "annually" && (
-                      <div className="absolute -top-3 -right-3 bg-[#775684] text-white rounded-full p-2 shadow-lg">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {/* Card content */}
-                    <div className="flex flex-col h-full">
-                      {/* Header */}
-                      <div className="text-center mb-6">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2" style={marcellusStyle}>
-                          Annual
-                        </h4>
-                        <p className="text-sm text-gray-500">Pay once per year</p>
-                      </div>
-                      
-                      {/* Price section */}
-                      <div className="flex-grow flex flex-col justify-center mb-6">
-                        <div className="text-center">
-                          <div className="flex items-baseline justify-center">
-                            <span className="text-5xl font-light text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-                              {costs ? formatCurrency(costs.finalAnnualCost).replace('$', '') : getAnnualCost()}
-                            </span>
-                            <span className="text-2xl text-gray-500 ml-2">USD</span>
-                          </div>
-                          <p className="text-gray-500 mt-2">per year</p>
-                          
-                          {/* Discount badge */}
-                          {costs && costs.discountAmount > 0 && iceCodeValid && paymentFrequency === "annually" && (
-                            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Save {formatCurrency(costs.discountAmount)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* CTA Button */}
-                      <button className={`
-                        w-full py-3 px-4 rounded-xl font-medium transition-all duration-300
-                        ${paymentFrequency === "annually"
-                          ? "bg-[#775684] text-white shadow-md"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        }
-                      `}>
-                        {paymentFrequency === "annually" ? "Selected" : "Choose Annual"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PaymentOptions
+                paymentFrequency={paymentFrequency}
+                onPaymentFrequencyChange={handlePaymentFrequencyChange}
+                costs={costs}
+                formatCurrency={formatCurrency}
+                getMonthlyCost={getMonthlyCost}
+                getQuarterlyCost={getQuarterlyCost}
+                getAnnualCost={getAnnualCost}
+                iceCodeValid={iceCodeValid}
+                marcellusStyle={marcellusStyle}
+              />
             </div>
 
             {/* ICE Code Section */}
