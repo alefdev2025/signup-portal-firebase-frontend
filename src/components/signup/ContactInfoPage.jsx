@@ -660,7 +660,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           </div>
         </div>
       )}
-      <div className="w-full mx-auto px-2 sm:px-6 lg:px-8" style={{ maxWidth: "85%" }}>
+      <div className="w-full mx-auto px-1 sm:px-6 lg:px-8" style={{ maxWidth: "95%" }}>
         <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
           {/* Personal Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">

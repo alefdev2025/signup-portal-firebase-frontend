@@ -12,8 +12,8 @@ export const fundingOptions = {
     icon: insuranceImage,
     badge: {
       text: "MOST POPULAR",
-      bgColor: "bg-[#f0cd5d]",
-      textColor: "text-[#2c3253]"
+      bgColor: "bg-[#15263f]",
+      textColor: "text-white"
     },
     pricing: {
       cost: "$50-250/month",
@@ -90,7 +90,8 @@ export const fundingOptions = {
     pricing: {
       cost: "One-time", // Will be dynamic based on package
       complexity: "Very Simple",
-      costColor: "text-[#2D3050]"
+      costColor: "text-[#2D3050]",
+      costLabel: "Cost"
     },
     benefits: [
       "Single payment covers all costs",
@@ -125,8 +126,8 @@ export const fundingOptions = {
       costColor: "text-[#13233e]"
     },
     benefits: [
-      "Start your cryopreservation contract",
-      "Get personalized funding guidance from our team"
+      "Start cryopreservation contract",
+      "Decide after more information"
     ],
     detailsSection: {
       title: "Basic Membership & Future Funding",

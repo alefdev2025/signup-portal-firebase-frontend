@@ -215,7 +215,7 @@ const AddressAutocompleteV3 = ({
           disabled={disabled}
           required={required}
           className={`
-            w-full h-16 pl-8 pr-12 py-3 text-lg border rounded-md 
+          w-full h-12 md:h-16 pl-4 md:pl-8 pr-8 md:pr-12 py-2 md:py-3 text-base md:text-lg border rounded-md 
             focus:outline-none focus:ring-1 focus:ring-[#775684] 
             ${isError ? 'border-red-600 bg-red-50' : 'border-[#775684]/30'}
             ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}

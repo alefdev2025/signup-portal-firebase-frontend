@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { getMembershipCost } from "../../services/pricing";
 import HelpPanel from "./HelpPanel";
 import { savePackageInfo, getPackageInfo } from "../../services/package";
+import { getContactInfo } from "../../services/contact";
 import {
   planOptions,
   packageHelpContent,
@@ -28,6 +29,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   const [error, setError] = useState(null);
   const [selectedOption, setSelectedOption] = useState(initialData.preservationType || "neuro");
   const [selectedPackage, setSelectedPackage] = useState(initialData.packageType || "standard");
+  const [isInternational, setIsInternational] = useState(false);
+  const [userCountry, setUserCountry] = useState(null);
   // Add state for help panel
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   // Add new state for dropdowns
@@ -51,106 +54,164 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
     }));
   };
 
-// Add this useEffect after your existing useEffects in PackagePage.jsx
-// Load saved package info on component mount
-useEffect(() => {
-  // Add a flag to prevent multiple calls
-  let isMounted = true;
-  
-  async function loadSavedPackageInfo() {
-    try {
-      console.log("PackagePage: Loading saved package info...");
-      const result = await getPackageInfo();
-      
-      // Check if component is still mounted before updating state
-      if (!isMounted) return;
-      
-      if (result?.success && result?.packageInfo) {
-        console.log("PackagePage: Found saved package info:", result.packageInfo);
+  // Load saved package info on component mount
+  useEffect(() => {
+    // Add a flag to prevent multiple calls
+    let isMounted = true;
+    
+    async function loadSavedPackageInfo() {
+      try {
+        console.log("🔍 PackagePage: Loading saved package info...");
+        const result = await getPackageInfo();
         
-        // Extract the preservation type from the actual data structure
-        const savedPreservationType = result.packageInfo.details?.preservationType || 
-                                    result.packageInfo.packageDetails?.preservationType || 
-                                    result.packageInfo.preservationType;
-        
-        // Extract the package type from the actual data structure  
-        const savedPackageType = result.packageInfo.type || 
-                               result.packageInfo.packageType || 
-                               result.packageInfo.packageDetails?.packageType;
-        
-        console.log("PackagePage: Extracted preservationType:", savedPreservationType);
-        console.log("PackagePage: Extracted packageType:", savedPackageType);
-        
-        // Set the selected option if we have saved data
-        if (savedPreservationType && isMounted) {
-          console.log("PackagePage: Setting selected option to:", savedPreservationType);
-          setSelectedOption(savedPreservationType);
-        } else {
-          console.log("PackagePage: No preservation type found in saved data");
+        // Check if component is still mounted before updating state
+        if (!isMounted) {
+          console.log("⚠️ PackagePage: Component unmounted, skipping saved package info");
+          return;
         }
         
-        // Set the selected package type if we have saved data
-        if (savedPackageType && isMounted) {
-          console.log("PackagePage: Setting selected package to:", savedPackageType);
-          setSelectedPackage(savedPackageType);
+        if (result?.success && result?.packageInfo) {
+          console.log("✅ PackagePage: Found saved package info:", result.packageInfo);
+          
+          // Extract the preservation type from the actual data structure
+          const savedPreservationType = result.packageInfo.details?.preservationType || 
+                                      result.packageInfo.packageDetails?.preservationType || 
+                                      result.packageInfo.preservationType;
+          
+          // Extract the package type from the actual data structure  
+          const savedPackageType = result.packageInfo.type || 
+                                 result.packageInfo.packageType || 
+                                 result.packageInfo.packageDetails?.packageType;
+          
+          console.log("📋 PackagePage: Extracted data:");
+          console.log("  - preservationType:", savedPreservationType);
+          console.log("  - packageType:", savedPackageType);
+          
+          // Set the selected option if we have saved data
+          if (savedPreservationType && isMounted) {
+            console.log("🎯 PackagePage: Setting selected option to:", savedPreservationType);
+            setSelectedOption(savedPreservationType);
+          } else {
+            console.log("ℹ️ PackagePage: No preservation type found in saved data");
+          }
+          
+          // Set the selected package type if we have saved data
+          if (savedPackageType && isMounted) {
+            console.log("📦 PackagePage: Setting selected package to:", savedPackageType);
+            setSelectedPackage(savedPackageType);
+          } else {
+            console.log("ℹ️ PackagePage: No package type found in saved data");
+          }
         } else {
-          console.log("PackagePage: No package type found in saved data");
+          console.log("ℹ️ PackagePage: No saved package info found or failed to load");
         }
-      } else {
-        console.log("PackagePage: No saved package info found or failed to load");
+      } catch (error) {
+        console.error("❌ PackagePage: Error loading saved package info:", error);
+        // Don't show error to user for this - it's not critical
+        // User can still make selections normally
       }
-    } catch (error) {
-      console.error("PackagePage: Error loading saved package info:", error);
-      // Don't show error to user for this - it's not critical
-      // User can still make selections normally
     }
-  }
-  
-  // Always try to load saved info on mount, regardless of initial data
-  console.log("PackagePage: Attempting to load saved package info on mount");
-  loadSavedPackageInfo();
-  
-  // Cleanup function
-  return () => {
-    isMounted = false;
-  };
-}, []); // Empty dependency array means this runs once on mount
+    
+    // Always try to load saved info on mount, regardless of initial data
+    console.log("🔍 PackagePage: Attempting to load saved package info on mount");
+    loadSavedPackageInfo();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array means this runs once on mount
 
+  // COMBINED: Load contact info for location AND membership pricing
   useEffect(() => {
-    if (!selectedOption && !isLoading) {
-      setSelectedOption("neuro");
-    }
-  }, [isLoading, selectedOption]);
-  
-  // Fetch membership cost when component mounts or only if not preloaded
-  useEffect(() => {
-    // Prevent double initialization which causes flickering (for updated version)
+    // Prevent double initialization for updated version
     if (USE_UPDATED_VERSION) {
-      if (initRef.current) return;
+      if (initRef.current) {
+        console.log("⏭️ PackagePage: Skipping duplicate initialization (updated version)");
+        return;
+      }
       initRef.current = true;
       
-      // Skip fetching if we already have preloaded data
       if (preloadedMembershipData) {
+        console.log("📦 PackagePage: Using preloaded membership data:", preloadedMembershipData);
+        setIsInternational(preloadedMembershipData.isInternational || false);
+        setUserCountry(preloadedMembershipData.userCountry || null);
         return;
       }
     }
     
-    async function fetchMembershipCost() {
+    async function loadContactInfoAndPricing() {
       try {
+        console.log("🚀 PackagePage: Starting to load contact info and pricing...");
         setIsLoading(true);
-        setError(null);
         
-        const result = await getMembershipCost();
+        // Step 1: Get contact info to determine location
+        let detectedCountry = null;
+        let isInternationalUser = false;
         
-        if (result?.success) {
-          setMembershipCost(result.membershipCost || 540);
-          setMembershipAge(result.age || 36);
-        } else {
-          setError(result?.error || "Failed to calculate membership cost");
+        try {
+          console.log("🌍 PackagePage: Fetching contact info for location detection...");
+          const contactResult = await getContactInfo();
+          
+          if (contactResult?.success && contactResult?.contactInfo?.country) {
+            detectedCountry = contactResult.contactInfo.country;
+            const country = detectedCountry.toLowerCase();
+            const domesticCountries = [
+              'united states', 'usa', 'us', 'united states of america',
+              'canada', 'ca', 'can'
+            ];
+            
+            isInternationalUser = !domesticCountries.some(domestic => 
+              country.includes(domestic)
+            );
+            
+            console.log("🏴 PackagePage: Location detection results:");
+            console.log("  - Country:", detectedCountry);
+            console.log("  - Normalized:", country);
+            console.log("  - Is International:", isInternationalUser);
+            console.log("  - Domestic countries checked:", domesticCountries);
+            
+            setIsInternational(isInternationalUser);
+            setUserCountry(detectedCountry);
+          } else {
+            console.log("⚠️ PackagePage: No country found in contact info, defaulting to domestic pricing");
+            console.log("Contact result:", contactResult);
+          }
+        } catch (contactError) {
+          console.warn("⚠️ PackagePage: Could not get contact info for pricing:", contactError);
+          // Default to domestic pricing
+          setIsInternational(false);
+          setUserCountry("United States");
         }
-      } catch (err) {
-        console.error("Error fetching membership cost:", err);
-        setError("An error occurred while calculating your membership cost. Please try again later.");
+        
+        // Step 2: Get membership cost
+        console.log("💰 PackagePage: Fetching membership cost...");
+        const pricingResult = await getMembershipCost();
+        
+        if (pricingResult?.success) {
+          console.log("✅ PackagePage: Membership pricing loaded:");
+          console.log("  - Cost:", pricingResult.membershipCost);
+          console.log("  - Age:", pricingResult.age);
+          
+          setMembershipCost(pricingResult.membershipCost || 540);
+          setMembershipAge(pricingResult.age || 36);
+        } else {
+          console.error("❌ PackagePage: Failed to get membership cost:", pricingResult?.error);
+          setError(pricingResult?.error || "Failed to calculate membership cost");
+        }
+        
+        // Final summary
+        console.log("📊 PackagePage: Final pricing configuration:");
+        console.log("  - Membership Cost:", pricingResult?.membershipCost || 540);
+        console.log("  - User Age:", pricingResult?.age || 36);
+        console.log("  - User Country:", detectedCountry);
+        console.log("  - Is International:", isInternationalUser);
+        console.log("  - Neuro Price:", isInternationalUser ? planOptions.neuro.internationalEstimate : planOptions.neuro.baseEstimate);
+        console.log("  - Whole Body Price:", isInternationalUser ? planOptions.wholebody.internationalEstimate : planOptions.wholebody.baseEstimate);
+        
+      } catch (error) {
+        console.error("❌ PackagePage: Error loading pricing:", error);
+        setError("Failed to load pricing information");
       } finally {
         setIsLoading(false);
         // Set content loaded state after data is fetched
@@ -160,26 +221,41 @@ useEffect(() => {
       }
     }
     
-    fetchMembershipCost();
+    loadContactInfoAndPricing();
   }, [preloadedMembershipData]);
+
+  useEffect(() => {
+    if (!selectedOption && !isLoading) {
+      console.log("🎯 PackagePage: No option selected and not loading, defaulting to 'neuro'");
+      setSelectedOption("neuro");
+    }
+  }, [isLoading, selectedOption]);
   
   const handleBackClick = () => {
-    console.log("PackagePage: Handle back button clicked");
+    console.log("⬅️ PackagePage: Handle back button clicked");
     
     // Call the onBack prop if provided
     if (typeof onBack === 'function') {
-      console.log("Calling parent onBack handler");
+      console.log("✅ Calling parent onBack handler");
       onBack();
     } else {
-      console.warn("No onBack handler provided");
+      console.warn("⚠️ No onBack handler provided");
     }
   };
   
   const handleNext = async () => {
-    if (!selectedOption) return;
+    if (!selectedOption) {
+      console.warn("⚠️ PackagePage: No option selected, cannot proceed");
+      return;
+    }
     
     setIsSubmitting(true);
-    console.log("PackagePage: Handle next button clicked");
+    console.log("➡️ PackagePage: Handle next button clicked");
+    console.log("📋 PackagePage: Current selections:");
+    console.log("  - Selected Option:", selectedOption);
+    console.log("  - Selected Package:", selectedPackage);
+    console.log("  - Is International:", isInternational);
+    console.log("  - User Country:", userCountry);
     
     try {
       // Calculate the final membership price based on selected package
@@ -190,8 +266,14 @@ useEffect(() => {
         finalPrice = membershipCost * 1.5;
       }
       
-      // Calculate estimated preservation cost (if applicable)
-      const preservationEstimate = selectedOption === "basic" ? null : planOptions[selectedOption].baseEstimate;
+      // Calculate preservation cost with international pricing
+      const preservationEstimate = calculatePreservationEstimate(selectedOption);
+      
+      console.log("💰 PackagePage: Price calculations:");
+      console.log("  - Base membership cost:", membershipCost);
+      console.log("  - Final membership price:", finalPrice);
+      console.log("  - Preservation estimate:", preservationEstimate);
+      console.log("  - International surcharge applied:", isInternational && selectedOption !== "basic");
       
       // Prepare the data object to pass to the parent component
       const packageData = {
@@ -201,33 +283,39 @@ useEffect(() => {
           preservationType: selectedOption,
           preservationEstimate: preservationEstimate,
           basePrice: membershipCost,
+          isInternational: isInternational,
+          userCountry: userCountry,
           calculatedAt: new Date().toISOString()
         }
       };
       
+      console.log("📦 PackagePage: Package data to save:", packageData);
+      
       // Save package info to backend
+      console.log("💾 PackagePage: Saving package info to backend...");
       const saveResult = await savePackageInfo(packageData);
       
       if (!saveResult || !saveResult.success) {
         throw new Error("Failed to save package information to backend");
       }
       
-      console.log("PackagePage: Package info saved successfully");
+      console.log("✅ PackagePage: Package info saved successfully");
       
       // Use onNext prop to let parent handle navigation
       if (onNext) {
-        console.log("Using parent onNext handler");
+        console.log("➡️ Using parent onNext handler");
         const success = await onNext(packageData);
         if (!success) {
           throw new Error("Failed to proceed to next step");
         }
+        console.log("✅ PackagePage: Successfully proceeded to next step");
       } else {
-        console.warn("No onNext handler provided");
+        console.warn("⚠️ No onNext handler provided");
       }
       
       return true;
     } catch (error) {
-      console.error("Error in handleNext:", error);
+      console.error("❌ Error in handleNext:", error);
       alert(error.message || "Failed to save package information. Please try again.");
       setIsSubmitting(false);
       return false;
@@ -235,21 +323,36 @@ useEffect(() => {
   };
   
   const selectOption = (option) => {
+    console.log("🎯 PackagePage: Option selected:", option);
+    console.log("💰 PackagePage: Price for", option + ":", calculatePreservationEstimate(option));
     setSelectedOption(option);
   };
   
   const selectPackage = (packageType) => {
+    console.log("📦 PackagePage: Package selected:", packageType);
     setSelectedPackage(packageType);
   };
   
-  // Calculate estimated preservation cost based on age and type
+  // Calculate preservation estimate with international pricing
   const calculatePreservationEstimate = (optionType) => {
-    if (!optionType || optionType === "basic") return null;
+    if (!optionType || optionType === "basic") {
+      console.log("💰 calculatePreservationEstimate: Basic membership, returning null");
+      return null;
+    }
     
-    // Return fixed amount directly from baseEstimate without age factor
-    return planOptions[optionType].baseEstimate;
+    const planOption = planOptions[optionType];
+    const price = isInternational ? planOption.internationalEstimate : planOption.baseEstimate;
+    
+    console.log("💰 calculatePreservationEstimate:");
+    console.log("  - Option:", optionType);
+    console.log("  - Is International:", isInternational);
+    console.log("  - Base Price:", planOption.baseEstimate);
+    console.log("  - International Price:", planOption.internationalEstimate);
+    console.log("  - Selected Price:", price);
+    
+    return price;
   };
-  
+
   // Get package price with selected options
   const getPackagePrice = (packageType) => {
     if (!membershipCost) return null;
@@ -287,14 +390,24 @@ useEffect(() => {
   };
   
   // Show loading indicator
-  if (isLoading) {
+  if (isLoading || userCountry === null) {
+    console.log("⏳ PackagePage: Showing loading component");
     return <LoadingComponent USE_UPDATED_VERSION={USE_UPDATED_VERSION} />;
   }
   
   // Show error message
   if (error) {
+    console.log("❌ PackagePage: Showing error component:", error);
     return <ErrorComponent error={error} USE_UPDATED_VERSION={USE_UPDATED_VERSION} />;
   }
+  
+  console.log("🎨 PackagePage: Rendering component with state:");
+  console.log("  - Selected Option:", selectedOption);
+  console.log("  - Selected Package:", selectedPackage);
+  console.log("  - Is International:", isInternational);
+  console.log("  - User Country:", userCountry);
+  console.log("  - Membership Cost:", membershipCost);
+  console.log("  - Membership Age:", membershipAge);
   
   // Define animation styles for the component
   const fadeInStyle = {
@@ -320,6 +433,8 @@ useEffect(() => {
       opacity: 0,
       animation: "fadeIn 0.5s forwards 0.1s"
     }}>
+
+      
       {/* Main container with appropriate padding based on version */}
       <div className={`w-full mx-auto ${USE_UPDATED_VERSION ? 'px-6 sm:px-8 md:px-12' : 'px-4 sm:px-8'} py-8`} 
            style={{ maxWidth: USE_UPDATED_VERSION ? "1400px" : "1200px" }}>
@@ -338,6 +453,7 @@ useEffect(() => {
                   getAnimationDelay={getAnimationDelay}
                   calculatePreservationEstimate={calculatePreservationEstimate}
                   getPackagePrice={getPackagePrice}
+                  isInternational={isInternational}
                 />
                 
                 {/* WHOLE BODY OPTION */}
@@ -349,6 +465,7 @@ useEffect(() => {
                   getAnimationDelay={getAnimationDelay}
                   calculatePreservationEstimate={calculatePreservationEstimate}
                   getPackagePrice={getPackagePrice}
+                  isInternational={isInternational}
                 />
                 
                 {/* BASIC OPTION */}
@@ -360,6 +477,7 @@ useEffect(() => {
                   getAnimationDelay={getAnimationDelay}
                   calculatePreservationEstimate={calculatePreservationEstimate}
                   getPackagePrice={getPackagePrice}
+                  isInternational={isInternational}
                 />
               </div>
               
@@ -406,6 +524,7 @@ useEffect(() => {
                 getAnimationDelay={getAnimationDelay}
                 calculatePreservationEstimate={calculatePreservationEstimate}
                 getPackagePrice={getPackagePrice}
+                isInternational={isInternational}
               />
               
               {/* WHOLE BODY OPTION */}
@@ -417,6 +536,7 @@ useEffect(() => {
                 getAnimationDelay={getAnimationDelay}
                 calculatePreservationEstimate={calculatePreservationEstimate}
                 getPackagePrice={getPackagePrice}
+                isInternational={isInternational}
               />
               
               {/* BASIC OPTION */}
@@ -428,6 +548,7 @@ useEffect(() => {
                 getAnimationDelay={getAnimationDelay}
                 calculatePreservationEstimate={calculatePreservationEstimate}
                 getPackagePrice={getPackagePrice}
+                isInternational={isInternational}
               />
             </div>
           )}
@@ -488,11 +609,35 @@ useEffect(() => {
                   {/* Change selection button */}
                   <div className="mt-5 pt-2">
                     <button 
-                      onClick={() => {
-                        // Scroll to top of page smoothly
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("🔝 Mobile: Change selection button clicked - scrolling to top");
+                        
+                        // Try multiple scroll methods
+                        try {
+                          // Method 1: Standard smooth scroll
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          
+                          // Method 2: Fallback - instant scroll
+                          setTimeout(() => {
+                            window.scrollTo(0, 0);
+                          }, 100);
+                          
+                          // Method 3: Document element scroll
+                          setTimeout(() => {
+                            document.documentElement.scrollTop = 0;
+                            document.body.scrollTop = 0;
+                          }, 200);
+                          
+                        } catch (error) {
+                          console.error("Scroll error:", error);
+                          // Final fallback
+                          window.location.hash = '';
+                          window.scrollTo(0, 0);
+                        }
                       }}
-                      className="text-[#775684] font-medium hover:underline focus:outline-none flex items-center transition-transform duration-300 hover:translate-y-[-2px]"
+                      className="text-[#775684] font-medium hover:underline focus:outline-none flex items-center transition-transform duration-300 hover:translate-y-[-2px] cursor-pointer"
                     >
                       <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -513,6 +658,9 @@ useEffect(() => {
                     <h4 className="text-gray-700 font-medium mb-2 text-xl">Important Information</h4>
                     <p className="text-gray-600 text-lg">
                       Your membership pricing is personalized based on your current age ({membershipAge} years). Most members fund their cryopreservation through life insurance policies with manageable monthly premiums. We'll discuss insurance options on the next page.
+                    </p>
+                    <p className="text-gray-600 text-lg mt-3">
+                      Additional surcharges may apply for early services ($20,000 within 180 days), third-party arrangements ($25,000), or non-member services ($50,000).
                     </p>
                   </div>
                 </div>

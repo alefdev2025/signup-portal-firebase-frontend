@@ -3,13 +3,13 @@ import React from "react";
 import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 
-// Plan options and descriptions
 export const planOptions = {
   neuro: {
     title: "Neuropreservation",
     short: "Preserves brain and neural structures at a lower cost.",
     long: "Preserves the brain's neural connections that define your identity.",
     baseEstimate: 80000,
+    internationalEstimate: 90000,
     titleBgColor: "bg-[#323053]",
     iconBgColor: "bg-[#454575]",
     icon: (
@@ -21,6 +21,7 @@ export const planOptions = {
     short: "Preserves your entire body for complete restoration.",
     long: "Complete body preservation for potential full restoration.",
     baseEstimate: 220000,
+    internationalEstimate: 230000,
     titleBgColor: "bg-[#1a2342]",
     iconBgColor: "bg-[#293253]",
     icon: (
@@ -32,6 +33,7 @@ export const planOptions = {
     short: "Join now, decide on your cryopreservation type later.",
     long: "Basic membership with flexibility to upgrade later.",
     baseEstimate: 0,
+    internationalEstimate: 0, // No surcharge for basic membership
     titleBgColor: "bg-[#11243a]",
     iconBgColor: "bg-[#1c324c]",
     icon: (
@@ -39,6 +41,9 @@ export const planOptions = {
     )
   }
 };
+
+// International surcharge constant
+export const INTERNATIONAL_SURCHARGE = 10000;
 
 // Update help content for export
 export const packageHelpContent = [
