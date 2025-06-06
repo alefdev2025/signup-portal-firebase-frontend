@@ -204,7 +204,12 @@ export default function MembershipSummary({
   // Set initial payment frequency and ICE code when data loads
   useEffect(() => {
     if (summaryData?.membershipData) {
-      setLocalPaymentFrequency(summaryData.membershipData.paymentFrequency || 'annually');
+      console.log('Backend payment frequency:', summaryData.membershipData.paymentFrequency);
+      // Only set if there's actually a saved value
+      if (summaryData.membershipData.paymentFrequency) {
+        setLocalPaymentFrequency(summaryData.membershipData.paymentFrequency);
+      }
+      // Keep the rest as is
       setLocalIceCode(summaryData.membershipData.iceCode || '');
       setLocalIceCodeValid(summaryData.membershipData.iceCodeValid || null);
     }
@@ -336,7 +341,6 @@ export default function MembershipSummary({
     setShowDocuSignOverlay(true);
   };
 
-  // Handle proceeding to DocuSign after confirmation
   const handleProceedToDocuSign = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -347,14 +351,20 @@ export default function MembershipSummary({
       // Close the overlay first
       setShowDocuSignOverlay(false);
       
-      // Then proceed to DocuSign
+      // Pass the updated values back to parent
       if (onSignAgreement) {
-        await onSignAgreement();
+        // Pass an object with updated values, not the event
+        const updatedData = {
+          paymentFrequency: localPaymentFrequency,
+          iceCode: localIceCode,
+          iceCodeValid: localIceCodeValid
+        };
+        await onSignAgreement(updatedData);
       }
     } catch (err) {
       console.error("Error proceeding to DocuSign:", err);
       setError("Failed to proceed to agreement signing. Please try again.");
-      setShowDocuSignOverlay(false); // Close overlay on error too
+      setShowDocuSignOverlay(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -845,6 +855,7 @@ export default function MembershipSummary({
 {/* DocuSign Confirmation Overlay - Using createPortal to render directly to document.body */}
 {showDocuSignOverlay && createPortal(
   <div 
+    onClick={() => setShowDocuSignOverlay(false)} // Click outside to close
     style={{
       position: 'fixed',
       top: 0,
@@ -858,11 +869,14 @@ export default function MembershipSummary({
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 9999999,
-      padding: '1rem',
+      padding: '0.5rem', // Reduced padding for more width on mobile
       fontFamily: SYSTEM_FONT
     }}
   >
-    <div className="bg-white rounded-xl shadow-2xl p-8 mx-4 max-w-2xl w-full">
+    <div 
+      className="bg-white rounded-xl shadow-2xl p-7 sm:p-8 mx-2 sm:mx-4 max-w-2xl w-full"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+    >
       <div className="text-center">
         {/* DocuSign Icon */}
         <div className="mx-auto mb-6 w-16 h-16 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
@@ -872,17 +886,17 @@ export default function MembershipSummary({
         </div>
         
         {/* Title */}
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">Confirm Your Information</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5">Confirm Your Information</h3>
         
         {/* Important Notice */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-start">
-            <svg className="w-6 h-6 text-blue-600 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-left">
-              <h4 className="text-base font-semibold text-blue-800 mb-1">Ready to Proceed?</h4>
-              <p className="text-blue-700 text-sm">
+              <h4 className="text-sm sm:text-base font-semibold text-blue-800 mb-1.5">Ready to Proceed?</h4>
+              <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
                 Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
               </p>
             </div>
@@ -892,22 +906,22 @@ export default function MembershipSummary({
         {/* SMS Verification Notice */}
         <div className="text-left bg-gray-50 rounded-lg p-4 mb-6">
           <div className="flex items-start">
-            <svg className="w-6 h-6 text-gray-600 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
             <div>
-              <h4 className="text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
-              <p className="text-gray-700 text-sm mb-3">
+              <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
+              <p className="text-gray-700 text-xs sm:text-sm mb-3 leading-relaxed">
                 DocuSign will send an SMS verification code to validate your identity for electronic signature.
               </p>
               
               {/* Phone Number Display/Edit */}
               <div className="bg-white rounded-lg p-3 border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-gray-600 font-medium text-sm">SMS will be sent to:</label>
+                  <label className="text-gray-600 font-medium text-xs sm:text-sm">SMS will be sent to:</label>
                   <button
                     onClick={() => setIsEditingPhone(!isEditingPhone)}
-                    className="text-[#775684] hover:text-[#664573] font-medium text-sm"
+                    className="text-[#775684] hover:text-[#664573] font-medium text-xs sm:text-sm"
                   >
                     {isEditingPhone ? 'Cancel' : 'Change'}
                   </button>
@@ -919,18 +933,18 @@ export default function MembershipSummary({
                       type="tel"
                       value={smsPhoneNumber}
                       onChange={(e) => setSmsPhoneNumber(e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded-md text-base"
+                      className="flex-1 p-2 border border-gray-300 rounded-md text-sm sm:text-base"
                       placeholder="Enter phone number"
                     />
                     <button
                       onClick={() => setIsEditingPhone(false)}
-                      className="bg-[#775684] text-white px-3 py-1.5 rounded-md hover:bg-[#664573] text-sm"
+                      className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-xs sm:text-sm"
                     >
                       Save
                     </button>
                   </div>
                 ) : (
-                  <p className="text-gray-900 text-lg font-medium">
+                  <p className="text-gray-900 text-base sm:text-lg font-medium">
                     {smsPhoneNumber || 'No phone number provided'}
                   </p>
                 )}
@@ -939,19 +953,22 @@ export default function MembershipSummary({
           </div>
         </div>
         
-        {/* Buttons */}
-        <div className="flex justify-center space-x-4">
+        {/* Buttons - Single button on mobile, two on desktop */}
+        <div className="flex justify-center">
+          {/* Cancel button - hidden on mobile */}
           <button
             onClick={() => setShowDocuSignOverlay(false)}
-            className="px-6 py-2.5 border border-gray-300 rounded-full text-gray-700 font-medium text-base hover:bg-gray-50 transition-all duration-300"
+            className="hidden sm:block px-6 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-base hover:bg-gray-50 transition-all duration-300 mr-4"
             disabled={isSubmitting}
           >
             Cancel
           </button>
+          
+          {/* Proceed button - full width on mobile, taller */}
           <button
             onClick={handleProceedToDocuSign}
             disabled={isSubmitting || !smsPhoneNumber}
-            className={`px-8 py-2.5 rounded-full font-semibold text-base flex items-center transition-all duration-300 ${
+            className={`w-full sm:w-auto px-8 py-5 sm:py-4 rounded-full font-semibold text-sm sm:text-base flex items-center justify-center transition-all duration-300 ${
               !isSubmitting && smsPhoneNumber
                 ? "bg-[#775684] text-white hover:bg-[#664573]" 
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -959,7 +976,7 @@ export default function MembershipSummary({
           >
             {isSubmitting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -974,8 +991,7 @@ export default function MembershipSummary({
     </div>
   </div>,
   document.body
-
-      )}
+)}
     </>
   );
 }

@@ -356,37 +356,51 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   };
   
   // In MembershipPage.jsx, update handleProceedToDocuSign:
-  const handleProceedToDocuSign = async () => {
+  const handleProceedToDocuSign = async (updatedData = {}) => {
     setIsSubmitting(true);
     
     try {
       console.log("MembershipPage: Proceeding to DocuSign step...");
+      console.log("MembershipPage: Updated data from summary:", updatedData);
       
-      // Validate ICE code one final time before saving
-      if (iceCode.trim()) {
-        console.log("Final validation of ICE code before save:", iceCode);
-        const finalValidation = await membershipService.validateIceCode(iceCode.trim());
+      // Use updated values from MembershipSummary if provided, otherwise use existing state
+      // Note: We're accessing the component's state variables here
+      const finalIceCode = updatedData.iceCode !== undefined ? updatedData.iceCode : iceCode;
+      const finalPaymentFrequency = updatedData.paymentFrequency || paymentFrequency;
+      const finalIceCodeValid = updatedData.iceCodeValid !== undefined ? updatedData.iceCodeValid : iceCodeValid;
+      
+      // Validate ICE code one final time before saving (only if changed and not empty)
+      let finalIceCodeInfo = iceCodeInfo;
+      if (finalIceCode && finalIceCode.trim() && finalIceCode !== iceCode) {
+        console.log("ICE code changed, validating new code:", finalIceCode);
+        const finalValidation = await membershipService.validateIceCode(finalIceCode.trim());
         
         if (!finalValidation.valid) {
           throw new Error("ICE code is no longer valid. Please check the code and try again.");
         }
         
         // Update the ICE code info with the latest validation
+        finalIceCodeInfo = finalValidation;
         setIceCodeInfo(finalValidation);
         setIceCodeValid(true);
       }
       
+      // Update local state with final values
+      setIceCode(finalIceCode || '');
+      setPaymentFrequency(finalPaymentFrequency);
+      setIceCodeValid(finalIceCodeValid);
+      
       // Create data object with all details
       const data = {
-        iceCode: iceCode.trim(),
-        paymentFrequency: paymentFrequency,
-        iceCodeValid: iceCode.trim() ? iceCodeValid : null,
-        iceCodeInfo: iceCode.trim() ? iceCodeInfo : null,
+        iceCode: (finalIceCode || '').trim(),
+        paymentFrequency: finalPaymentFrequency,
+        iceCodeValid: finalIceCode && finalIceCode.trim() ? finalIceCodeValid : null,
+        iceCodeInfo: finalIceCode && finalIceCode.trim() ? finalIceCodeInfo : null,
         interestedInLifetime: false,
         completionDate: new Date().toISOString()
       };
       
-      console.log("MembershipPage: Submitting data:", data);
+      console.log("MembershipPage: Submitting data to backend:", data);
       
       // Save membership data to backend
       try {
