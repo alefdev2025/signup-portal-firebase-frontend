@@ -435,10 +435,10 @@ function CheckoutForm({ userData }) {
                   
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="mt-3 mb-6">
-                      <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-                        Activate Membership
-                        <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
-                      </h2>
+                    <h2 className="text-xl font-medium text-white mb-4 flex items-center">
+  Activate Membership
+  <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
+</h2>
                     </div>
                     
                     <div className="space-y-4 flex-grow">
@@ -447,14 +447,14 @@ function CheckoutForm({ userData }) {
                         {/* Main Membership */}
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="text-base font-semibold text-white mb-1 flex items-center">
+                            <h3 className="text-sm font-normal text-white mb-1 flex items-center">
                               Alcor Membership
                               <img src={alcorStar} alt="Alcor Star" className="h-4 ml-1" />
                             </h3>
-                            <p className="text-white/70 text-sm mb-1">{paymentInfo.frequency} Plan</p>
+                            <p className="text-white/70 text-xs mb-1">{paymentInfo.frequency} Plan</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-xl font-bold text-white">
+                            <div className="text-base font-medium text-white">
                               {formatCurrency(paymentInfo.originalAmount)}
                             </div>
                           </div>
@@ -466,11 +466,11 @@ function CheckoutForm({ userData }) {
                             <hr className="border-white/20 my-3" />
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <h3 className="text-base font-semibold text-white mb-1">ICE Code Discount</h3>
-                                <p className="text-white/70 text-sm mb-1">Code: {paymentInfo.iceCode}</p>
+                                <h3 className="text-sm font-normal text-white mb-1">ICE Code Discount</h3>
+                                <p className="text-white/70 text-xs mb-1">Code: {paymentInfo.iceCode}</p>
                               </div>
                               <div className="text-right">
-                                <div className="text-xl font-bold text-blue-300">
+                                <div className="text-base font-medium text-blue-300">
                                   -{formatCurrency(paymentInfo.discount)}
                                 </div>
                               </div>
@@ -482,11 +482,11 @@ function CheckoutForm({ userData }) {
                         <hr className="border-white/20 my-3" />
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="text-base font-semibold text-white mb-1">Tax</h3>
-                            <p className="text-white/70 text-sm mb-1">No tax applicable</p>
+                            <h3 className="text-sm font-normal text-white mb-1">Tax</h3>
+                            <p className="text-white/70 text-xs mb-1">No tax applicable</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-xl font-bold text-white">
+                            <div className="text-base font-medium text-white">
                               $0.00
                             </div>
                           </div>
@@ -497,8 +497,8 @@ function CheckoutForm({ userData }) {
                       <div className="mt-6 pt-4">
                         <div className="bg-white/15 backdrop-blur-sm rounded-lg p-4 border border-white/30">
                           <div className="flex justify-between items-center">
-                            <div className="text-base font-semibold text-white">Total Due Today</div>
-                            <div className="text-2xl font-bold text-white">
+                            <div className="text-sm font-normal text-white">Total Due Today</div>
+                            <div className="text-base font-medium text-white">
                               {formatCurrency(paymentInfo.discountedAmount)}
                             </div>
                           </div>
@@ -702,29 +702,29 @@ function CheckoutForm({ userData }) {
                           </div>
                         )}
 
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-3.5 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
-                        >
-                          {isLoading ? (
-                            <div className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
-                            </div>
-                          ) : (
-                            <span className="flex items-center">
-                              <img src={alcorStar} alt="" className="h-4 mr-2" />
-                              {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </span>
-                          )}
-                        </button>
+<button
+  type="submit"
+  disabled={isLoading}
+  className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+>
+  {isLoading ? (
+    <div className="flex items-center justify-center">
+      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
+    </div>
+  ) : (
+    <span className="flex items-center">
+      <img src={alcorStar} alt="" className="h-4 mr-1" />
+      {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    </span>
+  )}
+</button>
 
                         <p className="text-xs text-gray-500 text-center leading-tight -mt-2">
                           By completing your purchase, you agree to our{' '}
