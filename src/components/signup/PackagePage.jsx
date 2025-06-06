@@ -20,6 +20,8 @@ import {
 // TOGGLE BETWEEN VERSIONS: set to true for the updated design, false for the original
 const USE_UPDATED_VERSION = false;
 
+const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 export default function PackagePage({ onNext, onBack, initialData = {}, preloadedMembershipData = null }) {
   const initRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -626,24 +628,14 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   </div>
                 </div>
               </div>
-            
-              {/* Important Information Section */}
-              <div className="mt-8 p-5 bg-gray-50 rounded-lg border border-gray-200 mx-8 sm:mx-12 md:mx-0 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(4)}}>
-                <div className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-600 mr-3 flex-shrink-0 mt-0.5 animate-bounce" style={{animationDuration: '2s'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <h4 className="text-gray-700 font-medium mb-2 text-xl">Important Information</h4>
-                    <p className="text-gray-600 text-lg">
-                      Your membership pricing is personalized based on your current age ({membershipAge} years). Most members fund their cryopreservation through life insurance policies with manageable monthly premiums. We'll discuss insurance options on the next page.
-                    </p>
-                    <p className="text-gray-600 text-lg mt-3">
-                      Additional surcharges may apply for early services ($20,000 within 180 days), third-party arrangements ($25,000), or non-member services ($50,000).
-                    </p>
-                  </div>
-                </div>
-              </div>
+{/* Important Information Section */}
+<ImportantInformation 
+  membershipAge={membershipAge}
+  fadeInStyle={fadeInStyle}
+  getAnimationDelay={getAnimationDelay}
+  USE_UPDATED_VERSION={USE_UPDATED_VERSION}
+  showSurcharges={true}
+/>
             </>
           )}
         </div>

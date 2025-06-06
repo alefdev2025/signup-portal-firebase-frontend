@@ -47,14 +47,15 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   const { user } = useUser();
   
   // Page state management
-  const [currentPage, setCurrentPage] = useState('membership'); // 'membership', 'summary', 'docusign'
+  // TEMPORARY: Start directly on summary page
+  const [currentPage, setCurrentPage] = useState('summary'); // Changed from 'membership' to 'summary'
   const [showHelpInfo, setShowHelpInfo] = useState(false);
   const [showIceInfo, setShowIceInfo] = useState(false); // ICE popup state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Form state
+  // Form state with default values for summary page
   const [iceCode, setIceCode] = useState(initialData?.iceCode || "");
   const [paymentFrequency, setPaymentFrequency] = useState(initialData?.paymentFrequency || "quarterly");
   const [iceCodeValid, setIceCodeValid] = useState(initialData?.iceCodeValid || null);
@@ -346,7 +347,12 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   
   // Handler for going back from summary to main form
   const handleBackFromSummary = () => {
-    setCurrentPage('membership');
+    // TEMPORARY: Go back to previous page instead of membership form
+    if (onBack) {
+      onBack();
+    }
+    // Uncomment this line to go back to membership form when ready:
+    // setCurrentPage('membership');
   };
   
   // In MembershipPage.jsx, update handleProceedToDocuSign:
@@ -550,6 +556,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     );
   }
   
+  /* COMMENTED OUT MEMBERSHIP FORM - Uncomment when ready to use pricing page again
   // Render main membership form
   return (
     <div>
@@ -565,7 +572,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
       >
         <div className="w-full mx-auto px-4 sm:px-6 md:px-8 py-8 max-w-[90%] md:max-w-[80%] lg:max-w-[70%]">
           <div className="mb-8">
-            {/* Header */}
             <div className="mb-8">
               {costs && costs.discountAmount > 0 && (
                 <div className="text-center">
@@ -579,7 +585,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
               )}
             </div>
 
-            {/* Payment Options */}
             <div className="mb-12">
               <PaymentOptions
                 paymentFrequency={paymentFrequency}
@@ -594,10 +599,8 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
               />
             </div>
 
-            {/* ICE Code Section */}
             <div className="mb-8">
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-                {/* Header with ICE Logo */}
                 <div className="flex items-center mb-6">
                   <div className="bg-gradient-to-br from-[#f8f9ff] to-[#f0f4ff] w-16 h-16 rounded-lg flex items-center justify-center mr-4 shadow-sm border border-gray-200">
                     <img 
@@ -605,7 +608,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
                       alt="ICE Logo" 
                       className="h-12 w-12 object-contain"
                       onError={(e) => {
-                        // Fallback to gradient icon if ICE logo fails to load
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
                       }}
@@ -633,7 +635,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
                   </div>
                 </div>
 
-                {/* Input Section */}
                 <div className="max-w-md">
                   <div className="relative mb-4">
                     <input
@@ -645,7 +646,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
                       style={{...marcellusStyle, fontFamily: 'monospace'}}
                     />
                     
-                    {/* Validation indicator */}
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       {isValidatingCode ? (
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#775684]"></div>
@@ -661,14 +661,12 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
                     </div>
                   </div>
                   
-                  {/* Demo codes hint */}
                   {!iceCode.trim() && (
                     <div className="text-sm text-gray-500">
                       <p>Demo codes: ICE2024DEMO, MEMBER2024, CRYOMEM2024</p>
                     </div>
                   )}
                   
-                  {/* Validation messages */}
                   {iceCode.trim() && iceCodeValid === true && iceCodeInfo && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
                       <div className="flex items-center">
@@ -695,7 +693,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
             </div>
           </div>
           
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-12">
             <button
               type="button"
@@ -744,7 +741,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         />
       </div>
 
-      {/* ICE Info Modal */}
       {showIceInfo && createPortal(
         <div 
           style={{
@@ -870,4 +866,5 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
       )}
     </div>
   );
+  END OF COMMENTED OUT MEMBERSHIP FORM */
 }

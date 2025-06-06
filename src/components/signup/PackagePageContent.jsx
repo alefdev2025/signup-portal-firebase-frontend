@@ -2,6 +2,7 @@
 import React from "react";
 import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
+import braintop from "../../assets/images/braintop.png";
 
 // ============================================
 // SECTION 1: PLAN OPTIONS DATA CONFIGURATION
@@ -529,7 +530,7 @@ export const OriginalVersionOptionCard = ({
           </div>
           
           {/* More vertical spacing */}
-          <p style={{ fontSize: '16px' }} className="text-gray-600 mt-6 md:mt-5 mb-8 md:mb-7 font-light">
+          <p style={{ fontSize: '16px' }} className="text-gray-600 mt-2 md:mt-5 mb-8 md:mb-7 font-light">
             {planOption.short}
           </p>
           
@@ -797,19 +798,30 @@ export const MobileSelectionSummary = ({
 // ============================================
 // SECTION 8: IMPORTANT INFORMATION
 // ============================================
-// Information panel about pricing and insurance
-export const ImportantInformation = ({ membershipAge, fadeInStyle, getAnimationDelay, USE_UPDATED_VERSION }) => {
+export const ImportantInformation = ({ membershipAge, fadeInStyle, getAnimationDelay, USE_UPDATED_VERSION, showSurcharges = false }) => {
   return (
-    <div className={`mt-5 p-4 sm:p-6 bg-gray-50 rounded-xl ${USE_UPDATED_VERSION ? 'md:rounded-2xl' : 'rounded-lg'} border border-gray-200 transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(4), fontFamily: SYSTEM_FONT}}>
-      <div className="flex items-start">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 mr-2 flex-shrink-0 mt-0.5 animate-bounce" style={{animationDuration: '2s'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <h4 className="text-gray-700 font-medium mb-1">Important Information</h4>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Your membership pricing is personalized based on your current age ({membershipAge} years). Most members fund their cryopreservation through life insurance policies with manageable monthly premiums. We'll discuss insurance options on the next page.
-          </p>
+    <div className="px-8 sm:px-12 md:px-0">
+      <div className={`mt-5 md:mt-8 p-4 sm:p-5 bg-gray-50 ${USE_UPDATED_VERSION ? 'rounded-xl md:rounded-2xl' : 'rounded-lg'} border border-gray-200 transform transition-all duration-500`} style={{...fadeInStyle, ...getAnimationDelay(4), fontFamily: SYSTEM_FONT}}>
+        <div className="flex items-start">
+          <div className="bg-gray-200 p-3 rounded-lg mr-4 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h4 style={{ fontSize: '16px', fontWeight: '500' }} className="text-gray-700 mb-3">Important Information</h4>
+            <p style={{ fontSize: '14px' }} className="text-gray-600 font-light">
+              Most members fund their cryopreservation through <span className="underline">life insurance</span> policies with <span className="underline">manageable monthly premiums</span>. We'll discuss insurance options on the next page.
+            </p>
+            <p style={{ fontSize: '14px' }} className="text-gray-600 font-light mt-2">
+              Your membership pricing is personalized based on your current age ({membershipAge} years).
+            </p>
+            {showSurcharges && (
+              <p style={{ fontSize: '14px' }} className="text-gray-600 font-light mt-2.5">
+                Additional surcharges may apply for early services ($20,000 within 180 days), third-party arrangements ($25,000), or non-member services ($50,000).
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

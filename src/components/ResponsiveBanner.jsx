@@ -153,7 +153,7 @@ const ResponsiveBanner = ({
       case 2: return "Contact information";
       case 3: return "Package selection";
       case 4: return "Funding Options";
-      case 5: return "Start Your Membership";
+      case 5: return "Launch Your Membership";
       default: return "Become a member";
     }
   };
