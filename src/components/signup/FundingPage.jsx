@@ -100,7 +100,16 @@ export default function FundingPage({ initialData, onBack, onNext }) {
          
          // Set selected option based on initialData or defaults
          if (initialData.fundingMethod) {
-           setSelectedOption(initialData.fundingMethod);
+           // Map backend values to internal option IDs
+           let mappedOption = initialData.fundingMethod;
+           if (mappedOption === 'life insurance') {
+             mappedOption = 'insurance';
+           } else if (mappedOption === 'prepayment') {
+             mappedOption = 'prepay';
+           } else if (mappedOption === 'undecided') {
+             mappedOption = 'later';
+           }
+           setSelectedOption(mappedOption);
          } else if (initialData.preservationType === 'basic') {
            setSelectedOption('later'); // Default to "later" for basic membership
          } else {
@@ -119,12 +128,54 @@ export default function FundingPage({ initialData, onBack, onNext }) {
              annualCost: result.annualCost
            });
            
-           // Set default funding method based on preservation type
-           if (result.preservationType === 'basic') {
-             setSelectedOption('later'); // Default to "later" for basic membership
-           } else {
-             // For non-basic membership, default to 'insurance'
-             setSelectedOption('insurance');
+           // ALSO fetch existing funding info from backend
+           try {
+             const fundingInfoResult = await fundingService.getUserFundingInfo();
+             
+             if (fundingInfoResult.success && fundingInfoResult.data?.fundingInfo?.fundingMethod) {
+               // Map backend values to internal option IDs
+               let mappedOption = fundingInfoResult.data.fundingInfo.fundingMethod;
+               
+               // Map backend values to frontend option IDs
+               if (mappedOption === 'life insurance') {
+                 mappedOption = 'insurance';
+               } else if (mappedOption === 'prepayment') {
+                 mappedOption = 'prepay';
+               } else if (mappedOption === 'undecided') {
+                 mappedOption = 'later';
+               } else if (mappedOption === 'other') {
+                 // Handle legacy "other" value
+                 mappedOption = 'later';
+               }
+               
+               setSelectedOption(mappedOption);
+               
+               // Also set insurance sub-option if available
+               if (fundingInfoResult.data.fundingInfo.insuranceSubOption) {
+                 setInsuranceSubOption(fundingInfoResult.data.fundingInfo.insuranceSubOption);
+               }
+               
+               // Set policy details if available
+               if (fundingInfoResult.data.fundingInfo.policyDetails) {
+                 setPolicyDetails(fundingInfoResult.data.fundingInfo.policyDetails);
+               }
+             } else {
+               // No existing funding info, set defaults based on preservation type
+               if (result.preservationType === 'basic') {
+                 setSelectedOption('later'); // Default to "later" for basic membership
+               } else {
+                 // For non-basic membership, default to 'insurance'
+                 setSelectedOption('insurance');
+               }
+             }
+           } catch (fundingError) {
+             console.error("Error fetching funding info:", fundingError);
+             // Still set defaults if fetching funding info fails
+             if (result.preservationType === 'basic') {
+               setSelectedOption('later');
+             } else {
+               setSelectedOption('insurance');
+             }
            }
          } else {
            setError("Failed to load package information. Please go back and try again.");
@@ -247,9 +298,19 @@ const handleNext = async () => {
   console.log("FundingPage: Handle next button clicked");
   
   try {
+    // Map internal option IDs to backend values BEFORE sending
+    let mappedFundingMethod = selectedOption;
+    if (selectedOption === 'insurance') {
+      mappedFundingMethod = 'life insurance';
+    } else if (selectedOption === 'prepay') {
+      mappedFundingMethod = 'prepayment';
+    } else if (selectedOption === 'later') {
+      mappedFundingMethod = 'undecided';
+    }
+    
     // Create data object with all details
     const data = {
-      fundingMethod: hasBasicMembership ? 'none' : (selectedOption || 'later'),
+      fundingMethod: hasBasicMembership ? 'none' : (mappedFundingMethod || 'undecided'),
       selectionDate: new Date().toISOString()
     };
     
@@ -290,10 +351,19 @@ const handleNext = async () => {
     
     console.log("FundingPage: Funding info saved successfully");
     
+    // Pass the ORIGINAL selectedOption to parent (not mapped)
+    // The parent will handle its own mapping if needed
+    const parentData = {
+      fundingMethod: selectedOption, // Keep internal ID for parent
+      selectionDate: data.selectionDate,
+      ...(data.insuranceSubOption && { insuranceSubOption: data.insuranceSubOption }),
+      ...(data.insuranceCompany && { insuranceCompany: data.insuranceCompany })
+    };
+    
     // Use onNext prop to let parent handle navigation
     if (onNext) {
       console.log("Using parent onNext handler");
-      const success = await onNext(data);
+      const success = await onNext(parentData);
       if (!success) {
         throw new Error("Failed to proceed to next step");
       }

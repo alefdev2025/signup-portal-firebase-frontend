@@ -1,9 +1,10 @@
-// File: pages/signup/FundingStep.jsx
+// File: pages/signup/FundingStep.jsx - FIXED
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useSignupFlow } from "../../contexts/SignupFlowContext";
 import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
 import { getStepFormData, saveFormData } from "../../services/storage";
+import fundingService from "../../services/funding"; // ADD THIS IMPORT
 
 // Import your existing FundingPage component
 import FundingPage from "./FundingPage";
@@ -27,6 +28,7 @@ const FundingStep = () => {
   const [formData, setFormData] = useState({
     fundingMethod: "insurance", // Default to insurance
   });
+  const [packageInfo, setPackageInfo] = useState(null); // ADD THIS
   // Add initialization tracker to prevent double initialization
   const initializedRef = useRef(false);
   
@@ -51,7 +53,37 @@ const FundingStep = () => {
         const savedData = getStepFormData("funding");
         if (savedData) {
           LOG_TO_TERMINAL("Loading saved form data");
+          
+          // Map backend values back to internal option IDs
+          if (savedData.fundingMethod) {
+            let mappedMethod = savedData.fundingMethod;
+            if (mappedMethod === 'life insurance') {
+              mappedMethod = 'insurance';
+            } else if (mappedMethod === 'prepayment') {
+              mappedMethod = 'prepay';
+            } else if (mappedMethod === 'undecided') {
+              mappedMethod = 'later';
+            }
+            savedData.fundingMethod = mappedMethod;
+          }
+          
           setFormData(savedData);
+        }
+        
+        // ALSO fetch package info so FundingPage doesn't need to
+        try {
+          const packageResult = await fundingService.getPackageInfoForFunding();
+          if (packageResult.success) {
+            setPackageInfo({
+              packageType: packageResult.packageType,
+              preservationType: packageResult.preservationType,
+              preservationEstimate: packageResult.preservationEstimate,
+              annualCost: packageResult.annualCost
+            });
+            LOG_TO_TERMINAL("Package info loaded successfully");
+          }
+        } catch (err) {
+          LOG_TO_TERMINAL("Error loading package info: " + err.message);
         }
         
         // Check user's progress via API
@@ -111,17 +143,17 @@ const FundingStep = () => {
     try {
       LOG_TO_TERMINAL("Saving funding info and proceeding to next step");
       
-      // Convert the option names to match the database format
+      // Convert the option names to match the backend format
       let fundingMethod;
       switch(stepData.fundingMethod) {
         case 'insurance':
-          fundingMethod = 'insurance';
+          fundingMethod = 'life insurance';
           break;
         case 'prepay':
-          fundingMethod = 'self_funded';
+          fundingMethod = 'prepayment';
           break;
         case 'later':
-          fundingMethod = 'other';
+          fundingMethod = 'undecided';
           break;
         default:
           fundingMethod = stepData.fundingMethod;
@@ -180,10 +212,16 @@ const FundingStep = () => {
   
   LOG_TO_TERMINAL("Rendering FundingPage component");
   
+  // Combine formData with packageInfo for initialData
+  const combinedInitialData = {
+    ...formData,
+    ...(packageInfo || {})
+  };
+  
   // Use the FundingPage component with proper handlers
   return (
     <FundingPage
-      initialData={formData}
+      initialData={combinedInitialData}
       onBack={handleBack}
       onNext={handleNext}
     />
