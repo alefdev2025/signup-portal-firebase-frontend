@@ -120,7 +120,7 @@ export const fundingOptions = {
     },
     pricing: {
       cost: "Cryopreservation",
-      complexity: "At Your Own Pace",
+      complexity: "Decide Later",
       costLabel: "Intent:",
       complexityLabel: "Funding:",
       costColor: "text-[#13233e]"
@@ -147,7 +147,7 @@ export const basicMembershipContent = {
       bgGradient: "bg-gradient-to-l from-[#323053] to-[#454575]",
       iconBg: "bg-[#575790]",
       icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-      description: "After completing your Basic Membership, you'll receive information about upgrading to cryopreservation. Your Alcor advisor will guide you through options when you're ready.",
+      description: "After completing your Basic Membership, you'll receive information about upgrading to cryopreservation. An Alcor advisor will guide you through options when you're ready.",
       futureOptions: [
         {
           icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
@@ -164,7 +164,7 @@ export const basicMembershipContent = {
       bgGradient: "bg-gradient-to-l from-[#11243a] to-[#1c324c]",
       iconBg: "bg-[#293253]",
       icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-      description: "With a Basic Membership, you don't need to set up life insurance or prepayment for cryopreservation at this time. Your membership begins with annual dues only.",
+      description: "With a Basic Membership, you will not be covered for cryopreservation services. Your membership begins with annual dues only, you can upgrade to a cryopreservation contract at any time.",
       includedFeatures: [
         "Member Events & Resources",
         "Pet Preservation Options",
