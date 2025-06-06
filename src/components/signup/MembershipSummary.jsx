@@ -201,14 +201,23 @@ export default function MembershipSummary({
     }
   }, [summaryData]);
 
-  // Set initial payment frequency and ICE code when data loads
   useEffect(() => {
     if (summaryData?.membershipData) {
       console.log('Backend payment frequency:', summaryData.membershipData.paymentFrequency);
-      // Only set if there's actually a saved value
+      
+      // Only set if there's actually a saved value AND it's a valid option
       if (summaryData.membershipData.paymentFrequency) {
-        setLocalPaymentFrequency(summaryData.membershipData.paymentFrequency);
+        const savedFrequency = summaryData.membershipData.paymentFrequency;
+        
+        // Only set to valid options (annually or monthly)
+        if (savedFrequency === 'annually' || savedFrequency === 'monthly') {
+          setLocalPaymentFrequency(savedFrequency);
+        } else {
+          // Default to annually if saved value is not a current option
+          setLocalPaymentFrequency('annually');
+        }
       }
+      
       // Keep the rest as is
       setLocalIceCode(summaryData.membershipData.iceCode || '');
       setLocalIceCodeValid(summaryData.membershipData.iceCodeValid || null);
@@ -642,42 +651,32 @@ export default function MembershipSummary({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column - Payment Options */}
                 <div>
-{/* Payment Frequency Selection */}
-<div className="mb-6">
-  <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '16px' }}>Payment Frequency</p>
-  <div className="flex space-x-1">
-    <button
-      onClick={() => handlePaymentFrequencyChange('annually')}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-24 ${
-        localPaymentFrequency === 'annually' 
-          ? 'bg-white text-[#775684] border-2 border-[#775684]' 
-          : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-      }`}
-    >
-      Annual
-    </button>
-    <button
-      onClick={() => handlePaymentFrequencyChange('quarterly')}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-24 ${
-        localPaymentFrequency === 'quarterly' 
-          ? 'bg-white text-[#775684] border-2 border-[#775684]' 
-          : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-      }`}
-    >
-      Quarterly
-    </button>
-    <button
-      onClick={() => handlePaymentFrequencyChange('monthly')}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-24 ${
-        localPaymentFrequency === 'monthly' 
-          ? 'bg-white text-[#775684] border-2 border-[#775684]' 
-          : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-      }`}
-    >
-      Monthly
-    </button>
-  </div>
-</div>
+                  {/* Payment Frequency Selection */}
+                  <div className="mb-6">
+                    <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '16px' }}>Payment Frequency</p>
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={() => handlePaymentFrequencyChange('annually')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-28 ${
+                          localPaymentFrequency === 'annually' 
+                            ? 'bg-white text-[#775684] border-2 border-[#775684]' 
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        Annual
+                      </button>
+                      <button
+                        onClick={() => handlePaymentFrequencyChange('monthly')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-28 ${
+                          localPaymentFrequency === 'monthly' 
+                            ? 'bg-white text-[#775684] border-2 border-[#775684]' 
+                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                    </div>
+                  </div>
                   
                   {/* ICE Code Input */}
                   <div>
@@ -737,7 +736,6 @@ export default function MembershipSummary({
                         <p className="text-gray-900 text-sm">
                           {formatCurrency(calculateLocalCosts().paymentAmount)}
                           {localPaymentFrequency === 'monthly' && '/mo'}
-                          {localPaymentFrequency === 'quarterly' && '/qtr'}
                           {localPaymentFrequency === 'annually' && '/yr'}
                         </p>
                       </div>

@@ -31,13 +31,13 @@ const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hp
 const CARD_ELEMENT_OPTIONS = {
   style: {
     base: {
-      fontSize: '18px',
+      fontSize: '14px',
       color: '#1f2937',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       '::placeholder': { 
         color: '#9ca3af' 
       },
-      lineHeight: '24px',
+      lineHeight: '20px',
     },
     invalid: { 
       color: '#ef4444',
@@ -433,14 +433,14 @@ function CheckoutForm({ userData }) {
   if (paymentStatus === 'completed') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#12243c] to-[#4b3965] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 text-center max-w-md mx-auto">
-          <div className="bg-gradient-to-r from-green-400 to-green-500 rounded-full p-6 mb-8 mx-auto w-24 h-24 flex items-center justify-center shadow-lg">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-auto">
+          <div className="bg-gradient-to-r from-green-400 to-green-500 rounded-full p-4 mb-6 mx-auto w-20 h-20 flex items-center justify-center shadow-lg">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Complete!</h2>
-          <p className="text-lg text-gray-600 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Payment Complete!</h2>
+          <p className="text-base text-gray-600 mb-4">
             Welcome to Alcor! Your membership is now active.
           </p>
           <div className="animate-pulse text-sm text-gray-500">
@@ -454,49 +454,73 @@ function CheckoutForm({ userData }) {
   return (
     <div>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Top Header Bar */}
-        <div className="py-4 px-8 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+        {/* Top Header Bar - Mobile */}
+        <div className="md:hidden">
+          <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+            {/* Additional diagonal gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+            
+            <div className="flex items-center justify-between pt-3 relative z-10">
+              <div className="flex items-center">
+                <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
+              </div>
+              
+              <div className="flex items-center">
+                <h1 className="flex items-center">
+                  <span className="text-xl font-bold text-white">Activate Membership</span>
+                  <img src={yellowStar} alt="" className="h-5 ml-0.5" />
+                </h1>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Top Header Bar - Desktop */}
+        <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
           {/* Additional diagonal gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
           
           <div className="w-full flex justify-between items-center relative z-10">
-            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-20" />
-            <h1 className="text-xl sm:text-2xl font-semibold text-white">Activate Membership</h1>
+            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
+            <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
+              Activate Membership
+              <img src={alcorStar} alt="" className="h-5 ml-0.5" />
+            </h1>
           </div>
         </div>
         
-        <div className="flex items-start justify-center pt-12 px-6">
-          <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-0">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden lg:h-[850px] max-w-sm sm:max-w-none mx-auto">
+        <div className="flex items-start justify-center pt-8 lg:pt-10 px-4">
+          <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-0">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
             
                 {/* LEFT SIDE - Order Summary with Custom Gradient */}
-<div className="lg:col-span-2 bg-gradient-to-br from-[#0a1629] to-[#1e2650] p-8 text-white flex flex-col relative overflow-hidden">
+                <div className="lg:col-span-2 bg-gradient-to-br from-[#0a1629] to-[#1e2650] p-6 text-white flex flex-col relative overflow-hidden">
                   {/* Additional diagonal gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
                   
                   <div className="relative z-10 h-full flex flex-col">
-                    <div className="mt-4 mb-8">
-                      <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                    <div className="mt-3 mb-6">
+                      <h2 className="text-xl font-bold text-white mb-4 flex items-center">
                         Activate Membership
-                        <img src={alcorStar} alt="Alcor Star" className="h-7 ml-1" />
+                        <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
                       </h2>
                     </div>
                     
-                    <div className="space-y-6 flex-grow">
+                    <div className="space-y-4 flex-grow">
                       {/* Grouped Summary Items - Membership, Discount, and Tax */}
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 space-y-6">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 space-y-4">
                         {/* Main Membership */}
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1 flex items-center">
+                            <h3 className="text-base font-semibold text-white mb-1 flex items-center">
                               Alcor Membership
-                              <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
+                              <img src={alcorStar} alt="Alcor Star" className="h-4 ml-1" />
                             </h3>
-                            <p className="text-white/70 text-sm mb-2">{paymentInfo.frequency} Plan</p>
+                            <p className="text-white/70 text-sm mb-1">{paymentInfo.frequency} Plan</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-white">
+                            <div className="text-xl font-bold text-white">
                               {formatCurrency(paymentInfo.originalAmount)}
                             </div>
                           </div>
@@ -505,14 +529,14 @@ function CheckoutForm({ userData }) {
                         {/* ICE Code Discount */}
                         {paymentInfo.hasDiscount && (
                           <>
-                            <hr className="border-white/20 my-4" />
+                            <hr className="border-white/20 my-3" />
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-white mb-1">ICE Code Discount</h3>
-                                <p className="text-white/70 text-sm mb-2">Code: {paymentInfo.iceCode}</p>
+                                <h3 className="text-base font-semibold text-white mb-1">ICE Code Discount</h3>
+                                <p className="text-white/70 text-sm mb-1">Code: {paymentInfo.iceCode}</p>
                               </div>
                               <div className="text-right">
-                                <div className="text-2xl font-bold text-blue-300">
+                                <div className="text-xl font-bold text-blue-300">
                                   -{formatCurrency(paymentInfo.discount)}
                                 </div>
                               </div>
@@ -521,14 +545,14 @@ function CheckoutForm({ userData }) {
                         )}
 
                         {/* Tax Section */}
-                        <hr className="border-white/20 my-4" />
+                        <hr className="border-white/20 my-3" />
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1">Tax</h3>
-                            <p className="text-white/70 text-sm mb-2">No tax applicable</p>
+                            <h3 className="text-base font-semibold text-white mb-1">Tax</h3>
+                            <p className="text-white/70 text-sm mb-1">No tax applicable</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-white">
+                            <div className="text-xl font-bold text-white">
                               $0.00
                             </div>
                           </div>
@@ -536,11 +560,11 @@ function CheckoutForm({ userData }) {
                       </div>
 
                       {/* Total Section */}
-                      <div className="mt-8 pt-6">
-                        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-6 border border-white/30">
+                      <div className="mt-6 pt-4">
+                        <div className="bg-white/15 backdrop-blur-sm rounded-lg p-4 border border-white/30">
                           <div className="flex justify-between items-center">
-                            <div className="text-lg font-semibold text-white">Total Due Today</div>
-                            <div className="text-3xl font-bold text-white">
+                            <div className="text-base font-semibold text-white">Total Due Today</div>
+                            <div className="text-2xl font-bold text-white">
                               {formatCurrency(paymentInfo.discountedAmount)}
                             </div>
                           </div>
@@ -550,8 +574,8 @@ function CheckoutForm({ userData }) {
 
                     {/* Security Info at Bottom */}
                     <div className="mt-auto pt-8">
-                      <div className="mb-6 flex justify-center">
-                        <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12 opacity-90" />
+                      <div className="mb-4 flex justify-center">
+                        <img src={whiteALogoNoText} alt="Alcor Logo" className="h-10 opacity-90" />
                       </div>
                       <div className="flex items-start text-white/60 text-xs leading-relaxed">
                         <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -567,23 +591,23 @@ function CheckoutForm({ userData }) {
 
                 {/* RIGHT SIDE - Payment Form with Internal Scrolling (Desktop Only) */}
                 <div className="lg:col-span-3 lg:h-full lg:overflow-hidden">
-                  <div className="lg:h-full lg:overflow-y-auto p-12">
-                    <div className="max-w-lg mx-auto w-full">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-10">Payment Information</h2>
+                  <div className="lg:h-full lg:overflow-y-auto p-6 lg:p-8">
+                    <div className="max-w-md mx-auto w-full">
+                      <h2 className="text-lg font-bold text-gray-900 mb-5">Payment Information</h2>
 
-                      <form onSubmit={handleSubmit} className="space-y-8 pb-8">
+                      <form onSubmit={handleSubmit} className="space-y-8 lg:space-y-6 pb-8 lg:pb-12">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-4">
+                          <label className="block text-sm font-semibold text-gray-700 mb-3">
                             Email Address
                           </label>
                           <div className="relative">
                             <input
                               type="email"
                               value={contactData?.email || ''}
-                              className="w-full px-5 py-5 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                              className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                               readOnly
                             />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                               <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                               </svg>
@@ -593,10 +617,10 @@ function CheckoutForm({ userData }) {
 
                         {/* Payment Method Selection */}
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-4">
+                          <label className="block text-sm font-semibold text-gray-700 mb-3">
                             Payment method
                           </label>
-                          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                          <div className="border border-gray-200 rounded-lg p-4 lg:p-3 space-y-3 lg:space-y-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
                                 <input
@@ -609,17 +633,17 @@ function CheckoutForm({ userData }) {
                                   className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
                                 />
                                 <label htmlFor="card" className="flex items-center cursor-pointer">
-                                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
                                   </svg>
-                                  <span className="font-medium">Card</span>
+                                  <span className="font-medium text-sm">Card</span>
                                 </label>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-6" />
-                                <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-6" />
-                                <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-6" />
-                                <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-6" />
+                              <div className="flex items-center space-x-1">
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-5" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" className="h-5" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a49b82f46c5cd6a96a6e418a6ca1717c.svg" alt="American Express" className="h-5" />
+                                <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac52cd46f89fa40a29a0bfb954e33173.svg" alt="Discover" className="h-5" />
                               </div>
                             </div>
                             
@@ -637,10 +661,10 @@ function CheckoutForm({ userData }) {
                                   className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
                                 />
                                 <label htmlFor="ach" className="flex items-center cursor-pointer">
-                                  <div className="bg-[#0052cc] text-white px-2 py-1 rounded text-xs font-bold mr-2">
-                                    SEPA
+                                  <div className="bg-[#0052cc] text-white px-2 py-0.5 rounded text-xs font-bold mr-2">
+                                    ACH
                                   </div>
-                                  <span className="font-medium">Direct Debit</span>
+                                  <span className="font-medium text-sm">Bank Transfer</span>
                                 </label>
                               </div>
                             </div>
@@ -649,10 +673,10 @@ function CheckoutForm({ userData }) {
 
                         {paymentMethod === 'card' ? (
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-4">
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">
                               Card Information
                             </label>
-                            <div className="border-2 border-gray-200 rounded-xl p-5 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
+                            <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
                               <CardElement 
                                 options={CARD_ELEMENT_OPTIONS}
                                 onReady={handleCardReady}
@@ -660,103 +684,73 @@ function CheckoutForm({ userData }) {
                               />
                             </div>
                             
-                            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                               <div className="flex items-start">
-                                <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <div className="text-sm text-blue-700">
+                                <div className="text-xs text-blue-700">
                                   <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
                                 </div>
                               </div>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-6">
+                          <div className="space-y-4">
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-4">
+                              <label className="block text-sm font-semibold text-gray-700 mb-3">
                                 Bank Account Information
                               </label>
                               <div className="space-y-4">
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">
                                     Routing Number
                                   </label>
                                   <input
                                     type="text"
                                     placeholder="9 digits"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">
                                     Account Number
                                   </label>
                                   <input
                                     type="text"
                                     placeholder="Account number"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">
                                     Account Type
                                   </label>
-                                  <select className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
+                                  <select className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
                                     <option value="checking">Checking</option>
                                     <option value="savings">Savings</option>
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                                    Bank Name
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="Your bank name"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">
                                     Account Holder Name
                                   </label>
                                   <input
                                     type="text"
                                     placeholder="Full name on account"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                                    IBAN
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="International Bank Account Number"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-2">
-                                    BIC/SWIFT Code
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="Bank identifier code"
-                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
                               <div className="flex items-start">
-                                <svg className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                <svg className="w-4 h-4 text-amber-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                 </svg>
-                                <div className="text-sm text-amber-700">
-                                  <strong>SEPA Payment Note:</strong> Bank transfers typically take 1-3 business days to process. Your membership will be activated once payment is confirmed.
+                                <div className="text-xs text-amber-700">
+                                  <strong>ACH Payment Note:</strong> Bank transfers typically take 1-3 business days to process. Your membership will be activated once payment is confirmed.
                                 </div>
                               </div>
                             </div>
@@ -764,12 +758,12 @@ function CheckoutForm({ userData }) {
                         )}
 
                         {error && (
-                          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                          <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-start">
-                              <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span className="text-sm text-red-700 font-medium">{error}</span>
+                              <span className="text-xs text-red-700 font-medium">{error}</span>
                             </div>
                           </div>
                         )}
@@ -777,7 +771,7 @@ function CheckoutForm({ userData }) {
                         <button
                           type="submit"
                           disabled={isLoading}
-                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-8 rounded-full font-semibold text-lg disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-3.5 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
                         >
                           {isLoading ? (
                             <div className="flex items-center justify-center">
@@ -789,32 +783,30 @@ function CheckoutForm({ userData }) {
                             </div>
                           ) : (
                             <span className="flex items-center">
-                              <img src={alcorStar} alt="" className="h-5 mr-3" />
+                              <img src={alcorStar} alt="" className="h-4 mr-2" />
                               {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                               </svg>
                             </span>
                           )}
                         </button>
 
-                        <p className="text-xs text-gray-500 text-center leading-relaxed">
+                        <p className="text-xs text-gray-500 text-center leading-tight -mt-2">
                           By completing your purchase, you agree to our{' '}
-                          <button 
-                            type="button" 
+                          <span 
                             onClick={() => openModal('terms')} 
-                            className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                            className="text-[#13273f] hover:underline cursor-pointer"
                           >
                             terms of service
-                          </button>{' '}
+                          </span>{' '}
                           and{' '}
-                          <button 
-                            type="button" 
+                          <span 
                             onClick={() => openModal('privacy')} 
-                            className="text-[#13273f] hover:underline focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:ring-offset-1 rounded px-1"
+                            className="text-[#13273f] hover:underline cursor-pointer"
                           >
                             privacy policy
-                          </button>.
+                          </span>.
                           Your membership will be activated immediately upon successful payment.
                         </p>
                       </form>
@@ -919,9 +911,9 @@ function PaymentPageLoader() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#12243c] border-t-transparent mb-6 mx-auto"></div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Payment</h3>
+        <div className="bg-white rounded-xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#12243c] border-t-transparent mb-4 mx-auto"></div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Payment</h3>
           <p className="text-gray-600">Preparing your secure checkout...</p>
         </div>
       </div>
@@ -931,17 +923,17 @@ function PaymentPageLoader() {
   if (error || !userData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md mx-auto">
-          <div className="bg-red-100 rounded-full p-4 mb-6 mx-auto w-16 h-16 flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-xl p-8 text-center max-w-md mx-auto">
+          <div className="bg-red-100 rounded-full p-3 mb-4 mx-auto w-14 h-14 flex items-center justify-center">
+            <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Unable to Load Payment</h3>
-          <p className="text-gray-600 mb-8">{error || 'Failed to load payment data'}</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Unable to Load Payment</h3>
+          <p className="text-gray-600 mb-6">{error || 'Failed to load payment data'}</p>
           <button 
             onClick={() => navigate('/signup')}
-            className="bg-gradient-to-r from-[#12243c] to-[#4b3965] text-white px-8 py-3 rounded-xl font-semibold hover:from-[#0f1e33] hover:to-[#402f56] transition-all duration-200 transform hover:scale-105 shadow-lg"
+            className="bg-gradient-to-r from-[#12243c] to-[#4b3965] text-white px-6 py-2.5 rounded-lg font-semibold hover:from-[#0f1e33] hover:to-[#402f56] transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
             Back to Signup
           </button>
