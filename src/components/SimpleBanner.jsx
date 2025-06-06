@@ -1,17 +1,18 @@
 // File: components/SimpleBanner.jsx
 import React from "react";
 import alcorWhiteLogo from "../assets/images/alcor-white-logo.png";
+import whiteALogoNoText from "../assets/images/alcor-white-logo-no-text.png";
 import yellowStar from "../assets/images/alcor-yellow-star.png";
+import alcorStar from "../assets/images/alcor-star.png";
 
 /**
  * Simple Banner Component for DocuSign signing page
- * Just logo on left, title on right - minimal and clean
+ * Matches the Stripe page styling exactly
  */
 const SimpleBanner = ({ 
-  logo = alcorWhiteLogo,
-  title = "Sign Your Membership Agreement",
+  logo = whiteALogoNoText,
+  title = "Membership Agreement",
   showStar = true,
-  backgroundColor = "#13263f"
 }) => {
   
   // Custom font style
@@ -20,33 +21,42 @@ const SimpleBanner = ({
   };
 
   return (
-    <div 
-      className="w-full bg-[#13263f] text-white px-6 py-6 flex items-center justify-between shadow-lg flex-shrink-0"
-      style={{
-        ...marcellusStyle,
-        backgroundColor: backgroundColor,
-        zIndex: 1000
-      }}
-    >
-      {/* Logo on the left - Much bigger */}
-      <div className="flex items-center">
-        <img 
-          src={logo} 
-          alt="Alcor Logo" 
-          className="h-12 md:h-16 lg:h-20"
-        />
+    <>
+      {/* Mobile Banner */}
+      <div className="md:hidden">
+        <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+          {/* Additional diagonal gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+          
+          <div className="flex items-center justify-between pt-3 relative z-10">
+            <div className="flex items-center">
+              <img src={logo} alt="Alcor Logo" className="h-12" />
+            </div>
+            
+            <div className="flex items-center">
+              <h1 className="flex items-center">
+                <span className="text-xl font-bold text-white">{title}</span>
+                {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
+              </h1>
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Title on the right - Bigger text */}
-      <div className="flex items-center">
-        <h1 className="flex items-center">
-          <span className="text-xl md:text-2xl lg:text-3xl font-bold">
+      {/* Desktop Banner */}
+      <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+        {/* Additional diagonal gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+        
+        <div className="w-full flex justify-between items-center relative z-10">
+          <img src={logo} alt="Alcor Logo" className="h-12" />
+          <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
             {title}
-          </span>
-          {showStar && <img src={yellowStar} alt="" className="h-7 md:h-8 lg:h-10 ml-2" />}
-        </h1>
+            {showStar && <img src={alcorStar} alt="" className="h-5 ml-0.5" />}
+          </h1>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

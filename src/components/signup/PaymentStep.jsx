@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignupFlow } from '../../contexts/SignupFlowContext';
 import { useUser } from '../../contexts/UserContext';
+import DotLoader, { PageLoader, InlineLoader } from '../DotLoader';
 
 // Import services to verify user has required data
 import { getContactInfo } from '../../services/contact';
@@ -76,25 +77,26 @@ export default function PaymentStep() {
     }, 1000);
   };
 
-  if (isLoading) {
+  /*if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-8 sm:px-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#673171] mb-6 mx-auto"></div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
                 Preparing Payment
               </h2>
-              <p className="text-gray-600 mb-6">
-                Verifying your information and preparing the secure payment form...
-              </p>
+              <DotLoader 
+                size="lg" 
+                color="primary" 
+                message="Verifying your information and preparing the secure payment form..."
+              />
             </div>
           </div>
         </div>
       </div>
     );
-  }
+  }*/
 
   if (error) {
     return (

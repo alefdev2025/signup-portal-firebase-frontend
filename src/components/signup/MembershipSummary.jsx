@@ -7,6 +7,7 @@ import { getContactInfo } from "../../services/contact";
 import fundingService from "../../services/funding";
 import { getMembershipCost } from "../../services/pricing";
 import astronautLaunch from "../../assets/images/astronaut-launch.png";
+import { PageLoader, InlineLoader } from "../DotLoader";
 
 export default function MembershipSummary({ 
   membershipData, 
@@ -381,9 +382,8 @@ export default function MembershipSummary({
 
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#775684]"></div>
-        <p className="mt-4 text-xl text-gray-600">Loading your membership summary...</p>
+      <div className="flex items-center justify-center py-12">
+        <PageLoader size="lg" color="primary" message="Loading your membership summary..." />
       </div>
     );
   }

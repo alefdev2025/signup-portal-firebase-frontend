@@ -1,9 +1,9 @@
 // File: pages/signup/MembershipDocuSign.jsx - OPTIMIZED EMBEDDED SIGNING
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
-import SimpleBanner from "../../components/SimpleBanner"; // Import the simple banner
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import whiteALogoNoText from "../../assets/images/alcor-white-logo-no-text.png";
 
 // Import services
 import membershipService from "../../services/membership";
@@ -602,7 +602,43 @@ export default function MembershipDocuSign({
     <div className="w-screen h-screen fixed inset-0 bg-white" style={marcellusStyle}>
       <div className="w-full h-full flex flex-col">
         {/* Simple Banner - Always show */}
-        <SimpleBanner title="Sign Your Membership Agreement" />
+        {/* Top Header Bar - Mobile */}
+        {/* Replace the SimpleBanner line with this exact code: */}
+
+        {/* Top Header Bar - Mobile */}
+        <div className="md:hidden">
+          <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+            {/* Additional diagonal gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+            
+            <div className="flex items-center justify-between pt-3 relative z-10">
+              <div className="flex items-center">
+                <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
+              </div>
+              
+              <div className="flex items-center">
+                <h1 className="flex items-center">
+                  <span className="text-xl font-bold text-white">Sign Agreement</span>
+                  <img src={yellowStar} alt="" className="h-5 ml-0.5" />
+                </h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Header Bar - Desktop */}
+        <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+          {/* Additional diagonal gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+          
+          <div className="w-full flex justify-between items-center relative z-10">
+            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
+            <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
+              Membership Agreement
+              <img src={alcorStar} alt="" className="h-5 ml-0.5" />
+            </h1>
+          </div>
+        </div>
         
         {/* Status Section - Show when not signing or when iframe hasn't loaded */}
         {(!showIframe || !iframeLoaded) && (

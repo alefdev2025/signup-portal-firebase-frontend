@@ -245,85 +245,89 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
     }
   };
   
-  const handleNext = async () => {
-    if (!selectedOption) {
-      console.warn("⚠️ PackagePage: No option selected, cannot proceed");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    console.log("➡️ PackagePage: Handle next button clicked");
-    console.log("📋 PackagePage: Current selections:");
-    console.log("  - Selected Option:", selectedOption);
-    console.log("  - Selected Package:", selectedPackage);
-    console.log("  - Is International:", isInternational);
-    console.log("  - User Country:", userCountry);
-    
-    try {
-      // Calculate the final membership price based on selected package
-      let finalPrice = membershipCost;
-      if (selectedPackage === "basic") {
-        finalPrice = membershipCost * 0.8;
-      } else if (selectedPackage === "premium") {
-        finalPrice = membershipCost * 1.5;
-      }
-      
-      // Calculate preservation cost with international pricing
-      const preservationEstimate = calculatePreservationEstimate(selectedOption);
-      
-      console.log("💰 PackagePage: Price calculations:");
-      console.log("  - Base membership cost:", membershipCost);
-      console.log("  - Final membership price:", finalPrice);
-      console.log("  - Preservation estimate:", preservationEstimate);
-      console.log("  - International surcharge applied:", isInternational && selectedOption !== "basic");
-      
-      // Prepare the data object to pass to the parent component
-      const packageData = {
-        packageType: selectedPackage,
-        packageDetails: {
-          cost: finalPrice,
-          preservationType: selectedOption,
-          preservationEstimate: preservationEstimate,
-          basePrice: membershipCost,
-          isInternational: isInternational,
-          userCountry: userCountry,
-          calculatedAt: new Date().toISOString()
-        }
-      };
-      
-      console.log("📦 PackagePage: Package data to save:", packageData);
-      
-      // Save package info to backend
-      console.log("💾 PackagePage: Saving package info to backend...");
-      const saveResult = await savePackageInfo(packageData);
-      
-      if (!saveResult || !saveResult.success) {
-        throw new Error("Failed to save package information to backend");
-      }
-      
-      console.log("✅ PackagePage: Package info saved successfully");
-      
-      // Use onNext prop to let parent handle navigation
-      if (onNext) {
-        console.log("➡️ Using parent onNext handler");
-        const success = await onNext(packageData);
-        if (!success) {
-          throw new Error("Failed to proceed to next step");
-        }
-        console.log("✅ PackagePage: Successfully proceeded to next step");
-      } else {
-        console.warn("⚠️ No onNext handler provided");
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("❌ Error in handleNext:", error);
-      alert(error.message || "Failed to save package information. Please try again.");
-      setIsSubmitting(false);
-      return false;
-    }
-  };
+// In PackageStep.jsx
+const handleNext = async () => {
+  if (!selectedOption) {
+    console.warn("⚠️ PackagePage: No option selected, cannot proceed");
+    return;
+  }
   
+  setIsSubmitting(true);
+  console.log("➡️ PackagePage: Handle next button clicked");
+  console.log("📋 PackagePage: Current selections:");
+  console.log("  - Selected Option:", selectedOption);
+  console.log("  - Selected Package:", selectedPackage);
+  console.log("  - Is International:", isInternational);
+  console.log("  - User Country:", userCountry);
+  
+  try {
+    // Calculate the final membership price based on selected package
+    let finalPrice = membershipCost;
+    if (selectedPackage === "basic") {
+      finalPrice = membershipCost * 0.8;
+    } else if (selectedPackage === "premium") {
+      finalPrice = membershipCost * 1.5;
+    }
+    
+    // Calculate preservation cost with international pricing
+    const preservationEstimate = calculatePreservationEstimate(selectedOption);
+    
+    console.log("💰 PackagePage: Price calculations:");
+    console.log("  - Base membership cost:", membershipCost);
+    console.log("  - Final membership price:", finalPrice);
+    console.log("  - Preservation estimate:", preservationEstimate);
+    console.log("  - International surcharge applied:", isInternational && selectedOption !== "basic");
+    
+    // Prepare the data object to pass to the parent component
+    const packageData = {
+      packageType: selectedPackage,
+      packageDetails: {
+        cost: finalPrice,
+        preservationType: selectedOption,
+        preservationEstimate: preservationEstimate,
+        basePrice: membershipCost,
+        isInternational: isInternational,
+        userCountry: userCountry,
+        calculatedAt: new Date().toISOString()
+      }
+    };
+    
+    console.log("📦 PackagePage: Package data to save:", packageData);
+    
+    // Save package info to backend
+    console.log("💾 PackagePage: Saving package info to backend...");
+    const saveResult = await savePackageInfo(packageData);
+    
+    if (!saveResult || !saveResult.success) {
+      throw new Error("Failed to save package information to backend");
+    }
+    
+    console.log("✅ PackagePage: Package info saved successfully");
+    
+    // Use onNext prop to let parent handle navigation
+    if (onNext) {
+      console.log("➡️ Using parent onNext handler");
+      const success = await onNext(packageData);
+      if (!success) {
+        throw new Error("Failed to proceed to next step");
+      }
+      console.log("✅ PackagePage: Successfully proceeded to next step");
+    } else {
+      console.warn("⚠️ No onNext handler provided");
+    }
+    
+    // Reset submitting state after successful completion
+    setIsSubmitting(false);
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Error in handleNext:", error);
+    alert(error.message || "Failed to save package information. Please try again.");
+    setIsSubmitting(false);
+    return false;
+  }
+};
+
   const selectOption = (option) => {
     console.log("🎯 PackagePage: Option selected:", option);
     console.log("💰 PackagePage: Price for", option + ":", calculatePreservationEstimate(option));

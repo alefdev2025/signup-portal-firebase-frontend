@@ -16,7 +16,7 @@ export const fundingOptions = {
       textColor: "text-white"
     },
     pricing: {
-      cost: "$50-250/month",
+      cost: "$25-250/month",
       complexity: "Simple",
       costColor: "text-[#49355B]"
     },
@@ -122,7 +122,7 @@ export const fundingOptions = {
       cost: "Cryopreservation",
       complexity: "At Your Own Pace",
       costLabel: "Intent:",
-      complexityLabel: "Funding Decision:",
+      complexityLabel: "Funding:",
       costColor: "text-[#13233e]"
     },
     benefits: [

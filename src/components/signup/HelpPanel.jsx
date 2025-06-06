@@ -41,7 +41,7 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
         color: white !important;
         border: none !important;
         border-radius: 50% !important;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         cursor: pointer !important;
         display: flex !important;
         align-items: center !important;
@@ -55,6 +55,7 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
       .help-panel-button:hover {
         background-color: #8a4191 !important;
         transform: scale(1.05) !important;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
       }
       
       .help-panel-popup {
@@ -64,12 +65,15 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
         z-index: 999998 !important;
         width: 320px !important;
         max-width: calc(100vw - 64px) !important;
-        background-color: white !important;
+        background-color: #ffffff !important;
         border-radius: 8px !important;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
-        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+        border: none !important;
         overflow: hidden !important;
         animation: slideInUp 0.3s ease-out !important;
+        outline: none !important;
+        -webkit-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+        -moz-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
       }
       
       @keyframes slideInUp {
@@ -96,6 +100,7 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
         padding: 20px !important;
         max-height: 384px !important;
         overflow-y: auto !important;
+        background-color: #ffffff !important;
       }
       
       .help-panel-item {

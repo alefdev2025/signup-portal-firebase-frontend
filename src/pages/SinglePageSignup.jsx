@@ -79,7 +79,7 @@ export default function SinglePageSignup() {
   // Get banner title for special steps
   const getSimpleBannerTitle = () => {
     if (currentStep?.id === 'docusign') {
-      return "Sign Your Membership Agreement";
+      return "Membership Agreement";
     }
     if (currentStep?.id === 'payment') {
       return "Complete Your Payment";

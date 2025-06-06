@@ -660,26 +660,28 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           </div>
         </div>
       )}
-      <div className="w-full mx-auto px-1 sm:px-6 lg:px-8" style={{ maxWidth: "95%" }}>
+      
+      {/* Container that uses 80% of viewport width on desktop, full width on mobile */}
+      <div className="w-full mx-auto px-5 sm:px-6 lg:px-8 lg:max-w-[80%]">
         <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
           {/* Personal Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-4 md:p-12 px-6 md:px-14">
-              <div className="mb-6 md:mb-14 flex items-start pt-2 md:pt-4">
-                <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
+            <div className="p-6 md:p-10">
+              <div className="mb-8 md:mb-10 flex items-start">
+                <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <div className="ml-4 pt-2 md:pt-3">
-                  <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Personal Information</h2>
-                  <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
+                <div className="ml-4 pt-0.5 md:pt-1">
+                  <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Personal Information</h2>
+                  <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
                     Please provide your personal details for your member file.
                   </p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
                 <div>
                   <LabelWithIcon label="First Name" required={true} />
                   <InputField
@@ -836,24 +838,24 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           </div>
           
           {/* Address Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full mx-auto">
-            <div className="p-4 md:p-12 px-6 md:px-14">
-              <div className="mb-6 md:mb-14 flex items-start pt-2 md:pt-4">
-                <div className="bg-[#775684] p-4 md:p-4 p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
+            <div className="p-6 md:p-10">
+              <div className="mb-8 md:mb-10 flex items-start">
+                <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <div className="ml-4 pt-2 md:pt-3">
-                  <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Address Information</h2>
-                  <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
+                <div className="ml-4 pt-0.5 md:pt-1">
+                  <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Address Information</h2>
+                  <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
                     Start typing to search with Google Places. Addresses will be validated when you continue.
                   </p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
                 {/* Home address with Google Places Autocomplete */}
                 <div className="md:col-span-2">
                   <div className="address-autocomplete-field">
@@ -974,22 +976,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               
               {/* Mailing address fields - conditionally shown */}
               {showMailingAddress && (
-                <div className="mt-14 pt-10 border-t border-gray-200">
-                  <div className="mb-12 flex items-start pt-4">
-                    <div className="bg-[#775684] p-3 md:p-4 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="mt-10 pt-8 border-t border-gray-200">
+                  <div className="mb-8 flex items-start">
+                    <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="ml-4 pt-2 md:pt-3">
-                      <h3 className="text-xl md:text-2xl font-semibold text-gray-800">Mailing Address</h3>
-                      <p className="text-sm text-gray-500 italic font-light mt-1 md:text-sm text-xs">
+                    <div className="ml-4 pt-0.5 md:pt-1">
+                      <h3 className="text-lg md:text-xl font-semibold text-gray-800">Mailing Address</h3>
+                      <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
                         Please provide the address where you would like to receive mail.
                       </p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
                     <div className="md:col-span-2">
                       <div className="address-autocomplete-field">
                         <AddressAutocompleteV3
@@ -1094,7 +1096,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           </div>
           
           {/* Navigation buttons */}
-          <div className="flex justify-between mt-8 mb-6 w-full mx-auto">
+          <div className="flex justify-between mt-8 mb-6 w-full">
             <button
               type="button"
               onClick={handleBack}

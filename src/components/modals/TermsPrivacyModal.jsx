@@ -1,4 +1,4 @@
-// File: components/modals/TermsPrivacyModal.jsx - COMPLETE WORKING VERSION
+// File: components/modals/TermsPrivacyModal.jsx - NAVY VERSION
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import alcorLogo from "../../assets/images/alcor-white-logo-no-text.png";
@@ -152,7 +152,7 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
       >
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(90deg, #6f2d74 0%, #8a4099 100%)',
+          backgroundColor: '#262c4c',
           borderTopLeftRadius: '12px',
           borderTopRightRadius: '12px',
           padding: '16px 24px',
@@ -201,7 +201,7 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
                 width: '48px',
                 height: '48px',
                 border: '3px solid #e5e7eb',
-                borderTop: '3px solid #6f2d74',
+                borderTop: '3px solid #262c4c',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite'
               }}></div>
@@ -272,26 +272,26 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
           <button 
             onClick={onClose} 
             style={{
-              backgroundColor: '#6f2d74',
+              backgroundColor: '#262c4c',
               color: 'white',
               border: 'none',
               padding: '12px 32px',
               borderRadius: '9999px',
               fontWeight: 500,
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(111, 45, 116, 0.3)',
+              boxShadow: '0 4px 14px rgba(38, 44, 76, 0.3)',
               transition: 'all 0.2s ease',
               fontSize: '16px'
             }}
             onMouseOver={(e) => {
-              e.target.style.backgroundColor = '#5a2460';
+              e.target.style.backgroundColor = '#1a1f33';
               e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 6px 20px rgba(111, 45, 116, 0.4)';
+              e.target.style.boxShadow = '0 6px 20px rgba(38, 44, 76, 0.4)';
             }}
             onMouseOut={(e) => {
-              e.target.style.backgroundColor = '#6f2d74';
+              e.target.style.backgroundColor = '#262c4c';
               e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 14px rgba(111, 45, 116, 0.3)';
+              e.target.style.boxShadow = '0 4px 14px rgba(38, 44, 76, 0.3)';
             }}
           >
             Close
