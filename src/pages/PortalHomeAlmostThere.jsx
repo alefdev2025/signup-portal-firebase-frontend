@@ -33,7 +33,7 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems }) => {
     <>
       <button
         onClick={toggleHelpInfo}
-        className={`fixed right-5 bottom-20 z-[100] bg-[#C49278] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 ${
+        className={`fixed right-8 bottom-20 z-[100] bg-[#C49278] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 ${
           showHelpInfo ? 'ring-4 ring-white ring-opacity-50' : ''
         }`}
       >
@@ -187,12 +187,12 @@ const PortalPage = () => {
         <div 
           className="fixed inset-0"
           style={{ 
-            background: 'radial-gradient(ellipse at center 65%, rgba(220, 194, 84, 0.3) 0%, rgba(185, 129, 104, 0.96) 10%, rgba(127, 96, 131, 0.96) 27.5%, rgba(85, 57, 108, 0.96) 45%, rgba(36, 44, 73, 0.95) 65%, rgba(27, 40, 66, 0.94) 82.5%, rgba(12, 24, 40, 0.95) 100%)'
+            background: 'radial-gradient(ellipse at center 65%, rgba(220, 194, 84, 0.3) 0%, rgba(185, 129, 104, 0.96) 11%, rgba(127, 96, 131, 0.96) 28%, rgba(85, 57, 108, 0.96) 48%, rgba(36, 44, 73, 0.95) 65%, rgba(27, 40, 66, 0.94) 82%, rgba(12, 24, 45, 0.95) 100%)'
           }}
         />
         
         <div className="relative z-10 min-h-screen flex flex-col">
-          <div className="flex flex-col items-center justify-center px-4 md:px-8 text-center pt-28 pb-12">
+          <div className="flex flex-col items-center justify-center px-4 md:px-8 text-center pt-32 pb-12">
             <h1 className="text-3xl md:text-5xl font-light text-white mb-3">
               Member Portal
             </h1>
@@ -202,23 +202,23 @@ const PortalPage = () => {
           </div>
           
           <div className="px-4 md:px-8 py-2">
-            <div className="max-w-[1320px] mx-auto">
-              <h2 className="text-2xl md:text-3xl font-light text-white mb-6 mt-6">Member Portal Home</h2>
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-light text-white mb-5">Member Portal Home</h2>
               
-              <div className="bg-white/95 backdrop-blur px-4 pt-5 pb-4 rounded-xl" style={{ boxShadow: '10px 15px 30px -12px rgba(0, 0, 0, 0.2), 3px 7px 15px -8px rgba(0, 0, 0, 0.15)' }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="bg-white/95 backdrop-blur px-10 pt-8 pb-4 rounded-xl" style={{ boxShadow: '15px 20px 40px -15px rgba(0, 0, 0, 0.3), 5px 10px 20px -10px rgba(0, 0, 0, 0.2)' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                   {portalSections.map((section, index) => (
                     <div key={index} className="cursor-pointer group">
-                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[250px]" style={{ boxShadow: '0 -2px 8px -3px rgba(0, 0, 0, 0.1), 3px 8px 16px -8px rgba(0, 0, 0, 0.15), 4px 12px 24px -10px rgba(0, 0, 0, 0.12)' }}>
+                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[260px]" style={{ boxShadow: '0 -2px 8px -3px rgba(0, 0, 0, 0.1), 8px 12px 20px -8px rgba(0, 0, 0, 0.2), 4px 6px 10px -4px rgba(0, 0, 0, 0.15)' }}>
                         <div className="p-4 pb-3 flex-grow">
-                          <div className="flex items-start gap-3 mb-3">
+                          <div className="flex items-start gap-3 mb-4">
                             <div 
                               className="p-3.5 rounded-lg flex-shrink-0"
                               style={{ backgroundColor: section.bgColor }}
                             >
                               {section.icon}
                             </div>
-                            <h3 className="text-[1.375rem] font-light text-gray-900 pt-0">{section.name}</h3>
+                            <h3 className="text-[1.375rem] font-light text-gray-900 pt-0.5">{section.name}</h3>
                           </div>
                           
                           <p className="text-gray-600 text-base leading-relaxed">
@@ -226,7 +226,7 @@ const PortalPage = () => {
                           </p>
                         </div>
                         
-                        <div className="mx-3 mb-4">
+                        <div className="mx-3 mb-3">
                           <div className="bg-white rounded-lg p-3.5 border border-gray-200" style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
                             <p className="text-sm text-gray-500 mb-1 font-medium">{section.stats.label}</p>
                             <p className="text-2xl font-extrabold text-gray-900">{section.stats.value}</p>
@@ -237,7 +237,7 @@ const PortalPage = () => {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
                   <button className="relative overflow-hidden rounded-lg px-6 py-4 shadow-xl hover:shadow-2xl transition-all duration-200 group">
                     <div 
                       className="absolute inset-0 bg-cover bg-center"
