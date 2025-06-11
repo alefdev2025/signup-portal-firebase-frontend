@@ -87,7 +87,7 @@ const PortalPage = () => {
       content: "Welcome to your Alcor member portal. Here you can manage your profile, access important documents, schedule appointments, and stay connected with your membership benefits."
     },
     {
-      title: "My Profile",
+      title: "Profile",
       content: "Update your personal information, emergency contacts, and membership preferences. Keep your profile current to ensure we can reach you when needed."
     },
     {
@@ -148,7 +148,7 @@ const PortalPage = () => {
     { 
       name: 'Documents', 
       icon: <DocumentsIcon />,
-      description: 'View and upload important membership documents.',
+      description: 'View and upload important membership documents and videos.',
       bgColor: '#34495E',
       stats: {
         label: 'Required Documents Added',
@@ -159,7 +159,7 @@ const PortalPage = () => {
       name: 'Payment', 
       icon: <PaymentIcon />,
       description: 'Manage billing and view payment history.',
-      bgColor: '#5D4E6D',
+      bgColor: '#6B4C75',
       stats: {
         label: 'Next Payment',
         value: 'Jan 15'
@@ -202,7 +202,7 @@ const PortalPage = () => {
           </div>
           
           <div className="px-4 md:px-8 py-2">
-            <div className="max-w-[1320px] mx-auto">
+            <div className="max-w-[1280px] mx-auto">
               <h2 className="text-2xl md:text-3xl font-light text-white mb-6 mt-6">Member Portal Home</h2>
               
               <div className="bg-white/95 backdrop-blur px-4 pt-5 pb-4 rounded-xl" style={{ boxShadow: '10px 15px 30px -12px rgba(0, 0, 0, 0.2), 3px 7px 15px -8px rgba(0, 0, 0, 0.15)' }}>
@@ -218,7 +218,7 @@ const PortalPage = () => {
                             >
                               {section.icon}
                             </div>
-                            <h3 className="text-[1.375rem] font-light text-gray-900 pt-0">{section.name}</h3>
+                            <h3 className="text-[1.4rem] font-normal text-gray-900 pt-0">{section.name}</h3>
                           </div>
                           
                           <p className="text-gray-600 text-base leading-relaxed">
@@ -249,7 +249,7 @@ const PortalPage = () => {
                     />
                     <div className="relative z-10 text-center">
                       <h4 className="text-lg font-medium text-white mb-1">Quick Start Guide</h4>
-                      <p className="text-white/90 text-sm">Learn how to make the most of your membership</p>
+                      <p className="text-white/90 text-sm">Learn how to use the member portal</p>
                     </div>
                   </button>
                   
@@ -263,8 +263,8 @@ const PortalPage = () => {
                       style={{ background: 'linear-gradient(135deg, rgba(107, 76, 111, 0.9) 0%, rgba(85, 57, 108, 0.9) 50%, rgba(60, 50, 90, 0.95) 100%)' }}
                     />
                     <div className="relative z-10 text-center">
-                      <h4 className="text-lg font-medium text-white mb-1">Member Benefits</h4>
-                      <p className="text-white/90 text-sm">Explore all the advantages of your membership</p>
+                      <h4 className="text-lg font-medium text-white mb-1">Member Resources</h4>
+                      <p className="text-white/90 text-sm">Explore resources for improving your cryopreservation</p>
                     </div>
                   </button>
                   
@@ -279,7 +279,7 @@ const PortalPage = () => {
                     />
                     <div className="relative z-10 text-center">
                       <h4 className="text-lg font-medium text-white mb-1">Support Center</h4>
-                      <p className="text-white/90 text-sm">Get help when you need it most</p>
+                      <p className="text-white/90 text-sm">Get help with member services</p>
                     </div>
                   </button>
                 </div>
