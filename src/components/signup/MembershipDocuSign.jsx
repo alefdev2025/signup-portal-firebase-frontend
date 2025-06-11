@@ -11,6 +11,9 @@ import fundingService from "../../services/funding";
 import { getContactInfo } from "../../services/contact";
 import { getMembershipCost } from "../../services/pricing";
 
+import DotLoader, { NewtonCradleLoader } from "../../components/DotLoader";
+
+
 export default function MembershipDocuSign({ 
   membershipData,
   packageData,
@@ -192,6 +195,21 @@ export default function MembershipDocuSign({
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
+    }
+    
+    // EMERGENCY FIX: Force iframe to full viewport
+    if (iframeRef.current) {
+      const iframe = iframeRef.current;
+      iframe.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 999999 !important;';
+      
+      // Also hide any parent containers that might be constraining it
+      document.body.style.overflow = 'hidden';
+      
+      // Find and hide the signup layout if it exists
+      const signupLayout = document.querySelector('.signup-layout');
+      if (signupLayout) {
+        signupLayout.style.display = 'none';
+      }
     }
     
     // Try to communicate with the iframe
@@ -488,9 +506,7 @@ export default function MembershipDocuSign({
     switch (docuSignStatus) {
       case 'initializing':
         return {
-          icon: (
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684]"></div>
-          ),
+          icon: <DotLoader size="lg" color="primary" />,
           title: 'Preparing Your Agreement',
           message: 'Gathering your information and preparing your membership agreement...',
           color: 'text-[#775684]'
@@ -498,13 +514,7 @@ export default function MembershipDocuSign({
       
       case 'creating':
         return {
-          icon: (
-            <div className="bg-gradient-to-r from-[#775684] via-[#5a4a6b] to-[#3d3852] rounded-full p-4">
-              <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-          ),
+          icon: <NewtonCradleLoader size="lg" color="primary" />,
           title: 'Creating DocuSign Envelope',
           message: 'Setting up your embedded signing experience...',
           color: 'text-[#775684]'
@@ -512,7 +522,9 @@ export default function MembershipDocuSign({
       
       case 'signing':
         return {
-          icon: (
+          icon: !iframeLoaded ? (
+            <DotLoader size="lg" color="primary" />
+          ) : (
             <div className="bg-blue-500 rounded-full p-4">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -556,7 +568,7 @@ export default function MembershipDocuSign({
       
       default:
         return {
-          icon: <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684]"></div>,
+          icon: <DotLoader size="lg" color="primary" />,
           title: 'Loading...',
           message: 'Please wait...',
           color: 'text-gray-600'
@@ -598,107 +610,140 @@ export default function MembershipDocuSign({
     );
   }
 
+  // Use useEffect to break out of any parent constraints
+  useEffect(() => {
+    // Save original body styles
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    
+    // Lock body scroll and ensure full viewport
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    
+    // Hide any parent containers
+    const allParents = document.querySelectorAll('.signup-layout, .signup-container, [class*="layout"], [class*="container"]');
+    const hiddenElements = [];
+    allParents.forEach(el => {
+      if (!el.contains(document.querySelector('.docusign-fullscreen-container'))) {
+        if (el.style.display !== 'none') {
+          hiddenElements.push({ element: el, originalDisplay: el.style.display });
+          el.style.display = 'none';
+        }
+      }
+    });
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      hiddenElements.forEach(({ element, originalDisplay }) => {
+        element.style.display = originalDisplay;
+      });
+    };
+  }, []);
+
   return (
-    <div className="w-screen h-screen fixed inset-0 bg-white" style={marcellusStyle}>
-      <div className="w-full h-full flex flex-col">
-        {/* Simple Banner - Always show */}
-        {/* Top Header Bar - Mobile */}
-        {/* Replace the SimpleBanner line with this exact code: */}
-
-        {/* Top Header Bar - Mobile */}
-        <div className="md:hidden">
-          <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
-            {/* Additional diagonal gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
-            
-            <div className="flex items-center justify-between pt-3 relative z-10">
-              <div className="flex items-center">
-                <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
-              </div>
-              
-              <div className="flex items-center">
-                <h1 className="flex items-center">
-                  <span className="text-xl font-bold text-white">Sign Agreement</span>
-                  <img src={yellowStar} alt="" className="h-5 ml-0.5" />
-                </h1>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Header Bar - Desktop */}
-        <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+    <div 
+      className="docusign-fullscreen-container"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        zIndex: 999999,
+        ...marcellusStyle
+      }}
+    >
+      {/* Top Header Bar - Mobile */}
+      <div className="md:hidden" style={{ flexShrink: 0 }}>
+        <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
           {/* Additional diagonal gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
           
-          <div className="w-full flex justify-between items-center relative z-10">
-            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
-            <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
-              Membership Agreement
-              <img src={alcorStar} alt="" className="h-5 ml-0.5" />
-            </h1>
-          </div>
-        </div>
-        
-        {/* Status Section - Show when not signing or when iframe hasn't loaded */}
-        {(!showIframe || !iframeLoaded) && (
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-            {/* Status Icon */}
-            <div className="flex justify-center mb-8">
-              {statusDisplay.icon}
+          <div className="flex items-center justify-between pt-3 relative z-10">
+            <div className="flex items-center">
+              <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
             </div>
             
-            {/* Status Title */}
-            <h2 className={`text-3xl font-bold mb-6 ${statusDisplay.color}`}>
-              {statusDisplay.title}
-            </h2>
-            
-            {/* Status Message */}
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              {statusDisplay.message}
-            </p>
-            
-            {/* Debug Information (only in development) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left text-sm">
-                <h4 className="font-semibold mb-2">Debug Info:</h4>
-                <p>Status: {docuSignStatus}</p>
-                <p>Iframe Loaded: {iframeLoaded ? 'Yes' : 'No'}</p>
-                <p>Iframe Error: {iframeError ? 'Yes' : 'No'}</p>
-                <p>Show Iframe: {showIframe ? 'Yes' : 'No'}</p>
-                <p>Retry Count: {retryCountRef.current}</p>
-                {signingUrl && <p>Signing URL: {signingUrl.substring(0, 50)}...</p>}
+            <div className="flex items-center">
+              <h1 className="flex items-center">
+                <span className="text-xl font-bold text-white">Sign Agreement</span>
+                <img src={alcorStar} alt="" className="h-5 ml-0.5" />
+              </h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Header Bar - Desktop */}
+      <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative" style={{ flexShrink: 0 }}>
+        {/* Additional diagonal gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+        
+        <div className="w-full flex justify-between items-center relative z-10">
+          <img src={whiteALogoNoText} alt="Alcor Logo" className="h-12" />
+          <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
+            Membership Agreement
+            <img src={alcorStar} alt="" className="h-5 ml-0.5" />
+          </h1>
+        </div>
+      </div>
+      
+      {/* Main Content Area */}
+      <div style={{ flex: '1 1 auto', position: 'relative', overflow: 'hidden' }}>
+        {/* Status Section - Show when not signing or when iframe hasn't loaded */}
+        {(!showIframe || !iframeLoaded) && (
+          <div style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: '1rem'
+          }}>
+            {/* Simplified loading display */}
+            {(docuSignStatus === 'initializing' || docuSignStatus === 'creating' || 
+              (docuSignStatus === 'signing' && !iframeLoaded)) && (
+              <div className="text-center">
+                <DotLoader 
+                  size="lg" 
+                  color="primary" 
+                  className="mb-8"
+                />
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                  {docuSignStatus === 'initializing' && 'Preparing Your Agreement'}
+                  {docuSignStatus === 'creating' && 'Creating DocuSign Envelope'}
+                  {docuSignStatus === 'signing' && !iframeLoaded && 'Loading Document'}
+                </h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  {docuSignStatus === 'initializing' && 'We\'re gathering your information...'}
+                  {docuSignStatus === 'creating' && 'Setting up your signing session...'}
+                  {docuSignStatus === 'signing' && !iframeLoaded && 'Almost there...'}
+                </p>
               </div>
             )}
             
-            {/* Action Buttons */}
-            <div className="flex justify-center space-x-6">
-              {docuSignStatus === 'error' && (
-                <>
-                  <button
-                    onClick={onBack}
-                    className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
-                  >
-                    Go Back
-                  </button>
-                  <button
-                    onClick={handleRetryDocuSign}
-                    className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    onClick={handleRefreshPage}
-                    className="px-8 py-4 border border-[#775684] text-[#775684] rounded-full font-medium text-lg hover:bg-[#775684] hover:text-white transition-all duration-300"
-                  >
-                    Refresh Page
-                  </button>
-                </>
-              )}
-              
-              {docuSignStatus === 'completed' && (
+            {/* Success state */}
+            {docuSignStatus === 'completed' && (
+              <div className="text-center">
+                <div className="bg-green-500 rounded-full p-4 w-fit mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold text-green-600 mb-4">
+                  Agreement Signed Successfully!
+                </h2>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <div className="flex items-center text-green-800">
+                  <div className="flex items-center justify-center text-green-800">
                     <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                     </svg>
@@ -707,26 +752,85 @@ export default function MembershipDocuSign({
                     </span>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {/* Error state */}
+            {docuSignStatus === 'error' && (
+              <div className="text-center">
+                <div className="bg-red-500 rounded-full p-4 w-fit mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Signing Error</h2>
+                <p className="text-gray-600 mb-8">{docuSignError || 'There was an error with the signing process.'}</p>
+                
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={onBack}
+                    className="px-6 py-3 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50 transition-all duration-300"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    onClick={handleRetryDocuSign}
+                    className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         
         {/* DocuSign Embedded Iframe - FULL SCREEN */}
         {showIframe && signingUrl && (
-          <div className="flex-1 relative w-full">
+          <div style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 999999
+          }}>
             {/* Loading overlay - shows until iframe loads */}
             {!iframeLoaded && (
-              <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mb-4"></div>
-                <p className="text-gray-600 text-lg">Loading signing interface...</p>
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10
+              }}>
+                <DotLoader 
+                  size="lg" 
+                  color="primary" 
+                  message="Loading signing interface..."
+                  className="mb-2"
+                />
                 <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
               </div>
             )}
             
             {/* Error overlay - shows if iframe fails to load */}
             {iframeError && (
-              <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10
+              }}>
                 <div className="bg-red-500 rounded-full p-4 mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -747,18 +851,22 @@ export default function MembershipDocuSign({
             <iframe
               ref={iframeRef}
               src={signingUrl}
-              className="w-full h-full border-0 block"
               title="DocuSign Embedded Signing"
               allow="camera; microphone; geolocation"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+              frameBorder="0"
               style={{ 
+                position: 'absolute',
+                top: 0,
+                left: 0,
                 width: '100%',
                 height: '100%',
-                minHeight: '100%',
+                border: 'none',
+                display: 'block',
                 opacity: iframeLoaded ? 1 : 0,
                 transition: 'opacity 0.3s ease-in-out',
-                border: 'none',
-                outline: 'none'
+                minHeight: '100vh',
+                minWidth: '100vw'
               }}
               onLoad={handleIframeLoad}
               onError={handleIframeError}

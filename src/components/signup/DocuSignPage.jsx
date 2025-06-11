@@ -1,9 +1,12 @@
 // File: pages/signup/DocuSignPage.jsx - FULL SCREEN EMBEDDED SIGNING WITH TEST MODE
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useUser } from "../../contexts/UserContext";
 import SimpleBanner from "../../components/SimpleBanner";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
+import whiteALogoNoText from "../../assets/images/alcor-white-logo-no-text.png";
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { PageLoader } from "../../components/DotLoader";
 
 // Global test mode configuration
 const TEST_MODE = true; // Set to true to bypass DocuSign and show test button instead
@@ -27,6 +30,7 @@ export default function DocuSignPage({
   const [showIframe, setShowIframe] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeError, setIframeError] = useState(false);
+  const [portalContainer, setPortalContainer] = useState(null);
   
   // Constants
   const MAX_RETRY_ATTEMPTS = 3;
@@ -43,11 +47,52 @@ export default function DocuSignPage({
     'https://eu2.docusign.net'
   ];
   
-  // Apply Marcellus font
-  const marcellusStyle = {
-    fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-    fontSize: "1.05rem"
-  };
+  // Use system font to match other pages
+  const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  // Create portal container when we need to show the iframe
+  useEffect(() => {
+    if (showIframe && signingUrl && !portalContainer) {
+      // Create a portal container at the body level
+      const container = document.createElement('div');
+      container.id = 'docusign-portal-container';
+      container.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 999999 !important;
+        background-color: white !important;
+      `;
+      document.body.appendChild(container);
+      setPortalContainer(container);
+
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
+      console.log('Portal container created for DocuSign iframe');
+    }
+
+    // Cleanup on unmount or when iframe is hidden
+    return () => {
+      if (portalContainer && portalContainer.parentNode) {
+        portalContainer.parentNode.removeChild(portalContainer);
+        setPortalContainer(null);
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
+    };
+  }, [showIframe, signingUrl, portalContainer]);
 
   // TEST MODE: Handle test completion
   const handleTestComplete = async () => {
@@ -63,16 +108,22 @@ export default function DocuSignPage({
   };
 
   // Cleanup function
-  const cleanup = useCallback(() => {
-    if (messageListenerRef.current) {
-      window.removeEventListener('message', messageListenerRef.current);
-      messageListenerRef.current = null;
-    }
-    if (iframeTimeoutRef.current) {
-      clearTimeout(iframeTimeoutRef.current);
-      iframeTimeoutRef.current = null;
-    }
-  }, []);
+// In your cleanup function:
+const cleanup = useCallback(() => {
+  if (messageListenerRef.current) {
+    window.removeEventListener('message', messageListenerRef.current);
+    messageListenerRef.current = null;
+  }
+  if (iframeTimeoutRef.current) {
+    clearTimeout(iframeTimeoutRef.current);
+    iframeTimeoutRef.current = null;
+  }
+  // ADD THIS:
+  if (window.docusignCheckInterval) {
+    clearInterval(window.docusignCheckInterval);
+    window.docusignCheckInterval = null;
+  }
+}, []);
 
   // Enhanced message listener for DocuSign iframe events
   const setupDocuSignMessageListener = useCallback(() => {
@@ -189,8 +240,62 @@ export default function DocuSignPage({
     console.log('📡 DocuSign message listener set up');
   }, [onComplete, cleanup]);
 
-  // Handle iframe load events
   const handleIframeLoad = useCallback(() => {
+    console.log('🔄 Iframe load event triggered');
+    setIframeLoaded(true);
+    setIframeError(false);
+    
+    // Clear timeout
+    if (iframeTimeoutRef.current) {
+      clearTimeout(iframeTimeoutRef.current);
+      iframeTimeoutRef.current = null;
+    }
+    
+    // Monitor iframe for navigation attempts
+    if (iframeRef.current) {
+      // Check the iframe URL periodically
+      // In handleIframeLoad, update this part:
+      const checkInterval = setInterval(() => {
+        try {
+          const iframeUrl = iframeRef.current?.contentWindow?.location?.href;
+          // Only trigger completion if we see specific completion indicators
+          if (iframeUrl && (
+            iframeUrl.includes('event/completed') || 
+            iframeUrl.includes('signing/completed') ||
+            iframeUrl.includes('logout/session/end')
+          )) {
+            console.log('DocuSign completion detected via URL check');
+            clearInterval(checkInterval);
+            
+            // Manually trigger completion
+            setDocuSignStatus('completed');
+            setShowIframe(false);
+            if (onComplete) {
+              onComplete();
+            }
+          }
+        } catch (e) {
+          // Cross-origin error is expected and normal
+        }
+      }, 1000);
+      
+      // Store interval ref for cleanup
+      window.docusignCheckInterval = checkInterval;
+    }
+    
+    // Try to communicate with the iframe
+    try {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        // Send a ready message to DocuSign iframe
+        iframeRef.current.contentWindow.postMessage({ type: 'parent_ready' }, '*');
+      }
+    } catch (err) {
+      console.warn('Could not communicate with iframe:', err);
+    }
+   }, [onComplete]);
+
+  // Handle iframe load events
+  /*const handleIframeLoad = useCallback(() => {
     console.log('🔄 Iframe load event triggered');
     setIframeLoaded(true);
     setIframeError(false);
@@ -210,7 +315,7 @@ export default function DocuSignPage({
     } catch (err) {
       console.warn('Could not communicate with iframe:', err);
     }
-  }, []);
+  }, []);*/
 
   // Handle iframe error events
   const handleIframeError = useCallback(() => {
@@ -295,11 +400,18 @@ export default function DocuSignPage({
       
       console.log('📞 Calling Firebase function...');
       
-      const result = await createEmbeddedEnvelope({
+      /*const result = await createEmbeddedEnvelope({
         signerData: docuSignData,
         templateId: "04610984-8920-4094-ac13-5c2d0914108c",
         clientUserId: `${docuSignData.email}_${Date.now()}`,
         returnUrl: `${window.location.origin}/signup`
+      });*/
+
+      const result = await createEmbeddedEnvelope({
+        signerData: docuSignData,
+        templateId: "04610984-8920-4094-ac13-5c2d0914108c",
+        clientUserId: `${docuSignData.email}_${Date.now()}`
+        // Don't pass returnUrl - let the backend handle it
       });
       
       console.log('📨 Firebase function result:', result);
@@ -441,43 +553,39 @@ export default function DocuSignPage({
           message: TEST_MODE 
             ? 'Test mode - ready to sign'
             : 'Gathering your information and preparing your membership agreement...',
-          color: 'text-[#775684]'
+          color: 'text-[#323053]'
         };
       
       case 'test_ready':
         return {
-          icon: (
-            <div className="bg-[#775684] rounded-full p-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-          ),
-          title: 'Test Mode',
-          message: 'Click complete to finish.',
-          color: 'text-[#775684]'
+          icon: null,
+          title: '',
+          message: '',
+          color: ''
         };
       
       case 'creating':
         return {
           icon: (
-            <div className="bg-gradient-to-r from-[#775684] via-[#5a4a6b] to-[#3d3852] rounded-full p-4">
-              <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div className="p-4 rounded-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]"></div>
+              <svg className="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
           ),
           title: 'Creating DocuSign Envelope',
           message: 'Setting up your embedded signing experience...',
-          color: 'text-[#775684]'
+          color: 'text-[#323053]'
         };
       
       case 'signing':
         return {
           icon: (
-            <div className="bg-blue-500 rounded-full p-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <div className="p-4 rounded-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]"></div>
+              <svg className="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </div>
           ),
@@ -485,15 +593,15 @@ export default function DocuSignPage({
           message: !iframeLoaded 
             ? 'Please wait while we load your document...' 
             : 'Please complete your signature in the document below.',
-          color: 'text-blue-600'
+          color: 'text-[#323053]'
         };
       
       case 'completed':
         return {
           icon: (
-            <div className="bg-green-500 rounded-full p-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            <div className="bg-green-500 rounded-lg p-4">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
           ),
@@ -505,9 +613,9 @@ export default function DocuSignPage({
       case 'error':
         return {
           icon: (
-            <div className="bg-red-500 rounded-full p-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="bg-red-500 rounded-lg p-4">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           ),
@@ -560,58 +668,147 @@ export default function DocuSignPage({
     );
   }
 
-  return (
+  // Regular content (non-iframe states)
+  const regularContent = (
     <div className="w-full h-full flex flex-col">
       {/* Status Section - Show when not signing or when iframe hasn't loaded */}
       {(!showIframe || !iframeLoaded) && (
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-          {/* Status Icon */}
-          <div className="flex justify-center mb-8">
-            {statusDisplay.icon}
-          </div>
-          
-          {/* Status Title */}
-          <h2 className={`text-3xl font-bold mb-6 ${statusDisplay.color}`}>
-            {statusDisplay.title}
-          </h2>
-          
-          {/* Status Message */}
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            {statusDisplay.message}
-          </p>
-          
-          {/* Debug Information (only in development) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left text-sm">
-              <h4 className="font-semibold mb-2">Debug Info:</h4>
-              <p>Test Mode: {TEST_MODE ? 'Enabled' : 'Disabled'}</p>
-              <p>Status: {docuSignStatus}</p>
-              <p>Iframe Loaded: {iframeLoaded ? 'Yes' : 'No'}</p>
-              <p>Iframe Error: {iframeError ? 'Yes' : 'No'}</p>
-              <p>Show Iframe: {showIframe ? 'Yes' : 'No'}</p>
-              <p>Retry Count: {retryCountRef.current}</p>
-              {signingUrl && <p>Signing URL: {signingUrl.substring(0, 50)}...</p>}
-            </div>
+          {/* Show DotLoader for all loading states */}
+          {(docuSignStatus === 'initializing' || docuSignStatus === 'creating' || 
+            (docuSignStatus === 'signing' && !iframeLoaded)) && (
+            <PageLoader 
+              size="lg" 
+              color="primary" 
+              message={
+                docuSignStatus === 'initializing' ? 'Preparing your agreement...' :
+                docuSignStatus === 'creating' ? 'Creating DocuSign envelope...' :
+                'Loading signing interface...'
+              }
+            />
           )}
           
           {/* Action Buttons */}
           <div className="flex justify-center space-x-6">
             {/* TEST MODE: Show test completion button */}
             {TEST_MODE && docuSignStatus === 'test_ready' && (
-              <>
-                <button
-                  onClick={onBack}
-                  className="px-8 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-lg hover:bg-gray-50 transition-all duration-300"
-                >
-                  Go Back
-                </button>
-                <button
-                  onClick={handleTestComplete}
-                  className="px-8 py-4 bg-[#775684] text-white rounded-full font-medium text-lg hover:bg-[#664573] transition-all duration-300"
-                >
-                  Complete DocuSign
-                </button>
-              </>
+              <div className="w-full max-w-4xl mx-auto">
+                {/* Test mode information card - matching MembershipSummary card style */}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 mb-6" style={{ fontFamily: SYSTEM_FONT }}>
+                  <div className="mb-6 flex items-start">
+                    <div className="p-3 rounded-lg relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
+                           style={{
+                             backgroundSize: '400% 100%',
+                             backgroundPosition: '50% 50%'
+                           }}></div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4 pt-2">
+                      <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Development Mode</h2>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-600 leading-relaxed mb-4" style={{ fontSize: '16px' }}>
+                    You're in test mode. The actual DocuSign process is bypassed to speed up development. 
+                    In production, users will see the real DocuSign embedded signing interface here.
+                  </p>
+                  
+                  <div className="mt-4 flex items-center space-x-6 text-gray-500" style={{ fontSize: '14px' }}>
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      No API calls
+                    </div>
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Instant completion
+                    </div>
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Same flow as production
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mock DocuSign document preview - matching package card style */}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-8">
+                  <div className="bg-white p-7 px-10 pt-10 pb-8 border-b border-gray-300">
+                    <div className="flex items-center">
+                      <div className="p-3.5 rounded-lg mr-3.5" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <h3 style={{ fontSize: '20px' }} className="font-normal text-gray-900">Membership Agreement</h3>
+                    </div>
+                    
+                    <p style={{ fontSize: '16px' }} className="text-gray-600 mt-5 mb-7 font-light">
+                      This is a preview of the DocuSign signing interface. In production, this will display the actual membership agreement document.
+                    </p>
+                  </div>
+                  
+                  <div className="p-8">
+                    {/* Fake document lines */}
+                    <div className="space-y-3 mb-8">
+                      <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-100 rounded w-full"></div>
+                      <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+                      <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                      <div className="h-3 bg-gray-100 rounded w-4/5"></div>
+                    </div>
+                    
+                    {/* Fake signature area */}
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50">
+                      <div className="flex items-center justify-center space-x-3">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                        </svg>
+                        <span className="text-gray-500 font-light" style={{ fontSize: '16px' }}>Signature area - Click "Complete Test Signing" below</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <div className="flex justify-between items-center text-sm text-gray-500">
+                        <span>Test Document ID: DEMO-{Date.now()}</span>
+                        <span>DocuSign Demo Environment</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons - matching MembershipSummary button style */}
+                <div className="flex justify-between">
+                  <button
+                    onClick={onBack}
+                    className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
+                    style={{ fontSize: '16px', fontFamily: SYSTEM_FONT }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                    </svg>
+                    Back
+                  </button>
+                  
+                  <button
+                    onClick={handleTestComplete}
+                    className="py-5 px-8 bg-[#775684] text-white rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] hover:bg-[#664573]"
+                    style={{ fontFamily: SYSTEM_FONT }}
+                  >
+                    Complete Test Signing
+                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             )}
             
             {docuSignStatus === 'error' && (
@@ -644,7 +841,7 @@ export default function DocuSignPage({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                   </svg>
                   <span className="font-semibold text-xl">
-                    Welcome to Alcor! Your membership is now active.
+                    Test Signing Complete
                   </span>
                 </div>
               </div>
@@ -652,60 +849,135 @@ export default function DocuSignPage({
           </div>
         </div>
       )}
-      
-      {/* DocuSign Embedded Iframe - FULL SCREEN (only shown when NOT in test mode) */}
-      {!TEST_MODE && showIframe && signingUrl && (
-        <div className="flex-1 relative w-full">
-          {/* Loading overlay - shows until iframe loads */}
-          {!iframeLoaded && (
-            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mb-4"></div>
-              <p className="text-gray-600 text-lg">Loading signing interface...</p>
-              <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
-            </div>
-          )}
-          
-          {/* Error overlay - shows if iframe fails to load */}
-          {iframeError && (
-            <div className="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-              <div className="bg-red-500 rounded-full p-4 mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-red-600 text-lg font-semibold mb-2">Failed to Load Signing Interface</p>
-              <p className="text-gray-600 mb-4">Please check your internet connection and try again</p>
-              <button
-                onClick={handleRetryDocuSign}
-                className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
-              >
-                Retry Loading
-              </button>
-            </div>
-          )}
-          
-          {/* Actual DocuSign iframe - MAXIMUM SIZE */}
-          <iframe
-            ref={iframeRef}
-            src={signingUrl}
-            className="w-full h-full border-0 block"
-            title="DocuSign Embedded Signing"
-            allow="camera; microphone; geolocation"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-            style={{ 
-              width: '100%',
-              height: '100%',
-              minHeight: '100%',
-              opacity: iframeLoaded ? 1 : 0,
-              transition: 'opacity 0.3s ease-in-out',
-              border: 'none',
-              outline: 'none'
-            }}
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-          />
-        </div>
-      )}
     </div>
+  );
+
+  // Iframe content to render in portal
+  const iframeContent = showIframe && signingUrl && portalContainer && (
+    <div style={{ 
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'white',
+      zIndex: 999999,
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Alcor Header Banner */}
+      <div className="bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative" style={{ flexShrink: 0 }}>
+        {/* Additional diagonal gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+        
+        <div className="relative z-10 px-6 py-3">
+          <div className="flex justify-between items-center">
+            <img 
+              src={whiteALogoNoText} 
+              alt="Alcor Logo" 
+              className="h-12"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                console.error('Failed to load Alcor logo');
+              }}
+            />
+            <h1 className="flex items-center text-lg sm:text-xl font-semibold text-white">
+              Membership Agreement
+              <img 
+                src={alcorStar} 
+                alt="" 
+                className="h-5 ml-0.5"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Iframe container */}
+      <div style={{ flex: '1 1 auto', position: 'relative', overflow: 'hidden' }}>
+        {/* Loading overlay - shows until iframe loads */}
+        {!iframeLoaded && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
+          }}>
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading signing interface...</p>
+            <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
+          </div>
+        )}
+        
+        {/* Error overlay - shows if iframe fails to load */}
+        {iframeError && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10
+          }}>
+            <div className="bg-red-500 rounded-full p-4 mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-red-600 text-lg font-semibold mb-2">Failed to Load Signing Interface</p>
+            <p className="text-gray-600 mb-4">Please check your internet connection and try again</p>
+            <button
+              onClick={handleRetryDocuSign}
+              className="px-6 py-3 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+            >
+              Retry Loading
+            </button>
+          </div>
+        )}
+        
+        {/* Actual DocuSign iframe */}
+        <iframe
+          ref={iframeRef}
+          src={signingUrl}
+          title="DocuSign Embedded Signing"
+          allow="camera; microphone; geolocation"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+          style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            display: 'block',
+            opacity: iframeLoaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out'
+          }}
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Regular content always renders */}
+      {regularContent}
+      
+      {/* Portal renders iframe outside of normal DOM hierarchy */}
+      {iframeContent && createPortal(iframeContent, portalContainer)}
+    </>
   );
 }

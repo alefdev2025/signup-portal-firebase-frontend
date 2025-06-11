@@ -186,9 +186,39 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     
     const styleElement = applyContactFormStyles();
     
+    // Add custom styles for smaller fields
+    const customStyles = document.createElement('style');
+    customStyles.innerHTML = `
+      /* Reduce input field padding and height */
+      .contact-info-form input[type="text"],
+      .contact-info-form input[type="email"],
+      .contact-info-form input[type="tel"],
+      .contact-info-form select {
+        padding: 0.875rem 1.125rem !important;
+        height: 3.25rem !important;
+        font-size: 1rem !important;
+      }
+      
+      /* Reduce label spacing */
+      .contact-info-form label {
+        margin-bottom: 0.5rem !important;
+        font-size: 1rem !important;
+      }
+      
+      /* Adjust autocomplete field height */
+      .contact-info-form .address-autocomplete-field input {
+        padding: 0.875rem 1.125rem !important;
+        height: 3.25rem !important;
+      }
+    `;
+    document.head.appendChild(customStyles);
+    
     return () => {
       if (styleElement.parentNode) {
         styleElement.parentNode.removeChild(styleElement);
+      }
+      if (customStyles.parentNode) {
+        customStyles.parentNode.removeChild(customStyles);
       }
     };
   }, [isSafariBrowser]);
@@ -637,10 +667,10 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
       {/* Simple Age Overlay */}
       {showAgeOverlay && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pt-20">
-          <div className="bg-white rounded-lg shadow-lg p-10 max-w-lg mx-4 border">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg mx-4 border">
             <div className="text-center">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-6">Age Requirement</h3>
-              <p className="text-gray-600 mb-8 leading-relaxed text-lg">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Age Requirement</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed text-base">
                 You must be at least 18 years old to register. If you're interested otherwise, please contact our support team at{" "}
                 <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline font-medium">
                   support@alcor.com
@@ -652,7 +682,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               </p>
               <button
                 onClick={handleAgeOverlayClose}
-                className="bg-[#775684] text-white px-8 py-4 rounded-lg font-medium hover:bg-[#664573] transition-colors text-lg"
+                className="bg-[#775684] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#664573] transition-colors text-base"
               >
                 OK
               </button>
@@ -661,27 +691,27 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         </div>
       )}
       
-      {/* Container that uses 80% of viewport width on desktop, full width on mobile */}
-      <div className="w-full mx-auto px-5 sm:px-6 lg:px-8 lg:max-w-[80%]">
-        <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
-          {/* Personal Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
-            <div className="p-6 md:p-10">
-              <div className="mb-8 md:mb-10 flex items-start">
-                <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-0.5 md:pt-1">
-                  <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Personal Information</h2>
-                  <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
-                    Please provide your personal details for your member file.
-                  </p>
-                </div>
-              </div>
+{/* Container that uses 80% of viewport width on desktop, full width on mobile */}
+<div className="w-full mx-auto px-5 sm:px-6 lg:px-8 lg:max-w-[80%]">
+  <form onSubmit={handleSubmit} className="w-full contact-info-form" autoComplete="on">
+    {/* Personal Information */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
+      <div className="p-6 md:p-9">
+        <div className="mb-8 md:mb-9 flex items-start">
+          <div className="bg-[#775684] p-2.5 md:p-3.5 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div className="ml-4 pt-0.5">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Personal Information</h2>
+            <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
+              Please provide your personal details for your member file.
+            </p>
+          </div>
+        </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 pb-6">
                 <div>
                   <LabelWithIcon label="First Name" required={true} />
                   <InputField
@@ -837,25 +867,25 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
             </div>
           </div>
           
-          {/* Address Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
-            <div className="p-6 md:p-10">
-              <div className="mb-8 md:mb-10 flex items-start">
-                <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-0.5 md:pt-1">
-                  <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Address Information</h2>
-                  <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
-                    Start typing to search with Google Places. Addresses will be validated when you continue.
-                  </p>
-                </div>
-              </div>
+{/* Address Information */}
+<div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
+  <div className="p-6 md:p-9">
+    <div className="mb-8 md:mb-9 flex items-start">
+      <div className="bg-[#775684] p-2.5 md:p-3.5 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </div>
+      <div className="ml-4 pt-0.5">
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Address Information</h2>
+        <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
+          Start typing to search with Google Places. Addresses will be validated when you continue.
+        </p>
+      </div>
+    </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 pb-6">
                 {/* Home address with Google Places Autocomplete */}
                 <div className="md:col-span-2">
                   <div className="address-autocomplete-field">
@@ -976,22 +1006,22 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               
               {/* Mailing address fields - conditionally shown */}
               {showMailingAddress && (
-                <div className="mt-10 pt-8 border-t border-gray-200">
+                <div className="mt-9 pt-8 border-t border-gray-200">
                   <div className="mb-8 flex items-start">
                     <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="ml-4 pt-0.5 md:pt-1">
+                    <div className="ml-4 pt-0.5">
                       <h3 className="text-lg md:text-xl font-semibold text-gray-800">Mailing Address</h3>
-                      <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
+                      <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
                         Please provide the address where you would like to receive mail.
                       </p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 pb-6">
                     <div className="md:col-span-2">
                       <div className="address-autocomplete-field">
                         <AddressAutocompleteV3
@@ -1100,7 +1130,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
             <button
               type="button"
               onClick={handleBack}
-              className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
+              className="py-4 px-7 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
               disabled={isSubmitting}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -1112,7 +1142,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg bg-[#775684] text-white hover:bg-[#664573] disabled:opacity-70"
+              className="py-4 px-7 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg bg-[#775684] text-white hover:bg-[#664573] disabled:opacity-70"
             >
               {isSubmitting ? (
                 <>

@@ -16,6 +16,7 @@ import { checkUserStep } from "../services/auth";
 const ResponsiveBanner = ({ 
   logo = alcorWhiteLogo,
   activeStep = 0,
+  //steps = ["Account", "Contact Info", "Package", "Funding", "Membership"],
   steps = ["Account", "Contact Info", "Package", "Funding", "Membership"],
   heading = null,
   subText = null,
@@ -151,7 +152,7 @@ const ResponsiveBanner = ({
       case 0: return "Become a member";
       case 1: return "Account created!";
       case 2: return "Contact information";
-      case 3: return "Package selection";
+      case 3: return "Plan selection";
       case 4: return "Funding Options";
       case 5: return "Launch Your Membership";
       default: return "Become a member";
@@ -165,7 +166,7 @@ const ResponsiveBanner = ({
       case 0: return "Sign up process takes on average 5 minutes.";
       case 1: return "Your account has been successfully created.";
       case 2: return "Building your membership application.";
-      case 3: return "Choose your cryopreservation package.";
+      case 3: return "Choose your cryopreservation plan.";
       case 4: return "Let us know your cryopreservation funding preference.";
       case 5: return "Review and confirm your membership details.";
       default: return "Sign up process takes on average 5 minutes.";

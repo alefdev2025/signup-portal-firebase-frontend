@@ -5,6 +5,7 @@ import { useSignupFlow } from "../../contexts/SignupFlowContext";
 import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
 import { getStepFormData, saveFormData } from "../../services/storage";
 import membershipService from "../../services/membership";
+import { PageLoader } from "../../components/DotLoader";
 
 // Import the DocuSignPage component
 import DocuSignPage from "./DocuSignPage";
@@ -29,6 +30,15 @@ const DocuSignStep = () => {
   const [allUserData, setAllUserData] = useState(null);
   // Add initialization tracker to prevent double initialization
   const initializedRef = useRef(false);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('docusign_event') === 'signing_complete') {
+      LOG_TO_TERMINAL("DocuSign completed via redirect");
+      window.history.replaceState({}, '', '/signup');
+      handleComplete();
+    }
+  }, []);
   
   // Check authentication and load all user data for DocuSign
   useEffect(() => {
@@ -178,8 +188,9 @@ const DocuSignStep = () => {
     navigateToStep(5, { reason: 'user_back_button' });
   };
   
-  // Handle DocuSign completion and proceeding to next step
   const handleComplete = async () => {
+    LOG_TO_TERMINAL("=== DOCUSIGN COMPLETE HANDLER STARTED ===");
+    
     if (!currentUser) {
       LOG_TO_TERMINAL("No current user - cannot proceed");
       return false;
@@ -198,30 +209,42 @@ const DocuSignStep = () => {
       
       // Update progress via API to mark DocuSign as complete
       LOG_TO_TERMINAL("Updating progress via API...");
-      const progressResult = await updateSignupProgressAPI("completed", 7);
+      const progressResult = await updateSignupProgressAPI("payment", 6);
+      
+      LOG_TO_TERMINAL(`Progress update result: ${JSON.stringify(progressResult)}`);
       
       if (!progressResult.success) {
         throw new Error(progressResult.error || "Failed to update progress");
       }
       
-      LOG_TO_TERMINAL("Progress updated successfully, proceeding to completion");
+      LOG_TO_TERMINAL("Progress updated successfully, proceeding to payment");
       
       // Refresh user progress from context
       if (typeof refreshUserProgress === 'function') {
+        LOG_TO_TERMINAL("Refreshing user progress...");
         await refreshUserProgress();
+        LOG_TO_TERMINAL("User progress refreshed");
       }
       
-      // Use goToNextStep() to proceed (or redirect to member portal if this is the final step)
-      const navigationSuccess = goToNextStep();
+      // Add a delay to ensure state is settled
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      LOG_TO_TERMINAL("Attempting navigation to step 7...");
+      
+      // Navigate to payment step (step 7)
+      const navigationSuccess = navigateToStep(7, { reason: 'docusign_completed' });
+      
+      LOG_TO_TERMINAL(`Navigation result: ${navigationSuccess}`);
       
       if (navigationSuccess) {
-        LOG_TO_TERMINAL("Navigation to next step successful");
+        LOG_TO_TERMINAL("Navigation to payment step successful");
         return true;
       } else {
-        // If no next step, redirect to member portal
-        LOG_TO_TERMINAL("No next step, redirecting to member portal");
-        window.location.href = '/member-portal';
-        return true;
+        // If navigation fails, try goToNextStep as fallback
+        LOG_TO_TERMINAL("Direct navigation failed, trying goToNextStep");
+        const nextStepResult = goToNextStep();
+        LOG_TO_TERMINAL(`goToNextStep result: ${nextStepResult}`);
+        return nextStepResult;
       }
     } catch (error) {
       LOG_TO_TERMINAL(`Error in handleComplete: ${error.message}`);
@@ -229,16 +252,18 @@ const DocuSignStep = () => {
       return false;
     }
   };
-  
-  // Show loading spinner while initializing
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
-        <p className="ml-4 text-xl text-gray-700">Loading signing interface...</p>
-      </div>
-    );
-  }
+
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <PageLoader 
+            size="lg" 
+            color="primary" 
+            message="Loading signing interface..."
+          />
+        </div>
+      );
+    }
   
   // Show error state if there was a problem
   if (error) {

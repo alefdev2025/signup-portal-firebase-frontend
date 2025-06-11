@@ -46,13 +46,26 @@ export default function WelcomeMember() {
             Thank you for completing your signup. We'll be in touch soon.
           </p>
           
-          {/* Simple Button */}
-          <button 
-            onClick={() => navigate('/')}
-            className="bg-[#0a1629] text-white px-6 py-3 rounded-full font-medium text-sm hover:bg-[#1e2650] transition-all duration-200"
-          >
-            Return Home
-          </button>
+          {/* Buttons */}
+          <div className="space-y-3">
+            {/* Portal Button - Primary */}
+            <button 
+              onClick={() => navigate('/portal-home')}
+              className="bg-[#775684] text-white px-6 py-3 rounded-full font-medium text-sm hover:bg-[#664573] transition-all duration-200 w-full sm:w-auto"
+            >
+              Go to Member Portal
+            </button>
+            
+            {/* Return Home Button - Secondary */}
+            <div>
+              <button 
+                onClick={() => navigate('/')}
+                className="bg-[#0a1629] text-white px-6 py-3 rounded-full font-medium text-sm hover:bg-[#1e2650] transition-all duration-200 w-full sm:w-auto"
+              >
+                Return Home
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

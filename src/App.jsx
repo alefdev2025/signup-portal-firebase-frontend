@@ -12,6 +12,7 @@ import SinglePageSignup from "./pages/SinglePageSignup";
 import StandalonePaymentPage from './pages/PaymentPage';
 import WelcomeMember from './pages/WelcomeMember';
 import DemoPasswordPage from './pages/DemoPasswordPage';
+import PortalHome from './pages/PortalHome'; // ADD THIS IMPORT
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -106,6 +107,9 @@ function App() {
           {/* Payment and member welcome pages */}
           <Route path="/payment" element={<StandalonePaymentPage />} />
           <Route path="/welcome-member" element={<WelcomeMember />} />
+          
+          {/* Portal Home page - ADD THIS ROUTE */}
+          <Route path="/portal-home" element={<PortalHome />} />
           
           {/* Isolated signup flow - all signup paths go to the same component */}
           <Route path="/signup/*" element={
