@@ -4,25 +4,25 @@ import dewarsImage from '../assets/images/dewars2.jpg';
 
 // Portal Navigation Icons - updated to match specifications
 const ProfileIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 
 const MembershipIcon = () => (
-  <svg className="w-5 h-5" fill="white" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
     <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
   </svg>
 );
 
 const DocumentsIcon = () => (
-  <svg className="w-5 h-5" fill="white" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="white" viewBox="0 0 24 24">
     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
   </svg>
 );
 
 const PaymentIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
   </svg>
 );
@@ -192,7 +192,7 @@ const PortalPage = () => {
         />
         
         <div className="relative z-10 min-h-screen flex flex-col">
-          <div className="flex flex-col items-center justify-center px-4 md:px-8 text-center pt-32 pb-12">
+          <div className="flex flex-col items-center justify-center px-4 md:px-8 text-center pt-24 pb-12">
             <h1 className="text-3xl md:text-5xl font-light text-white mb-3">
               Member Portal
             </h1>
@@ -201,7 +201,7 @@ const PortalPage = () => {
             </p>
           </div>
           
-          <div className="px-4 md:px-8 py-3 mt-1">
+          <div className="px-4 md:px-8 py-2">
             <div className="max-w-7xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-light text-white mb-4">Member Portal Home</h2>
               
@@ -209,16 +209,16 @@ const PortalPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                   {portalSections.map((section, index) => (
                     <div key={index} className="cursor-pointer group">
-                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[245px]" style={{ boxShadow: '0 -5px 15px -3px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
-                        <div className="p-4 pb-3 flex-grow">
-                          <div className="flex items-start gap-3 mb-4">
+                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[280px]" style={{ boxShadow: '0 -5px 15px -3px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
+                        <div className="p-6 pb-4 flex-grow">
+                          <div className="flex items-start gap-4 mb-5">
                             <div 
-                              className="p-3.5 rounded-lg flex-shrink-0"
+                              className="p-4 rounded-lg flex-shrink-0"
                               style={{ backgroundColor: section.bgColor }}
                             >
                               {section.icon}
                             </div>
-                            <h3 className="text-2xl font-light text-gray-900 pt-0.5">{section.name}</h3>
+                            <h3 className="text-2xl font-light text-gray-900">{section.name}</h3>
                           </div>
                           
                           <p className="text-gray-600 text-base leading-relaxed">
@@ -226,10 +226,10 @@ const PortalPage = () => {
                           </p>
                         </div>
                         
-                        <div className="mx-3 mb-3">
-                          <div className="bg-white rounded-lg p-3.5" style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
-                            <p className="text-xs text-gray-500 mb-1 font-medium">{section.stats.label}</p>
-                            <p className="text-2xl font-extrabold text-gray-900">{section.stats.value}</p>
+                        <div className="mx-4 mb-4">
+                          <div className="bg-white rounded-lg p-4" style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
+                            <p className="text-sm text-gray-500 mb-1 font-medium">{section.stats.label}</p>
+                            <p className="text-3xl font-extrabold text-gray-900">{section.stats.value}</p>
                           </div>
                         </div>
                       </div>
