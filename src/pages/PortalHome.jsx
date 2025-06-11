@@ -209,7 +209,7 @@ const PortalPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                   {portalSections.map((section, index) => (
                     <div key={index} className="cursor-pointer group">
-                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[250px]" style={{ boxShadow: '0 -2px 8px -3px rgba(0, 0, 0, 0.1), 3px 8px 16px -8px rgba(0, 0, 0, 0.15), 4px 12px 24px -10px rgba(0, 0, 0, 0.12)' }}>
+                      <div className="bg-gray-100 rounded-lg h-full flex flex-col min-h-[250px]" style={{ boxShadow: '-2px 8px 14px -3px rgba(0, 0, 0, 0.15), -4px 14px 24px -5px rgba(0, 0, 0, 0.18), -6px 18px 32px -7px rgba(0, 0, 0, 0.12)' }}>
                         <div className="p-4 pb-3 flex-grow">
                           <div className="flex items-start gap-3 mb-3">
                             <div 
