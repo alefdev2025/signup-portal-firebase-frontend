@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 
-// Make sure this path is correct relative to your component file
-import alcorWhiteLogo from '../assets/images/alcor-white-logo.png';
-
 const PortalPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [profileImage, setProfileImage] = useState(null);
@@ -495,9 +492,13 @@ const PortalPage = () => {
       <div className="flex h-[calc(100vh-2rem)] rounded-lg overflow-hidden shadow-2xl">
         {/* === Sidebar === */}
         <div className="w-64 flex flex-col flex-shrink-0">
-          {/* === LOGO AREA (EDITED) === */}
-          <div className="p-6 border-b border-white/10 flex items-center justify-start">
-            <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-12 w-auto" />
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                <span className="text-xl font-bold text-[#0a1629]">A</span>
+              </div>
+              <span className="text-white text-xl font-light">ALCOR</span>
+            </div>
           </div>
 
           <nav className="flex-1 p-4">
