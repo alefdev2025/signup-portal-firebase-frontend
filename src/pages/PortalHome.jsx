@@ -4,11 +4,20 @@ import React, { useState } from 'react';
 import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
 import OverviewTab from '../components/portal/OverviewTab';
-import AccountTab from '../components/portal/AccountTab';
-import MembershipTab from '../components/portal/MembershipTab';
-import DocumentsTab from '../components/portal/DocumentsTab';
-import PaymentsTab from '../components/portal/PaymentsTab';
-import ResourcesTab from '../components/portal/ResourcesTab';
+
+import ProfileSettingsTab from '../components/portal/ProfileSettingsTab';
+import SecurityTab from '../components/portal/SecurityTab';
+import MembershipStatusTab from '../components/portal/MembershipStatusTab';
+import MyInformationTab from '../components/portal/MyInformationTab';
+import FinancialDocumentsTab from '../components/portal/FinancialDocumentsTab';
+import ContractsTab from '../components/portal/ContractsTab';
+import FormsTab from '../components/portal/FormsTab';
+import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
+import PaymentMethodsTab from '../components/portal/PaymentMethodsTab';
+import InvoicesTab from '../components/portal/InvoicesTab';
+import MediaTab from '../components/portal/MediaTab';
+import CommunityTab from '../components/portal/CommunityTab';
+import SupportTab from '../components/portal/SupportTab';
 
 const PortalHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -32,14 +41,51 @@ const PortalHome = () => {
         return <OverviewTab />;
       case 'account': 
         return <AccountTab profileImage={profileImage} onImageUpload={handleImageUpload} />;
-      case 'membership': 
+      
+      // Account subtabs
+      case 'account-profile':
+        return <ProfileSettingsTab profileImage={profileImage} onImageUpload={handleImageUpload} />;
+      case 'account-security':
+        return <SecurityTab />;
+      
+      // Membership subtabs
+      case 'membership':
         return <MembershipTab />;
-      case 'documents': 
+      case 'membership-status':
+        return <MembershipStatusTab />;
+      case 'membership-myinfo':
+        return <MyInformationTab />;
+      
+      // Documents subtabs
+      case 'documents':
         return <DocumentsTab />;
-      case 'payments': 
+      case 'documents-financial':
+        return <FinancialDocumentsTab />;
+      case 'documents-contracts':
+        return <ContractsTab />;
+      case 'documents-forms':
+        return <FormsTab />;
+      
+      // Payments subtabs
+      case 'payments':
         return <PaymentsTab />;
-      case 'resources': 
+      case 'payments-history':
+        return <PaymentHistoryTab />;
+      case 'payments-methods':
+        return <PaymentMethodsTab />;
+      case 'payments-invoices':
+        return <InvoicesTab />;
+      
+      // Resources subtabs
+      case 'resources':
         return <ResourcesTab />;
+      case 'resources-media':
+        return <MediaTab />;
+      case 'resources-community':
+        return <CommunityTab />;
+      case 'resources-support':
+        return <SupportTab />;
+      
       default: 
         return <OverviewTab />;
     }

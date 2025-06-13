@@ -1,9 +1,9 @@
 import React from 'react';
 
-const AccountTab = ({ profileImage, onImageUpload }) => {
+const ProfileSettingsTab = ({ profileImage, onImageUpload }) => {
   return (
     <div>
-      <h1 className="text-3xl font-light text-[#2a2346] mb-8">Account Settings</h1>
+      <h1 className="text-3xl font-light text-[#2a2346] mb-8">Profile Settings</h1>
       
       <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 className="text-xl font-medium text-[#2a2346] mb-6">Profile Information</h2>
@@ -74,6 +74,14 @@ const AccountTab = ({ profileImage, onImageUpload }) => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
                 />
               </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-[#4a3d6b] mb-2">Bio</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Tell us about yourself..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
+                />
+              </div>
             </div>
             <button className="mt-6 bg-[#0a1629] text-white px-6 py-2 rounded-lg hover:bg-[#1e2650] transition-colors">
               Save Changes
@@ -83,25 +91,43 @@ const AccountTab = ({ profileImage, onImageUpload }) => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-xl font-medium text-[#2a2346] mb-6">Security Settings</h2>
-        <div className="space-y-6">
-          <div>
-            <h3 className="font-medium text-[#2a2346] mb-3">Change Password</h3>
-            <button className="text-[#0a1629] hover:text-[#1e2650] transition-colors">
-              Update your password →
-            </button>
+        <h2 className="text-xl font-medium text-[#2a2346] mb-6">Address Information</h2>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-[#4a3d6b] mb-2">Street Address</label>
+            <input 
+              type="text" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
+            />
           </div>
-          <div className="border-t pt-6">
-            <h3 className="font-medium text-[#2a2346] mb-3">Two-Factor Authentication</h3>
-            <p className="text-sm text-[#4a3d6b] mb-3">Add an extra layer of security to your account</p>
-            <button className="bg-gray-100 text-[#2a2346] px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-              Enable 2FA
-            </button>
+          <div>
+            <label className="block text-sm font-medium text-[#4a3d6b] mb-2">City</label>
+            <input 
+              type="text" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4a3d6b] mb-2">State</label>
+            <input 
+              type="text" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4a3d6b] mb-2">ZIP Code</label>
+            <input 
+              type="text" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629]" 
+            />
           </div>
         </div>
+        <button className="mt-6 bg-[#0a1629] text-white px-6 py-2 rounded-lg hover:bg-[#1e2650] transition-colors">
+          Update Address
+        </button>
       </div>
     </div>
   );
 };
 
-export default AccountTab;
+export default ProfileSettingsTab;
