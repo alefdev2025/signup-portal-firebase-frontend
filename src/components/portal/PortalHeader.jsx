@@ -2,7 +2,7 @@ import React from 'react';
 
 const PortalHeader = ({ setIsMobileMenuOpen }) => {
   return (
-    <header className="bg-white p-6 border-b border-gray-200 flex items-center justify-between">
+    <header className="bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-gray-500 hover:text-gray-900">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

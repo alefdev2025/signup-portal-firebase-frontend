@@ -96,7 +96,7 @@ const PortalHome = () => {
       className="min-h-screen p-0 md:p-4"
       style={{ 
         fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-        background: 'linear-gradient(135deg, #0a1629 0%, #1e2650 50%, #2a3670 100%)' 
+        background: 'linear-gradient(135deg, #0e1c34 0%, #202b54 50%, #2e396b 100%)' 
       }}
     >
       <div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-lg overflow-hidden shadow-2xl bg-white">

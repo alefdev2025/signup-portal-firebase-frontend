@@ -41,7 +41,7 @@ const OverviewTab = () => {
   return (
     <div className="-mt-4">
       <div 
-        className="relative h-80 rounded-lg overflow-hidden mb-12"
+        className="relative h-64 rounded-lg overflow-hidden mb-12"
         style={{ background: 'radial-gradient(ellipse at top left, #2a3670 0%, #1e2650 35%, #13263f 60%, #0a1629 100%)' }}
       >
         {/* Mesh gradient overlay for complexity */}
@@ -65,7 +65,7 @@ const OverviewTab = () => {
             {/* Welcome message on the left */}
             <div className="flex-1">
               <h1 className="text-3xl md:text-[2.625rem] font-light text-white mb-4 drop-shadow-lg tracking-tight">
-                <span className="text-white/90">Welcome</span>
+                <span className="text-white/90">Welcome Back</span>
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
               <p className="text-base md:text-lg text-white/90 mb-5 drop-shadow">
@@ -119,7 +119,7 @@ const OverviewTab = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -127,7 +127,7 @@ const OverviewTab = () => {
                   background: 'linear-gradient(to right, #b8a2d4, #b19bcd, #aa94c6, #a38dbf, #9c86b8)',
                 }}
               />
-              <svg className="w-8 h-8 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
               </svg>
             </div>
@@ -137,7 +137,7 @@ const OverviewTab = () => {
           
           <div className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -145,7 +145,7 @@ const OverviewTab = () => {
                   background: 'linear-gradient(to right, #9c86b8, #957fb1, #8e78aa, #8771a3, #806a9c)',
                 }}
               />
-              <svg className="w-8 h-8 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
               </svg>
             </div>
@@ -155,7 +155,7 @@ const OverviewTab = () => {
           
           <div className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -163,7 +163,7 @@ const OverviewTab = () => {
                   background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)',
                 }}
               />
-              <svg className="w-8 h-8 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
@@ -173,7 +173,7 @@ const OverviewTab = () => {
           
           <div className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -181,7 +181,7 @@ const OverviewTab = () => {
                   background: 'linear-gradient(to right, #644e80, #5d4779, #564072, #4f396b, #483264)',
                 }}
               />
-              <svg className="w-8 h-8 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
@@ -193,7 +193,7 @@ const OverviewTab = () => {
 
       {/* Announcements Section */}
       {announcements && announcements.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-12">
           <h2 className="text-2xl font-light text-[#2a2346] mb-6">Announcements</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {announcements.slice(0, 2).map((announcement) => (
@@ -267,7 +267,7 @@ const OverviewTab = () => {
 
       {/* Member Newsletter Section */}
       {memberNewsletters && memberNewsletters.length > 0 && (
-        <div className="mt-16">
+        <div className="mt-8">
           <h2 className="text-2xl font-light text-[#2a2346] mb-6">Member Newsletters</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {memberNewsletters.slice(0, 2).map((newsletter) => (
@@ -303,15 +303,15 @@ const OverviewTab = () => {
       )}
 
       {/* Recent Activity */}
-      <div className="mt-16">
+      <div className="mt-8">
         <h2 className="text-2xl font-light text-[#2a2346] mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-6 hover:shadow-md transition-shadow">
+        <div className="space-y-3">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)' }}
+              className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #e6b89c 0%, #d09163 100%)' }}
             >
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
             </div>
@@ -324,12 +324,12 @@ const OverviewTab = () => {
             </svg>
           </div>
           
-          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-6 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
             <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)' }}
+              className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #9b7fa6 0%, #6b5b7e 100%)' }}
             >
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
             </div>

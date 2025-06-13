@@ -12,7 +12,7 @@ const navigationItems = [
       label: 'Account', 
       icon: ( <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg> ),
       subItems: [
-        { id: 'profile', label: 'Profile Settings' },
+        { id: 'profile', label: 'Settings' },
         { id: 'security', label: 'Security' }
       ]
     },
@@ -100,7 +100,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
       <div 
         className="absolute inset-0 md:rounded-l-lg"
         style={{
-          background: 'linear-gradient(135deg, #0a1629 0%, #1e2650 50%, #2a3670 100%)',
+          background: 'linear-gradient(135deg, #0a1629 0%, #1e2650 80%, #253360 100%)',
           margin: '-1px',
           marginRight: '0'
         }}
@@ -111,7 +111,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
           <button 
-            className="text-gray-400 hover:text-white md:hidden"
+            className="text-gray-300 hover:text-white md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="Close menu"
           >
@@ -129,8 +129,8 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
                   onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-light relative group ${
                     isItemActive(item.id)
-                      ? 'bg-white/10 text-white'
-                      : 'text-gray-400 hover:text-[#e8e0f0] hover:bg-white/5'
+                      ? 'bg-white/15 text-white shadow-lg'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -162,8 +162,8 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
                         onClick={() => handleSubItemClick(item.id, subItem.id)}
                         className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
                           activeTab === `${item.id}-${subItem.id}`
-                            ? 'bg-white/10 text-white'
-                            : 'text-gray-400 hover:text-[#e8e0f0] hover:bg-white/5'
+                            ? 'bg-white/15 text-white'
+                            : 'text-gray-300 hover:text-white hover:bg-white/10'
                         }`}
                       >
                         {subItem.label}
@@ -182,14 +182,14 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
               {profileImage ? (
                 <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
-                <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               )}
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-white text-sm font-medium truncate">Nikki Olson</p>
-              <p className="text-gray-400 text-xs truncate">Premium Member</p>
+              <p className="text-gray-300 text-xs truncate">Premium Member</p>
             </div>
           </div>
         </div>

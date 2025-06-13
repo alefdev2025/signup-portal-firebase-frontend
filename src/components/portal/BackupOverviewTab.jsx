@@ -4,6 +4,7 @@ import { useUser } from '../../contexts/UserContext';
 import { latestMediaItems } from './LatestMedia';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
+import { podcasts } from './Podcasts';
 import GradientButton from './GradientButton';
 
 const OverviewTab = () => {
@@ -41,44 +42,25 @@ const OverviewTab = () => {
   return (
     <div className="-mt-4">
       <div 
-        className="relative h-80 rounded-lg overflow-hidden mb-12"
-        style={{ background: 'radial-gradient(ellipse at top left, #2a3670 0%, #1e2650 35%, #13263f 60%, #0a1629 100%)' }}
+        className="relative h-64 rounded-lg overflow-hidden mb-12"
+        style={{ background: 'radial-gradient(ellipse at center, #1a2b5a 0%, #0f1937 100%)' }}
       >
-        {/* Mesh gradient overlay for complexity */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at 80% 20%, rgba(42, 54, 112, 0.3) 0%, transparent 50%)',
-          }}
-        />
-        
-        {/* Additional accent gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(115deg, transparent 40%, rgba(19, 38, 63, 0.4) 70%, rgba(10, 22, 41, 0.6) 100%)',
-          }}
-        />
-        
         <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message on the left */}
-            <div className="flex-1">
+            <div className="flex-1 -mt-4">
               <h1 className="text-3xl md:text-[2.625rem] font-light text-white mb-4 drop-shadow-lg tracking-tight">
-                <span className="text-white/90">Welcome</span>
-                <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
+                Welcome Back, {loading ? '...' : userName}!
               </h1>
               <p className="text-base md:text-lg text-white/90 mb-5 drop-shadow">
                 Access your membership benefits, documents, and resources all in one place.
               </p>
-              <GradientButton 
+              <button 
                 onClick={() => console.log('View membership status')}
-                variant="outline"
-                size="sm"
-                className="border-white/30 text-white hover:bg-white/10"
+                className="bg-white text-[#1a2b5a] px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >
                 View Membership Status
-              </GradientButton>
+              </button>
             </div>
             
             {/* Latest Media on the right */}
@@ -193,7 +175,7 @@ const OverviewTab = () => {
 
       {/* Announcements Section */}
       {announcements && announcements.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-12">
           <h2 className="text-2xl font-light text-[#2a2346] mb-6">Announcements</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {announcements.slice(0, 2).map((announcement) => (
@@ -207,19 +189,29 @@ const OverviewTab = () => {
                     alt={announcement.title}
                     className="w-full h-full object-cover"
                   />
-                  {/* Full overlay with gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
+                  {/* Full overlay with gradient - only for first announcement */}
+                  {announcement.id === announcements[0].id && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/30" />
+                  )}
+                  
+                  {/* Extra mild black overlay for first announcement only */}
+                  {announcement.id === announcements[0].id && (
+                    <div className="absolute inset-0 bg-black/20" />
+                  )}
+                  
+                  {/* Purple band strip for text area on both */}
+                  <div className="absolute bottom-0 left-0 right-0 h-28" style={{ backgroundColor: 'rgba(48, 40, 60, 0.7)' }} />
                   
                   {/* Text overlay content */}
-                  <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
-                    <h3 className="text-2xl font-medium mb-2">{announcement.title}</h3>
+                  <div className="absolute inset-0 p-5 flex flex-col justify-end text-white">
+                    <h3 className="text-2xl font-semibold mb-1">{announcement.title}</h3>
                     {announcement.subtitle && (
-                      <p className="text-lg mb-3 text-white/90">{announcement.subtitle}</p>
+                      <p className="text-sm mb-2 text-white/90">{announcement.subtitle}</p>
                     )}
-                    <div className="flex items-center gap-4 text-sm text-white/80">
+                    <div className="flex items-center gap-4 text-xs text-white/80">
                       {announcement.eventDate && (
                         <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                           {announcement.eventDate}
@@ -227,7 +219,7 @@ const OverviewTab = () => {
                       )}
                       {announcement.eventTime && (
                         <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           {announcement.eventTime}
@@ -235,7 +227,7 @@ const OverviewTab = () => {
                       )}
                       {announcement.location && (
                         <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
@@ -267,7 +259,7 @@ const OverviewTab = () => {
 
       {/* Member Newsletter Section */}
       {memberNewsletters && memberNewsletters.length > 0 && (
-        <div className="mt-16">
+        <div className="mt-8">
           <h2 className="text-2xl font-light text-[#2a2346] mb-6">Member Newsletters</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {memberNewsletters.slice(0, 2).map((newsletter) => (
@@ -302,14 +294,56 @@ const OverviewTab = () => {
         </div>
       )}
 
+      {/* Podcasts Section */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-light text-[#2a2346] mb-6">Latest Podcasts</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {podcasts.slice(0, 3).map((podcast) => (
+            <div 
+              key={podcast.id}
+              className="bg-white rounded-lg overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 cursor-pointer flex flex-col h-full"
+            >
+              <div className="relative h-32 flex-shrink-0">
+                <img 
+                  src={announcements[1]?.image || '/texas-downtown.png'}
+                  alt="Episode thumbnail"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div 
+                className="p-4 flex gap-3 flex-1 flex-col"
+                style={{ background: 'linear-gradient(180deg, #1e2650 0%, #0a1629 100%)' }}
+              >
+                <div className="flex gap-3 flex-1">
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={podcast.image}
+                      alt={podcast.title}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <h4 className="font-light text-white mb-2 text-base leading-snug line-clamp-2 flex-1">{podcast.title}</h4>
+                    <div className="flex items-center justify-between text-xs text-white/80">
+                      <span>Episode {podcast.episode}</span>
+                      <span>{podcast.duration}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Recent Activity */}
       <div className="mt-16">
-        <h2 className="text-2xl font-light text-[#2a2346] mb-4">Recent Activity</h2>
+        <h2 className="text-2xl font-light text-[#2a2346] mb-6">Recent Activity</h2>
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-6 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
             <div 
               className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)' }}
+              style={{ background: 'linear-gradient(135deg, #6c4674 0%, #4a3150 100%)' }}
             >
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -324,10 +358,10 @@ const OverviewTab = () => {
             </svg>
           </div>
           
-          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-6 hover:shadow-md transition-shadow">
+          <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
             <div 
               className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)' }}
+              style={{ background: 'linear-gradient(135deg, #6c4674 0%, #4a3150 100%)' }}
             >
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
