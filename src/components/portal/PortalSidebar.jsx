@@ -189,7 +189,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-white text-sm font-medium truncate">Nikki Olson</p>
-              <p className="text-gray-400 text-xs truncate">Premium Member</p>
+              <p className="text-gray-400 text-xs truncate">Associate Member</p>
             </div>
           </div>
         </div>

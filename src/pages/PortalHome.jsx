@@ -139,7 +139,7 @@ const PortalHome = () => {
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
-          <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} activeTab={activeTab} />
           
           <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
             {renderActiveTab()}

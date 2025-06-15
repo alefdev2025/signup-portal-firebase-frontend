@@ -130,7 +130,7 @@ const OverviewTab = () => {
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
               <p className="text-base md:text-lg text-white/90 mb-5 drop-shadow">
-                Access your membership benefits, documents, and resources all in one place.
+                Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
                 onClick={() => console.log('View membership status')}

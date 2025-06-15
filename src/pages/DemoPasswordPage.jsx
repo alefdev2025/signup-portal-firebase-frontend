@@ -90,7 +90,7 @@ const DemoPasswordPage = ({ onAuthenticated }) => {
               </svg>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-[#0C2340] mb-2">Client Demo</h1>
-            <p className="text-gray-600 text-sm md:text-base">This is a private demonstration of the membership application system</p>
+            <p className="text-gray-600 text-sm md:text-base">This is a private demonstration of the membership portal system</p>
           </div>
           
           {/* Password form */}

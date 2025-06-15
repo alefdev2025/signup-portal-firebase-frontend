@@ -1,29 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getCustomerInvoices, getInvoiceDetails } from './services/netsuite';
 
-const InvoicesTab = () => {
+const InvoicesTab = ({ customerId = '4666' }) => {
   const [filterValue, setFilterValue] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const invoices = [
-    { 
-      id: 'INV5842', 
-      date: 'Sep 1, 2024', 
-      description: 'Associate Member',
-      amount: 60.00,
-      status: 'Unpaid',
-      dueDate: 'Oct 1, 2024',
-      memo: 'Associate Member Dues (Annual)'
-    },
-    { 
-      id: 'INV3453', 
-      date: 'Sep 17, 2023', 
-      description: 'Associate Member',
-      amount: 60.00,
-      status: 'Paid',
-      dueDate: 'Oct 17, 2023',
-      memo: 'Associate Member Dues (Annual)'
+  // Fetch invoices on component mount
+  useEffect(() => {
+    fetchInvoices();
+  }, [customerId]);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await getCustomerInvoices(customerId, { limit: 100 });
+      
+      // Transform NetSuite data to match your UI structure
+      const transformedInvoices = result.invoices.map(inv => ({
+        id: inv.documentNumber,
+        date: inv.date, // Keep original format for now
+        description: inv.memo || 'Associate Member',
+        amount: parseFloat(inv.total),
+        status: inv.status === 'paidInFull' ? 'Paid' : 'Unpaid',
+        dueDate: inv.dueDate || inv.date, // Fallback to invoice date if no due date
+        memo: inv.memo || 'Associate Member Dues (Annual)',
+        // Keep original data for details and e-link
+        _original: inv
+      }));
+      
+      setInvoices(transformedInvoices);
+    } catch (err) {
+      console.error('Error loading invoices:', err);
+      setError(err.message);
+      // Fallback to hardcoded data if API fails
+      setInvoices([
+        { 
+          id: 'INV5842', 
+          date: 'Sep 1, 2024', 
+          description: 'Associate Member',
+          amount: 60.00,
+          status: 'Unpaid',
+          dueDate: 'Oct 1, 2024',
+          memo: 'Associate Member Dues (Annual)',
+          _original: {}
+        },
+        { 
+          id: 'INV3453', 
+          date: 'Sep 17, 2023', 
+          description: 'Associate Member',
+          amount: 60.00,
+          status: 'Paid',
+          dueDate: 'Oct 17, 2023',
+          memo: 'Associate Member Dues (Annual)',
+          _original: {}
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Handle viewing invoice details
+  const handleViewInvoice = async (invoice) => {
+    try {
+      // If we have an internal ID, try to fetch more details
+      if (invoice._original?.internalId) {
+        const details = await getInvoiceDetails(invoice._original.internalId);
+        setSelectedInvoice({
+          ...invoice,
+          detailedInfo: details.invoice
+        });
+      } else {
+        setSelectedInvoice(invoice);
+      }
+    } catch (err) {
+      console.error('Error fetching invoice details:', err);
+      // Just show what we have
+      setSelectedInvoice(invoice);
+    }
+  };
+
+  // Handle payment action
+  const handlePayInvoice = (invoice) => {
+    // If the invoice has an e-link, open it
+    if (invoice._original?.merchantELink) {
+      window.open(invoice._original.merchantELink, '_blank');
+    } else {
+      // Otherwise, could implement your own payment flow
+      console.log('Implement payment flow for invoice:', invoice.id);
+      alert('Payment functionality will be implemented soon');
+    }
+  };
 
   // Filter invoices based on selected filter
   const filteredInvoices = invoices.filter(invoice => {
@@ -48,15 +120,45 @@ const InvoicesTab = () => {
     return true;
   });
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="bg-gray-50 -m-8 p-8 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6b5b7e] mx-auto mb-4"></div>
+          <p className="text-[#6b7280]">Loading invoices...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state (but still show data if we have fallback)
+  if (error && invoices.length === 0) {
+    return (
+      <div className="bg-gray-50 -m-8 p-8 min-h-screen">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <p className="font-bold">Error loading invoices</p>
+          <p className="text-sm">{error}</p>
+          <button 
+            onClick={fetchInvoices}
+            className="mt-2 text-sm underline hover:no-underline"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 -m-8 p-8 min-h-screen">
       {/* Full Invoice View */}
       {selectedInvoice ? (
-        <div>
+        <div className="animate-fadeIn">
           {/* Back button */}
           <button 
             onClick={() => setSelectedInvoice(null)}
-            className="flex items-center gap-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors mb-8 text-lg"
+            className="flex items-center gap-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors mb-8 text-lg animate-fadeInDown"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -64,15 +166,15 @@ const InvoicesTab = () => {
             Back to Invoices
           </button>
 
-          <div className="bg-white rounded-lg shadow-[0_-2px_10px_rgba(0,0,0,0.08),0_4px_15px_rgba(0,0,0,0.1)]">
+          <div className="bg-white rounded-lg shadow-[0_-2px_10px_rgba(0,0,0,0.08),0_4px_15px_rgba(0,0,0,0.1)] animate-fadeInUp">
             {/* Invoice Details */}
             <div className="p-8">
               {/* Invoice Header Information */}
               <div className="mb-10 mt-4">
                 <div className="flex justify-between items-start pb-8 border-b border-gray-200">
                   <div>
-                    <h2 className="text-3xl font-semibold text-[#2a2346] mb-6 mt-2">Invoice {selectedInvoice.id}</h2>
-                    <div className="flex items-center gap-8 text-base text-[#6b7280]">
+                    <h2 className="text-3xl font-semibold text-[#2a2346] mb-6 mt-2 animate-fadeIn">Invoice {selectedInvoice.id}</h2>
+                    <div className="flex items-center gap-8 text-base text-[#6b7280] animate-fadeIn animation-delay-100">
                       <div className="flex items-center gap-3">
                         <span className="font-medium">Invoice Date:</span>
                         <span>{selectedInvoice.date}</span>
@@ -83,7 +185,7 @@ const InvoicesTab = () => {
                       </div>
                     </div>
                   </div>
-                  <span className={`px-4 py-2 text-base font-medium rounded-lg mt-2 ${
+                  <span className={`px-4 py-2 text-base font-medium rounded-lg mt-2 animate-fadeIn animation-delay-200 ${
                     selectedInvoice.status === 'Paid' 
                       ? 'bg-[#e5d4f1] text-black' 
                       : 'bg-[#fef3e2] text-black'
@@ -94,7 +196,7 @@ const InvoicesTab = () => {
               </div>
 
               {/* Customer Information */}
-              <div className="mb-10">
+              <div className="mb-10 animate-fadeIn animation-delay-300">
                 <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Customer Information</h3>
                 <div className="bg-gray-50 rounded-lg p-6">
                   <p className="text-[#2a2346] font-medium text-lg mb-2">Nicole Olson</p>
@@ -104,7 +206,7 @@ const InvoicesTab = () => {
               </div>
 
               {/* Invoice Items */}
-              <div className="mb-10">
+              <div className="mb-10 animate-fadeIn animation-delay-400">
                 <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Invoice Items</h3>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full">
@@ -129,7 +231,7 @@ const InvoicesTab = () => {
               </div>
 
               {/* Invoice Summary */}
-              <div className="flex justify-end mb-10">
+              <div className="flex justify-end mb-10 animate-fadeIn animation-delay-500">
                 <div className="w-full sm:w-96">
                   <div className="bg-gray-50 rounded-lg p-6">
                     <div className="flex justify-between items-center mb-3">
@@ -148,7 +250,7 @@ const InvoicesTab = () => {
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-base text-[#6b7280]">Amount Due</span>
                         <span className="text-xl font-semibold text-[#d09163]">
-                          {selectedInvoice.status === 'Paid' ? '$0.00' : `${selectedInvoice.amount.toFixed(2)}`}
+                          {selectedInvoice.status === 'Paid' ? '$0.00' : `$${selectedInvoice.amount.toFixed(2)}`}
                         </span>
                       </div>
                     </div>
@@ -158,7 +260,7 @@ const InvoicesTab = () => {
 
               {/* Payment Information (if paid) */}
               {selectedInvoice.status === 'Paid' && (
-                <div className="mb-10">
+                <div className="mb-10 animate-fadeIn animation-delay-600">
                   <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Payment Information</h3>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                     <div className="flex items-center gap-3 mb-2">
@@ -173,7 +275,7 @@ const InvoicesTab = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center border-t pt-8">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center border-t pt-8 animate-fadeIn animation-delay-700">
                 <button className="flex items-center justify-center gap-3 px-6 py-3 border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:bg-[#6b5b7e] hover:text-white transition-all text-base w-full sm:w-48">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -181,7 +283,10 @@ const InvoicesTab = () => {
                   Download PDF
                 </button>
                 {selectedInvoice.status !== 'Paid' && (
-                  <button className="flex items-center justify-center gap-3 px-6 py-3 bg-[#6c4674] text-white rounded-lg hover:bg-[#5a4862] transition-colors font-medium text-base w-full sm:w-48">
+                  <button 
+                    onClick={() => handlePayInvoice(selectedInvoice)}
+                    className="flex items-center justify-center gap-3 px-6 py-3 bg-[#6c4674] text-white rounded-lg hover:bg-[#5a4862] transition-colors font-medium text-base w-full sm:w-48"
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
@@ -195,9 +300,9 @@ const InvoicesTab = () => {
       ) : (
         /* Main Invoice List */
         <>
-          <h1 className="text-4xl font-light text-[#2a2346] mb-10">Invoices</h1>
+          <h1 className="text-4xl font-light text-[#2a2346] mb-10 animate-fadeInDown">Invoices</h1>
         
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-8 animate-fadeIn animation-delay-100">
             <div className="flex justify-between items-start mb-8">
               <h2 className="text-2xl font-medium text-[#2a2346]">Invoice History</h2>
               <div className="flex items-center gap-6">
@@ -221,7 +326,7 @@ const InvoicesTab = () => {
             </div>
 
             {/* Email Notifications Section */}
-            <div className="bg-gray-200 rounded-lg p-4 lg:p-6 mb-8">
+            <div className="bg-gray-200 rounded-lg p-4 lg:p-6 mb-8 animate-fadeIn animation-delay-200">
               <div className="flex flex-col gap-4 lg:gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex-shrink-0">
                   <h3 className="text-lg font-semibold text-[#2a2346] mb-1">Email Notifications</h3>
@@ -265,7 +370,7 @@ const InvoicesTab = () => {
             <div className="space-y-5">
               {filteredInvoices.length > 0 ? (
                 filteredInvoices.map((invoice, index) => (
-                  <div key={invoice.id} className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 hover:border-gray-300 group relative overflow-hidden">
+                  <div key={invoice.id} className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 hover:border-gray-300 group relative overflow-hidden animate-fadeInUp" style={{animationDelay: `${300 + index * 100}ms`}}>
                     {/* Colored accent band with stronger gradient */}
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-[#3a5a8f] via-[#4a6fa5] to-[#6b8fc4]"></div>
                     
@@ -292,7 +397,7 @@ const InvoicesTab = () => {
                         <p className="text-xl sm:text-2xl font-medium text-[#2a2346]">${invoice.amount.toFixed(2)}</p>
                         <div className="sm:mt-6">
                           <button 
-                            onClick={() => setSelectedInvoice(invoice)}
+                            onClick={() => handleViewInvoice(invoice)}
                             className="text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base sm:opacity-0 group-hover:opacity-100 sm:transition-opacity sm:duration-300"
                           >
                             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +412,7 @@ const InvoicesTab = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-16">
+                <div className="text-center py-16 animate-fadeIn">
                   <p className="text-[#4a3d6b] text-lg">No invoices found matching your filter.</p>
                   <button 
                     onClick={() => setFilterValue('all')}
@@ -321,7 +426,7 @@ const InvoicesTab = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            <div className="bg-white rounded-lg shadow-sm p-8 animate-fadeIn animation-delay-500">
               <h3 className="text-xl font-medium text-[#2a2346] mb-6">Invoice Summary</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-4 border-b border-gray-100">
@@ -340,7 +445,7 @@ const InvoicesTab = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            <div className="bg-white rounded-lg shadow-sm p-8 animate-fadeIn animation-delay-600">
               <h3 className="text-xl font-medium text-[#2a2346] mb-6">Billing Information</h3>
               <div className="space-y-3 text-base">
                 <p className="text-[#2a2346] font-medium text-lg">Nicole Olson</p>
@@ -352,7 +457,7 @@ const InvoicesTab = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="mt-10 bg-gradient-to-r from-[#0a1629] to-[#384e7a] rounded-lg p-8 text-white">
+          <div className="mt-10 bg-gradient-to-r from-[#0a1629] to-[#384e7a] rounded-lg p-8 text-white animate-fadeIn animation-delay-700">
             <h3 className="text-xl font-medium mb-5">Need Help with Invoices?</h3>
             <p className="text-white/90 mb-6 text-base">Our support team is here to assist you with any billing questions or concerns.</p>
             <div className="flex flex-wrap gap-5">
@@ -370,6 +475,82 @@ const InvoicesTab = () => {
               </button>
             </div>
           </div>
+
+          <style jsx>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
+            @keyframes fadeInDown {
+              from {
+                opacity: 0;
+                transform: translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
+            .animate-fadeIn {
+              animation: fadeIn 0.6s ease-out forwards;
+              opacity: 0;
+            }
+
+            .animate-fadeInUp {
+              animation: fadeInUp 0.6s ease-out forwards;
+              opacity: 0;
+            }
+
+            .animate-fadeInDown {
+              animation: fadeInDown 0.6s ease-out forwards;
+              opacity: 0;
+            }
+
+            .animation-delay-100 {
+              animation-delay: 100ms;
+            }
+
+            .animation-delay-200 {
+              animation-delay: 200ms;
+            }
+
+            .animation-delay-300 {
+              animation-delay: 300ms;
+            }
+
+            .animation-delay-400 {
+              animation-delay: 400ms;
+            }
+
+            .animation-delay-500 {
+              animation-delay: 500ms;
+            }
+
+            .animation-delay-600 {
+              animation-delay: 600ms;
+            }
+
+            .animation-delay-700 {
+              animation-delay: 700ms;
+            }
+          `}</style>
         </>
       )}
     </div>
