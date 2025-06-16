@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { UserProvider } from "./contexts/UserContext";
 import { SignupFlowProvider } from "./contexts/SignupFlowContext";
+import { MemberPortalProvider } from "./contexts/MemberPortalProvider";
 
 // Import pages and components
 import WelcomePage from "./pages/WelcomePage";
@@ -12,10 +13,19 @@ import SinglePageSignup from "./pages/SinglePageSignup";
 import StandalonePaymentPage from './pages/PaymentPage';
 import WelcomeMember from './pages/WelcomeMember';
 import DemoPasswordPage from './pages/DemoPasswordPage';
-import PortalHome from './pages/PortalHome'; // ADD THIS IMPORT
+import PortalHome from './pages/PortalHome';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
+
+// Protected route wrapper for member portal
+const MemberPortalRoute = ({ children }) => {
+  return (
+    <MemberPortalProvider>
+      {children}
+    </MemberPortalProvider>
+  );
+};
 
 function App() {
   console.log('[APP] App component rendering');
@@ -104,12 +114,28 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/__/auth/action" element={<ResetPasswordPage />} />
 
-          {/* Payment and member welcome pages */}
+          {/* Payment page (used in signup flow) */}
           <Route path="/payment" element={<StandalonePaymentPage />} />
-          <Route path="/welcome-member" element={<WelcomeMember />} />
           
-          {/* Portal Home page - ADD THIS ROUTE */}
-          <Route path="/portal-home" element={<PortalHome />} />
+          {/* Member-only routes wrapped with MemberPortalProvider */}
+          <Route path="/welcome-member" element={
+            <MemberPortalRoute>
+              <WelcomeMember />
+            </MemberPortalRoute>
+          } />
+          
+          <Route path="/portal-home" element={
+            <MemberPortalRoute>
+              <PortalHome />
+            </MemberPortalRoute>
+          } />
+          
+          {/* Add other member portal routes here */}
+          <Route path="/portal/*" element={
+            <MemberPortalRoute>
+              <PortalHome />
+            </MemberPortalRoute>
+          } />
           
           {/* Isolated signup flow - all signup paths go to the same component */}
           <Route path="/signup/*" element={

@@ -19,10 +19,15 @@ import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';
 
+import { useMemberPortal } from '../contexts/MemberPortalProvider';
+
 const PortalHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [profileImage, setProfileImage] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Get customerId from the context
+  const { customerId } = useMemberPortal();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -66,15 +71,15 @@ const PortalHome = () => {
       case 'documents-forms':
         return <FormsTab />;
       
-      // Payments subtabs
+      // Payments subtabs - Pass customerId to payment-related tabs
       case 'payments':
         return <PaymentsTab />;
       case 'payments-history':
-        return <PaymentHistoryTab />;
+        return <PaymentHistoryTab customerId={customerId} />;
       case 'payments-methods':
-        return <PaymentMethodsTab />;
+        return <PaymentMethodsTab customerId={customerId} />;
       case 'payments-invoices':
-        return <InvoicesTab />;
+        return <InvoicesTab customerId={customerId} />;
       
       // Resources subtabs
       case 'resources':

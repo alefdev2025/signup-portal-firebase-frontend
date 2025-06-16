@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getCustomerPayments, getPaymentSummary, exportPaymentsToCSV } from './services/netsuite/payments';
-import { getInvoiceDetails } from './services/netsuite/invoices';
+import { usePayments, usePaymentSummary, useCustomerData } from './contexts/CustomerDataContext';
+import { exportPaymentsToCSV } from './services/netsuite/payments';
 
 const PaymentHistoryTab = ({ customerId = '4527' }) => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: paymentsData, isLoading, error } = usePayments();
+  const { data: summaryData } = usePaymentSummary();
+  const { fetchPaymentsWithDetails } = useCustomerData();
+  
   const [selectedYear, setSelectedYear] = useState('All');
   const [stats, setStats] = useState({
     totalSpent: 0,
@@ -13,124 +14,6 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
     lastPayment: 0,
     yearTotals: {}
   });
-
-  // Fetch payments on component mount
-  useEffect(() => {
-    fetchPayments();
-  }, [customerId]);
-
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Fetch payments using the service
-      const result = await getCustomerPayments(customerId, { limit: 50 });
-      
-      if (result.success && result.payments) {
-        // Process the payments data and fetch invoice details
-        const processedPayments = await processPaymentsWithInvoiceDetails(result.payments);
-        setPayments(processedPayments);
-        calculateStats(processedPayments);
-        
-        // Optionally fetch summary for more detailed stats
-        try {
-          const summaryResult = await getPaymentSummary(customerId);
-          if (summaryResult.success && summaryResult.summary) {
-            // Update stats with summary data if available
-            setStats(prevStats => ({
-              ...prevStats,
-              ...summaryResult.summary
-            }));
-          }
-        } catch (summaryError) {
-          console.warn('Could not fetch payment summary:', summaryError);
-        }
-      } else {
-        throw new Error(result.error || 'Failed to load payments');
-      }
-    } catch (err) {
-      console.error('Error fetching payments:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Process payment data and fetch invoice details
-  const processPaymentsWithInvoiceDetails = async (rawPayments) => {
-    const processedPayments = await Promise.all(
-      rawPayments.map(async (payment) => {
-        const processed = {
-          id: payment.id,
-          internalId: payment.internalId,
-          date: formatDate(payment.date),
-          rawDate: payment.date,
-          description: payment.memo || `Payment ${payment.documentNumber}`,
-          documentNumber: payment.documentNumber,
-          amount: parseFloat(payment.amount) || 0,
-          status: payment.status || 'Completed',
-          method: payment.paymentMethod || 'Unknown',
-          currency: payment.currency || 'USD',
-          appliedTo: payment.appliedTo || [],
-          unapplied: parseFloat(payment.unapplied) || 0,
-          invoiceDetails: []
-        };
-
-        // Fetch details for each applied invoice
-        if (payment.appliedTo && payment.appliedTo.length > 0) {
-          const invoiceDetails = await Promise.all(
-            payment.appliedTo.map(async (applied) => {
-              try {
-                // Only fetch if we have a transaction ID
-                if (applied.transactionId) {
-                  const details = await getInvoiceDetails(applied.transactionId);
-                  if (details.invoice) {
-                    return {
-                      ...applied,
-                      description: details.invoice.memo || details.invoice.description || 'Invoice',
-                      invoiceDate: details.invoice.date || details.invoice.trandate,
-                      items: details.invoice.items || []
-                    };
-                  }
-                }
-              } catch (err) {
-                console.warn(`Could not fetch details for invoice ${applied.transactionId}:`, err);
-              }
-              // Return original if fetch fails
-              return applied;
-            })
-          );
-          processed.invoiceDetails = invoiceDetails;
-        }
-
-        return processed;
-      })
-    );
-
-    return processedPayments;
-  };
-
-  // Calculate statistics
-  const calculateStats = (paymentList) => {
-    const totalSpent = paymentList.reduce((sum, payment) => sum + payment.amount, 0);
-    const averagePayment = paymentList.length > 0 ? totalSpent / paymentList.length : 0;
-    const lastPayment = paymentList.length > 0 ? paymentList[0].amount : 0;
-
-    // Calculate yearly totals
-    const yearTotals = {};
-    paymentList.forEach(payment => {
-      const year = new Date(payment.rawDate).getFullYear();
-      yearTotals[year] = (yearTotals[year] || 0) + payment.amount;
-    });
-
-    setStats({
-      totalSpent,
-      averagePayment,
-      lastPayment,
-      yearTotals
-    });
-  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -141,6 +24,51 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
       day: 'numeric' 
     });
   };
+
+  // Process payments when data changes
+  const payments = React.useMemo(() => {
+    if (!paymentsData?.payments) return [];
+    
+    return paymentsData.payments.map(payment => ({
+      id: payment.id,
+      internalId: payment.internalId,
+      date: formatDate(payment.date),
+      rawDate: payment.date,
+      description: payment.memo || `Payment ${payment.documentNumber}`,
+      documentNumber: payment.documentNumber,
+      amount: parseFloat(payment.amount) || 0,
+      status: payment.status || 'Completed',
+      method: payment.paymentMethod || 'Unknown',
+      currency: payment.currency || 'USD',
+      appliedTo: payment.appliedTo || [],
+      invoiceDetails: payment.invoiceDetails || [],
+      unapplied: parseFloat(payment.unapplied) || 0
+    }));
+  }, [paymentsData]);
+
+  // Calculate stats when payments or summary data changes
+  useEffect(() => {
+    if (payments.length > 0) {
+      const totalSpent = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const averagePayment = totalSpent / payments.length;
+      const lastPayment = payments[0].amount;
+
+      // Calculate yearly totals
+      const yearTotals = {};
+      payments.forEach(payment => {
+        const year = new Date(payment.rawDate).getFullYear();
+        yearTotals[year] = (yearTotals[year] || 0) + payment.amount;
+      });
+
+      setStats({
+        totalSpent,
+        averagePayment,
+        lastPayment,
+        yearTotals,
+        ...(summaryData?.summary || {})
+      });
+    }
+  }, [payments, summaryData]);
 
   // Filter payments by year
   const filteredPayments = selectedYear === 'All' 
@@ -153,7 +81,6 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
   // Export payments
   const handleExportPayments = async () => {
     try {
-      // Use the service export function
       await exportPaymentsToCSV(customerId, {
         dateFrom: selectedYear !== 'All' ? `${selectedYear}-01-01` : undefined,
         dateTo: selectedYear !== 'All' ? `${selectedYear}-12-31` : undefined
@@ -164,20 +91,35 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
     }
   };
 
-  if (loading) {
+  // Handle refresh
+  const handleRefresh = async () => {
+    await fetchPaymentsWithDetails({ forceRefresh: true });
+  };
+
+  if (isLoading && !payments.length) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-[#4a3d6b]">Loading payment history...</div>
+      <div>
+        <h1 className="text-3xl font-light text-[#2a2346] mb-8">Payment History</h1>
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-20 bg-gray-100 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !payments.length) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-600">Error loading payments: {error}</p>
         <button 
-          onClick={fetchPayments}
+          onClick={handleRefresh}
           className="mt-2 text-sm text-red-600 underline hover:no-underline"
         >
           Try again
@@ -190,7 +132,18 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
     <div>
       <h1 className="text-3xl font-light text-[#2a2346] mb-8">Payment History</h1>
 
-      {/* Transaction History - Now the main focus */}
+      {/* Show banner if refreshing in background */}
+      {isLoading && payments.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-sm text-blue-700">Checking for new payments...</span>
+        </div>
+      )}
+
+      {/* Transaction History */}
       <div className="bg-white rounded-lg shadow-sm p-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-medium text-[#2a2346]">Transaction History</h2>
@@ -247,7 +200,7 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
                       <p className="text-base text-[#2a2346] font-medium">
                         {payment.description || 'Payment'}
                       </p>
-                      {payment.invoiceDetails.length > 0 && (
+                      {payment.invoiceDetails && payment.invoiceDetails.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {payment.invoiceDetails.map((invoice, idx) => (
                             <div key={idx} className="text-sm text-[#4a3d6b]">
@@ -324,13 +277,14 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
             </p>
           </div>
           <button 
-            onClick={fetchPayments}
-            className="bg-[#0a1629] text-white px-6 py-3 rounded-lg hover:bg-[#1e2650] transition-colors flex items-center gap-2"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="bg-[#0a1629] text-white px-6 py-3 rounded-lg hover:bg-[#1e2650] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Refresh
+            {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </div>

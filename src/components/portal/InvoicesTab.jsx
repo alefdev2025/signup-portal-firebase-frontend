@@ -1,82 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { getCustomerInvoices, getInvoiceDetails } from './services/netsuite';
+import { useInvoices, useCustomerData } from './contexts/CustomerDataContext';
+import { getInvoiceDetails } from './services/netsuite';
 import SearchableInvoices from './utils/searchableInvoices.jsx';
 
 const InvoicesTab = ({ customerId = '4666' }) => {
+  const { data: invoicesData, isLoading, error } = useInvoices();
+  const { fetchInvoices } = useCustomerData();
+  
   const [filterValue, setFilterValue] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [mostRecentBillingAddress, setMostRecentBillingAddress] = useState(null);
 
-  // Fetch invoices on component mount
-  useEffect(() => {
-    fetchInvoices();
-  }, [customerId]);
+  // Process invoices when data changes
+  const invoices = React.useMemo(() => {
+    if (!invoicesData?.invoices) return [];
+    
+    return invoicesData.invoices.map(inv => ({
+      id: inv.documentNumber || inv.id,
+      internalId: String(inv.internalId || inv.id),
+      date: inv.date,
+      description: inv.memo || 'Associate Member',
+      amount: parseFloat(inv.total) || 0,
+      subtotal: parseFloat(inv.subtotal) || parseFloat(inv.total) || 0,
+      taxTotal: parseFloat(inv.taxTotal) || 0,
+      discountTotal: parseFloat(inv.discountTotal) || 0,
+      amountRemaining: parseFloat(inv.amountRemaining) || 0,
+      status: inv.status === 'paidInFull' || parseFloat(inv.amountRemaining) === 0 ? 'Paid' : 'Unpaid',
+      dueDate: inv.dueDate || inv.date,
+      memo: inv.memo || 'Associate Member Dues (Annual)',
+      postingPeriod: inv.postingPeriod,
+      terms: inv.terms || 'Net 30',
+      currency: inv.currency || 'USD',
+      subsidiary: inv.subsidiary,
+      automaticPayment: inv.automaticPayment || 'ICE AMBASSADOR',
+      merchantELink: inv.merchantELink,
+      _original: inv
+    }));
+  }, [invoicesData]);
 
-  const fetchInvoices = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Fetch billing address from most recent invoice
+  useEffect(() => {
+    if (invoices.length > 0 && !mostRecentBillingAddress) {
+      // Sort by date to get most recent
+      const sortedByDate = [...invoices].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+      );
       
-      const result = await getCustomerInvoices(customerId, { limit: 100 });
-      
-      // Transform NetSuite data to match your UI structure
-      const transformedInvoices = (result.invoices || []).map(inv => ({
-        id: inv.documentNumber || inv.id,
-        internalId: String(inv.internalId || inv.id), // Ensure it's a string
-        date: inv.date,
-        description: inv.memo || 'Associate Member',
-        amount: parseFloat(inv.total) || 0,
-        subtotal: parseFloat(inv.subtotal) || parseFloat(inv.total) || 0,
-        taxTotal: parseFloat(inv.taxTotal) || 0,
-        discountTotal: parseFloat(inv.discountTotal) || 0,
-        amountRemaining: parseFloat(inv.amountRemaining) || 0,
-        status: inv.status === 'paidInFull' || parseFloat(inv.amountRemaining) === 0 ? 'Paid' : 'Unpaid',
-        dueDate: inv.dueDate || inv.date,
-        memo: inv.memo || 'Associate Member Dues (Annual)',
-        postingPeriod: inv.postingPeriod,
-        terms: inv.terms || 'Net 30',
-        currency: inv.currency || 'USD',
-        subsidiary: inv.subsidiary,
-        automaticPayment: inv.automaticPayment || 'ICE AMBASSADOR',
-        merchantELink: inv.merchantELink,
-        _original: inv
-      }));
-      
-      setInvoices(transformedInvoices);
-      
-      // After successfully loading invoices, fetch billing address from the most recent one
-      if (transformedInvoices.length > 0) {
-        // Sort by date to get most recent
-        const sortedByDate = [...transformedInvoices].sort((a, b) => 
-          new Date(b.date) - new Date(a.date)
-        );
-        
-        // Try to fetch billing address from the most recent invoice
-        const mostRecent = sortedByDate[0];
-        if (mostRecent.internalId) {
-          try {
-            const details = await getInvoiceDetails(mostRecent.internalId);
+      // Try to fetch billing address from the most recent invoice
+      const mostRecent = sortedByDate[0];
+      if (mostRecent.internalId) {
+        getInvoiceDetails(mostRecent.internalId)
+          .then(details => {
             if (details.invoice && details.invoice.billingAddress) {
               setMostRecentBillingAddress(details.invoice.billingAddress);
               console.log('Fetched billing address from invoice:', mostRecent.id);
             }
-          } catch (err) {
+          })
+          .catch(err => {
             console.warn('Could not fetch billing address from most recent invoice:', err.message);
-          }
-        }
+          });
       }
-    } catch (err) {
-      console.error('Error loading invoices:', err);
-      setError(err.message);
-      // Don't set fallback data - let the error show
-      setInvoices([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [invoices, mostRecentBillingAddress]);
 
   // Handle viewing invoice details
   const handleViewInvoice = async (invoice) => {
@@ -133,8 +118,13 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     return true;
   });
 
+  // Handle refresh
+  const handleRefresh = async () => {
+    await fetchInvoices({ forceRefresh: true });
+  };
+
   // Loading state
-  if (loading) {
+  if (isLoading && !invoices.length) {
     return (
       <div className="bg-gray-50 -m-8 p-8 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -145,15 +135,15 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     );
   }
 
-  // Error state (but still show data if we have fallback)
-  if (error && invoices.length === 0) {
+  // Error state
+  if (error && !invoices.length) {
     return (
       <div className="bg-gray-50 -m-8 p-8 min-h-screen">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           <p className="font-bold">Error loading invoices</p>
           <p className="text-sm">{error}</p>
           <button 
-            onClick={fetchInvoices}
+            onClick={handleRefresh}
             className="mt-2 text-sm underline hover:no-underline"
           >
             Try again
@@ -165,6 +155,17 @@ const InvoicesTab = ({ customerId = '4666' }) => {
 
   return (
     <div className="bg-gray-50 -m-8 p-8 min-h-screen">
+      {/* Show banner if refreshing in background */}
+      {isLoading && invoices.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-sm text-blue-700">Checking for new invoices...</span>
+        </div>
+      )}
+
       {/* Full Invoice View */}
       {selectedInvoice ? (
         <div className="animate-fadeIn">
@@ -216,8 +217,8 @@ const InvoicesTab = ({ customerId = '4666' }) => {
               <div className="mb-10 animate-fadeIn animation-delay-300">
                 <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Customer Information</h3>
                 <div className="bg-gray-50 rounded-lg p-6">
-                  <p className="text-[#2a2346] font-medium text-lg mb-2">Nicole Olson</p>
-                  <p className="text-[#6b7280] text-base">Alcor ID: AM-10523</p>
+                  <p className="text-[#2a2346] font-medium text-lg mb-2">TODO Name from Salesforce</p>
+                  <p className="text-[#6b7280] text-base">Alcor ID: TODO id from Salesforce</p>
                   <p className="text-[#6b7280] text-base">{selectedInvoice.subsidiary}</p>
                 </div>
               </div>
@@ -497,7 +498,7 @@ const InvoicesTab = ({ customerId = '4666' }) => {
 
             <div className="bg-white rounded-lg shadow-sm p-8 animate-fadeIn animation-delay-600">
               <h3 className="text-xl font-medium text-[#2a2346] mb-6">Billing Information</h3>
-              {loading ? (
+              {isLoading ? (
                 <div className="space-y-3">
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
