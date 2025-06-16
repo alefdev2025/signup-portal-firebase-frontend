@@ -1,3 +1,3 @@
 export { getCustomerInvoices, getInvoiceDetails, searchInvoices } from './invoices';
-export { postPayment, getPaymentStatus } from './payments';
+export { getCustomerPayments, getPaymentDetails, getPaymentSummary, getCustomerCredits, getCustomerPaymentMethods, exportPaymentsToCSV } from './payments';
 export { getSalesOrders, getSalesOrderDetails } from './salesOrders';

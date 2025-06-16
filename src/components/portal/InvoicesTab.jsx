@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCustomerInvoices, getInvoiceDetails } from './services/netsuite';
+import SearchableInvoices from './utils/searchableInvoices.jsx';
 
 const InvoicesTab = ({ customerId = '4666' }) => {
   const [filterValue, setFilterValue] = useState('all');
@@ -337,30 +338,31 @@ const InvoicesTab = ({ customerId = '4666' }) => {
       ) : (
         /* Main Invoice List */
         <>
-          <h1 className="text-4xl font-light text-[#2a2346] mb-10 animate-fadeInDown">Invoices</h1>
+        <h1 className="text-4xl font-light text-[#2a2346] mb-10 animate-fadeInDown">Invoices</h1>
         
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8 animate-fadeIn animation-delay-100">
-            <div className="flex justify-between items-start mb-8">
-              <h2 className="text-2xl font-medium text-[#2a2346]">Invoice History</h2>
-              <div className="flex items-center gap-6">
-                <input 
-                  type="search" 
-                  placeholder="Search invoices..."
-                  className="hidden sm:block px-5 py-3 border-2 border-[#6b5b7e] rounded-lg focus:outline-none focus:border-[#d09163] transition-all text-base h-[50px]"
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-8 animate-fadeIn animation-delay-100">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-8">
+            <h2 className="text-2xl font-medium text-[#2a2346]">Invoice History</h2>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
+              <div className="w-full sm:w-80">
+                <SearchableInvoices 
+                  invoices={invoices} 
+                  onInvoiceSelect={handleViewInvoice}
                 />
-                <select 
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                  className="px-5 pr-10 py-3 border-2 border-[#6b5b7e] rounded-lg focus:outline-none focus:border-[#d09163] transition-all text-[#6b5b7e] cursor-pointer text-base h-[50px]"
-                >
-                  <option value="all">All Invoices</option>
-                  <option value="unpaid">Unpaid Only</option>
-                  <option value="recent">Last 30 Days</option>
-                  <option value="older">Older than 30 Days</option>
-                  <option value="pastYear">Past Year</option>
-                </select>
               </div>
+              <select 
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                className="w-full sm:w-auto px-5 pr-10 py-3 border-2 border-[#6b5b7e] rounded-lg focus:outline-none focus:border-[#d09163] transition-all text-[#6b5b7e] cursor-pointer text-base h-[50px]"
+              >
+                <option value="all">All Invoices</option>
+                <option value="unpaid">Unpaid Only</option>
+                <option value="recent">Last 30 Days</option>
+                <option value="older">Older than 30 Days</option>
+                <option value="pastYear">Past Year</option>
+              </select>
             </div>
+          </div>
 
             {/* Email Notifications Section */}
             <div className="bg-gray-200 rounded-lg p-4 lg:p-6 mb-8 animate-fadeIn animation-delay-200">
