@@ -7,6 +7,7 @@ const InvoicesTab = ({ customerId = '4666' }) => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mostRecentBillingAddress, setMostRecentBillingAddress] = useState(null);
 
   // Fetch invoices on component mount
   useEffect(() => {
@@ -21,45 +22,56 @@ const InvoicesTab = ({ customerId = '4666' }) => {
       const result = await getCustomerInvoices(customerId, { limit: 100 });
       
       // Transform NetSuite data to match your UI structure
-      const transformedInvoices = result.invoices.map(inv => ({
-        id: inv.documentNumber,
-        date: inv.date, // Keep original format for now
+      const transformedInvoices = (result.invoices || []).map(inv => ({
+        id: inv.documentNumber || inv.id,
+        internalId: String(inv.internalId || inv.id), // Ensure it's a string
+        date: inv.date,
         description: inv.memo || 'Associate Member',
-        amount: parseFloat(inv.total),
-        status: inv.status === 'paidInFull' ? 'Paid' : 'Unpaid',
-        dueDate: inv.dueDate || inv.date, // Fallback to invoice date if no due date
+        amount: parseFloat(inv.total) || 0,
+        subtotal: parseFloat(inv.subtotal) || parseFloat(inv.total) || 0,
+        taxTotal: parseFloat(inv.taxTotal) || 0,
+        discountTotal: parseFloat(inv.discountTotal) || 0,
+        amountRemaining: parseFloat(inv.amountRemaining) || 0,
+        status: inv.status === 'paidInFull' || parseFloat(inv.amountRemaining) === 0 ? 'Paid' : 'Unpaid',
+        dueDate: inv.dueDate || inv.date,
         memo: inv.memo || 'Associate Member Dues (Annual)',
-        // Keep original data for details and e-link
+        postingPeriod: inv.postingPeriod,
+        terms: inv.terms || 'Net 30',
+        currency: inv.currency || 'USD',
+        subsidiary: inv.subsidiary,
+        automaticPayment: inv.automaticPayment || 'ICE AMBASSADOR',
+        merchantELink: inv.merchantELink,
         _original: inv
       }));
       
       setInvoices(transformedInvoices);
+      
+      // After successfully loading invoices, fetch billing address from the most recent one
+      if (transformedInvoices.length > 0) {
+        // Sort by date to get most recent
+        const sortedByDate = [...transformedInvoices].sort((a, b) => 
+          new Date(b.date) - new Date(a.date)
+        );
+        
+        // Try to fetch billing address from the most recent invoice
+        const mostRecent = sortedByDate[0];
+        if (mostRecent.internalId) {
+          try {
+            const details = await getInvoiceDetails(mostRecent.internalId);
+            if (details.invoice && details.invoice.billingAddress) {
+              setMostRecentBillingAddress(details.invoice.billingAddress);
+              console.log('Fetched billing address from invoice:', mostRecent.id);
+            }
+          } catch (err) {
+            console.warn('Could not fetch billing address from most recent invoice:', err.message);
+          }
+        }
+      }
     } catch (err) {
       console.error('Error loading invoices:', err);
       setError(err.message);
-      // Fallback to hardcoded data if API fails
-      setInvoices([
-        { 
-          id: 'INV5842', 
-          date: 'Sep 1, 2024', 
-          description: 'Associate Member',
-          amount: 60.00,
-          status: 'Unpaid',
-          dueDate: 'Oct 1, 2024',
-          memo: 'Associate Member Dues (Annual)',
-          _original: {}
-        },
-        { 
-          id: 'INV3453', 
-          date: 'Sep 17, 2023', 
-          description: 'Associate Member',
-          amount: 60.00,
-          status: 'Paid',
-          dueDate: 'Oct 17, 2023',
-          memo: 'Associate Member Dues (Annual)',
-          _original: {}
-        }
-      ]);
+      // Don't set fallback data - let the error show
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -69,10 +81,11 @@ const InvoicesTab = ({ customerId = '4666' }) => {
   const handleViewInvoice = async (invoice) => {
     try {
       // If we have an internal ID, try to fetch more details
-      if (invoice._original?.internalId) {
-        const details = await getInvoiceDetails(invoice._original.internalId);
+      if (invoice.internalId) {
+        const details = await getInvoiceDetails(invoice.internalId);
         setSelectedInvoice({
           ...invoice,
+          ...details.invoice,
           detailedInfo: details.invoice
         });
       } else {
@@ -88,10 +101,9 @@ const InvoicesTab = ({ customerId = '4666' }) => {
   // Handle payment action
   const handlePayInvoice = (invoice) => {
     // If the invoice has an e-link, open it
-    if (invoice._original?.merchantELink) {
-      window.open(invoice._original.merchantELink, '_blank');
+    if (invoice.merchantELink) {
+      window.open(invoice.merchantELink, '_blank');
     } else {
-      // Otherwise, could implement your own payment flow
       console.log('Implement payment flow for invoice:', invoice.id);
       alert('Payment functionality will be implemented soon');
     }
@@ -174,14 +186,18 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                 <div className="flex justify-between items-start pb-8 border-b border-gray-200">
                   <div>
                     <h2 className="text-3xl font-semibold text-[#2a2346] mb-6 mt-2 animate-fadeIn">Invoice {selectedInvoice.id}</h2>
-                    <div className="flex items-center gap-8 text-base text-[#6b7280] animate-fadeIn animation-delay-100">
-                      <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-base text-[#6b7280] animate-fadeIn animation-delay-100">
+                      <div>
                         <span className="font-medium">Invoice Date:</span>
-                        <span>{selectedInvoice.date}</span>
+                        <span className="ml-3">{new Date(selectedInvoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div>
                         <span className="font-medium">Due Date:</span>
-                        <span>{selectedInvoice.dueDate}</span>
+                        <span className="ml-3">{new Date(selectedInvoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Posting Period:</span>
+                        <span className="ml-3">{selectedInvoice.postingPeriod}</span>
                       </div>
                     </div>
                   </div>
@@ -201,9 +217,29 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                 <div className="bg-gray-50 rounded-lg p-6">
                   <p className="text-[#2a2346] font-medium text-lg mb-2">Nicole Olson</p>
                   <p className="text-[#6b7280] text-base">Alcor ID: AM-10523</p>
-                  <p className="text-[#6b7280] text-base">Alcor Life Extension Foundation</p>
+                  <p className="text-[#6b7280] text-base">{selectedInvoice.subsidiary}</p>
                 </div>
               </div>
+
+              {/* Billing Address */}
+              {selectedInvoice.billingAddress && (
+                <div className="mb-10 animate-fadeIn animation-delay-350">
+                  <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Billing Address</h3>
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <p className="text-[#2a2346] font-medium text-lg mb-2">
+                      {selectedInvoice.billingAddress.addressee}
+                    </p>
+                    <p className="text-[#6b7280] text-base">{selectedInvoice.billingAddress.addr1}</p>
+                    {selectedInvoice.billingAddress.addr2 && (
+                      <p className="text-[#6b7280] text-base">{selectedInvoice.billingAddress.addr2}</p>
+                    )}
+                    <p className="text-[#6b7280] text-base">
+                      {selectedInvoice.billingAddress.city}, {selectedInvoice.billingAddress.state} {selectedInvoice.billingAddress.zip}
+                    </p>
+                    <p className="text-[#6b7280] text-base">{selectedInvoice.billingAddress.country || 'United States'}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Invoice Items */}
               <div className="mb-10 animate-fadeIn animation-delay-400">
@@ -219,12 +255,23 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      <tr>
-                        <td className="px-6 py-6 text-base text-[#2a2346]">{selectedInvoice.description}</td>
-                        <td className="px-6 py-6 text-base text-[#2a2346] text-center">1</td>
-                        <td className="px-6 py-6 text-base text-[#2a2346] text-right">${selectedInvoice.amount.toFixed(2)}</td>
-                        <td className="px-6 py-6 text-base text-[#2a2346] font-medium text-right">${selectedInvoice.amount.toFixed(2)}</td>
-                      </tr>
+                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                        selectedInvoice.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-6 text-base text-[#2a2346]">{item.description || selectedInvoice.description}</td>
+                            <td className="px-6 py-6 text-base text-[#2a2346] text-center">{item.quantity || 1}</td>
+                            <td className="px-6 py-6 text-base text-[#2a2346] text-right">${(item.rate || selectedInvoice.amount).toFixed(2)}</td>
+                            <td className="px-6 py-6 text-base text-[#2a2346] font-medium text-right">${(item.amount || selectedInvoice.amount).toFixed(2)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-6 py-6 text-base text-[#2a2346]">{selectedInvoice.description}</td>
+                          <td className="px-6 py-6 text-base text-[#2a2346] text-center">1</td>
+                          <td className="px-6 py-6 text-base text-[#2a2346] text-right">${selectedInvoice.amount.toFixed(2)}</td>
+                          <td className="px-6 py-6 text-base text-[#2a2346] font-medium text-right">${selectedInvoice.amount.toFixed(2)}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -236,11 +283,17 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                   <div className="bg-gray-50 rounded-lg p-6">
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-base text-[#6b7280]">Subtotal</span>
-                      <span className="text-base text-[#2a2346] font-medium">${selectedInvoice.amount.toFixed(2)}</span>
+                      <span className="text-base text-[#2a2346] font-medium">${selectedInvoice.subtotal.toFixed(2)}</span>
                     </div>
+                    {selectedInvoice.discountTotal > 0 && (
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-base text-[#6b7280]">Discount</span>
+                        <span className="text-base text-[#2a2346] font-medium">-${selectedInvoice.discountTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-base text-[#6b7280]">Tax</span>
-                      <span className="text-base text-[#2a2346] font-medium">$0.00</span>
+                      <span className="text-base text-[#2a2346] font-medium">${selectedInvoice.taxTotal.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-3">
                       <div className="flex justify-between items-center">
@@ -250,29 +303,13 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-base text-[#6b7280]">Amount Due</span>
                         <span className="text-xl font-semibold text-[#d09163]">
-                          {selectedInvoice.status === 'Paid' ? '$0.00' : `$${selectedInvoice.amount.toFixed(2)}`}
+                          ${selectedInvoice.amountRemaining.toFixed(2)}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Payment Information (if paid) */}
-              {selectedInvoice.status === 'Paid' && (
-                <div className="mb-10 animate-fadeIn animation-delay-600">
-                  <h3 className="text-lg font-semibold text-[#2a2346] mb-4">Payment Information</h3>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-base font-medium text-green-800">Payment Received</span>
-                    </div>
-                    <p className="text-sm text-green-700">This invoice has been paid in full.</p>
-                  </div>
-                </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center border-t pt-8 animate-fadeIn animation-delay-700">
@@ -388,13 +425,18 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                         </div>
                         <p className="text-sm sm:text-base text-[#6b7280] mb-2">{invoice.description}</p>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-sm sm:text-base text-[#6b7280]">
-                          <span>Invoice Date: {invoice.date}</span>
+                          <span>Invoice Date: {new Date(invoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                           <span className="hidden sm:inline text-gray-300">•</span>
-                          <span>Due Date: {invoice.dueDate}</span>
+                          <span>Due Date: {new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                          <span className="hidden sm:inline text-gray-300">•</span>
+                          <span>Period: {invoice.postingPeriod}</span>
                         </div>
                       </div>
                       <div className="flex flex-row sm:flex-col items-center sm:items-center justify-between sm:justify-start gap-4 min-w-[120px]">
                         <p className="text-xl sm:text-2xl font-medium text-[#2a2346]">${invoice.amount.toFixed(2)}</p>
+                        {invoice.amountRemaining > 0 && invoice.amountRemaining < invoice.amount && (
+                          <p className="text-sm text-[#6b7280]">Due: ${invoice.amountRemaining.toFixed(2)}</p>
+                        )}
                         <div className="sm:mt-6">
                           <button 
                             onClick={() => handleViewInvoice(invoice)}
@@ -437,6 +479,12 @@ const InvoicesTab = ({ customerId = '4666' }) => {
                   <span className="text-[#4a3d6b] text-base">Paid Invoices</span>
                   <span className="font-medium text-[#6b5b7e] text-lg">{invoices.filter(i => i.status === 'Paid').length}</span>
                 </div>
+                <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                  <span className="text-[#4a3d6b] text-base">Total Due</span>
+                  <span className="font-medium text-[#d09163] text-lg">
+                    ${invoices.reduce((sum, inv) => sum + inv.amountRemaining, 0).toFixed(2)}
+                  </span>
+                </div>
                 <div className="pt-2">
                   <p className="text-base text-[#4a3d6b] italic text-center">
                     Reminder: Your Membership Dues are Tax Deductible
@@ -447,12 +495,35 @@ const InvoicesTab = ({ customerId = '4666' }) => {
 
             <div className="bg-white rounded-lg shadow-sm p-8 animate-fadeIn animation-delay-600">
               <h3 className="text-xl font-medium text-[#2a2346] mb-6">Billing Information</h3>
-              <div className="space-y-3 text-base">
-                <p className="text-[#2a2346] font-medium text-lg">Nicole Olson</p>
-                <p className="text-[#4a3d6b]">1345 Bellefield Park Ln</p>
-                <p className="text-[#4a3d6b]">Bellevue, WA 98004</p>
-                <p className="text-[#4a3d6b]">United States</p>
-              </div>
+              {loading ? (
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                </div>
+              ) : mostRecentBillingAddress ? (
+                <div className="space-y-3 text-base">
+                  <p className="text-[#2a2346] font-medium text-lg">
+                    {mostRecentBillingAddress.addressee}
+                  </p>
+                  <p className="text-[#4a3d6b]">{mostRecentBillingAddress.addr1}</p>
+                  {mostRecentBillingAddress.addr2 && (
+                    <p className="text-[#4a3d6b]">{mostRecentBillingAddress.addr2}</p>
+                  )}
+                  <p className="text-[#4a3d6b]">
+                    {mostRecentBillingAddress.city}, {mostRecentBillingAddress.state} {mostRecentBillingAddress.zip}
+                  </p>
+                  <p className="text-[#4a3d6b]">{mostRecentBillingAddress.country || 'United States'}</p>
+                  <p className="text-xs text-[#6b7280] mt-3 italic">
+                    From most recent invoice
+                  </p>
+                </div>
+              ) : (
+                <div className="text-[#6b7280] text-base">
+                  <p>No billing address available</p>
+                  <p className="text-sm mt-2">Billing address will appear here once an invoice is created.</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -535,12 +606,20 @@ const InvoicesTab = ({ customerId = '4666' }) => {
               animation-delay: 300ms;
             }
 
+            .animation-delay-350 {
+              animation-delay: 350ms;
+            }
+
             .animation-delay-400 {
               animation-delay: 400ms;
             }
 
             .animation-delay-500 {
               animation-delay: 500ms;
+            }
+
+            .animation-delay-550 {
+              animation-delay: 550ms;
             }
 
             .animation-delay-600 {
