@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getContactInfo } from '../../services/contact';
 import { useUser } from '../../contexts/UserContext';
 import { latestMediaItems } from './LatestMedia';
-import { podcastEpisodes } from './podcastConfig';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
@@ -149,15 +148,23 @@ const OverviewTab = () => {
           }}
         />
         
+        {/* Additional orange/yellow gradient overlay */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(135deg, transparent 0%, transparent 40%, rgba(174, 121, 104, 0.3) 50%, rgba(194, 135, 106, 0.4) 60%, rgba(212, 168, 95, 0.5) 70%, rgba(221, 181, 113, 0.6) 75%, rgba(228, 192, 132, 0.6) 80%, rgba(233, 202, 150, 0.6) 85%, rgba(239, 211, 168, 0.6) 90%, rgba(247, 221, 181, 0.6) 95%, rgba(255, 212, 163, 0.6) 100%)',
+          }}
+        />
+        
         <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message on the left */}
-            <div className="flex-1">
-              <h1 className="font-light text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2.5rem' }}>
+            <div className="flex-1 mt-8">
+              <h1 className="font-light text-white mb-4 drop-shadow-lg tracking-tight" style={{ fontSize: '2.5rem' }}>
                 <span className="text-white/90">Welcome</span>
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
-              <p className="text-base md:text-lg text-white/90 mb-4 drop-shadow">
+              <p className="text-base md:text-lg text-white/90 mb-8 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
@@ -171,35 +178,30 @@ const OverviewTab = () => {
             </div>
             
             {/* Latest Media on the right */}
-            {podcastEpisodes[0] && latestMediaItems[0] && (
+            {latestMediaItems[0] && (
               <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded-lg p-5 max-w-lg border border-white/20">
                 <h3 className="text-white text-base font-medium mb-3 drop-shadow">LATEST MEDIA</h3>
                 <div className="flex items-start gap-4">
                   <img 
                     src={latestMediaItems[0].image} 
-                    alt={podcastEpisodes[0].title}
+                    alt={latestMediaItems[0].title}
                     className="w-40 h-28 object-cover rounded-md shadow-lg flex-shrink-0"
                   />
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-white/25 text-white px-2 py-0.5 rounded backdrop-blur-sm">
-                        PODCAST
+                        {latestMediaItems[0].type}
                       </span>
                       <span className="text-xs text-white/70">
-                        {podcastEpisodes[0].timeAgo}
+                        {latestMediaItems[0].date}
                       </span>
                     </div>
                     <h4 className="text-sm font-medium text-white line-clamp-2 mb-2 drop-shadow">
-                      {podcastEpisodes[0].title}
+                      {latestMediaItems[0].title}
                     </h4>
-                    <a 
-                      href={podcastEpisodes[0].link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-white/90 hover:text-white transition-colors font-medium inline-block"
-                    >
+                    <button className="text-sm text-white/90 hover:text-white transition-colors font-medium">
                       LISTEN NOW →
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>

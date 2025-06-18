@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getContactInfo } from '../../services/contact';
 import { useUser } from '../../contexts/UserContext';
 import { latestMediaItems } from './LatestMedia';
-import { podcastEpisodes } from './podcastConfig';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
@@ -11,7 +10,7 @@ import TopMiddleCard from './DashboardComponents/TopMiddleCard';
 import MiddleLeftSmallCard from './DashboardComponents/MiddleLeftSmallCard';
 import MiddleRightSmallCard from './DashboardComponents/MiddleRightSmallCard';
 import TopRightCard from './DashboardComponents/TopRightCard';
-import dewarsImage from '../../assets/images/dewars2.jpg';
+import dewarsImage from '../../assets/images/dewars-high-res1.png';
 
 const OverviewTab = () => {
   const { currentUser } = useUser();
@@ -97,7 +96,7 @@ const OverviewTab = () => {
   return (
     <div className="-mt-4">
       <div 
-        className="relative h-72 rounded-2xl overflow-hidden mb-12 animate-fadeIn"
+        className="relative h-80 rounded-2xl overflow-hidden mb-12 animate-fadeIn"
         style={{ 
           animation: 'fadeIn 0.8s ease-in-out'
         }}
@@ -115,37 +114,68 @@ const OverviewTab = () => {
           }
         `}</style>
         
-        {/* Background image */}
+        {/* Background Image Layer */}
         <div 
-          className="absolute inset-0"
-          style={{
+          className="absolute inset-0 bg-cover"
+          style={{ 
             backgroundImage: `url(${dewarsImage})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'right center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.6
           }}
         />
         
-        {/* Gradient overlay that becomes transparent towards bottom right */}
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(135deg, #0e0e2f 0%, #1b163a 15%, #2a1b3d 30%, #3f2541 45%, rgba(46, 65, 104, 0.7) 65%, rgba(56, 78, 122, 0.4) 90%, rgba(255, 179, 102, 0.1) 100%)',
-          }}
-        />
-        
-        {/* Mesh gradient overlay for complexity */}
+        {/* Main gradient that transitions to transparent */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(circle at 80% 20%, rgba(56, 78, 122, 0.3) 0%, transparent 50%)',
+            background: `linear-gradient(to right, 
+              #0a1629 0%, 
+              #1a2744 15%, 
+              #243456 30%, 
+              #2e4168 45%, 
+              #384e7a 55%,
+              rgba(56, 78, 122, 0.95) 60%,
+              rgba(56, 78, 122, 0.85) 65%,
+              rgba(56, 78, 122, 0.6) 70%,
+              rgba(56, 78, 122, 0.4) 75%,
+              rgba(56, 78, 122, 0.2) 80%,
+              transparent 85%)`
           }}
         />
         
-        {/* Additional accent gradient */}
+        {/* Right side gradient overlay from TopRightCard - more prominent */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(115deg, transparent 40%, rgba(46, 65, 104, 0.2) 70%, rgba(56, 78, 122, 0.3) 100%)',
+            background: `linear-gradient(160deg, 
+              transparent 0%,
+              transparent 40%,
+              rgba(75, 56, 101, 0.3) 45%,
+              rgba(93, 68, 128, 0.4) 50%,
+              rgba(108, 85, 120, 0.5) 55%,
+              rgba(123, 86, 112, 0.6) 60%,
+              rgba(138, 95, 100, 0.7) 65%,
+              rgba(153, 107, 102, 0.8) 70%,
+              rgba(174, 121, 104, 0.85) 75%,
+              rgba(194, 135, 106, 0.9) 80%,
+              rgba(212, 168, 95, 0.95) 85%,
+              rgba(221, 181, 113, 1) 87.5%,
+              rgba(228, 192, 132, 1) 90%,
+              rgba(233, 202, 150, 1) 92.5%,
+              rgba(239, 211, 168, 1) 95%,
+              rgba(247, 221, 181, 1) 97.5%,
+              rgba(255, 212, 163, 1) 100%)`,
+            opacity: 0.9
+          }}
+        />
+        
+        {/* Vignette overlay for depth */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at 80% 50%, transparent 30%, rgba(0,0,0,0.3) 100%)`
           }}
         />
         
@@ -153,17 +183,17 @@ const OverviewTab = () => {
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message on the left */}
             <div className="flex-1">
-              <h1 className="font-light text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2.5rem' }}>
+              <h1 className="text-3xl md:text-[2.625rem] font-light text-white mb-4 drop-shadow-lg tracking-tight">
                 <span className="text-white/90">Welcome</span>
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
-              <p className="text-base md:text-lg text-white/90 mb-4 drop-shadow">
+              <p className="text-base md:text-lg text-white/90 mb-5 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
                 onClick={() => console.log('View membership status')}
                 variant="outline"
-                size="md"
+                size="sm"
                 className="border-white/30 text-white hover:bg-white/10"
               >
                 View Membership Status
@@ -171,35 +201,30 @@ const OverviewTab = () => {
             </div>
             
             {/* Latest Media on the right */}
-            {podcastEpisodes[0] && latestMediaItems[0] && (
+            {latestMediaItems[0] && (
               <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded-lg p-5 max-w-lg border border-white/20">
-                <h3 className="text-white text-base font-medium mb-3 drop-shadow">LATEST MEDIA</h3>
+                <h3 className="text-white text-base font-medium mb-3 drop-shadow">Latest Media</h3>
                 <div className="flex items-start gap-4">
                   <img 
                     src={latestMediaItems[0].image} 
-                    alt={podcastEpisodes[0].title}
+                    alt={latestMediaItems[0].title}
                     className="w-40 h-28 object-cover rounded-md shadow-lg flex-shrink-0"
                   />
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-white/25 text-white px-2 py-0.5 rounded backdrop-blur-sm">
-                        PODCAST
+                        {latestMediaItems[0].type}
                       </span>
                       <span className="text-xs text-white/70">
-                        {podcastEpisodes[0].timeAgo}
+                        {latestMediaItems[0].date}
                       </span>
                     </div>
                     <h4 className="text-sm font-medium text-white line-clamp-2 mb-2 drop-shadow">
-                      {podcastEpisodes[0].title}
+                      {latestMediaItems[0].title}
                     </h4>
-                    <a 
-                      href={podcastEpisodes[0].link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-white/90 hover:text-white transition-colors font-medium inline-block"
-                    >
-                      LISTEN NOW →
-                    </a>
+                    <button className="text-xs text-white/90 hover:text-white transition-colors font-medium">
+                      Learn More →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -231,7 +256,7 @@ const OverviewTab = () => {
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Account</h3>
+            <h3 className="font-medium text-2xl text-[#2a2346] mb-2">Account Settings</h3>
             <p className="text-sm text-gray-400">Manage your profile and preferences</p>
           </div>
           
@@ -255,7 +280,7 @@ const OverviewTab = () => {
                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Membership</h3>
+            <h3 className="font-medium text-2xl text-[#2a2346] mb-2">View Membership</h3>
             <p className="text-sm text-gray-400">Check your membership details</p>
           </div>
           
@@ -279,7 +304,7 @@ const OverviewTab = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Payments</h3>
+            <h3 className="font-medium text-2xl text-[#2a2346] mb-2">Payment History</h3>
             <p className="text-sm text-gray-400">Review recent transactions</p>
           </div>
           
@@ -303,7 +328,7 @@ const OverviewTab = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Support</h3>
+            <h3 className="font-medium text-2xl text-[#2a2346] mb-2">Support Center</h3>
             <p className="text-sm text-gray-400">Get help when you need it</p>
           </div>
         </div>
@@ -388,8 +413,8 @@ const OverviewTab = () => {
       {memberNewsletters && memberNewsletters.length > 0 && (
         <div ref={newslettersRef} id="newsletters" className="mt-16">
           <h2 className={`text-2xl font-light text-[#2a2346] mb-6 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Member Newsletters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {memberNewsletters.slice(0, 3).map((newsletter, index) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {memberNewsletters.slice(0, 2).map((newsletter, index) => (
               <div 
                 key={newsletter.id}
                 className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 cursor-pointer ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}

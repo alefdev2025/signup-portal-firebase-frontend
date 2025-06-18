@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getContactInfo } from '../../services/contact';
 import { useUser } from '../../contexts/UserContext';
 import { latestMediaItems } from './LatestMedia';
-import { podcastEpisodes } from './podcastConfig';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
@@ -115,7 +114,7 @@ const OverviewTab = () => {
           }
         `}</style>
         
-        {/* Background image */}
+        {/* Background image - Layer 1 */}
         <div 
           className="absolute inset-0"
           style={{
@@ -125,39 +124,27 @@ const OverviewTab = () => {
           }}
         />
         
-        {/* Gradient overlay that becomes transparent towards bottom right */}
+        {/* Your gradient overlay - Layer 2 */}
         <div 
           className="absolute inset-0"
           style={{ 
-            background: 'linear-gradient(135deg, #0e0e2f 0%, #1b163a 15%, #2a1b3d 30%, #3f2541 45%, rgba(46, 65, 104, 0.7) 65%, rgba(56, 78, 122, 0.4) 90%, rgba(255, 179, 102, 0.1) 100%)',
+            background: `linear-gradient(135deg, rgba(18, 35, 59, 0.95) 0%, rgba(39, 43, 77, 0.93) 10%, rgba(59, 52, 91, 0.91) 20%, rgba(75, 56, 101, 0.89) 30%, rgba(93, 68, 128, 0.85) 40%, rgba(108, 85, 120, 0.8) 50%, rgba(123, 86, 112, 0.75) 60%, rgba(138, 95, 100, 0.65) 70%, rgba(153, 107, 102, 0.55) 80%, rgba(174, 121, 104, 0.45) 85%, rgba(194, 135, 106, 0.4) 88%, rgba(212, 168, 95, 0.35) 91%, rgba(221, 181, 113, 0.3) 92.5%, rgba(228, 192, 132, 0.25) 94%, rgba(233, 202, 150, 0.2) 95.5%, rgba(239, 211, 168, 0.15) 97%, rgba(247, 221, 181, 0.1) 98.5%, rgba(255, 212, 163, 0.05) 100%)`,
           }}
         />
         
-        {/* Mesh gradient overlay for complexity */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at 80% 20%, rgba(56, 78, 122, 0.3) 0%, transparent 50%)',
-          }}
-        />
+        {/* Remove mesh gradient overlay */}
         
-        {/* Additional accent gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(115deg, transparent 40%, rgba(46, 65, 104, 0.2) 70%, rgba(56, 78, 122, 0.3) 100%)',
-          }}
-        />
+        {/* Remove additional accent gradient */}
         
         <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message on the left */}
-            <div className="flex-1">
-              <h1 className="font-light text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2.5rem' }}>
+            <div className="flex-1 mt-8">
+              <h1 className="font-light text-white mb-4 drop-shadow-lg tracking-tight" style={{ fontSize: '2.5rem' }}>
                 <span className="text-white/90">Welcome</span>
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
-              <p className="text-base md:text-lg text-white/90 mb-4 drop-shadow">
+              <p className="text-base md:text-lg text-white/90 mb-8 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
@@ -171,35 +158,30 @@ const OverviewTab = () => {
             </div>
             
             {/* Latest Media on the right */}
-            {podcastEpisodes[0] && latestMediaItems[0] && (
+            {latestMediaItems[0] && (
               <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded-lg p-5 max-w-lg border border-white/20">
                 <h3 className="text-white text-base font-medium mb-3 drop-shadow">LATEST MEDIA</h3>
                 <div className="flex items-start gap-4">
                   <img 
                     src={latestMediaItems[0].image} 
-                    alt={podcastEpisodes[0].title}
+                    alt={latestMediaItems[0].title}
                     className="w-40 h-28 object-cover rounded-md shadow-lg flex-shrink-0"
                   />
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-white/25 text-white px-2 py-0.5 rounded backdrop-blur-sm">
-                        PODCAST
+                        {latestMediaItems[0].type}
                       </span>
                       <span className="text-xs text-white/70">
-                        {podcastEpisodes[0].timeAgo}
+                        {latestMediaItems[0].date}
                       </span>
                     </div>
                     <h4 className="text-sm font-medium text-white line-clamp-2 mb-2 drop-shadow">
-                      {podcastEpisodes[0].title}
+                      {latestMediaItems[0].title}
                     </h4>
-                    <a 
-                      href={podcastEpisodes[0].link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-white/90 hover:text-white transition-colors font-medium inline-block"
-                    >
+                    <button className="text-sm text-white/90 hover:text-white transition-colors font-medium">
                       LISTEN NOW →
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
