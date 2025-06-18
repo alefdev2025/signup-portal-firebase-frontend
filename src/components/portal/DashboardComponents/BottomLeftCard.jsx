@@ -1,28 +1,52 @@
 import React from 'react';
 
 const BottomLeftCard = () => {
-  const transactions = [
-    { icon: '☕', bgColor: 'bg-green-100', name: 'Starbucks', time: 'Just now', amount: '+$57.00', amountColor: 'text-green-600' },
-    { icon: '📷', bgColor: 'bg-pink-100', name: 'Instagram', time: 'Yesterday', amount: '+$99.00', amountColor: 'text-pink-600' },
-    { icon: '💎', bgColor: 'bg-blue-100', name: 'Sketch app', time: '2 days ago', amount: '+$205.00', amountColor: 'text-orange-600' }
+  const activities = [
+    { 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      ),
+      name: 'Account Settings',
+      time: '2 hours ago'
+    },
+    { 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <rect x="3" y="11" width="18" height="10" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      ),
+      name: 'View Membership',
+      time: '5 hours ago'
+    },
+    { 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      ),
+      name: 'Payment History',
+      time: 'Yesterday'
+    }
   ];
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg">
-      <h3 className="text-xl font-bold text-gray-900 mb-5">Latest updates</h3>
+      <h3 className="text-xl font-bold text-gray-900 mb-5">Recent activity</h3>
       <div className="space-y-4">
-        {transactions.map((transaction, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${transaction.bgColor} rounded-full flex items-center justify-center`}>
-                <span className="text-2xl">{transaction.icon}</span>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">{transaction.name}</p>
-                <p className="text-sm text-gray-500">{transaction.time}</p>
-              </div>
+        {activities.map((activity, index) => (
+          <div key={index} className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#9b88db] to-[#6b5bc6] rounded-xl flex items-center justify-center flex-shrink-0">
+              {activity.icon}
             </div>
-            <span className={`${transaction.amountColor} font-bold text-lg`}>{transaction.amount}</span>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">{activity.name}</p>
+              <p className="text-sm text-gray-500">{activity.time}</p>
+            </div>
           </div>
         ))}
       </div>

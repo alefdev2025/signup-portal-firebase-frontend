@@ -3,6 +3,7 @@
 
 import februaryNewsletter from '../../assets/images/newsletters/february-newsletter.png';
 import springNewsletter from '../../assets/images/newsletters/spring-newsletter.png';
+import juneNewsletter from '../../assets/images/newsletters/june-newsletter.png';
 // Import additional newsletter images here as you add them
 // import summerNewsletter from '../../assets/images/newsletters/summer-newsletter.png';
 
@@ -16,17 +17,24 @@ const formatDate = (date) => {
 const newsletterData = [
   {
     id: 1,
-    title: "March 2024 Newsletter",
+    title: "March 2025 Newsletter",
     image: februaryNewsletter,
-    date: "2024-02-01",
+    date: "2025-02-01",
     description: "Latest updates on research, member stories, and upcoming events"
   },
   {
     id: 2,
-    title: "April 2024 Newsletter",
+    title: "April 2025 Newsletter",
     image: springNewsletter,
-    date: "2024-03-20",
+    date: "2025-03-20",
     description: "Spring conference highlights and new technology developments"
+  },
+  {
+    id: 3,
+    title: "June 2025 Newsletter",
+    image: juneNewsletter,
+    date: "2025-06-13",
+    description: "Alcor makes strong showing at Vitalist Bay Biostasis Conference"
   }
 ];
 

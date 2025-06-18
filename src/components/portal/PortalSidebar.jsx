@@ -89,7 +89,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
   return (
     <div
       className={`
-        w-64 flex-shrink-0 flex flex-col 
+        w-72 flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40 md:relative md:translate-x-0
         md:rounded-2xl overflow-hidden
@@ -128,17 +128,17 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
               <div key={item.id} className="group">
                 <button
                   onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-light relative group ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
                     isItemActive(item.id)
                       ? 'bg-white/10 text-white'
-                      : 'text-gray-400 hover:text-[#e8e0f0] hover:bg-white/5'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={isItemActive(item.id) ? 'text-white' : ''}>
+                    <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
                       {item.icon}
                     </span>
-                    <span className="text-base">{item.label}</span>
+                    <span className="text-lg">{item.label}</span>
                   </div>
                   {item.subItems && (
                     <svg 
@@ -164,7 +164,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
                         className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
                           activeTab === `${item.id}-${subItem.id}`
                             ? 'bg-white/10 text-white'
-                            : 'text-gray-400 hover:text-[#e8e0f0] hover:bg-white/5'
+                            : 'text-white/70 hover:text-white hover:bg-white/5'
                         }`}
                       >
                         {subItem.label}

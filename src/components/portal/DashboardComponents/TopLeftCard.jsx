@@ -1,18 +1,80 @@
 import React from 'react';
+import dewarsImage from '../../../assets/images/dewars-high-res1.png';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 const TopLeftCard = () => {
   return (
-    <div className="bg-white rounded-2xl p-4 h-64 shadow-lg">
-      <div className="bg-gradient-to-br from-cyan-400 to-teal-400 rounded-xl h-40 flex items-center justify-center relative overflow-hidden">
-        <div className="absolute top-4 left-4 w-12 h-12 bg-yellow-300 rounded-lg"></div>
-        <div className="absolute top-4 right-8 w-8 h-8 bg-white/30 rounded-full"></div>
-        <div className="absolute top-6 right-4 w-6 h-6 bg-white/20 rounded-full"></div>
-        <div className="text-7xl">🏖️</div>
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-teal-500/50"></div>
-      </div>
-      <div className="mt-4 text-center">
-        <p className="text-gray-900 font-semibold text-lg">Latest updates</p>
-        <p className="text-gray-500 text-sm">All in one flow</p>
+    <div className="relative rounded-2xl h-80 w-80 overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${dewarsImage})` }}
+      />
+      
+      {/* Gradient Overlay - custom gradient */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(160deg, 
+            #12233b 0%, 
+            #272b4d 10%, 
+            #3b345b 20%, 
+            #4b3865 30%, 
+            #5d4480 40%, 
+            #6c5578 50%, 
+            #7b5670 60%, 
+            #8a5f64 70%, 
+            #996b66 80%, 
+            #ae7968 85%, 
+            #c2876a 88%, 
+            #d4a85f 91%, 
+            #ddb571 92.5%, 
+            #e4c084 94%, 
+            #e9ca96 95.5%, 
+            #efd3a8 97%, 
+            #f7ddb5 98.5%, 
+            #ffd4a3 100%)`,
+          opacity: 0.8
+        }}
+      />
+      
+      {/* Vignette overlay */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)`
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative p-6 h-full text-white">
+        <div className="flex items-center gap-1 mb-6">
+          <h3 className="text-2xl font-bold text-white">Transactions</h3>
+          <img src={alcorStar} alt="Star" className="w-7 h-7 inline-block" />
+        </div>
+        
+        {/* Recent Payments */}
+        <div className="space-y-3">
+          {/* First Payment */}
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-sm font-medium text-gray-800">Membership Dues</p>
+              <p className="text-sm font-bold text-gray-900">$525.00</p>
+            </div>
+            <p className="text-xs text-gray-600 mb-1">December 15, 2024</p>
+            <p className="text-xs text-gray-500">Annual membership renewal</p>
+          </div>
+          
+          {/* Second Payment */}
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-sm font-medium text-gray-800">Trust Funding</p>
+              <p className="text-sm font-bold text-gray-900">$1,200.00</p>
+            </div>
+            <p className="text-xs text-gray-600 mb-1">November 28, 2024</p>
+            <p className="text-xs text-gray-500">Monthly trust contribution</p>
+          </div>
+        </div>
       </div>
     </div>
   );

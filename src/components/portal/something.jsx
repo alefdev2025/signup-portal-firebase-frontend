@@ -5,11 +5,6 @@ import { latestMediaItems } from './LatestMedia';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
-import TopLeftCard from './DashboardComponents/TopLeftCard';
-import TopMiddleCard from './DashboardComponents/TopMiddleCard';
-import MiddleLeftSmallCard from './DashboardComponents/MiddleLeftSmallCard';
-import MiddleRightSmallCard from './DashboardComponents/MiddleRightSmallCard';
-import TopRightCard from './DashboardComponents/TopRightCard';
 
 const OverviewTab = () => {
   const { currentUser } = useUser();
@@ -19,7 +14,6 @@ const OverviewTab = () => {
 
   // Refs for scroll animations
   const quickActionsRef = useRef(null);
-  const dashboardCardsRef = useRef(null);
   const announcementsRef = useRef(null);
   const newslettersRef = useRef(null);
   const recentActivityRef = useRef(null);
@@ -76,7 +70,6 @@ const OverviewTab = () => {
 
     // Quick actions and recent activity use regular observer
     if (quickActionsRef.current) observer.observe(quickActionsRef.current);
-    if (dashboardCardsRef.current) observer.observe(dashboardCardsRef.current);
     if (recentActivityRef.current) observer.observe(recentActivityRef.current);
     
     // Announcements and newsletters need more scroll
@@ -85,7 +78,6 @@ const OverviewTab = () => {
 
     return () => {
       if (quickActionsRef.current) observer.unobserve(quickActionsRef.current);
-      if (dashboardCardsRef.current) observer.unobserve(dashboardCardsRef.current);
       if (recentActivityRef.current) observer.unobserve(recentActivityRef.current);
       if (announcementsRef.current) delayedObserver.unobserve(announcementsRef.current);
       if (newslettersRef.current) delayedObserver.unobserve(newslettersRef.current);
@@ -187,14 +179,11 @@ const OverviewTab = () => {
         <h2 className={`text-2xl font-light text-[#2a2346] mb-4 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '100ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
+            className={`bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group duration-700 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ transitionDelay: '100ms' }}
           >
             <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -206,19 +195,16 @@ const OverviewTab = () => {
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Account Settings</h3>
-            <p className="text-sm text-gray-400">Manage your profile and preferences</p>
+            <h3 className="font-medium text-[#2a2346] mb-2">Account Settings</h3>
+            <p className="text-sm text-[#4a3d6b]">Manage your profile and preferences</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '200ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
+            className={`bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group duration-700 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ transitionDelay: '200ms' }}
           >
             <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -230,19 +216,16 @@ const OverviewTab = () => {
                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">View Membership</h3>
-            <p className="text-sm text-gray-400">Check your membership details</p>
+            <h3 className="font-medium text-[#2a2346] mb-2">View Membership</h3>
+            <p className="text-sm text-[#4a3d6b]">Check your membership details</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '300ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
+            className={`bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group duration-700 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ transitionDelay: '300ms' }}
           >
             <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -254,19 +237,16 @@ const OverviewTab = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Payment History</h3>
-            <p className="text-sm text-gray-400">Review recent transactions</p>
+            <h3 className="font-medium text-[#2a2346] mb-2">Payment History</h3>
+            <p className="text-sm text-[#4a3d6b]">Review recent transactions</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '400ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
+            className={`bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-all cursor-pointer group duration-700 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ transitionDelay: '400ms' }}
           >
             <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-110 relative overflow-hidden"
             >
               <div 
                 className="absolute inset-0" 
@@ -278,8 +258,8 @@ const OverviewTab = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Support Center</h3>
-            <p className="text-sm text-gray-400">Get help when you need it</p>
+            <h3 className="font-medium text-[#2a2346] mb-2">Support Center</h3>
+            <p className="text-sm text-[#4a3d6b]">Get help when you need it</p>
           </div>
         </div>
       </div>
@@ -363,8 +343,8 @@ const OverviewTab = () => {
       {memberNewsletters && memberNewsletters.length > 0 && (
         <div ref={newslettersRef} id="newsletters" className="mt-16">
           <h2 className={`text-2xl font-light text-[#2a2346] mb-6 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Member Newsletters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {memberNewsletters.slice(0, 3).map((newsletter, index) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {memberNewsletters.slice(0, 2).map((newsletter, index) => (
               <div 
                 key={newsletter.id}
                 className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 cursor-pointer ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
