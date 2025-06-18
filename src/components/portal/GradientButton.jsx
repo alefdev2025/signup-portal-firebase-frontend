@@ -11,7 +11,7 @@ const GradientButton = ({
   fullWidth = false,
   disabled = false,
   type = 'button',
-  variant = 'gradient' // 'gradient' | 'outline' | 'solid'
+  variant = 'gradient' // 'gradient' | 'outline' | 'solid' | 'pastel'
 }) => {
   const sizeClasses = {
     xs: 'px-3 py-1.5 text-xs',
@@ -47,6 +47,15 @@ const GradientButton = ({
         background: 'linear-gradient(90deg, #9662a2 0%, #b88bb8 20%, #d4a5a5 40%, #e6b89c 60%, #f4c99b 80%, #ffd4a3 100%)',
         border: '2px solid rgba(255, 255, 255, 0.9)',
         boxShadow: '0 4px 15px rgba(150, 98, 162, 0.3)'
+      },
+      textClass: 'text-white',
+      starClass: 'brightness-100'
+    },
+    pastel: {
+      style: {
+        background: 'linear-gradient(135deg, #9b7fb8 0%, #a786b5 10%, #b38db2 20%, #bf94af 30%, #cb9bac 40%, #d7a2a9 50%, #e3a9a6 60%, #efb0a3 70%, #fbb7a0 80%, #ffbe9d 90%, #ffc59a 100%)',
+        border: '2px solid rgba(255, 255, 255, 0.9)',
+        boxShadow: '0 4px 15px rgba(155, 127, 184, 0.2)'
       },
       textClass: 'text-white',
       starClass: 'brightness-100'
@@ -106,6 +115,16 @@ const GradientButton = ({
         />
       )}
 
+      {/* Hover overlay effect for pastel variant */}
+      {variant === 'pastel' && (
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)'
+          }}
+        />
+      )}
+
       {/* Hover effect for outline variant */}
       {variant === 'outline' && (
         <div 
@@ -126,6 +145,11 @@ export const gradientButtonStyles = {
     border: '2px solid rgba(255, 255, 255, 0.9)',
     boxShadow: '0 4px 15px rgba(150, 98, 162, 0.3)'
   },
+  pastel: {
+    background: 'linear-gradient(135deg, #9b7fb8 0%, #a786b5 10%, #b38db2 20%, #bf94af 30%, #cb9bac 40%, #d7a2a9 50%, #e3a9a6 60%, #efb0a3 70%, #fbb7a0 80%, #ffbe9d 90%, #ffc59a 100%)',
+    border: '2px solid rgba(255, 255, 255, 0.9)',
+    boxShadow: '0 4px 15px rgba(155, 127, 184, 0.2)'
+  },
   outline: {
     background: 'transparent',
     border: '1px solid rgba(255, 255, 255, 0.8)',
@@ -145,6 +169,11 @@ export const ButtonExamples = () => {
       {/* Gradient button (default) */}
       <GradientButton onClick={() => console.log('Clicked!')}>
         Introduction to Cryonics
+      </GradientButton>
+
+      {/* Pastel button for stats section */}
+      <GradientButton variant="pastel" size="md">
+        View Details
       </GradientButton>
 
       {/* Outline button with star */}

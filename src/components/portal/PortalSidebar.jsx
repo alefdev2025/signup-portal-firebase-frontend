@@ -89,7 +89,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
   return (
     <div
       className={`
-        w-72 flex-shrink-0 flex flex-col 
+        w-64 flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40 md:relative md:translate-x-0
         md:rounded-2xl overflow-hidden
@@ -101,7 +101,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
       <div 
         className="absolute inset-0 md:rounded-2xl"
         style={{
-          background: 'linear-gradient(135deg, #0a1629 0%, #1e2650 50%, #2a3670 100%)',
+          background: 'linear-gradient(to bottom, #0e0e2f 0%, #0e0e2f 15%, #1b163a 30%, #1b163a 45%, #2a1b3d 60%, #2a1b3d 75%, #3f2541 90%, #5b2f4b 100%)',
           margin: '-1px',
           marginRight: '0'
         }}
@@ -109,7 +109,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
       
       {/* Content layer */}
       <div className="relative z-10 flex flex-col h-full">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 pt-10 pb-8 border-b border-white/10 flex items-center justify-between">
           <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
           <button 
             className="text-gray-400 hover:text-white md:hidden"
@@ -122,7 +122,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
           </button>
         </div>
 
-        <nav className="flex-1 p-4 overflow-y-auto">
+        <nav className="flex-1 p-4 pt-6 overflow-y-auto">
           <div className="space-y-1">
             {navigationItems.map((item) => (
               <div key={item.id} className="group">

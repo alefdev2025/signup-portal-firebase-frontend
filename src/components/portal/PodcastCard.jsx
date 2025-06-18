@@ -26,21 +26,28 @@ const PodcastCard = ({ image, timeAgo, title, description, link, className }) =>
       >
         <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 h-full hover:bg-white/15 transition-all duration-200">
           <div className="h-full flex flex-col p-4">
-            {/* Image Container - 55% of card */}
-            <div className="h-[55%] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden shadow-sm">
-              <img 
-                src={image} 
-                alt="Podcast episode cover" 
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-              />
+            {/* Top row - Image and date content side by side */}
+            <div className="flex items-center mb-5">
+              {/* Image Container - Square */}
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                <img 
+                  src={image} 
+                  alt="Podcast episode cover" 
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                />
+              </div>
+              
+              {/* Date content - Next to image */}
+              <div className="pl-4">
+                <p className="text-[11px] text-gray-300 uppercase tracking-wider opacity-80">
+                  Podcast • {timeAgo}
+                </p>
+              </div>
             </div>
             
-            {/* Text Container - 45% of card */}
-            <div className="h-[45%] flex flex-col justify-center pt-2.5">
-              <p className="text-[11px] text-gray-300 uppercase tracking-wider mb-1 opacity-80 text-left">
-                Podcast • {timeAgo}
-              </p>
-              <h4 className="text-white text-[14px] font-medium leading-snug line-clamp-3 text-left">
+            {/* Title - Below image, full width */}
+            <div className="flex-1">
+              <h4 className="text-white text-[16px] font-medium leading-snug text-left">
                 {title}
               </h4>
             </div>

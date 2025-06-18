@@ -4,12 +4,19 @@ import { useUser } from '../../contexts/UserContext';
 import { latestMediaItems } from './LatestMedia';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
+import { podcastEpisodes } from './podcastConfig';
 import GradientButton from './GradientButton';
 import TopLeftCard from './DashboardComponents/TopLeftCard';
 import TopMiddleCard from './DashboardComponents/TopMiddleCard';
 import MiddleLeftSmallCard from './DashboardComponents/MiddleLeftSmallCard';
 import MiddleRightSmallCard from './DashboardComponents/MiddleRightSmallCard';
 import TopRightCard from './DashboardComponents/TopRightCard';
+import podcastImage from '../../assets/images/podcast-image.png';
+import PodcastCard from './PodcastCard';
+import dewarsImage from '../../assets/images/dewars-high-res1.png';
+import dewarsImage2 from '../../assets/images/dewars-high-res2.png';
+import starsImage from '../../assets/images/stars-png.png';
+import alcorBuildingImage from '../../assets/images/alcor-building.png';
 
 const OverviewTab = () => {
   const { currentUser } = useUser();
@@ -94,192 +101,227 @@ const OverviewTab = () => {
 
   return (
     <div className="-mt-4">
-      <div 
-        className="relative h-72 rounded-2xl overflow-hidden mb-12 animate-fadeIn"
-        style={{ 
-          background: 'linear-gradient(135deg, #0e0e2f 0%, #1b163a 15%, #2a1b3d 30%, #3f2541 45%, #2e4168 65%, #384e7a 90%, #ffb366 100%)',
-          animation: 'fadeIn 0.8s ease-in-out'
-        }}
-      >
-        <style jsx>{`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
-        {/* Mesh gradient overlay for complexity */}
+      <div className="grid grid-cols-1 lg:grid-cols-11 lg:grid-rows-2 gap-4 mb-8">
+        {/* Welcome section - spans 8 columns */}
         <div 
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at 80% 20%, rgba(56, 78, 122, 0.3) 0%, transparent 50%)',
+          className="relative h-72 rounded-2xl overflow-hidden animate-fadeIn lg:col-span-8"
+          style={{ 
+            backgroundImage: `url(${dewarsImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center top',
+            animation: 'fadeIn 0.8s ease-in-out'
           }}
-        />
-        
-        {/* Additional accent gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(115deg, transparent 40%, rgba(46, 65, 104, 0.2) 70%, rgba(56, 78, 122, 0.3) 100%)',
-          }}
-        />
-        
-        <div className="relative z-10 px-8 py-6 h-full flex items-center">
-          <div className="flex items-center gap-12 w-full">
-            {/* Welcome message on the left */}
+        >
+          <style jsx>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
+          
+          {/* Gradient overlay that becomes more transparent */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(10, 22, 41, 1) 0%, rgba(26, 39, 68, 1) 25%, rgba(36, 52, 86, 1) 50%, rgba(46, 65, 104, 1) 65%, rgba(56, 78, 122, 0.8) 80%, rgba(56, 78, 122, 0.6) 100%)',
+            }}
+          />
+          
+          {/* Mesh gradient overlay for complexity */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 80% 20%, rgba(56, 78, 122, 0.2) 0%, transparent 50%)',
+            }}
+          />
+          
+          {/* Additional accent gradient */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(115deg, transparent 40%, rgba(46, 65, 104, 0.15) 70%, rgba(56, 78, 122, 0.2) 100%)',
+            }}
+          />
+          
+          <div className="relative z-10 px-8 py-5 h-full flex items-center">
             <div className="flex-1">
-              <h1 className="text-3xl font-light text-white mb-4 drop-shadow-lg tracking-tight">
+              <h1 className="text-3xl md:text-4xl font-light text-white mb-3 drop-shadow-lg tracking-tight">
                 <span className="text-white/90">Welcome</span>
                 <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
               </h1>
-              <p className="text-base md:text-lg text-white/90 mb-8 drop-shadow">
+              <p className="text-sm md:text-base text-white/90 mb-3 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
                 onClick={() => console.log('View membership status')}
                 variant="outline"
-                size="md"
+                size="sm"
                 className="border-white/30 text-white hover:bg-white/10"
               >
                 View Membership Status
               </GradientButton>
             </div>
-            
-            {/* Latest Media on the right */}
-            {latestMediaItems[0] && (
-              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded-lg p-5 max-w-lg border border-white/20">
-                <h3 className="text-white text-base font-medium mb-3 drop-shadow">LATEST MEDIA</h3>
-                <div className="flex items-start gap-4">
-                  <img 
-                    src={latestMediaItems[0].image} 
-                    alt={latestMediaItems[0].title}
-                    className="w-40 h-28 object-cover rounded-md shadow-lg flex-shrink-0"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs bg-white/25 text-white px-2 py-0.5 rounded backdrop-blur-sm">
-                        {latestMediaItems[0].type}
-                      </span>
-                      <span className="text-xs text-white/70">
-                        {latestMediaItems[0].date}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-medium text-white line-clamp-2 mb-2 drop-shadow">
-                      {latestMediaItems[0].title}
-                    </h4>
-                    <button className="text-sm text-white/90 hover:text-white transition-colors font-medium">
-                      LISTEN NOW →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Stars image in bottom right */}
+            <img 
+              src={starsImage} 
+              alt=""
+              className="absolute bottom-0 right-0 w-32 h-32 object-contain opacity-70"
+              style={{ mixBlendMode: 'screen' }}
+            />
           </div>
         </div>
-      </div>
 
-      <div ref={quickActionsRef} id="quickActions" className="mb-8">
-        <h2 className={`text-2xl font-light text-[#2a2346] mb-4 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '100ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
-            >
-              <div 
-                className="absolute inset-0" 
-                style={{ 
-                  background: 'linear-gradient(to right, #b8a2d4, #b19bcd, #aa94c6, #a38dbf, #9c86b8)',
-                }}
-              />
-              <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-              </svg>
-            </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Account</h3>
-            <p className="text-sm text-gray-400">Manage your profile and preferences</p>
-          </div>
+        {/* Latest Updates section - spans 2 rows and 3 columns */}
+        <div 
+          className="relative h-64 lg:h-[35rem] rounded-2xl overflow-hidden animate-fadeIn lg:row-span-2 lg:col-span-3"
+          style={{ 
+            background: 'linear-gradient(135deg, #12233b 0%, #272b4d 10%, #3b345b 20%, #4b3865 30%, #5d4480 40%, #6c5578 50%, #7b5670 60%, #8a5f64 70%, #996b66 80%, #ae7968 90%, #d4a085 100%)',
+            animation: 'fadeIn 0.8s ease-in-out',
+            animationDelay: '0.2s'
+          }}
+        >
+          {/* Stars images in center left - stacked vertically */}
+          <img 
+            src={starsImage} 
+            alt=""
+            className="absolute -left-8 top-[42%] transform -translate-y-1/2 w-32 h-32 object-contain opacity-20"
+            style={{ mixBlendMode: 'screen' }}
+          />
+          <img 
+            src={starsImage} 
+            alt=""
+            className="absolute -left-8 top-[58%] transform -translate-y-1/2 w-32 h-32 object-contain opacity-20"
+            style={{ mixBlendMode: 'screen' }}
+          />
           
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '200ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
-            >
-              <div 
-                className="absolute inset-0" 
-                style={{ 
-                  background: 'linear-gradient(to right, #9c86b8, #957fb1, #8e78aa, #8771a3, #806a9c)',
-                }}
-              />
-              <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+          <div className="relative z-10 px-4 py-5 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-normal text-white">Latest Media</h3>
+              <svg className="w-6 h-6 text-white/90" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
               </svg>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Membership</h3>
-            <p className="text-sm text-gray-400">Check your membership details</p>
+            <div className="flex-1 flex flex-col gap-5 px-2">
+              {/* Podcast Episodes from config */}
+              {podcastEpisodes.map((episode, index) => (
+                <PodcastCard 
+                  key={episode.id}
+                  title={episode.title}
+                  timeAgo={episode.timeAgo}
+                  description={episode.description}
+                  link={episode.link}
+                  image={podcastImage}
+                  className="flex-1"
+                />
+              ))}
+            </div>
           </div>
-          
+        </div>
+
+        {/* Quick Actions - second row, spans 8 columns */}
+        <div ref={quickActionsRef} id="quickActions" className="lg:col-span-8 mt-2">
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className="relative rounded-xl shadow-xl min-h-[240px] overflow-hidden flex items-center"
             style={{ 
-              transitionDelay: '300ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
+              backgroundImage: `url(${dewarsImage2})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'right center',
             }}
           >
+            {/* Gray overlay that becomes more transparent diagonally */}
             <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
-            >
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(45deg, rgba(229, 231, 235, 1) 0%, rgba(229, 231, 235, 1) 70%, rgba(229, 231, 235, 0.9) 80%, rgba(229, 231, 235, 0.7) 85%, rgba(229, 231, 235, 0.4) 92%, rgba(229, 231, 235, 0.2) 100%)',
+              }}
+            />
+
+            {/* Stars image in top right */}
+            <img 
+              src={starsImage} 
+              alt=""
+              className="absolute top-0 right-0 w-24 h-24 object-contain opacity-70"
+              style={{ mixBlendMode: 'screen' }}
+            />
+            
+            <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 lg:gap-16 justify-start w-full p-8">
+              {/* Account icon */}
               <div 
-                className="absolute inset-0" 
-                style={{ 
-                  background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)',
-                }}
-              />
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-            </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Payments</h3>
-            <p className="text-sm text-gray-400">Review recent transactions</p>
-          </div>
-          
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-lg p-6 transition-all cursor-pointer group duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '400ms',
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.15)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden"
-            >
+                className={`flex flex-col items-center transition-all duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              >
+                <div 
+                  className="w-20 h-20 rounded-lg flex items-center justify-center relative overflow-hidden mb-4 cursor-pointer hover:scale-105 transition-transform"
+                  style={{ 
+                    background: 'linear-gradient(to right, #b8a2d4, #b19bcd, #aa94c6, #a38dbf, #9c86b8)',
+                  }}
+                >
+                  <svg className="w-10 h-10 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
+                </div>
+                <span className="text-[#2a2346] font-medium text-lg text-center">Account</span>
+              </div>
+              
+              {/* Membership icon */}
               <div 
-                className="absolute inset-0" 
-                style={{ 
-                  background: 'linear-gradient(to right, #644e80, #5d4779, #564072, #4f396b, #483264)',
-                }}
-              />
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+                className={`flex flex-col items-center transition-all duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{ transitionDelay: '100ms' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-lg flex items-center justify-center relative overflow-hidden mb-4 cursor-pointer hover:scale-105 transition-transform"
+                  style={{ 
+                    background: 'linear-gradient(to right, #9c86b8, #957fb1, #8e78aa, #8771a3, #806a9c)',
+                  }}
+                >
+                  <svg className="w-10 h-10 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                  </svg>
+                </div>
+                <span className="text-[#2a2346] font-medium text-lg text-center">Membership</span>
+              </div>
+              
+              {/* Payment icon */}
+              <div 
+                className={`flex flex-col items-center transition-all duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{ transitionDelay: '200ms' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-lg flex items-center justify-center relative overflow-hidden mb-4 cursor-pointer hover:scale-105 transition-transform"
+                  style={{ 
+                    background: 'linear-gradient(to right, #806a9c, #796395, #725c8e, #6b5587, #644e80)',
+                  }}
+                >
+                  <svg className="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <span className="text-[#2a2346] font-medium text-lg text-center">Payments</span>
+              </div>
+
+              {/* Support Center icon */}
+              <div 
+                className={`flex flex-col items-center transition-all duration-300 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{ transitionDelay: '300ms' }}
+              >
+                <div 
+                  className="w-20 h-20 rounded-lg flex items-center justify-center relative overflow-hidden mb-4 cursor-pointer hover:scale-105 transition-transform"
+                  style={{ 
+                    background: 'linear-gradient(to right, #644e80, #5d4779, #564072, #4f396b, #483264)',
+                  }}
+                >
+                  <svg className="w-10 h-10 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <span className="text-[#2a2346] font-medium text-lg text-center">Support</span>
+              </div>
             </div>
-            <h3 className="font-medium text-xl text-[#2a2346] mb-2">Support</h3>
-            <p className="text-sm text-gray-400">Get help when you need it</p>
           </div>
         </div>
       </div>
