@@ -1,9 +1,10 @@
-// Fixed UserContext.jsx - Use the same API as ResponsiveBanner
+// Updated UserContext.jsx with Salesforce integration
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { saveSignupState, clearSignupState, getSignupState } from "../services/storage";
 import { checkUserStep } from "../services/auth";
+import { searchCustomerByEmail } from "../components/portal/services/salesforce/salesforce";
 
 const LOG_TO_TERMINAL = (message) => {
   console.log(`[USER CONTEXT] ${message}`);
@@ -24,10 +25,47 @@ const UserProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authResolved, setAuthResolved] = useState(false);
   
+  // NEW: Salesforce customer data
+  const [salesforceCustomer, setSalesforceCustomer] = useState(null);
+  const [netsuiteCustomerId, setNetsuiteCustomerId] = useState(null);
+  
   // SIMPLIFIED: Only track the last processed state to prevent loops
   const lastProcessedState = useRef(null);
   
   LOG_TO_TERMINAL("UserProvider initialized");
+  
+  // NEW: Fetch Salesforce customer data
+  const fetchSalesforceCustomer = async (email) => {
+    LOG_TO_TERMINAL(`Fetching Salesforce customer for email: ${email}`);
+    
+    try {
+      // Search for customer by email
+      const searchResult = await searchCustomerByEmail(email);
+      console.log('[UserContext] Salesforce search result:', searchResult);
+      
+      if (searchResult.success && searchResult.data && searchResult.data.length > 0) {
+        const customer = searchResult.data[0]; // Take the first match
+        LOG_TO_TERMINAL(`Found Salesforce customer: ${customer.id}`);
+        LOG_TO_TERMINAL(`NetSuite Customer ID: ${customer.netsuiteCustomerId || 'Not found'}`);
+        
+        setSalesforceCustomer(customer);
+        setNetsuiteCustomerId(customer.netsuiteCustomerId);
+        
+        return {
+          salesforceId: customer.id,
+          netsuiteId: customer.netsuiteCustomerId,
+          customer: customer
+        };
+      } else {
+        LOG_TO_TERMINAL("No Salesforce customer found for this email");
+      }
+    } catch (error) {
+      LOG_TO_TERMINAL(`Error fetching Salesforce customer: ${error.message}`);
+      console.error('Salesforce customer fetch error:', error);
+    }
+    
+    return null;
+  };
   
   const refreshUserProgress = async (user) => {
     if (!user) return null;
@@ -36,26 +74,33 @@ const UserProvider = ({ children }) => {
     LOG_TO_TERMINAL(`Using checkUserStep API instead of direct Firestore`);
     
     try {
-      const result = await checkUserStep({ userId: user.uid });
-      LOG_TO_TERMINAL(`checkUserStep API result: ${JSON.stringify(result)}`);
+      // Fetch both user progress and Salesforce data in parallel
+      const [userStepResult, salesforceData] = await Promise.all([
+        checkUserStep({ userId: user.uid }),
+        fetchSalesforceCustomer(user.email)
+      ]);
       
-      if (result.success) {
+      LOG_TO_TERMINAL(`checkUserStep API result: ${JSON.stringify(userStepResult)}`);
+      
+      if (userStepResult.success) {
         const newSignupState = {
           userId: user.uid,
           email: user.email,
           displayName: user.displayName || "New Member",
-          signupStep: result.stepName || "account",
-          //signupProgress: result.step || 0,
-          signupProgress: (typeof result.step === 'object' ? result.step.step : result.step) || 0,
-          signupCompleted: result.isCompleted || false,
+          signupStep: userStepResult.stepName || "account",
+          signupProgress: (typeof userStepResult.step === 'object' ? userStepResult.step.step : userStepResult.step) || 0,
+          signupCompleted: userStepResult.isCompleted || false,
           lastUpdated: new Date(),
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          // Add NetSuite ID to signup state
+          netsuiteCustomerId: salesforceData?.netsuiteId || null
         };
         
         LOG_TO_TERMINAL(`Got signup state from API: ${JSON.stringify({
           signupStep: newSignupState.signupStep,
           signupProgress: newSignupState.signupProgress,
           signupCompleted: newSignupState.signupCompleted,
+          netsuiteCustomerId: newSignupState.netsuiteCustomerId
         })}`);
         
         setSignupState(newSignupState);
@@ -63,7 +108,7 @@ const UserProvider = ({ children }) => {
         return newSignupState;
         
       } else {
-        LOG_TO_TERMINAL(`API returned error: ${result.error || 'Unknown error'}`);
+        LOG_TO_TERMINAL(`API returned error: ${userStepResult.error || 'Unknown error'}`);
         LOG_TO_TERMINAL("Creating default state");
         const defaultState = {
           userId: user.uid,
@@ -72,7 +117,8 @@ const UserProvider = ({ children }) => {
           signupStep: "account",
           signupProgress: 0,
           signupCompleted: false,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          netsuiteCustomerId: salesforceData?.netsuiteId || null
         };
         
         setSignupState(defaultState);
@@ -150,6 +196,8 @@ const UserProvider = ({ children }) => {
           LOG_TO_TERMINAL("User is signed out, clearing state");
           setCurrentUser(null);
           setSignupState(null);
+          setSalesforceCustomer(null);
+          setNetsuiteCustomerId(null);
           clearSignupState();
           lastProcessedState.current = null;
         }
@@ -173,6 +221,10 @@ const UserProvider = ({ children }) => {
     signupState,
     isLoading,
     authResolved,
+    // NEW: Expose Salesforce/NetSuite data
+    salesforceCustomer,
+    netsuiteCustomerId,
+    customerId: netsuiteCustomerId, // Alias for compatibility
     refreshUserProgress: () => refreshUserProgress(currentUser)
   };
 

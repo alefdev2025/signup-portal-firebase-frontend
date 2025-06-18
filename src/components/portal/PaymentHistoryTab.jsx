@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { usePayments, usePaymentSummary, useCustomerData } from './contexts/CustomerDataContext';
 import { exportPaymentsToCSV } from './services/netsuite/payments';
+import { useMemberPortal } from '../../contexts/MemberPortalProvider'; // ADD THIS IMPORT
 
-const PaymentHistoryTab = ({ customerId = '4527' }) => {
+// Global testing flag - set this to false in production
+const USE_TEST_CUSTOMER_ID = false; // Set to false when ready for production
+const TEST_CUSTOMER_ID = '4527';
+
+const PaymentHistoryTab = () => {
+  // Get the customer ID from MemberPortal context
+  const { customerId: contextCustomerId } = useMemberPortal();
+  
+  // Use test ID if flag is set, otherwise use the context customer ID
+  const customerId = USE_TEST_CUSTOMER_ID ? TEST_CUSTOMER_ID : (contextCustomerId || TEST_CUSTOMER_ID);
+  
   const { data: paymentsData, isLoading, error } = usePayments();
   const { data: summaryData } = usePaymentSummary();
   const { fetchPaymentsWithDetails } = useCustomerData();
@@ -14,6 +25,15 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
     lastPayment: 0,
     yearTotals: {}
   });
+
+  // Log which customer ID we're using (helpful for debugging)
+  useEffect(() => {
+    console.log('[PaymentHistoryTab] Using customer ID:', customerId, {
+      isTestMode: USE_TEST_CUSTOMER_ID,
+      contextCustomerId,
+      actualId: customerId
+    });
+  }, [customerId, contextCustomerId]);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -132,6 +152,16 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
     <div>
       <h1 className="text-3xl font-light text-[#2a2346] mb-8">Payment History</h1>
 
+      {/* Show test mode banner if using test customer ID */}
+      {USE_TEST_CUSTOMER_ID && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-yellow-800">
+            <strong>Test Mode:</strong> Showing data for test customer {TEST_CUSTOMER_ID}. 
+            Set USE_TEST_CUSTOMER_ID to false to use actual customer data.
+          </p>
+        </div>
+      )}
+
       {/* Show banner if refreshing in background */}
       {isLoading && payments.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
@@ -146,14 +176,14 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
       {/* Transaction History */}
       <div className="bg-white rounded-lg shadow-sm p-8">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-medium text-[#2a2346]">Transaction History</h2>
+          <h2 className="text-2xl font-medium text-[#2a2346]">Recent Transaction History</h2>
           <div className="flex items-center gap-4">
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               className="px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] text-base"
             >
-              <option value="All">All Years</option>
+              <option value="All">All</option>
               {availableYears.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -270,7 +300,7 @@ const PaymentHistoryTab = ({ customerId = '4527' }) => {
           <div>
             <h3 className="text-xl font-medium text-[#2a2346] mb-4">Payment Records</h3>
             <p className="text-base text-[#4a3d6b] mb-2">
-              This shows all payments recorded in NetSuite for your account.
+              This shows all recent payments recorded for your account.
             </p>
             <p className="text-sm text-[#4a3d6b]">
               Customer ID: {customerId}

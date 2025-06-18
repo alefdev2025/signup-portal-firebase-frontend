@@ -92,13 +92,14 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
         w-64 flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40 md:relative md:translate-x-0
+        md:rounded-2xl overflow-hidden
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}
       aria-label="Sidebar"
     >
       {/* Background layer to prevent white lines */}
       <div 
-        className="absolute inset-0 md:rounded-l-lg"
+        className="absolute inset-0 md:rounded-2xl"
         style={{
           background: 'linear-gradient(135deg, #0a1629 0%, #1e2650 50%, #2a3670 100%)',
           margin: '-1px',
@@ -183,7 +184,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
                 <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               )}
             </div>

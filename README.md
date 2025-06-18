@@ -518,3 +518,129 @@ const MyComponent = () => {
 ```
 
 Remember: The cache system is your friend. Trust it, but verify with testing!
+
+
+Gradient colors:
+
+d9b852
+cd9d55
+c2876a
+ae7968
+996b66
+9f6d68
+b38490
+9e6880
+83617e
+7c5d86
+724e82
+724e82
+4b3865
+3b345b
+272b4d
+12233b
+
+import React from 'react';
+
+// The gradient colors and stops
+export const gradientColors = [
+  { color: '#12233b', stop: 0 },
+  { color: '#272b4d', stop: 10 },
+  { color: '#3b345b', stop: 20 },
+  { color: '#4b3865', stop: 30 },
+  { color: '#5d4480', stop: 40 },
+  { color: '#6c5578', stop: 50 },
+  { color: '#7b5670', stop: 60 },
+  { color: '#8a5f64', stop: 70 },
+  { color: '#996b66', stop: 80 },
+  { color: '#ae7968', stop: 85 },
+  { color: '#c2876a', stop: 88 },
+  { color: '#d4a85f', stop: 91 },
+  { color: '#ddb571', stop: 92.5 },
+  { color: '#e4c084', stop: 94 },
+  { color: '#e9ca96', stop: 95.5 },
+  { color: '#efd3a8', stop: 97 },
+  { color: '#f7ddb5', stop: 98.5 },
+  { color: '#ffd4a3', stop: 100 }
+];
+
+// Generate gradient string
+const generateGradient = (angle = 135, colors = gradientColors) => {
+  const colorStops = colors.map(({ color, stop }) => `${color} ${stop}%`).join(', ');
+  return `linear-gradient(${angle}deg, ${colorStops})`;
+};
+
+// Default gradient style object
+export const gradientStyle = {
+  background: generateGradient()
+};
+
+// GradientBackground Component
+const GradientBackground = ({ 
+  children, 
+  className = '', 
+  angle = 135,
+  customColors = null,
+  style = {},
+  as: Component = 'div',
+  ...props 
+}) => {
+  const gradient = customColors ? generateGradient(angle, customColors) : generateGradient(angle);
+  
+  return (
+    <Component 
+      className={className}
+      style={{ 
+        background: gradient,
+        ...style 
+      }}
+      {...props}
+    >
+      {children}
+    </Component>
+  );
+};
+
+// Hook to use the gradient in other components
+export const useGradientBackground = (angle = 135, customColors = null) => {
+  return {
+    background: customColors ? generateGradient(angle, customColors) : generateGradient(angle)
+  };
+};
+
+// Usage examples
+export const GradientExamples = () => {
+  return (
+    <div className="space-y-4 p-8">
+      {/* Basic usage */}
+      <GradientBackground className="p-6 rounded-lg text-white">
+        <h3 className="text-xl font-bold">Basic Gradient Background</h3>
+        <p>This uses the default gradient</p>
+      </GradientBackground>
+
+      {/* With custom angle */}
+      <GradientBackground angle={90} className="p-6 rounded-lg text-white">
+        <h3 className="text-xl font-bold">Horizontal Gradient</h3>
+        <p>This uses a 90-degree angle</p>
+      </GradientBackground>
+
+      {/* As a button */}
+      <GradientBackground as="button" className="px-6 py-3 rounded-full text-white font-medium">
+        Gradient Button
+      </GradientBackground>
+
+      {/* Using the style object directly */}
+      <div style={gradientStyle} className="p-6 rounded-lg text-white">
+        <h3 className="text-xl font-bold">Using gradientStyle object</h3>
+        <p>Import and apply the style object directly</p>
+      </div>
+
+      {/* Using the hook */}
+      <div style={useGradientBackground(45)} className="p-6 rounded-lg text-white">
+        <h3 className="text-xl font-bold">Using useGradientBackground hook</h3>
+        <p>45-degree angle gradient</p>
+      </div>
+    </div>
+  );
+};
+
+export default GradientBackground;

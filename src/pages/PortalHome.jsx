@@ -97,14 +97,14 @@ const PortalHome = () => {
   };
 
   return (
-<div 
-  className="min-h-screen p-0 md:p-4"
-  style={{ 
-    fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-    background: 'linear-gradient(135deg, #3a3359 0%, #4a5578 50%, #5a6897 100%)' 
-  }}
->
-      <div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-lg overflow-hidden shadow-2xl bg-white">
+      <div 
+        className="min-h-screen p-0 md:p-4"
+        style={{ 
+          fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
+          background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%)' 
+        }}
+      >
+<div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-2xl overflow-hidden shadow-2xl bg-white">
         {/* Corner accent lines */}
         <div className="hidden md:block">
           {/* Top-left corner */}
@@ -143,7 +143,7 @@ const PortalHome = () => {
         />
 
         {/* Main content area */}
-        <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden md:ml-4">
         <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} activeTab={activeTab} />
           
           <main className="flex-1 p-4 sm:p-8 overflow-y-auto">

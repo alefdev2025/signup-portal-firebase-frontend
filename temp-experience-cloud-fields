@@ -1,0 +1,345 @@
+# Alcor Membership Application - Form Questions to Salesforce Field Mappings
+
+## Personal Information Section
+
+**Question: What is your first name?**
+- → `Agreement.First_Name__c`
+- → `Contact.FirstName`
+
+**Question: What is your last name?**
+- → `Agreement.Last_Name__c`
+- → `Contact.LastName`
+
+**Question: What is your date of birth?**
+- → `Agreement.Date_of_Birth__c`
+- → `Contact.Birthdate`
+
+**Question: Please verify your date of birth**
+- → `Agreement.Verify_Date_of_Birth__c`
+
+**Question: Is your birth name different from your current name?**
+- → Flow logic field (not stored)
+
+**Question: What is your birth name?** *(conditional)*
+- → `Agreement.Birth_Name__c`
+- → `Contact.Birth_Name__c`
+
+**Question: What is your Social Security Number?**
+- → `Agreement.Social_Security_Number__c`
+- → `Contact.SSN__c`
+
+**Question: What is your gender/sex?**
+- → `Agreement.Sex__c`
+- → `Contact.Gender__c`
+
+**Question: What is your race?**
+- → `Agreement.Race__c`
+- → `Contact.Race__c`
+
+**Question: What is your ethnicity?**
+- → `Agreement.Ethnicity__c`
+- → `Contact.Ethnicity__c`
+
+**Question: What is your citizenship?**
+- → `Agreement.Citizenship__c`
+- → `Contact.Citizenship__c`
+
+**Question: What is your place of birth?**
+- → `Agreement.Place_of_Birth__c`
+- → `Contact.Place_of_Birth__c`
+
+**Question: What is your father's full name?**
+- → `Agreement.Father_s_Full_Name__c`
+- → `Contact.Father_s_Name__c`
+
+**Question: What is your father's birthplace?**
+- → `Agreement.Father_s_Birthplace__c`
+- → `Contact.Father_s_Birthplace__c`
+
+**Question: What is your mother's full maiden name?**
+- → `Agreement.Mother_s_Maiden_Name__c`
+- → `Contact.Mother_s_Maiden_Name__c`
+
+**Question: What is your mother's birthplace?**
+- → `Agreement.Mother_s_Birthplace__c`
+- → `Contact.Mother_s_Birthplace__c`
+
+**Question: What is your marital status?**
+- → `Agreement.Marital_Status__c`
+- → `Contact.Marital_Status__c`
+
+**Question: What is your wife's maiden name?** *(conditional on marital status)*
+- → `Agreement.Wife_s_Maiden_Name__c`
+- → `Contact.Spouse_s_Name__c`
+
+## Contact Information Section
+
+**Question: What is your personal email?**
+- → `Agreement.PersonalEmail__c`
+- → `Contact.Email`
+- → `Contact.npe01__HomeEmail__c`
+
+**Question: What is your home phone?**
+- → `Agreement.Home_Phone__c`
+- → `Contact.HomePhone`
+
+**Question: What is your mobile phone?**
+- → `Agreement.Mobile_Phone__c`
+- → `Contact.MobilePhone`
+
+**Question: What is your work phone?**
+- → `Agreement.Work_Phone__c`
+- → `Contact.npe01__WorkPhone__c`
+
+**Question: What is your preferred phone?**
+- → `Agreement.Preferred_Phone_Number__c`
+- → `Contact.npe01__PreferredPhone__c`
+
+## Address Information Section
+
+**Question: What is your home street address?**
+- → `Agreement.Home_Street__c`
+- → `Contact.MailingStreet`
+
+**Question: What is your home city?**
+- → `Agreement.Home_City__c`
+- → `Contact.MailingCity`
+
+**Question: What is your home state/province?**
+- → `Agreement.Home_State_Province__c`
+- → `Contact.MailingState`
+
+**Question: What is your home zip/postal code?**
+- → `Agreement.Home_Zip_Postal_Code__c`
+- → `Contact.MailingPostalCode`
+
+**Question: What is your home country?**
+- → `Agreement.Home_Country__c`
+- → `Contact.MailingCountry`
+
+**Question: Is your mailing address the same as your home address?**
+- → `Agreement.Same_Mailing_Address__c`
+
+**Question: What is your mailing street address?** *(conditional)*
+- → `Agreement.Mailing_Street__c`
+
+**Question: What is your mailing city?** *(conditional)*
+- → `Agreement.Mailing_City__c`
+
+**Question: What is your mailing state/province?** *(conditional)*
+- → `Agreement.Mailing_State_Province__c`
+
+**Question: What is your mailing zip/postal code?** *(conditional)*
+- → `Agreement.Mailing_Zip_Postal_Code__c`
+
+**Question: What is your mailing country?** *(conditional)*
+- → `Agreement.Mailing_Country__c`
+
+## Occupation Section
+
+**Question: What is your occupation/job title?**
+- → `Agreement.Occupation_Title__c`
+- → `Contact.Occupation__c`
+
+**Question: What is your occupational industry?**
+- → `Agreement.Occupational_Industry__c`
+- → `Contact.Occupational_Industry__c`
+
+**Question: Have you served in the US Military?**
+- → Flow logic field
+
+**Question: Which branch of the military?** *(conditional)*
+- → `Agreement.US_Military_Branch__c`
+- → `Contact.Military_Branch__c`
+
+**Question: What year did you start service?** *(conditional)*
+- → `Agreement.Service_Start_Year__c`
+- → `Contact.Served_From__c`
+
+**Question: What year did you end service?** *(conditional)*
+- → `Agreement.Service_End_Year__c`
+- → `Contact.Served_To__c`
+
+## Cryopreservation Arrangements Section
+
+**Question: Would you like to apply to become a Cryopreservation Member now?**
+- → Flow logic field
+
+**Question: Which method of cryopreservation do you choose?**
+- Options: "Whole Body Cryopreservation" ($220,000 US / $230,000 International)
+- Options: "Neurocryopreservation" ($80,000 US / $90,000 International)
+- → `Agreement.Method_of_Preservation__c`
+- → `Contact.Cryo_Method_Selected__c`
+
+**Question: Do you want to waive the $200 annual CMS fee by funding $20,000 over the minimum?**
+- Options: "Yes" (waive fee) / "No" (pay annual fee)
+- → `Agreement.CMS_Waiver__c`
+- → `Contact.CMS_Waiver__c`
+
+**Question: How should your non-cryopreserved remains be handled?**
+- → `Agreement.Non_Cryopreserved_Remain_Arrangements__c`
+
+**Question: What is the recipient's name for non-cryopreserved remains?** *(conditional)*
+- → `Agreement.Recipient_Name__c`
+
+**Question: What is the recipient's phone?** *(conditional)*
+- → `Agreement.Recipient_Phone__c`
+
+**Question: What is the recipient's email?** *(conditional)*
+- → `Agreement.Recipient_Email_Address__c`
+
+**Question: What is the recipient's mailing address?** *(conditional)*
+- → `Agreement.Recipient_Mailing_Street__c`
+- → `Agreement.Recipient_Mailing_City__c`
+- → `Agreement.Recipient_Mailing_State_Province__c`
+- → `Agreement.Recipient_Mailing_Zip_Postal_Code__c`
+- → `Agreement.Recipient_Mailing_Country__c`
+
+**Question: Under what criteria should cryopreservation NOT be performed?**
+- → `Agreement.Criteria_for_Cryopreservation__c`
+
+**Question: How should funds be allocated if cryopreservation is prevented?**
+- Patient Care Trust percentage → `Agreement.Patient_Care_Trust__c`
+- Endowment Fund percentage → `Agreement.Endowment_Fund__c`
+- General Operating Fund percentage → `Agreement.General_Operating_Fund__c`
+- Alcor Research Fund percentage → `Agreement.Alcor_Research_Fund__c`
+- Specific individuals percentage → `Agreement.Individuals__c`
+- Other percentage → `Agreement.Others__c`
+
+**Question: Would you like to allocate funds over the minimum differently?**
+- → Flow logic field
+
+**Question: How should over-minimum funds be allocated?** *(conditional)*
+- → `Agreement.Patient_Care_Trust_Over_Minimum__c`
+- → `Agreement.Endowment_Fund_Over_Minimum__c`
+- → `Agreement.General_Operating_Fund_Over_Minimum__c`
+- → `Agreement.Alcor_Research_Fund_Over_Minimum__c`
+- → `Agreement.Individuals_OM__c`
+- → `Agreement.Others_OM__c`
+
+**Question: What is your public disclosure preference?**
+- Options: "Alcor is authorized to freely release information"
+- Options: "Alcor to make reasonable efforts to maintain confidentiality prior to legal death"
+- Options: "Alcor will make reasonable efforts to maintain confidentiality"
+- → `Agreement.Member_Public_Disclosures__c`
+
+## Funding/Life Insurance Section
+
+**Question: How will you fund your cryopreservation?**
+- Options: "Life Insurance" / Other options
+- → `Agreement.Type_of_Cryopreservation_Funding__c`
+
+**Question: What is the life insurance company name?**
+- → `Agreement.Life_Insurance_Company_Name__c`
+- → `Insurance.Company_Name__c`
+
+**Question: What is the company phone number?**
+- → `Agreement.Company_Phone__c`
+- → `Insurance.Company_Telephone__c`
+
+**Question: What is the company fax number?**
+- → `Agreement.Company_Fax__c`
+- → `Insurance.Company_Fax__c`
+
+**Question: What is the company mailing street address?**
+- → `Agreement.Company_Mailing_Address__c`
+- → `Insurance.Address__c`
+
+**Question: What is the company mailing city?**
+- → `Agreement.Company_Mailing_City__c`
+- → `Insurance.City__c`
+
+**Question: What is the company mailing state/province?**
+- → `Agreement.Company_Mailing_State_Province__c`
+- → `Insurance.State_Province__c`
+
+**Question: What is the company mailing postal code?**
+- → `Agreement.Company_Mailing_Postal_Code__c`
+- → `Insurance.Zip__c`
+
+**Question: What is the company country?**
+- → `Agreement.Company_Country__c`
+- → `Insurance.Country__c`
+
+**Question: What type of policy is it?**
+- → `Agreement.Policy_Type__c`
+- → `Insurance.Policy_Type__c`
+
+**Question: What is the policy number?**
+- → `Agreement.Policy_Number__c`
+- → `Insurance.Policy_Number__c`
+
+**Question: When was the policy issued?**
+- → `Agreement.Date_Issued__c`
+- → `Insurance.Date_Issued__c`
+
+**Question: What is the face amount of the policy?**
+- → `Agreement.Face_Amount__c`
+- → `Insurance.Face_Amount__c`
+
+**Question: What is the annual premium?**
+- → `Agreement.Annual_Premium__c`
+- → `Insurance.Annual_Premium__c`
+
+**Question: What is the term length?** *(conditional on term policy)*
+- → `Agreement.Term_Length__c`
+- → `Insurance.Term_Length__c`
+
+**Question: Do you have a life insurance agent?**
+- → Flow logic field
+
+**Question: What is the agent's first name?** *(conditional)*
+- → Combined into `Insurance.Agents_Name__c`
+
+**Question: What is the agent's last name?** *(conditional)*
+- → Combined into `Insurance.Agents_Name__c`
+
+**Question: What is the agent's phone number?** *(conditional)*
+- → `Agreement.Agent_Phone_Number__c`
+- → `Insurance.Agent_s_Phone__c`
+
+**Question: What is the agent's email?** *(conditional)*
+- → `Agreement.Agent_Email_Address__c`
+- → `Insurance.Agent_s_Email__c`
+
+## Legal/Will Section
+
+**Question: Do you have a will?**
+- Options: "Yes" / "No"
+- → `Agreement.Will__c`
+
+**Question: Does your will contain any provisions contrary to cryonics?** *(conditional)*
+- Options: "Yes" / "No"
+- → Used in flow logic, may trigger warning message
+
+## Membership Options Section
+
+**Question: Would you like to apply for lifetime membership?**
+- → `Agreement.Lifetime_Member__c`
+
+**Question: Do you have an ICE (Independent Cryonics Educator) discount code?**
+- → `Agreement.ICE_Discount_Code__c`
+
+## Next of Kin Section
+
+**Question: What is your relationship to this person?**
+- → `Next_Of_Kin__c.Relation__c`
+
+*(Additional Next of Kin fields would follow similar pattern)*
+
+## System-Generated Fields (Not User Input)
+
+These fields are automatically set by the system:
+- `Agreement.Begin_Sign_Up_Date__c` = Current Date
+- `Agreement.Application_Status__c` = "Submitted"
+- `Contact.Alcor_Record_Type__c` = "Applicant"
+- `Contact.New_Contract_Complete__c` = TRUE
+- `Contact.Begin_Sign_Up_Date__c` = Current Date
+- Record Type IDs and other system fields
+
+## Notes:
+- Fields marked with *(conditional)* only appear based on previous answers
+- Some fields are stored in multiple places (Agreement first, then copied to Contact and/or other objects)
+- The `Agreement__c` object serves as the primary data collection point
+- Related objects (Insurance__c, Fund_Wills_Fees__c, etc.) are created after form submission
+- Flow logic handles validation, calculations, and conditional display of fields

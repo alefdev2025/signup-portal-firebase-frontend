@@ -54,19 +54,26 @@ const LoginPage = () => {
  
  // SIMPLE: Navigate based on backend progress after successful login
  useEffect(() => {
-   if (currentUser && signupState && !userLoading && !loading && isContinueSignup) {
+   if (currentUser && signupState && !userLoading && !loading) {
      console.log(`User logged in. Progress: ${signupState.signupProgress}, Step: ${signupState.signupStep}, Completed: ${signupState.signupCompleted}`);
      
-     // If signup is completed, go to member portal
-     if (signupState.signupCompleted) {
-       console.log('Signup completed - going to member portal');
-       navigate('/member-portal', { replace: true });
-       return;
+     // If continuing signup
+     if (isContinueSignup) {
+       // If signup is completed, go to member portal
+       if (signupState.signupCompleted) {
+         console.log('Signup completed - going to member portal');
+         navigate('/portal-home', { replace: true });
+         return;
+       }
+       
+       // Navigate to signup - SignupFlowContext will handle setting the right step
+       console.log('Going to signup flow');
+       navigate('/signup', { replace: true });
+     } else {
+       // Member portal login - navigate to portal home
+       console.log('Member portal login - going to portal home');
+       navigate('/portal-home', { replace: true });
      }
-     
-     // Navigate to signup - SignupFlowContext will handle setting the right step
-     console.log('Going to signup flow');
-     navigate('/signup', { replace: true });
    }
  }, [currentUser, signupState, userLoading, loading, navigate, isContinueSignup]);
  
@@ -75,12 +82,6 @@ const LoginPage = () => {
    
    if (!email || !password) {
      setError('Please enter both email and password');
-     return;
-   }
-   
-   // If NOT continue signup (i.e., member portal login), show coming soon
-   if (!isContinueSignup) {
-     setSuccessMessage('Member Portal coming soon!');
      return;
    }
    
@@ -123,12 +124,6 @@ const LoginPage = () => {
  const handleGoogleSignInSuccess = (result, isNewUser) => {
    if (isNewUser) {
      setShowNoAccountMessage(true);
-     return;
-   }
-   
-   // If NOT continue signup (i.e., member portal login), show coming soon
-   if (!isContinueSignup) {
-     setSuccessMessage('Member Portal coming soon!');
      return;
    }
    
