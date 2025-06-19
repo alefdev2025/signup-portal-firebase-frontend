@@ -74,11 +74,60 @@ const UserProvider = ({ children }) => {
     LOG_TO_TERMINAL(`Using checkUserStep API instead of direct Firestore`);
     
     try {
-      // Fetch both user progress and Salesforce data in parallel
+
+      const safeCheckUserStep = async (retries = 3, delayMs = 500) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await checkUserStep({ userId: user.uid });
+          } catch (err) {
+            if (err.code === 'permission-denied' || err.message?.includes('permission')) {
+              LOG_TO_TERMINAL(`Permission denied – retrying in ${delayMs}ms...`);
+              await new Promise(res => setTimeout(res, delayMs));
+            } else {
+              throw err; // rethrow non-permission errors
+            }
+          }
+        }
+        throw new Error("Too many permission-denied errors during checkUserStep");
+      };
+
+      const retry = async (fn, retries = 3, delayMs = 500) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await fn();
+          } catch (e) {
+            if (
+              e.code === "permission-denied" ||
+              e.message?.includes("permission") ||
+              e.message?.includes("insufficient")
+            ) {
+              console.warn(`Permission error, retrying in ${delayMs}ms...`);
+              await new Promise((res) => setTimeout(res, delayMs));
+            } else {
+              throw e;
+            }
+          }
+        }
+        throw new Error("Too many retries on permission error");
+      };
+      
       const [userStepResult, salesforceData] = await Promise.all([
+        retry(() => checkUserStep({ userId: user.uid })),
+        fetchSalesforceCustomer(user.email),
+      ]);
+      
+      
+      /*const [userStepResult, salesforceData] = await Promise.all([
+        safeCheckUserStep(),
+        fetchSalesforceCustomer(user.email)
+      ]);*/      
+
+
+      // Fetch both user progress and Salesforce data in parallel
+      /*const [userStepResult, salesforceData] = await Promise.all([
         checkUserStep({ userId: user.uid }),
         fetchSalesforceCustomer(user.email)
-      ]);
+      ]);*/
       
       LOG_TO_TERMINAL(`checkUserStep API result: ${JSON.stringify(userStepResult)}`);
       

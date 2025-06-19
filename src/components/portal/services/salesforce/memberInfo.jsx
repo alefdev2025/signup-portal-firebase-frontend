@@ -121,25 +121,25 @@ export const updateMemberCryoArrangements = async (contactId, data) => {
 
 // Emergency Contacts / Next of Kin
 export const getMemberEmergencyContacts = async (contactId) => {
-  return apiCall(`/api/salesforce/member/${contactId}/emergency-contacts`);
+  return apiCall(`/api/salesforce/member/${contactId}/next-of-kin`);
 };
 
 export const createMemberEmergencyContact = async (contactId, data) => {
-  return apiCall(`/api/salesforce/member/${contactId}/emergency-contacts`, {
+  return apiCall(`/api/salesforce/member/${contactId}/next-of-kin`, {
     method: 'POST',
     body: data
   });
 };
 
 export const updateMemberEmergencyContact = async (contactId, nokId, data) => {
-  return apiCall(`/api/salesforce/member/${contactId}/emergency-contacts/${nokId}`, {
+  return apiCall(`/api/salesforce/member/${contactId}/next-of-kin/${nokId}`, {
     method: 'PUT',
     body: data
   });
 };
 
 export const deleteMemberEmergencyContact = async (contactId, nokId) => {
-  return apiCall(`/api/salesforce/member/${contactId}/emergency-contacts/${nokId}`, {
+  return apiCall(`/api/salesforce/member/${contactId}/next-of-kin/${nokId}`, {
     method: 'DELETE'
   });
 };

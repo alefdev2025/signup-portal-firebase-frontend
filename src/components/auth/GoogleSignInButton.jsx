@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { signInWithGoogle, getPendingLinkingEmail } from '../../services/auth';
 import PropTypes from 'prop-types';
+//import { auth } from '../../services/firebase';
 
 /**
  * Google Sign-In Button component
@@ -30,6 +31,10 @@ const GoogleSignInButton = ({
 
   const handleGoogleSignIn = async () => {
     if (disabled || isLoading) return;
+
+    console.log("HELLO");
+
+    //console.log("Auth domain:", auth.config.authDomain);
     
     setIsLoading(true);
     if (setIsSubmitting) setIsSubmitting(true);

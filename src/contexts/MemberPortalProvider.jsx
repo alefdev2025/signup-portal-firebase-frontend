@@ -1,11 +1,21 @@
-// contexts/MemberPortalProvider.jsx - Updated to preload Salesforce member data
+// contexts/MemberPortalProvider.jsx - Updated with demo mode toggle
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser } from './UserContext';
 import { paymentDataService } from '../components/portal/services/paymentDataService';
 import { memberDataService } from '../components/portal/services/memberDataService';
-
-// Import the CustomerDataProvider so we can wrap with it
 import { CustomerDataProvider } from '../components/portal/contexts/CustomerDataContext';
+
+// ============================================
+// DEMO CONFIGURATION - TOGGLE HERE
+// ============================================
+const DEMO_MODE = true;  // <-- TOGGLE THIS ON/OFF
+const DEMO_CONFIG = {
+  netsuiteCustomerId: '4414',
+  salesforceContactId: '0031I00000tRcNZ', // <-- PUT YOUR DEMO CONTACT ID HERE
+  customerName: '0031I00000tRcNZ',
+  customerEmail: 'asnapier@gmail.com'
+};
+// ============================================
 
 const MemberPortalContext = createContext();
 
@@ -19,7 +29,8 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     if (customerId && salesforceCustomer?.id) {
       console.log('[MemberPortal] Starting data preload for customers:', {
         netsuiteId: customerId,
-        salesforceId: salesforceCustomer.id
+        salesforceId: salesforceCustomer.id,
+        demoMode: DEMO_MODE
       });
       setIsPreloading(true);
       
@@ -53,7 +64,8 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     // Add convenience getters
     customerName: salesforceCustomer ? `${salesforceCustomer.firstName} ${salesforceCustomer.lastName}` : '',
     customerEmail: salesforceCustomer?.email || '',
-    salesforceContactId: salesforceCustomer?.id || null
+    salesforceContactId: salesforceCustomer?.id || null,
+    isDemoMode: DEMO_MODE // Expose demo mode status
   };
 
   return (
@@ -67,20 +79,46 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
 export const MemberPortalProvider = ({ children }) => {
   const { currentUser, netsuiteCustomerId, salesforceCustomer, isLoading } = useUser();
   
-  // Use the NetSuite ID from UserContext
-  //const customerId = netsuiteCustomerId || '4527'; // Fallback for testing
-  const customerId = '4527';
+  // Apply demo overrides if enabled
+  let effectiveCustomerId = netsuiteCustomerId;
+  let effectiveSalesforceCustomer = salesforceCustomer;
+  
+  if (DEMO_MODE) {
+    console.log('🎮 DEMO MODE ACTIVE - Using demo IDs');
+    
+    // Override NetSuite ID
+    effectiveCustomerId = DEMO_CONFIG.netsuiteCustomerId;
+    
+    // Override Salesforce customer
+    if (salesforceCustomer) {
+      // If we have a real customer, just override the ID
+      effectiveSalesforceCustomer = {
+        ...salesforceCustomer,
+        id: DEMO_CONFIG.salesforceContactId
+      };
+    } else {
+      // If no customer found, create a demo one
+      effectiveSalesforceCustomer = {
+        id: DEMO_CONFIG.salesforceContactId,
+        firstName: DEMO_CONFIG.customerName.split(' ')[0],
+        lastName: DEMO_CONFIG.customerName.split(' ')[1] || '',
+        email: currentUser?.email || DEMO_CONFIG.customerEmail,
+        netsuiteCustomerId: DEMO_CONFIG.netsuiteCustomerId
+      };
+    }
+  }
   
   console.log('[MemberPortalProvider] Current state:', {
     hasUser: !!currentUser,
     email: currentUser?.email,
-    netsuiteCustomerId: netsuiteCustomerId,
-    salesforceCustomerId: salesforceCustomer?.id,
-    isLoading: isLoading
+    netsuiteCustomerId: effectiveCustomerId,
+    salesforceCustomerId: effectiveSalesforceCustomer?.id,
+    isLoading: isLoading,
+    demoMode: DEMO_MODE
   });
   
   // Show loading state while we fetch the customer IDs
-  if (isLoading && !netsuiteCustomerId) {
+  if (isLoading && !DEMO_MODE && !netsuiteCustomerId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -91,27 +129,36 @@ export const MemberPortalProvider = ({ children }) => {
     );
   }
 
-  // If no NetSuite ID found after loading, show a warning but continue
-  if (!isLoading && !netsuiteCustomerId && currentUser) {
+  // If no NetSuite ID found after loading and not in demo mode, show a warning
+  if (!isLoading && !effectiveCustomerId && currentUser && !DEMO_MODE) {
     console.warn('[MemberPortal] No NetSuite customer ID found for user:', currentUser.email);
-    // You might want to show an error UI here or handle this case differently
   }
 
-  // If no Salesforce customer found after loading, show a warning
-  if (!isLoading && !salesforceCustomer?.id && currentUser) {
+  // If no Salesforce customer found after loading and not in demo mode, show a warning
+  if (!isLoading && !effectiveSalesforceCustomer?.id && currentUser && !DEMO_MODE) {
     console.warn('[MemberPortal] No Salesforce customer found for user:', currentUser.email);
   }
 
+  // Show demo mode indicator (optional - remove for production)
+  const DemoIndicator = DEMO_MODE ? (
+    <div className="fixed bottom-4 right-4 bg-yellow-500 text-black px-3 py-1 rounded-md text-sm font-semibold z-50">
+      🎮 DEMO MODE
+    </div>
+  ) : null;
+
   // Wrap with CustomerDataProvider so all children have access to it
   return (
-    <CustomerDataProvider customerId={customerId}>
-      <MemberPortalProviderInner 
-        customerId={customerId} 
-        salesforceCustomer={salesforceCustomer}
-      >
-        {children}
-      </MemberPortalProviderInner>
-    </CustomerDataProvider>
+    <>
+      {DemoIndicator}
+      <CustomerDataProvider customerId={effectiveCustomerId}>
+        <MemberPortalProviderInner 
+          customerId={effectiveCustomerId} 
+          salesforceCustomer={effectiveSalesforceCustomer}
+        >
+          {children}
+        </MemberPortalProviderInner>
+      </CustomerDataProvider>
+    </>
   );
 };
 

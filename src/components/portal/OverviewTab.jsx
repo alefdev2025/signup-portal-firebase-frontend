@@ -6,11 +6,6 @@ import { podcastEpisodes } from './podcastConfig';
 import { memberNewsletters } from './MemberNewsletters';
 import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
-import TopLeftCard from './DashboardComponents/TopLeftCard';
-import TopMiddleCard from './DashboardComponents/TopMiddleCard';
-import MiddleLeftSmallCard from './DashboardComponents/MiddleLeftSmallCard';
-import MiddleRightSmallCard from './DashboardComponents/MiddleRightSmallCard';
-import TopRightCard from './DashboardComponents/TopRightCard';
 import dewarsImage from '../../assets/images/dewars2.jpg';
 
 const OverviewTab = () => {
