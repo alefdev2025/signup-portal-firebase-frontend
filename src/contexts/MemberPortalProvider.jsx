@@ -141,10 +141,10 @@ export const MemberPortalProvider = ({ children }) => {
 
   // Show demo mode indicator (optional - remove for production)
   const DemoIndicator = DEMO_MODE ? (
-    <div className="fixed bottom-4 right-4 bg-yellow-500 text-black px-3 py-1 rounded-md text-sm font-semibold z-50">
+    <div className="fixed bottom-4 right-4 bg-gray-300 text-black px-3 py-1 rounded-md text-sm font-semibold z-50">
       🎮 DEMO MODE
     </div>
-  ) : null;
+  ) : null;  
 
   // Wrap with CustomerDataProvider so all children have access to it
   return (

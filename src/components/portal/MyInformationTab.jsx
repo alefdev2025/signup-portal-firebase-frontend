@@ -37,6 +37,20 @@ const MyInformationTab = () => {
   const [savingSection, setSavingSection] = useState('');
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
   
+  // Section loading states
+  const [sectionsLoaded, setSectionsLoaded] = useState({
+    contact: false,
+    personal: false,
+    addresses: false,
+    family: false,
+    occupation: false,
+    medical: false,
+    cryoArrangements: false,
+    funding: false,
+    legal: false,
+    nextOfKin: false
+  });
+  
   // Edit mode states for each section
   const [editMode, setEditMode] = useState({
     personal: false,
@@ -86,6 +100,57 @@ const MyInformationTab = () => {
       loadAllData();
     }
   }, [salesforceContactId]);
+  
+  // Stagger section loading after data is loaded
+  useEffect(() => {
+    if (!isLoading && personalInfo.firstName) {
+      const timers = [];
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, contact: true }));
+      }, 100));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, personal: true }));
+      }, 200));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, addresses: true }));
+      }, 300));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, family: true }));
+      }, 400));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, occupation: true }));
+      }, 500));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, medical: true }));
+      }, 600));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, cryoArrangements: true }));
+      }, 700));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, funding: true }));
+      }, 800));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, legal: true }));
+      }, 900));
+      
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, nextOfKin: true }));
+      }, 1000));
+      
+      return () => {
+        timers.forEach(timer => clearTimeout(timer));
+      };
+    }
+  }, [isLoading, personalInfo.firstName]);
   
 // Updated loadAllData function in MyInformationTab.jsx
 
@@ -776,6 +841,24 @@ const loadAllData = async () => {
     return <Loading text="Loading your information..." />;
   }
   
+  // Loading skeleton component
+  const SectionSkeleton = () => (
+    <div className="animate-pulse">
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+        <div className="h-10 bg-gray-200 rounded w-24"></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i}>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-10 bg-gray-100 rounded"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  
   return (
     <div className="px-4 sm:px-6 lg:px-8">
       {/* Save Message */}
@@ -789,145 +872,185 @@ const loadAllData = async () => {
       )}
       
       {/* Contact Information - Now First with Name and DOB */}
-      <ContactInfoSection
-        contactInfo={contactInfo || {}}
-        setContactInfo={setContactInfo}
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveContactInfo={saveContactInfo}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.contact ? (
+        <SectionSkeleton />
+      ) : (
+        <ContactInfoSection
+          contactInfo={contactInfo || {}}
+          setContactInfo={setContactInfo}
+          personalInfo={personalInfo || {}}
+          setPersonalInfo={setPersonalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveContactInfo={saveContactInfo}
+          savingSection={savingSection}
+        />
+      )}
       
       {/* Section Separator */}
       <div className={sectionSeparator} />
             
       {/* Personal Information - Now Second */}
-      <PersonalInfoSection
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        familyInfo={familyInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        savePersonalInfo={savePersonalInfo}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.personal ? (
+        <SectionSkeleton />
+      ) : (
+        <PersonalInfoSection
+          personalInfo={personalInfo || {}}
+          setPersonalInfo={setPersonalInfo}
+          familyInfo={familyInfo || {}}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          savePersonalInfo={savePersonalInfo}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Addresses */}
-      <AddressesSection
-        addresses={addresses || {}}
-        setAddresses={setAddresses}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveAddresses={saveAddresses}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.addresses ? (
+        <SectionSkeleton />
+      ) : (
+        <AddressesSection
+          addresses={addresses || {}}
+          setAddresses={setAddresses}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveAddresses={saveAddresses}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Family Information */}
-      <FamilyInfoSection
-        familyInfo={familyInfo || {}}
-        setFamilyInfo={setFamilyInfo}
-        personalInfo={personalInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFamilyInfo={saveFamilyInfo}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.family ? (
+        <SectionSkeleton />
+      ) : (
+        <FamilyInfoSection
+          familyInfo={familyInfo || {}}
+          setFamilyInfo={setFamilyInfo}
+          personalInfo={personalInfo || {}}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveFamilyInfo={saveFamilyInfo}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Occupation */}
-      <OccupationSection
-        occupation={occupation || {}}
-        setOccupation={setOccupation}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveOccupation={saveOccupation}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.occupation ? (
+        <SectionSkeleton />
+      ) : (
+        <OccupationSection
+          occupation={occupation || {}}
+          setOccupation={setOccupation}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveOccupation={saveOccupation}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Medical Information */}
-      <MedicalInfoSection
-        medicalInfo={medicalInfo || {}}
-        setMedicalInfo={setMedicalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveMedicalInfo={saveMedicalInfo}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.medical ? (
+        <SectionSkeleton />
+      ) : (
+        <MedicalInfoSection
+          medicalInfo={medicalInfo || {}}
+          setMedicalInfo={setMedicalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveMedicalInfo={saveMedicalInfo}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Cryopreservation Arrangements */}
-      <CryoArrangementsSection
-        cryoArrangements={cryoArrangements || {}}
-        setCryoArrangements={setCryoArrangements}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveCryoArrangements={saveCryoArrangements}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.cryoArrangements ? (
+        <SectionSkeleton />
+      ) : (
+        <CryoArrangementsSection
+          cryoArrangements={cryoArrangements || {}}
+          setCryoArrangements={setCryoArrangements}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveCryoArrangements={saveCryoArrangements}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Funding/Life Insurance */}
-      <FundingSection
-        funding={funding || {}}
-        setFunding={setFunding}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFunding={saveFunding}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.funding ? (
+        <SectionSkeleton />
+      ) : (
+        <FundingSection
+          funding={funding || {}}
+          setFunding={setFunding}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveFunding={saveFunding}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Legal/Will */}
-      <LegalSection
-        legal={legal || {}}
-        setLegal={setLegal}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveLegal={saveLegal}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.legal ? (
+        <SectionSkeleton />
+      ) : (
+        <LegalSection
+          legal={legal || {}}
+          setLegal={setLegal}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveLegal={saveLegal}
+          savingSection={savingSection}
+        />
+      )}
 
       {/* Section Separator */}
       <div className={sectionSeparator} />
 
       {/* Next of Kin */}
-      <NextOfKinSection
-        nextOfKin={nextOfKin || {}}
-        setNextOfKin={setNextOfKin}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveNextOfKin={saveNextOfKin}
-        savingSection={savingSection}
-      />
+      {!sectionsLoaded.nextOfKin ? (
+        <SectionSkeleton />
+      ) : (
+        <NextOfKinSection
+          nextOfKin={nextOfKin || {}}
+          setNextOfKin={setNextOfKin}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveNextOfKin={saveNextOfKin}
+          savingSection={savingSection}
+        />
+      )}
     </div>
   );
 };

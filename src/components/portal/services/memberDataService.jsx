@@ -107,6 +107,10 @@ import {
     async getMemberProfile(contactId) {
       return this.fetchAndCache(contactId, 'memberProfile', getMemberProfile);
     }
+
+    // DOCUMENTS
+
+
   
     // Preload all member data in the background
     async preloadInBackground(contactId) {
