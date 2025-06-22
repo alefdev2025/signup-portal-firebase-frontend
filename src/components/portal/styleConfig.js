@@ -4,9 +4,9 @@ const styleConfig = {
     // Container styles
     section: {
       wrapper: "bg-white rounded-lg shadow-sm p-8 mb-6",
-      wrapperEnhanced: "bg-white rounded-xl shadow-sm border border-gray-200 mb-8",
-      innerPadding: "p-6 md:p-9",
-      title: "text-xl font-medium text-[#2a2346] mb-6",
+      wrapperEnhanced: "bg-white rounded-xl shadow-md border border-gray-200 mb-8",
+      innerPadding: "p-6 md:p-8",
+      title: "text-xl font-semibold text-gray-800 mb-6", // Changed from font-medium to font-semibold, changed color
       grid: {
         twoColumn: "grid grid-cols-2 gap-6",
         fourColumn: "grid grid-cols-2 gap-4",
@@ -18,10 +18,10 @@ const styleConfig = {
     header: {
       wrapper: "mb-8 md:mb-9 flex items-start",
       iconContainer: "bg-[#0e0e2f] p-3 rounded-lg", // Updated to first gradient color
-      icon: "h-7 w-7 text-white", // Restored default icon color
+      icon: "h-6 w-6 text-white", // Reduced from h-7 w-7 to h-6 w-6
       textContainer: "ml-4 pt-0.5",
-      title: "text-2xl font-light text-gray-800",
-      subtitle: "text-sm text-gray-500 italic font-light mt-0.5"
+      title: "text-xl font-semibold text-gray-800", // Changed from text-2xl font-light to text-xl font-semibold
+      subtitle: "text-sm text-gray-500 font-light mt-0.5" // Added font-light
     },
 
     // Section-specific icon styles with gradient progression
@@ -58,9 +58,9 @@ const styleConfig = {
       // Individual display item styles
       item: {
         wrapper: "", // Can add default wrapper styles if needed
-        label: "text-base font-medium text-gray-500",
-        value: "mt-1 text-base text-gray-900",
-        valueWithWrap: "mt-1 text-base text-gray-900 whitespace-pre-wrap",
+        label: "text-sm text-gray-500 font-light", // Changed from text-base font-medium to text-sm font-light
+        value: "mt-1 text-base font-medium text-gray-800", // Changed from text-gray-900 to text-gray-800, added font-medium
+        valueWithWrap: "mt-1 text-base font-medium text-gray-800 whitespace-pre-wrap",
         empty: "—"
       },
       // Non-editable field in edit mode
@@ -71,33 +71,33 @@ const styleConfig = {
   
     // Form elements
     form: {
-      label: "block text-gray-800 text-base md:text-lg font-medium mb-2",
-      labelCheckbox: "flex items-center text-gray-800 text-base md:text-lg font-medium cursor-pointer",
+      label: "block text-gray-700 text-sm font-normal mb-2", // Changed from text-base/lg font-medium to text-sm font-normal
+      labelCheckbox: "flex items-center text-gray-700 text-sm font-normal cursor-pointer",
       fieldSpacing: "space-y-6",
       subSection: "pl-4 border-l-2 border-gray-200"
     },
   
-    // Input styles - UPDATED: Reduced padding from py-4 to py-3
+    // Input styles - Already reduced padding
     input: {
       base: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200",
       disabled: "disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500",
       error: "border-red-500 focus:border-red-500 focus:ring-red-500/20",
-      // Combined classes - UPDATED: Reduced border from border-2 to border, padding from py-4 to py-3, text size from text-lg to text-base
+      // Combined classes - text size already reduced
       default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 text-base",
       // Specific input types
       checkbox: "mr-2 w-4 h-4 rounded border-gray-300 text-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/20",
       textarea: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 resize-none hover:border-gray-400 text-base"
     },
   
-    // Select/Dropdown styles - UPDATED: Same changes as inputs
+    // Select/Dropdown styles
     select: {
       default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 bg-white text-base appearance-none",
       multiple: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 min-h-[120px] bg-white text-base"
     },
   
-    // Button styles - UPDATED: Wider buttons, fixed double outline
+    // Button styles
     button: {
-      // Base styles - UPDATED: Increased padding for wider buttons
+      // Base styles
       base: "px-6 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none text-sm",
       
       // Primary button (Save, Submit)
@@ -106,13 +106,13 @@ const styleConfig = {
         disabled: "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
       },
       
-      // Secondary button (Edit) - UPDATED: Removed ring-offset to prevent double outline
+      // Secondary button (Edit)
       secondary: {
         default: "text-[#0a1629] border border-[#0a1629] hover:bg-[#0a1629] hover:text-white focus:ring-2 focus:ring-[#0a1629]/20",
         disabled: "disabled:opacity-50 disabled:cursor-not-allowed"
       },
       
-      // Tertiary button (Cancel) - UPDATED: Removed ring-offset to prevent double outline
+      // Tertiary button (Cancel)
       tertiary: {
         default: "text-gray-600 border border-gray-300 hover:bg-gray-100 hover:border-gray-400 focus:ring-2 focus:ring-gray-300/20",
         disabled: "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -124,7 +124,7 @@ const styleConfig = {
         solid: "bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
       },
       
-      // Combined classes for easy use - UPDATED: Wider buttons, fixed outlines
+      // Combined classes for easy use
       primaryButton: "px-6 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none bg-[#0a1629] text-white hover:bg-[#1e2650] focus:ring-2 focus:ring-[#0a1629] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-sm",
       secondaryButton: "px-6 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none text-[#0a1629] border border-[#0a1629] hover:bg-[#0a1629] hover:text-white focus:ring-2 focus:ring-[#0a1629]/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm",
       tertiaryButton: "px-6 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none text-gray-600 border border-gray-300 hover:bg-gray-100 hover:border-gray-400 focus:ring-2 focus:ring-gray-300/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm",
@@ -151,7 +151,7 @@ const styleConfig = {
     loading: {
       wrapper: "flex items-center justify-center h-64",
       spinner: "animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4",
-      text: "text-gray-600"
+      text: "text-gray-600 font-light" // Added font-light
     },
   
     // Card styles for subsections
@@ -163,14 +163,14 @@ const styleConfig = {
     // Typography
     text: {
       heading: {
-        h1: "text-3xl font-light text-[#2a2346] mb-8",
-        h2: "text-xl font-medium text-[#2a2346] mb-6",
-        h3: "font-medium text-[#2a2346] mb-4"
+        h1: "text-2xl font-semibold text-gray-800 mb-8", // Changed from text-3xl font-light
+        h2: "text-xl font-semibold text-gray-800 mb-6", // Changed from font-medium
+        h3: "text-lg font-semibold text-gray-800 mb-4" // Changed from font-medium
       },
       body: {
         default: "text-gray-700",
-        small: "text-sm text-gray-600",
-        muted: "text-gray-500"
+        small: "text-sm text-gray-600 font-light", // Added font-light
+        muted: "text-gray-500 font-light" // Added font-light
       }
     }
   };
@@ -221,7 +221,7 @@ const styleConfig = {
     const sectionConfig = styleConfig.sectionIcons[sectionType] || {};
     return {
       container: `${sectionConfig.containerColor || styleConfig.header.iconContainer} p-3 rounded-lg`,
-      icon: `h-7 w-7 ${sectionConfig.iconColor || 'text-white'}`
+      icon: `h-6 w-6 ${sectionConfig.iconColor || 'text-white'}` // Reduced from h-7 w-7
     };
   };
   

@@ -657,3 +657,25 @@ a25357
 b66e5d
 cb8863
 d79564
+
+
+
+FOR PRODUCTION FOR FORMS
+
+Make sure to add forms to Firebase 
+
+go to storage in the firebase backend
+
+/documents/forms 
+
+add all the forms in the Alcor Forms For Member Portal folde
+
+
+URLS FOR PRODUCTION
+
+
+// src/components/portal/services/salesforce/memberDocuments.js
+const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app' || 'http://localhost:8080';
+
+Some places we have hardcoded like this instead of being env specific
+

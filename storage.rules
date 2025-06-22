@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public documents - anyone can read
+    match /documents/public/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Member documents - authenticated users only
+    match /documents/forms/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only admin upload via console
+    }
+  }
+}

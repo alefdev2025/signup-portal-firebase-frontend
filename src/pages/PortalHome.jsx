@@ -1,15 +1,15 @@
+// PortalHome.jsx - Using the MemberPortal context like other components
+
 import React, { useState } from 'react';
+import { useMemberPortal } from '../contexts/MemberPortalProvider';
 
 // Import all the component parts
 import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
 import OverviewTab from '../components/portal/OverviewTab';
-
-import ProfileSettingsTab from '../components/portal/ProfileSettingsTab';
-import SecurityTab from '../components/portal/SecurityTab';
+import AccountSettingsTab from '../components/portal/AccountSettingsTab';
 import MembershipStatusTab from '../components/portal/MembershipStatusTab';
 import MyInformationTab from '../components/portal/MyInformationTab';
-import FinancialDocumentsTab from '../components/portal/FinancialDocumentsTab';
 import ContractsTab from '../components/portal/ContractsTab';
 import FormsTab from '../components/portal/FormsTab';
 import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
@@ -18,16 +18,16 @@ import InvoicesTab from '../components/portal/InvoicesTab';
 import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';
-
-import { useMemberPortal } from '../contexts/MemberPortalProvider';
+import DocumentsTab from '../components/portal/DocumentsTab';
+import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 
 const PortalHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [profileImage, setProfileImage] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Get customerId from the context
-  const { customerId } = useMemberPortal();
+  // Get the IDs from context
+  const { customerId, salesforceContactId } = useMemberPortal();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -44,14 +44,12 @@ const PortalHome = () => {
     switch (activeTab) {
       case 'overview': 
         return <OverviewTab />;
-      case 'account': 
-        return <AccountTab profileImage={profileImage} onImageUpload={handleImageUpload} />;
       
-      // Account subtabs
-      case 'account-profile':
-        return <ProfileSettingsTab profileImage={profileImage} onImageUpload={handleImageUpload} />;
-      case 'account-security':
-        return <SecurityTab />;
+      // Account only has settings
+      case 'account':
+        return <AccountSettingsTab />;
+      case 'account-settings':
+        return <AccountSettingsTab />;
       
       // Membership subtabs
       case 'membership':
@@ -63,15 +61,13 @@ const PortalHome = () => {
       
       // Documents subtabs
       case 'documents':
-        return <DocumentsTab />;
-      case 'documents-financial':
-        return <FinancialDocumentsTab />;
-      case 'documents-contracts':
-        return <ContractsTab />;
+        return <DocumentsTab contactId={salesforceContactId} />;
+      case 'documents-documents':
+        return <DocumentsTab contactId={salesforceContactId} />;
       case 'documents-forms':
         return <FormsTab />;
       
-      // Payments subtabs - Pass customerId to payment-related tabs
+      // Payments subtabs
       case 'payments':
         return <PaymentsTab />;
       case 'payments-history':
@@ -84,6 +80,8 @@ const PortalHome = () => {
       // Resources subtabs
       case 'resources':
         return <ResourcesTab />;
+      case 'resources-information':
+        return <InformationDocumentsTab />;
       case 'resources-media':
         return <MediaTab />;
       case 'resources-community':
@@ -97,14 +95,14 @@ const PortalHome = () => {
   };
 
   return (
-      <div 
-        className="min-h-screen p-0 md:p-4"
-        style={{ 
-          fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-          background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%)' 
-        }}
-      >
-<div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-2xl overflow-hidden shadow-2xl bg-white">
+    <div 
+      className="min-h-screen p-0 md:p-4"
+      style={{ 
+        fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
+        background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%)' 
+      }}
+    >
+      <div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-2xl overflow-hidden shadow-2xl bg-white">
         {/* Corner accent lines */}
         <div className="hidden md:block">
           {/* Top-left corner */}
@@ -144,13 +142,12 @@ const PortalHome = () => {
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden md:ml-4">
-        <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} activeTab={activeTab} />
+          <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} activeTab={activeTab} />
           
           <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
             {renderActiveTab()}
           </main>
         </div>
-
       </div>
     </div>
   );

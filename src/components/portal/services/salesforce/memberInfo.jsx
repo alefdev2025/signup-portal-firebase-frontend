@@ -224,3 +224,139 @@ export const getMemberAgreements = async (contactId) => {
 export const getMemberAgreement = async (contactId, agreementId) => {
   return apiCall(`/api/salesforce/member/${contactId}/agreements/${agreementId}`);
 };
+
+// Add these to your existing memberInfo.js file
+
+// Documents
+export const getMemberDocuments = async (contactId) => {
+  console.log('[getMemberDocuments] 1. Starting with contactId:', contactId);
+  
+  try {
+    const endpoint = `/api/salesforce/member/${contactId}/documents`;
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    console.log('[getMemberDocuments] 2. Calling URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    console.log('[getMemberDocuments] 3. Response received:', response);
+    console.log('[getMemberDocuments] 4. Response status:', response.status);
+    console.log('[getMemberDocuments] 5. Response headers:', response.headers);
+    
+    if (!response.ok) {
+      console.log('[getMemberDocuments] 6. Response NOT OK');
+      const errorText = await response.text();
+      console.error('[getMemberDocuments] 7. Error text:', errorText);
+      
+      return {
+        success: false,
+        error: `API call failed: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    console.log('[getMemberDocuments] 8. Response OK, parsing JSON...');
+    const data = await response.json();
+    console.log('[getMemberDocuments] 9. Data parsed:', data);
+    
+    const result = {
+      success: true,
+      data: data,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('[getMemberDocuments] 10. Returning result:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('[getMemberDocuments] 11. CAUGHT ERROR:', error);
+    console.error('[getMemberDocuments] 12. Error stack:', error.stack);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+export const getMemberDocument = async (contactId, documentId, documentType = 'attachment') => {
+  // For downloading files, we need special handling
+  try {
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${documentId}?type=${documentType}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download document: ${response.statusText}`);
+    }
+
+    // For binary files, handle as blob
+    if (documentType !== 'note') {
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/['"]/g, '')
+        : `document-${documentId}`;
+      
+      return {
+        success: true,
+        data: blob,
+        filename: filename,
+        contentType: response.headers.get('content-type')
+      };
+    } else {
+      // For notes, return as JSON
+      const data = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('[Salesforce Member API] Error downloading document:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+export const uploadMemberDocument = async (contactId, formData) => {
+  try {
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData // Send FormData directly, don't JSON.stringify
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to upload document: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[Salesforce Member API] Error uploading document:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+export const deleteMemberDocument = async (contactId, documentId, documentType = 'attachment') => {
+  return apiCall(`/api/salesforce/member/${contactId}/documents/${documentId}?type=${documentType}`, {
+    method: 'DELETE'
+  });
+};

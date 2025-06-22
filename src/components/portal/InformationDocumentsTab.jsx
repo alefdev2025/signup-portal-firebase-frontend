@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Download, FileText, Shield, Clock } from 'lucide-react';
+import { Download, FileText, Shield, DollarSign, Clipboard } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 
-const FormsTab = () => {
+const InformationDocumentsTab = () => {
   const [downloading, setDownloading] = useState({});
 
-  const handleDownload = async (fileName) => {
+  const handleInfoDocDownload = async (fileName) => {
     try {
       if (!auth.currentUser) {
         alert('Please log in to download documents');
@@ -28,10 +28,6 @@ const FormsTab = () => {
         alert(`File not found: ${fileName}. Please contact support.`);
       } else if (error.code === 'storage/unauthorized') {
         alert('You do not have permission to download this file. Please ensure you are logged in.');
-      } else if (error.code === 'storage/canceled') {
-        alert('Download was canceled.');
-      } else if (error.code === 'storage/unknown') {
-        alert('An unknown error occurred. Please try again.');
       } else {
         alert('Failed to open file. Please try again later.');
       }
@@ -40,43 +36,86 @@ const FormsTab = () => {
     }
   };
 
-  const formCategories = [
+  const informationDocuments = [
     {
-      title: "Essential Membership Forms",
+      title: "General Information",
       icon: FileText,
-      description: "Core forms for Alcor membership",
-      forms: [
+      description: "Essential Alcor information documents",
+      documents: [
         {
-          title: "Alcor Health Survey 2024",
-          description: "Health information form for cryopreservation preparation.",
-          fileName: "Health Survey.pdf",
+          title: "Membership Overview",
+          description: "Complete guide to becoming an Alcor member.",
+          fileName: "Alcor Brochure.pdf",
+          pages: 2
+        },
+        {
+          title: "Preservation Options Comparison",
+          description: "Detailed comparison of neuropreservation vs whole-body options.",
+          fileName: "Neuro or Whole Body Options Summary.pdf",
+          pages: 2
+        },
+        {
+          title: "Memory Box Information",
+          description: "Guide on Alcor's memory box services.",
+          fileName: "Memory Box Article.pdf",
           pages: 3
         }
       ]
     },
     {
-      title: "Medical & Legal Forms",
+      title: "Emergency Information",
       icon: Shield,
-      description: "Legal forms for healthcare decisions",
-      forms: [
+      description: "Critical emergency guidance",
+      documents: [
         {
-          title: "Advance Directive & Power of Attorney",
-          description: "Cryonics-specific legal documents for end-of-life medical decisions.",
-          fileName: "POA - HealthCare Directive.docx",
-          pages: 8
+          title: "Hospital Information Sheet",
+          description: "Essential one-page summary for medical staff during emergencies.",
+          fileName: "General Information.pdf",
+          pages: 1
+        },
+        {
+          title: "Emergency Notification Guide",
+          description: "Critical guidance on when and how to notify Alcor - 24/7 hotline included.",
+          fileName: "When to Notify Alcor About a Member.pdf",
+          pages: 2
         }
       ]
     },
     {
-      title: "Future Planning Forms",
-      icon: Clock,
-      description: "Forms for revival preferences",
-      forms: [
+      title: "Financial Information",
+      icon: DollarSign,
+      description: "Funding and insurance information",
+      documents: [
         {
-          title: "Revival Preferences Form",
-          description: "Document your wishes for revival timing and coordination.",
-          fileName: "Statement of Revival Preferences.docx",
-          pages: 4
+          title: "Life Insurance Agent Directory",
+          description: "Trusted agents experienced with cryonics life insurance funding.",
+          fileName: "Life Insurance Agent Directory.docx",
+          pages: 2
+        },
+        {
+          title: "Costs & Funding Breakdown",
+          description: "Detailed membership fees and preservation costs explained.",
+          fileName: "Alcor Brochure.pdf",
+          pages: 2
+        }
+      ]
+    },
+    {
+      title: "Educational Resources",
+      icon: Clipboard,
+      description: "Research and educational materials",
+      documents: [
+        {
+          title: "Why Cryonics Makes Sense",
+          description: "Tim Urban's comprehensive article.",
+          fileName: "Why Cryonics Makes Sense.pdf",
+          pages: 16
+        },
+        {
+          title: "Memory Persistence Research",
+          description: "Scientific study on long-term memory retention in cryopreservation.",
+          fileName: "Memory Persistence.pdf",
+          pages: 6
         }
       ]
     }
@@ -84,10 +123,10 @@ const FormsTab = () => {
 
   return (
     <div className="bg-gray-50 -m-8 p-8 min-h-screen">
-      <h1 className="text-4xl font-light text-[#2a2346] mb-10">Forms</h1>
+      <h1 className="text-4xl font-light text-[#2a2346] mb-10">Alcor Information Documents</h1>
       
       <div className="space-y-8">
-        {formCategories.map((category, categoryIndex) => {
+        {informationDocuments.map((category, categoryIndex) => {
           const IconComponent = category.icon;
           return (
             <div key={categoryIndex} className="bg-white rounded-lg shadow-xl p-8">
@@ -105,9 +144,9 @@ const FormsTab = () => {
               </div>
 
               <div className="space-y-5">
-                {category.forms.map((form, formIndex) => (
+                {category.documents.map((doc, docIndex) => (
                   <div 
-                    key={formIndex} 
+                    key={docIndex} 
                     className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden"
                   >
                     {/* Colored accent band */}
@@ -115,16 +154,16 @@ const FormsTab = () => {
                     
                     <div className="flex items-center justify-between pl-7 pr-8 py-8">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-[#2a2346] text-lg mb-2">{form.title}</h3>
-                        <p className="text-sm text-[#6b7280]">{form.description}</p>
+                        <h3 className="font-semibold text-[#2a2346] text-lg mb-2">{doc.title}</h3>
+                        <p className="text-sm text-[#6b7280]">{doc.description}</p>
                       </div>
                       
                       <button
-                        onClick={() => handleDownload(form.fileName)}
-                        disabled={downloading[form.fileName]}
+                        onClick={() => handleInfoDocDownload(doc.fileName)}
+                        disabled={downloading[doc.fileName]}
                         className="ml-6 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
                       >
-                        {downloading[form.fileName] ? (
+                        {downloading[doc.fileName] ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
                             <span>Downloading...</span>
@@ -150,4 +189,4 @@ const FormsTab = () => {
   );
 };
 
-export default FormsTab;
+export default InformationDocumentsTab;

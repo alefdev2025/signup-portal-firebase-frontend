@@ -243,51 +243,51 @@ const MembershipStatusTab = () => {
               <div className="space-y-5 flex-grow">
                 {membershipStatus?.contractComplete && (
                   <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-3 rounded-xl shadow-sm border-2 border-purple-200/50" style={{ background: 'linear-gradient(135deg, #4b3865 0%, #5d4480 50%, #6c5578 100%)' }}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <div className="p-2.5 rounded-xl shadow-sm" style={{ background: 'linear-gradient(135deg, #4e3a6f 0%, #5d4480 50%, #6c5578 100%)' }}>
+                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div className="flex-1 border-b border-dotted border-purple-100 pb-2">
-                      <p className="font-medium text-gray-800 text-lg">Contract Completed</p>
+                      <p className="font-medium text-gray-800 text-base">Contract Completed</p>
                       <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.contractDate)}</p>
                     </div>
                   </div>
                 )}
                 {membershipStatus?.agreementReceived && (
                   <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #5d4480 0%, #6c5578 50%, #7b5670 100%)' }}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <div className="p-2.5 rounded-xl shadow-sm" style={{ background: 'linear-gradient(135deg, #5d4480 0%, #6c5578 50%, #7b5670 100%)' }}>
+                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800 text-lg">Agreement Received</p>
+                      <p className="font-medium text-gray-800 text-base">Agreement Received</p>
                       <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementReceived)}</p>
                     </div>
                   </div>
                 )}
                 {membershipStatus?.agreementSent && (
                   <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #6c5578 0%, #7b5670 50%, #8a5f64 100%)' }}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #6c5578 0%, #7b5670 50%, #8a5f64 100%)' }}>
+                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800 text-lg">Agreement Sent</p>
+                      <p className="font-medium text-gray-800 text-base">Agreement Sent</p>
                       <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementSent)}</p>
                     </div>
                   </div>
                 )}
                 <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                  <div className="p-3 rounded-xl" style={{ background: 'linear-gradient(135deg, #7b5670 0%, #8a5f64 50%, #996b66 100%)' }}>
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #7b5670 0%, #8a5f64 50%, #996b66 100%)' }}>
+                    <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800 text-lg">Joined Alcor</p>
+                    <p className="font-medium text-gray-800 text-base">Joined Alcor</p>
                     <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.memberJoinDate)}</p>
                   </div>
                 </div>
@@ -306,11 +306,11 @@ const MembershipStatusTab = () => {
                   <div className="p-2 rounded-full bg-white border-2" 
                     style={{ borderColor: membershipStatus?.hasESignature ? '#5d4480' : '#e5e7eb' }}>
                     {membershipStatus?.hasESignature ? (
-                      <svg className="w-6 h-6" fill="none" stroke="#5d4480" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#5d4480" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     )}
@@ -322,11 +322,11 @@ const MembershipStatusTab = () => {
                   <div className="p-2 rounded-full bg-white border-2"
                     style={{ borderColor: membershipStatus?.hasAuthorizationConsent ? '#6c5578' : '#e5e7eb' }}>
                     {membershipStatus?.hasAuthorizationConsent ? (
-                      <svg className="w-6 h-6" fill="none" stroke="#6c5578" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#6c5578" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     )}
@@ -338,27 +338,27 @@ const MembershipStatusTab = () => {
                   <div className="p-2 rounded-full bg-white border-2"
                     style={{ borderColor: membershipStatus?.paidInitialDues ? '#7b5670' : '#e5e7eb' }}>
                     {membershipStatus?.paidInitialDues ? (
-                      <svg className="w-6 h-6" fill="none" stroke="#7b5670" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#7b5670" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     )}
                   </div>
-                  <span className="text-gray-800 text-sm font-normal">Proof of Funding</span>
+                  <span className="text-gray-800 text-sm font-normal">Initial Dues Paid</span>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-white border-2"
                     style={{ borderColor: membershipStatus?.hasProofOfFunding ? '#8a5f64' : '#e5e7eb' }}>
                     {membershipStatus?.hasProofOfFunding ? (
-                      <svg className="w-6 h-6" fill="none" stroke="#8a5f64" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#8a5f64" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     )}
