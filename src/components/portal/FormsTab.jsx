@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Download, FileText, Shield, Clock } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
+import formsHeaderImage from '../../assets/images/forms-image.jpg'; // You may need to add this image
+import pdfImage from '../../assets/images/pdf-image.png';
 
 const FormsTab = () => {
   const [downloading, setDownloading] = useState({});
@@ -82,69 +84,179 @@ const FormsTab = () => {
     }
   ];
 
-  return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen">
-      <h1 className="text-4xl font-light text-[#2a2346] mb-10">Forms</h1>
-      
-      <div className="space-y-8">
-        {formCategories.map((category, categoryIndex) => {
-          const IconComponent = category.icon;
-          return (
-            <div key={categoryIndex} className="bg-white rounded-lg shadow-xl p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, #4b3865 0%, #5d4480 25%, #6c5578 50%, #7b5670 75%, #8a5f64 100%)` }}
-                >
-                  <IconComponent className="w-6 h-6 text-white" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-medium text-[#2a2346]">{category.title}</h2>
-                  <p className="text-[#6a5b8a] text-sm mt-1">{category.description}</p>
-                </div>
-              </div>
+  // Flatten all forms into a single array for the grid
+  const allForms = formCategories.flatMap(category => 
+    category.forms.map(form => ({
+      ...form,
+      categoryTitle: category.title,
+      categoryIcon: category.icon
+    }))
+  );
 
-              <div className="space-y-5">
-                {category.forms.map((form, formIndex) => (
-                  <div 
-                    key={formIndex} 
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden"
-                  >
-                    {/* Colored accent band */}
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-[#3a5a8f] via-[#4a6fa5] to-[#6b8fc4]"></div>
-                    
-                    <div className="flex items-center justify-between pl-7 pr-8 py-8">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-[#2a2346] text-lg mb-2">{form.title}</h3>
-                        <p className="text-sm text-[#6b7280]">{form.description}</p>
-                      </div>
-                      
-                      <button
-                        onClick={() => handleDownload(form.fileName)}
-                        disabled={downloading[form.fileName]}
-                        className="ml-6 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {downloading[form.fileName] ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
-                            <span>Downloading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>Download</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+  return (
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
+      <div>
+        {/* Forms Section */}
+        <div className="mb-16">
+          <div className="bg-white rounded-lg shadow-xl p-8 animate-fadeInUp">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
+              {/* Text content - left side */}
+              <div className="flex-1">
+                <style>{`
+                  .forms-title {
+                    font-size: 1.375rem;
+                  }
+                  @media (min-width: 768px) {
+                    .forms-title {
+                      font-size: 1.875rem;
+                    }
+                  }
+                `}</style>
+                {/* Mobile gradient - shows above title */}
+                <div className="mb-3 sm:hidden">
+                  <div className="h-4 w-40" style={{
+                    background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
+                  }}></div>
+                </div>
+                <h2 className="forms-title font-thin text-[#2a2346] mb-6 tracking-widest">FORMS</h2>
+                <p className="text-gray-600 text-base leading-relaxed max-w-xl">
+                  Essential forms and documents for your Alcor membership. 
+                  Download, complete, and submit these forms to ensure your 
+                  cryopreservation arrangements are properly documented.
+                </p>
+              </div>
+              
+              {/* Image - right side */}
+              <div className="relative w-full lg:w-96 h-56 lg:h-48 rounded-lg overflow-hidden shadow-md">
+                <img 
+                  src={formsHeaderImage} 
+                  alt="Forms" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 right-0">
+                  <div className="px-3 py-1 sm:px-4 sm:py-2" style={{
+                    background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
+                  }}>
+                    <p className="text-white font-semibold text-sm sm:text-base tracking-wider">
+                      Member Forms
+                    </p>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
-          );
-        })}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-y-10">
+              {allForms.map((form, index) => {
+                const IconComponent = form.categoryIcon;
+                return (
+                  <div 
+                    key={index} 
+                    className={`bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
+                      index < 3 ? 'animation-delay-100' : 
+                      index < 6 ? 'animation-delay-200' : 
+                      index < 9 ? 'animation-delay-300' : 
+                      'animation-delay-400'
+                    }`}
+                  >
+                    <div className="p-5 pb-3 pr-3 flex h-full">
+                      <div className="flex-shrink-0 mr-4">
+                        <img 
+                          src={pdfImage} 
+                          alt="PDF" 
+                          className="w-16 h-20 object-contain"
+                        />
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-[#2a2346] text-base leading-tight">{form.title}</h3>
+                          <p className="text-xs text-[#6a5b8a] mt-1 line-clamp-2">{form.description}</p>
+                        </div>
+                        
+                        <button 
+                          onClick={() => handleDownload(form.fileName)}
+                          disabled={downloading[form.fileName]}
+                          className="self-end mt-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          {downloading[form.fileName] ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
+                              <span className="text-sm">Downloading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              <span className="text-sm">Download</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Form Categories Info Section */}
+
+        <style>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-fadeIn {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+          }
+
+          .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+          }
+
+          .animation-delay-100 {
+            animation-delay: 100ms;
+          }
+
+          .animation-delay-200 {
+            animation-delay: 200ms;
+          }
+
+          .animation-delay-300 {
+            animation-delay: 300ms;
+          }
+
+          .animation-delay-400 {
+            animation-delay: 400ms;
+          }
+
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+        `}</style>
       </div>
     </div>
   );

@@ -225,8 +225,6 @@ export const getMemberAgreement = async (contactId, agreementId) => {
   return apiCall(`/api/salesforce/member/${contactId}/agreements/${agreementId}`);
 };
 
-// Add these to your existing memberInfo.js file
-
 // Documents
 export const getMemberDocuments = async (contactId) => {
   console.log('[getMemberDocuments] 1. Starting with contactId:', contactId);
@@ -359,4 +357,104 @@ export const deleteMemberDocument = async (contactId, documentId, documentType =
   return apiCall(`/api/salesforce/member/${contactId}/documents/${documentId}?type=${documentType}`, {
     method: 'DELETE'
   });
+};
+
+// Video Testimony
+export const getMemberVideoTestimony = async (contactId) => {
+  return apiCall(`/api/salesforce/member/${contactId}/video-testimony`);
+};
+
+export const uploadMemberVideoTestimony = async (contactId, formData) => {
+  try {
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`;
+    
+    console.log('[VideoTestimony] Uploading video testimony for contact:', contactId);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[VideoTestimony] Upload error:', errorText);
+      
+      return {
+        success: false,
+        error: `Failed to upload video testimony: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    const data = await response.json();
+    console.log('[VideoTestimony] Upload successful');
+    return data;
+  } catch (error) {
+    console.error('[VideoTestimony] Upload error:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+export const deleteMemberVideoTestimony = async (contactId) => {
+  return apiCall(`/api/salesforce/member/${contactId}/video-testimony`, {
+    method: 'DELETE'
+  });
+};
+
+export const downloadMemberVideoTestimony = async (contactId) => {
+  try {
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`;
+    
+    console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[VideoTestimony] Download error:', errorText);
+      
+      return {
+        success: false,
+        error: `Failed to download video testimony: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    // Get file info from headers
+    const contentDisposition = response.headers.get('content-disposition');
+    const contentType = response.headers.get('content-type');
+    
+    let filename = 'video-testimony.mp4';
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (fileNameMatch && fileNameMatch[1]) {
+        filename = fileNameMatch[1].replace(/['"]/g, '');
+      }
+    }
+
+    const blob = await response.blob();
+    
+    console.log('[VideoTestimony] Download successful');
+    return {
+      success: true,
+      data: blob,
+      filename: filename,
+      contentType: contentType
+    };
+  } catch (error) {
+    console.error('[VideoTestimony] Download error:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
 };

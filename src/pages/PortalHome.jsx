@@ -20,6 +20,7 @@ import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
+import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
 
 const PortalHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -58,14 +59,18 @@ const PortalHome = () => {
         return <MembershipStatusTab />;
       case 'membership-myinfo':
         return <MyInformationTab />;
+      case 'membership-memberfiles':
+        return <DocumentsTab contactId={salesforceContactId} />;
+      case 'membership-video':
+        return <VideoTestimonyTab contactId={salesforceContactId} />;
       
       // Documents subtabs
       case 'documents':
-        return <DocumentsTab contactId={salesforceContactId} />;
-      case 'documents-documents':
-        return <DocumentsTab contactId={salesforceContactId} />;
+        return <FormsTab />;
       case 'documents-forms':
         return <FormsTab />;
+      case 'documents-information':
+        return <InformationDocumentsTab />;
       
       // Payments subtabs
       case 'payments':
@@ -80,8 +85,6 @@ const PortalHome = () => {
       // Resources subtabs
       case 'resources':
         return <ResourcesTab />;
-      case 'resources-information':
-        return <InformationDocumentsTab />;
       case 'resources-media':
         return <MediaTab />;
       case 'resources-community':

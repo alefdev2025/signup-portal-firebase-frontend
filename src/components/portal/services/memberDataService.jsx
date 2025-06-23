@@ -14,7 +14,11 @@ import {
   getMemberDocuments,
   getMemberDocument,
   uploadMemberDocument,
-  deleteMemberDocument
+  deleteMemberDocument,
+  getMemberVideoTestimony,
+  uploadMemberVideoTestimony,
+  deleteMemberVideoTestimony,
+  downloadMemberVideoTestimony
 } from './salesforce/memberInfo';
 
 class MemberDataService {
@@ -155,6 +159,48 @@ class MemberDataService {
   async downloadDocument(contactId, documentId, documentType) {
     return getMemberDocument(contactId, documentId, documentType);
   }
+
+  // VIDEO TESTIMONY
+  async getVideoTestimony(contactId) {
+    return this.fetchAndCache(contactId, 'videoTestimony', getMemberVideoTestimony);
+  }
+
+  async uploadVideoTestimony(contactId, formData) {
+    try {
+      const result = await uploadMemberVideoTestimony(contactId, formData);
+      
+      if (result.success) {
+        // Clear cache to force refresh
+        this.clearCacheEntry(contactId, 'videoTestimony');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('[MemberDataService] Error uploading video testimony:', error);
+      throw error;
+    }
+  }
+
+  async deleteVideoTestimony(contactId) {
+    try {
+      const result = await deleteMemberVideoTestimony(contactId);
+      
+      if (result.success) {
+        // Clear cache
+        this.clearCacheEntry(contactId, 'videoTestimony');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('[MemberDataService] Error deleting video testimony:', error);
+      throw error;
+    }
+  }
+
+  async downloadVideoTestimony(contactId) {
+    // Don't cache downloads
+    return downloadMemberVideoTestimony(contactId);
+  }
   
   // Helper to clear a specific cache entry
   clearCacheEntry(contactId, dataType) {
@@ -190,7 +236,8 @@ class MemberDataService {
       this.getMedicalInfo(contactId),
       this.getLegalInfo(contactId),
       this.getMemberProfile(contactId),
-      this.getDocuments(contactId) // Documents included!
+      this.getDocuments(contactId),
+      this.getVideoTestimony(contactId) // Video testimony included!
     ]).then(results => {
       const errors = results.filter(r => r.status === 'rejected');
       if (errors.length > 0) {

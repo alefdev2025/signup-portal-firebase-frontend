@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Download, FileText, Shield, DollarSign, Clipboard } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
+import pdfImage from '../../assets/images/pdf-image.png';
+import informationImage from '../../assets/images/information-image.JPG';
+import emergencyImage from '../../components/portal/emergency-image.jpg';
+import financialImage from '../../components/portal/financial-image.jpg';
+import educationImage from '../../assets/images/education-image.jpg';
 
 const InformationDocumentsTab = () => {
   const [downloading, setDownloading] = useState({});
@@ -39,8 +43,9 @@ const InformationDocumentsTab = () => {
   const informationDocuments = [
     {
       title: "General Information",
-      icon: FileText,
-      description: "Essential Alcor information documents",
+      description: "Essential Alcor information documents that provide comprehensive guides about membership, preservation options, and services. These foundational resources will help you understand the full scope of what Alcor offers.",
+      image: "placeholder-general.jpg",
+      imageLabel: "General Info",
       documents: [
         {
           title: "Membership Overview",
@@ -64,8 +69,9 @@ const InformationDocumentsTab = () => {
     },
     {
       title: "Emergency Information",
-      icon: Shield,
-      description: "Critical emergency guidance",
+      description: "Critical emergency guidance and protocols for medical professionals and family members. These time-sensitive documents ensure proper procedures are followed when every moment counts.",
+      image: "placeholder-emergency.jpg",
+      imageLabel: "Emergency",
       documents: [
         {
           title: "Hospital Information Sheet",
@@ -83,8 +89,9 @@ const InformationDocumentsTab = () => {
     },
     {
       title: "Financial Information",
-      icon: DollarSign,
-      description: "Funding and insurance information",
+      description: "Funding and insurance information to help you plan for the financial aspects of cryopreservation. Learn about costs, payment options, and trusted insurance providers who understand cryonics funding.",
+      image: "placeholder-financial.jpg",
+      imageLabel: "Financial",
       documents: [
         {
           title: "Life Insurance Agent Directory",
@@ -102,8 +109,9 @@ const InformationDocumentsTab = () => {
     },
     {
       title: "Educational Resources",
-      icon: Clipboard,
-      description: "Research and educational materials",
+      description: "Research papers, articles, and educational materials that explore the science and philosophy behind cryonics. Deepen your understanding with these carefully selected resources from experts in the field.",
+      image: "placeholder-educational.jpg",
+      imageLabel: "Educational",
       documents: [
         {
           title: "Why Cryonics Makes Sense",
@@ -121,69 +129,178 @@ const InformationDocumentsTab = () => {
     }
   ];
 
-  return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen">
-      <h1 className="text-4xl font-light text-[#2a2346] mb-10">Alcor Information Documents</h1>
-      
-      <div className="space-y-8">
-        {informationDocuments.map((category, categoryIndex) => {
-          const IconComponent = category.icon;
-          return (
-            <div key={categoryIndex} className="bg-white rounded-lg shadow-xl p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, #4b3865 0%, #5d4480 25%, #6c5578 50%, #7b5670 75%, #8a5f64 100%)` }}
-                >
-                  <IconComponent className="w-6 h-6 text-white" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-medium text-[#2a2346]">{category.title}</h2>
-                  <p className="text-[#6a5b8a] text-sm mt-1">{category.description}</p>
-                </div>
-              </div>
+  // Flatten all documents into a single array for the grid
+  const allDocuments = informationDocuments.flatMap(category => 
+    category.documents.map(doc => ({
+      ...doc,
+      categoryTitle: category.title
+    }))
+  );
 
-              <div className="space-y-5">
-                {category.documents.map((doc, docIndex) => (
-                  <div 
-                    key={docIndex} 
-                    className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden"
-                  >
-                    {/* Colored accent band */}
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-[#3a5a8f] via-[#4a6fa5] to-[#6b8fc4]"></div>
+  return (
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
+      <div>
+        {/* Information Documents Section */}
+        <div className="space-y-12">
+          {informationDocuments.map((category, categoryIndex) => {
+            return (
+              <div key={categoryIndex} className="bg-white rounded-lg p-8 animate-fadeInUp" style={{animationDelay: `${categoryIndex * 150}ms`, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'}}>
+                <div className="py-8">
+                  {/* Category Header with Image */}
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-16">
+                    {/* Text content - left side */}
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-thin text-[#2a2346] mb-4 tracking-wider">{category.title.toUpperCase()}</h3>
+                      <p className="text-gray-600 text-base leading-relaxed max-w-xl">
+                        {category.description}
+                      </p>
+                    </div>
                     
-                    <div className="flex items-center justify-between pl-7 pr-8 py-8">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-[#2a2346] text-lg mb-2">{doc.title}</h3>
-                        <p className="text-sm text-[#6b7280]">{doc.description}</p>
+                    {/* Category Image - right side */}
+                    <div className="relative w-full lg:w-80 h-48 lg:h-40 rounded-lg overflow-hidden shadow-md -mt-4">
+                      {categoryIndex === 0 ? (
+                        <img 
+                          src={informationImage} 
+                          alt={category.imageLabel}
+                          className="w-full h-full object-cover object-top grayscale"
+                        />
+                      ) : categoryIndex === 1 ? (
+                        <img 
+                          src={emergencyImage} 
+                          alt={category.imageLabel}
+                          className="w-full h-full object-cover object-top grayscale"
+                        />
+                      ) : categoryIndex === 2 ? (
+                        <img 
+                          src={financialImage} 
+                          alt={category.imageLabel}
+                          className="w-full h-full object-cover object-top grayscale"
+                        />
+                      ) : (
+                        <img 
+                          src={educationImage} 
+                          alt={category.imageLabel}
+                          className="w-full h-full object-cover object-top grayscale"
+                        />
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0">
+                        <div className="py-2" style={{
+                          background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
+                        }}>
+                          <p className="text-white font-semibold text-sm tracking-wider text-center">
+                            {category.imageLabel}
+                          </p>
+                        </div>
                       </div>
-                      
-                      <button
-                        onClick={() => handleInfoDocDownload(doc.fileName)}
-                        disabled={downloading[doc.fileName]}
-                        className="ml-6 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {downloading[doc.fileName] ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
-                            <span>Downloading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>Download</span>
-                          </>
-                        )}
-                      </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Documents Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {category.documents.map((doc, docIndex) => (
+                      <div 
+                        key={docIndex} 
+                        className={`bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn animation-delay-${(categoryIndex * 100) + 100}`}
+                      >
+                        <div className="p-5 pb-3 pr-3 flex h-full">
+                          <div className="flex-shrink-0 mr-4">
+                            <img 
+                              src={pdfImage} 
+                              alt="PDF" 
+                              className="w-16 h-20 object-contain"
+                            />
+                          </div>
+                          
+                          <div className="flex-1 flex flex-col">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-[#2a2346] text-base leading-tight">{doc.title}</h3>
+                              <p className="text-xs text-[#6a5b8a] mt-1 line-clamp-2">{doc.description}</p>
+                            </div>
+                            
+                            <button 
+                              onClick={() => handleInfoDocDownload(doc.fileName)}
+                              disabled={downloading[doc.fileName]}
+                              className="self-end mt-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {downloading[doc.fileName] ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
+                                  <span className="text-sm">Downloading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  <span className="text-sm">Download</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        <style>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-fadeIn {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+          }
+
+          .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+          }
+
+          .animation-delay-100 {
+            animation-delay: 100ms;
+          }
+
+          .animation-delay-200 {
+            animation-delay: 200ms;
+          }
+
+          .animation-delay-300 {
+            animation-delay: 300ms;
+          }
+
+          .animation-delay-400 {
+            animation-delay: 400ms;
+          }
+
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+        `}</style>
       </div>
     </div>
   );
