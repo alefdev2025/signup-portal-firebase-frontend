@@ -42,7 +42,7 @@ const InformationDocumentsTab = () => {
 
   const informationDocuments = [
     {
-      title: "General Information",
+      title: "General",
       description: "Essential Alcor information documents that provide comprehensive guides about membership, preservation options, and services. These foundational resources will help you understand the full scope of what Alcor offers.",
       image: "placeholder-general.jpg",
       imageLabel: "General Info",
@@ -68,7 +68,7 @@ const InformationDocumentsTab = () => {
       ]
     },
     {
-      title: "Emergency Information",
+      title: "Emergency",
       description: "Critical emergency guidance and protocols for medical professionals and family members. These time-sensitive documents ensure proper procedures are followed when every moment counts.",
       image: "placeholder-emergency.jpg",
       imageLabel: "Emergency",
@@ -88,7 +88,7 @@ const InformationDocumentsTab = () => {
       ]
     },
     {
-      title: "Financial Information",
+      title: "Financial",
       description: "Funding and insurance information to help you plan for the financial aspects of cryopreservation. Learn about costs, payment options, and trusted insurance providers who understand cryonics funding.",
       image: "placeholder-financial.jpg",
       imageLabel: "Financial",
@@ -138,31 +138,31 @@ const InformationDocumentsTab = () => {
   );
 
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative" style={{ maxWidth: '100vw' }}>
       <div>
         {/* Information Documents Section */}
         <div className="space-y-12">
           {informationDocuments.map((category, categoryIndex) => {
             return (
-              <div key={categoryIndex} className="bg-white rounded-lg p-8 animate-fadeInUp" style={{animationDelay: `${categoryIndex * 150}ms`, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'}}>
-                <div className="py-8">
+              <div key={categoryIndex} className="bg-white rounded-lg p-4 sm:p-8 animate-fadeInUp" style={{animationDelay: `${categoryIndex * 150}ms`, boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)'}}>
+                <div className="py-0">
                   {/* Category Header with Image */}
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-16">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
                     {/* Text content - left side */}
                     <div className="flex-1">
-                      <h3 className="text-2xl font-thin text-[#2a2346] mb-4 tracking-wider">{category.title.toUpperCase()}</h3>
-                      <p className="text-gray-600 text-base leading-relaxed max-w-xl">
+                      <h3 className="text-xl sm:text-3xl font-semibold text-gray-800 mb-6">{category.title.toUpperCase()}</h3>
+                      <p className="text-gray-500 text-base leading-relaxed max-w-xl">
                         {category.description}
                       </p>
                     </div>
                     
                     {/* Category Image - right side */}
-                    <div className="relative w-full lg:w-80 h-48 lg:h-40 rounded-lg overflow-hidden shadow-md -mt-4">
+                    <div className="relative w-full lg:w-80 h-48 lg:h-40 rounded-lg overflow-hidden shadow-md">
                       {categoryIndex === 0 ? (
                         <img 
                           src={informationImage} 
                           alt={category.imageLabel}
-                          className="w-full h-full object-cover object-top grayscale"
+                          className="w-full h-full object-cover object-top grayscale scale-110"
                         />
                       ) : categoryIndex === 1 ? (
                         <img 
@@ -183,11 +183,11 @@ const InformationDocumentsTab = () => {
                           className="w-full h-full object-cover object-top grayscale"
                         />
                       )}
-                      <div className="absolute bottom-0 left-0 right-0">
-                        <div className="py-2" style={{
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-3 py-1 sm:px-4 sm:py-2" style={{
                           background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
                         }}>
-                          <p className="text-white font-semibold text-sm tracking-wider text-center">
+                          <p className="text-white font-semibold text-xs sm:text-sm tracking-wider">
                             {category.imageLabel}
                           </p>
                         </div>
@@ -196,7 +196,7 @@ const InformationDocumentsTab = () => {
                   </div>
 
                   {/* Documents Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-sm mx-auto md:max-w-none">
                     {category.documents.map((doc, docIndex) => (
                       <div 
                         key={docIndex} 
@@ -213,7 +213,7 @@ const InformationDocumentsTab = () => {
                           
                           <div className="flex-1 flex flex-col">
                             <div className="flex-1">
-                              <h3 className="font-medium text-[#2a2346] text-base leading-tight">{doc.title}</h3>
+                              <h3 className="font-medium text-[#2a2346] text-lg leading-tight">{doc.title}</h3>
                               <p className="text-xs text-[#6a5b8a] mt-1 line-clamp-2">{doc.description}</p>
                             </div>
                             
@@ -248,6 +248,12 @@ const InformationDocumentsTab = () => {
         </div>
 
         <style>{`
+          /* Prevent horizontal scroll on mobile */
+          html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+          }
+          
           @keyframes fadeIn {
             from {
               opacity: 0;

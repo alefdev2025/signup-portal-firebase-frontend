@@ -94,14 +94,14 @@ const FormsTab = () => {
   );
 
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-x-hidden" style={{ maxWidth: '100vw' }}>
-      <div className="overflow-x-hidden">
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative" style={{ maxWidth: '100vw' }}>
+      <div>
         {/* Forms Section */}
         <div className="mb-16">
           <div 
             className="bg-white rounded-lg p-4 sm:p-8 animate-fadeInUp overflow-hidden" 
             style={{ 
-              boxShadow: '0 -20px 40px rgba(0, 0, 0, 0.25), 0 -10px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 0 20px rgba(0, 0, 0, 0.10), 0 0 10px rgba(0, 0, 0, 0.08)'
             }}
           >
             <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
@@ -117,25 +117,19 @@ const FormsTab = () => {
                     }
                   }
                 `}</style>
-                {/* Mobile gradient - shows above title */}
-                <div className="mb-4 sm:hidden">
-                  <div className="h-2 w-40" style={{
-                    background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
-                  }}></div>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 sm:normal-case uppercase mb-6">Forms</h2>
-                <p className="text-gray-600 text-base leading-relaxed max-w-3xl">
+              <h2 className="text-xl sm:text-3xl font-semibold text-gray-800 uppercase mb-6">FORMS</h2>
+              <p className="text-gray-500 text-base leading-relaxed max-w-3xl">
                   Essential forms and documents for your Alcor membership. 
                   Download, complete, and submit these forms to ensure your 
                   cryopreservation arrangements are properly documented.
-                  Each form has been carefully designed to capture important information
-                  about your preferences and medical history. All submissions are 
-                  securely stored and can be updated at any time through your member portal.
+                  Need help? <a href="#" className="text-blue-600 hover:underline">Contact support</a>. 
+                  You can also upload completed forms in the <a href="/member-files" className="text-blue-600 hover:underline">Member Files</a> section 
+                  of your portal.
                 </p>
               </div>
               
               {/* Image - right side */}
-              <div className="relative w-full lg:w-96 h-56 lg:h-48 rounded-lg overflow-hidden shadow-md">
+              <div className="relative w-full lg:w-80 h-48 lg:h-40 rounded-lg overflow-hidden shadow-md">
                 <img 
                   src={formsHeaderImage} 
                   alt="Forms" 
@@ -159,12 +153,17 @@ const FormsTab = () => {
                 return (
                   <div 
                     key={index} 
-                    className={`bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
+                    className={`bg-white border border-gray-200 rounded-2xl transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
                       index < 3 ? 'animation-delay-100' : 
                       index < 6 ? 'animation-delay-200' : 
                       index < 9 ? 'animation-delay-300' : 
                       'animation-delay-400'
                     }`}
+                    style={{
+                      boxShadow: '0 0 10px rgba(0, 0, 0, 0.08)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.12)'}
+                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.08)'}
                   >
                     <div className="p-5 pb-3 pr-3 flex h-full">
                       <div className="flex-shrink-0 mr-4">
