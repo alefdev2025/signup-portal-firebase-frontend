@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const NotificationBell = ({ activeTab }) => {
+const NotificationBell = ({ activeTab, setActiveTab }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([
     {
@@ -110,6 +110,11 @@ const NotificationBell = ({ activeTab }) => {
     }
   };
 
+  const handleViewAllNotifications = () => {
+    setIsOpen(false);
+    setActiveTab('account-notifications');
+  };
+
   return (
     <div className="relative">
       <button 
@@ -192,7 +197,10 @@ const NotificationBell = ({ activeTab }) => {
 
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-200">
-            <button className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium">
+            <button 
+              onClick={handleViewAllNotifications}
+              className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
+            >
               View all notifications
             </button>
           </div>

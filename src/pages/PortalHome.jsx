@@ -1,5 +1,3 @@
-// PortalHome.jsx - Using the MemberPortal context like other components
-
 import React, { useState } from 'react';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
 
@@ -8,6 +6,7 @@ import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
 import OverviewTab from '../components/portal/OverviewTab';
 import AccountSettingsTab from '../components/portal/AccountSettingsTab';
+import NotificationsTab from '../components/portal/NotificationsTab';
 import MembershipStatusTab from '../components/portal/MembershipStatusTab';
 import MyInformationTab from '../components/portal/MyInformationTab';
 import ContractsTab from '../components/portal/ContractsTab';
@@ -21,6 +20,35 @@ import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
+
+// Placeholder components for main tabs that don't have content yet
+const AccountTab = () => (
+  <div className="text-center py-16">
+    <h2 className="text-2xl font-medium text-gray-900 mb-4">Account</h2>
+    <p className="text-gray-600">Please select a sub-item from the menu</p>
+  </div>
+);
+
+const MembershipTab = () => (
+  <div className="text-center py-16">
+    <h2 className="text-2xl font-medium text-gray-900 mb-4">Membership</h2>
+    <p className="text-gray-600">Please select a sub-item from the menu</p>
+  </div>
+);
+
+const PaymentsTab = () => (
+  <div className="text-center py-16">
+    <h2 className="text-2xl font-medium text-gray-900 mb-4">Payments</h2>
+    <p className="text-gray-600">Please select a sub-item from the menu</p>
+  </div>
+);
+
+const ResourcesTab = () => (
+  <div className="text-center py-16">
+    <h2 className="text-2xl font-medium text-gray-900 mb-4">Resources</h2>
+    <p className="text-gray-600">Please select a sub-item from the menu</p>
+  </div>
+);
 
 const PortalHome = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -46,11 +74,13 @@ const PortalHome = () => {
       case 'overview': 
         return <OverviewTab />;
       
-      // Account only has settings
+      // Account tabs
       case 'account':
-        return <AccountSettingsTab />;
+        return <AccountTab />;
       case 'account-settings':
         return <AccountSettingsTab />;
+      case 'account-notifications':
+        return <NotificationsTab />;
       
       // Membership subtabs
       case 'membership':
@@ -99,32 +129,21 @@ const PortalHome = () => {
 
   return (
     <div 
-      className="min-h-screen p-0 md:p-4"
+      className="min-h-screen relative overflow-hidden"
       style={{ 
-        fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-        background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #e5e7eb 100%)' 
+        fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
       }}
     >
-      <div className="relative flex h-screen md:h-[calc(100vh-2rem)] md:rounded-2xl overflow-hidden shadow-2xl bg-white">
-        {/* Corner accent lines */}
-        <div className="hidden md:block">
-          {/* Top-left corner */}
-          <div className="absolute top-0 left-0 w-20 h-[1px] bg-white/30"></div>
-          <div className="absolute top-0 left-0 w-[1px] h-20 bg-white/30"></div>
-          
-          {/* Top-right corner */}
-          <div className="absolute top-0 right-0 w-20 h-[1px] bg-white/30"></div>
-          <div className="absolute top-0 right-0 w-[1px] h-20 bg-white/30"></div>
-          
-          {/* Bottom-left corner */}
-          <div className="absolute bottom-0 left-0 w-20 h-[1px] bg-white/30"></div>
-          <div className="absolute bottom-0 left-0 w-[1px] h-20 bg-white/30"></div>
-          
-          {/* Bottom-right corner */}
-          <div className="absolute bottom-0 right-0 w-20 h-[1px] bg-white/30"></div>
-          <div className="absolute bottom-0 right-0 w-[1px] h-20 bg-white/30"></div>
-        </div>
-        
+      {/* Full screen gradient background */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to bottom, #12243b 0%, #44365f 50%, #806083 100%)'
+        }}
+      />
+
+      {/* Main container */}
+      <div className="relative h-screen flex">
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div 
@@ -135,21 +154,29 @@ const PortalHome = () => {
         )}
 
         {/* Sidebar */}
-        <PortalSidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          profileImage={profileImage}
-          isMobileMenuOpen={isMobileMenuOpen}
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-        />
+        <div className="relative z-20">
+          <PortalSidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            profileImage={profileImage}
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+          />
+        </div>
 
-        {/* Main content area */}
-        <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden md:ml-4">
-          <PortalHeader setIsMobileMenuOpen={setIsMobileMenuOpen} activeTab={activeTab} />
-          
-          <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
-            {renderActiveTab()}
-          </main>
+        {/* Main content area with rounded corners */}
+        <div className="flex-1 flex flex-col p-2 md:p-3">
+          <div className="flex-1 bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden">
+            <PortalHeader 
+              setIsMobileMenuOpen={setIsMobileMenuOpen} 
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+            
+            <main className="h-[calc(100%-4rem)] p-4 sm:p-8 overflow-y-auto bg-gray-50">
+              {renderActiveTab()}
+            </main>
+          </div>
         </div>
       </div>
     </div>

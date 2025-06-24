@@ -12,7 +12,8 @@ const navigationItems = [
       label: 'Account', 
       icon: ( <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg> ),
       subItems: [
-        { id: 'settings', label: 'Settings' }
+        { id: 'settings', label: 'Settings' },
+        { id: 'notifications', label: 'Notifications' }
       ]
     },
     { 
@@ -89,30 +90,26 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
   return (
     <div
       className={`
-        w-64 flex-shrink-0 flex flex-col 
+        w-[200px] md:w-[220px] h-full flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
-        fixed inset-y-0 left-0 z-40 md:relative md:translate-x-0
-        md:rounded-2xl overflow-hidden
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed md:relative
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}
       aria-label="Sidebar"
     >
       {/* Background layer with blue to purple gradient */}
       <div 
-        className="absolute inset-0 md:rounded-2xl"
+        className="absolute inset-0"
         style={{
-          background: 'linear-gradient(to bottom, #12233b 0%, #7c5c87 100%)',
-          margin: '-1px',
-          marginRight: '0'
+          background: 'linear-gradient(to bottom, #12233b 0%, #7c5c87 100%)'
         }}
       />
-      
       {/* Content layer */}
       <div className="relative z-10 flex flex-col h-full">
-        <div className="p-6 pt-10 pb-8 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
           <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
           <button 
-            className="text-gray-400 hover:text-white md:hidden"
+            className="text-white/60 hover:text-white md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="Close menu"
           >
@@ -184,7 +181,7 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
                 <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               )}
             </div>

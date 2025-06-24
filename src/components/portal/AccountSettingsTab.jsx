@@ -39,35 +39,64 @@ const SettingsTab = () => {
   };
 
   const handleToggle = (settingName) => {
-    setSettings(prev => ({
-      ...prev,
-      [settingName]: !prev[settingName]
-    }));
+    const newSettings = {
+      ...settings,
+      [settingName]: !settings[settingName]
+    };
+    setSettings(newSettings);
+    // Autosave
+    saveSettings(newSettings);
   };
 
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    setShowSuccess(false);
+  const saveSettings = async (newSettings) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
 
+      await updateDoc(doc(db, 'users', user.uid), {
+        receiveMediaNotifications: newSettings.receiveMediaNotifications,
+        receiveStaffMessages: newSettings.receiveStaffMessages,
+        twoFactorEnabled: newSettings.twoFactorEnabled,
+        settingsUpdatedAt: new Date()
+      });
+
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
+  };
+
+  const handleRestoreDefaults = async () => {
+    const defaultSettings = {
+      receiveMediaNotifications: false,
+      receiveStaffMessages: true,
+      twoFactorEnabled: false
+    };
+    
+    setSettings(defaultSettings);
+    setSaving(true);
+    
     try {
       const user = auth.currentUser;
       if (!user) {
-        alert('Please log in to save settings');
+        alert('Please log in to restore defaults');
         return;
       }
 
       await updateDoc(doc(db, 'users', user.uid), {
-        receiveMediaNotifications: settings.receiveMediaNotifications,
-        receiveStaffMessages: settings.receiveStaffMessages,
-        twoFactorEnabled: settings.twoFactorEnabled,
+        receiveMediaNotifications: defaultSettings.receiveMediaNotifications,
+        receiveStaffMessages: defaultSettings.receiveStaffMessages,
+        twoFactorEnabled: defaultSettings.twoFactorEnabled,
         settingsUpdatedAt: new Date()
       });
 
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
+      console.error('Error restoring defaults:', error);
+      alert('Failed to restore defaults. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -94,8 +123,11 @@ const SettingsTab = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-8">
       {showSuccess && (
-        <div className="mb-6 bg-green-50 text-green-700 px-4 py-3 rounded-lg">
-          Settings saved successfully
+        <div className="mb-6 bg-green-50 text-green-700 px-4 py-3 rounded-lg flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M5 13l4 4L19 7"></path>
+          </svg>
+          Settings saved automatically
         </div>
       )}
 
@@ -103,82 +135,89 @@ const SettingsTab = () => {
 
       <div className="space-y-4">
         {/* Media Notifications */}
-        <div className="p-6 bg-gray-50 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Bell className="w-5 h-5 text-gray-600" />
-            <div>
-              <h3 className="font-medium text-gray-900">Receive email notifications about new Alcor media</h3>
-              <p className="text-sm text-gray-500">Default: Off</p>
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4 flex-1">
+              <Bell className="w-6 h-6 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">Receive email notifications about new Alcor media</h3>
+                <p className="text-sm text-gray-500 mt-1">Default: Off</p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => handleToggle('receiveMediaNotifications')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-              settings.receiveMediaNotifications ? 'bg-purple-600' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                settings.receiveMediaNotifications ? 'translate-x-6' : 'translate-x-1'
+            <button
+              onClick={() => handleToggle('receiveMediaNotifications')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
+                settings.receiveMediaNotifications ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`${
+                  settings.receiveMediaNotifications ? 'translate-x-3' : '-translate-x-2.5'
+                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Staff Messages */}
-        <div className="p-6 bg-gray-50 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Mail className="w-5 h-5 text-gray-600" />
-            <div>
-              <h3 className="font-medium text-gray-900">Receive email notifications for messages from Alcor staff</h3>
-              <p className="text-sm text-gray-500">Default: On</p>
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4 flex-1">
+              <Mail className="w-6 h-6 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">Receive email notifications for messages from Alcor staff</h3>
+                <p className="text-sm text-gray-500 mt-1">Default: On</p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => handleToggle('receiveStaffMessages')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-              settings.receiveStaffMessages ? 'bg-purple-600' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                settings.receiveStaffMessages ? 'translate-x-6' : 'translate-x-1'
+            <button
+              onClick={() => handleToggle('receiveStaffMessages')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
+                settings.receiveStaffMessages ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`${
+                  settings.receiveStaffMessages ? 'translate-x-3' : '-translate-x-2.5'
+                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* 2FA */}
-        <div className="p-6 bg-gray-50 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Shield className="w-5 h-5 text-gray-600" />
-            <div>
-              <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
-              <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+        <div className="p-6 bg-gray-50 rounded-xl">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4 flex-1">
+              <Shield className="w-6 h-6 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
+                <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account</p>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => handleToggle('twoFactorEnabled')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-              settings.twoFactorEnabled ? 'bg-purple-600' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                settings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
+            <button
+              onClick={() => handleToggle('twoFactorEnabled')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
+                settings.twoFactorEnabled ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`${
+                  settings.twoFactorEnabled ? 'translate-x-3' : '-translate-x-2.5'
+                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex justify-between items-center">
+        <p className="text-sm text-gray-500">Settings are saved automatically</p>
         <button
-          onClick={handleSaveSettings}
+          onClick={handleRestoreDefaults}
           disabled={saving}
-          className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-[#6f2d74] text-white rounded-lg hover:bg-[#5a2460] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? 'Restoring...' : 'Restore Defaults'}
         </button>
       </div>
     </div>

@@ -12,7 +12,8 @@ const navigationItems = [
       label: 'Account', 
       icon: ( <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg> ),
       subItems: [
-        { id: 'settings', label: 'Settings' }
+        { id: 'settings', label: 'Settings' },
+        { id: 'notifications', label: 'Notifications' }
       ]
     },
     { 
@@ -89,30 +90,19 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
   return (
     <div
       className={`
-        w-64 flex-shrink-0 flex flex-col 
+        w-[200px] md:w-[220px] h-full flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
-        fixed inset-y-0 left-0 z-40 md:relative md:translate-x-0
-        md:rounded-2xl overflow-hidden
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed md:relative
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}
       aria-label="Sidebar"
     >
-      {/* Background layer to prevent white lines */}
-      <div 
-        className="absolute inset-0 md:rounded-2xl"
-        style={{
-          background: 'linear-gradient(to bottom, #0e0e2f 0%, #0e0e2f 15%, #1b163a 30%, #1b163a 45%, #2a1b3d 60%, #2a1b3d 75%, #3f2541 90%, #5b2f4b 100%)',
-          margin: '-1px',
-          marginRight: '0'
-        }}
-      />
-      
       {/* Content layer */}
       <div className="relative z-10 flex flex-col h-full">
-        <div className="p-6 pt-10 pb-8 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
           <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
           <button 
-            className="text-gray-400 hover:text-white md:hidden"
+            className="text-white/60 hover:text-white md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="Close menu"
           >
@@ -177,20 +167,20 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
           </div>
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-white/20">
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
               {profileImage ? (
                 <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
-                <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               )}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-white text-sm font-medium truncate">Nikki Olson</p>
-              <p className="text-gray-400 text-xs truncate">Associate Member</p>
+              <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
+              <p className="text-white/80 text-xs truncate">Associate Member</p>
             </div>
           </div>
         </div>

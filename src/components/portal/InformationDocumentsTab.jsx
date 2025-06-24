@@ -196,7 +196,7 @@ const InformationDocumentsTab = () => {
                   </div>
 
                   {/* Documents Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-sm mx-auto md:max-w-none">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-md mx-auto md:max-w-none">
                     {category.documents.map((doc, docIndex) => (
                       <div 
                         key={docIndex} 
