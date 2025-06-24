@@ -21,6 +21,8 @@ import {
   downloadMemberVideoTestimony
 } from './salesforce/memberInfo';
 
+const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+
 class MemberDataService {
   constructor() {
     this.cache = new Map();
@@ -198,8 +200,53 @@ class MemberDataService {
   }
 
   async downloadVideoTestimony(contactId) {
-    // Don't cache downloads
-    return downloadMemberVideoTestimony(contactId);
+    try {
+      console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+      
+      // Use the full backend URL
+      const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'video/mp4, video/*'
+        }
+      });
+  
+      // Check if the response is OK before trying to process it
+      if (!response.ok) {
+        // If the response is not OK, it's likely a JSON error response
+        let errorMessage = 'Failed to download video testimony';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If parsing JSON fails, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+  
+      // Get the content type from response headers
+      const contentType = response.headers.get('content-type') || 'video/mp4';
+      
+      // Get the response as blob for binary data
+      const blob = await response.blob();
+      
+      console.log('[VideoTestimony] Download successful:', {
+        blobSize: blob.size,
+        contentType: contentType
+      });
+  
+      return {
+        success: true,
+        data: blob,
+        contentType: contentType,
+        filename: 'video-testimony.mp4' // You might want to parse this from Content-Disposition header
+      };
+    } catch (error) {
+      console.error('[VideoTestimony] Download error:', error.message);
+      throw error;
+    }
   }
   
   // Helper to clear a specific cache entry
