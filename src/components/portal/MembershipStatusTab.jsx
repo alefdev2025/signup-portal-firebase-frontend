@@ -114,257 +114,247 @@ const MembershipStatusTab = () => {
     return 'In Progress';
   };
 
+  // Uniform light drop shadow for all boxes
+  const boxShadow = 'shadow-md';
+
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen">
-      {/* Member Information - Moved to top */}
-      <div className="bg-white rounded-xl shadow-md p-8 animate-fadeInUp animation-delay-100 border border-gray-200 mb-10 relative">
-        <h3 className="text-xl font-semibold text-gray-800 mb-6">Member Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen max-w-full mx-auto">
+      {/* Member Information - Top Card */}
+      <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200 mb-8 max-w-full mx-auto" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
+        <h3 className="text-xl font-medium text-gray-800 mb-6 flex items-center gap-3 flex-wrap">
+          <div className="bg-[#0e0e2f] p-3 rounded-lg">
+            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          Personal Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
             <p className="text-sm text-gray-500 mb-1 font-light">Full Name</p>
             <p className="font-medium text-gray-800 text-lg">
               {personalInfo?.firstName} {personalInfo?.lastName}
             </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
             <p className="text-sm text-gray-500 mb-1 font-light">Member ID</p>
             <p className="font-medium text-gray-800 text-lg">{personalInfo?.alcorId || 'N/A'}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
             <p className="text-sm text-gray-500 mb-1 font-light">Record Type</p>
             <p className="font-medium text-gray-800 text-lg">{personalInfo?.recordType || 'N/A'}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1 font-light">Status</p>
-            <div className={`px-3 py-1 text-sm font-medium rounded-lg inline-block ${
-              membershipStatus?.contractComplete 
-                ? 'text-green-800 border border-green-200' 
-                : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-            }`}>
-              {getStatus()}
-            </div>
+          <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+            <p className="text-sm text-gray-500 mb-1 font-light">Years of Membership</p>
+            <p className="font-medium text-gray-800 text-lg">{yearsOfMembership}</p>
           </div>
         </div>
       </div>
 
-      {/* Section Separator */}
-      <div className="h-1 my-12 w-1/5 rounded-full bg-gray-400 mx-auto"></div>
-
-      {/* Main content area with new grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        {/* Left content - 2/3 width */}
-        <div className="lg:col-span-2 flex">
-          {/* Member info box - moved to left side */}
-          <div className="bg-white rounded-xl shadow-md p-8 animate-fadeInUp animation-delay-200 w-full border border-gray-200">
-            <div className="h-full flex flex-col">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">{getMembershipType()}</h2>
-              <p className="text-gray-500 mb-6 text-sm font-light">
-                Member since {formatDate(membershipStatus?.memberJoinDate)}
-              </p>
+      {/* Main content area with grid layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 mb-8 max-w-full">
+        {/* Membership Details - 2/3 width */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl animate-fadeInUp animation-delay-100 border border-gray-200 h-full p-6 sm:p-10" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
+            <div className="flex items-center gap-3 mb-6 flex-wrap">
+              <div className="bg-[#2a1b3d] p-3 rounded-lg flex-shrink-0">
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-medium text-gray-800">{getMembershipType()}</h2>
+                <p className="text-gray-400 text-sm font-light">
+                  Member since {formatDate(membershipStatus?.memberJoinDate)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Status</p>
+                <div className={`px-3 py-1 text-sm font-medium rounded-lg inline-block ${
+                  membershipStatus?.contractComplete 
+                    ? 'bg-gray-100 text-black border border-gray-300' 
+                    : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                }`}>
+                  {getStatus()}
+                </div>
+              </div>
               
-              <div className="grid grid-cols-2 gap-6 flex-grow">
-                <div>
-                  <p className="text-sm text-gray-500 mb-2 font-light">Status</p>
-                  <p className="text-base font-medium text-gray-800">
-                    {getStatus()}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-500 mb-2 font-light">Years of Membership</p>
-                  <p className="text-2xl font-light text-gray-800">{yearsOfMembership}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-500 mb-2 font-light">Contract Date</p>
-                  <p className="text-lg font-medium text-gray-800">{formatDate(membershipStatus?.contractDate)}</p>
-                </div>
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Contract Date</p>
+                <p className="font-medium text-gray-800 text-lg">{formatDate(membershipStatus?.contractDate)}</p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Join Date</p>
+                <p className="font-medium text-gray-800 text-lg">{formatDate(membershipStatus?.memberJoinDate)}</p>
+              </div>
 
-                <div>
-                  <p className="text-sm text-gray-500 mb-2 font-light">Member ID</p>
-                  <p className="text-lg font-medium text-gray-800">{personalInfo?.alcorId || 'N/A'}</p>
-                </div>
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Preservation Type</p>
+                <p className="font-medium text-gray-800 text-lg">
+                  {cryoArrangements?.methodOfPreservation?.includes('Whole Body') 
+                    ? 'Whole Body' 
+                    : cryoArrangements?.methodOfPreservation?.includes('Neuro')
+                    ? 'Neuro'
+                    : 'N/A'}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right side - 1/3 width */}
-        <div className="lg:col-span-1 flex">
-          {/* Cryopreservation Details - moved to right side */}
-          <div className="bg-white rounded-xl shadow-md p-6 animate-fadeIn animation-delay-100 w-full border border-gray-200">
-            <div className="h-full flex flex-col">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Cryopreservation Details</h3>
-              <div className="space-y-3 flex-grow">
-                <div className="py-2">
-                  <p className="text-sm text-gray-500 mb-1 font-light">Preservation Method</p>
-                  <p className="font-medium text-gray-800 text-base">
-                    {cryoArrangements?.methodOfPreservation || 'N/A'}
-                  </p>
+        {/* Membership Timeline - 1/3 width (moved from bottom) */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeIn animation-delay-100 border border-gray-200 h-full" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
+            <h3 className="text-lg font-medium text-gray-800 mb-6 flex items-center gap-3">
+              <div className="bg-[#3f2541] p-3 rounded-lg flex-shrink-0">
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              Membership Timeline
+            </h3>
+            <div className="space-y-5">
+              {membershipStatus?.contractComplete && (
+                <div>
+                  <p className="font-medium text-gray-800 text-base">Contract Completed</p>
+                  <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.contractDate)}</p>
                 </div>
-                <div className="py-2">
-                  <p className="text-sm text-gray-500 mb-1 font-light">CMS Fee Waiver</p>
-                  <p className="font-medium text-gray-800 text-base">
-                    {cryoArrangements?.cmsWaiver || 'N/A'}
-                  </p>
+              )}
+              {membershipStatus?.agreementReceived && (
+                <div>
+                  <p className="font-medium text-gray-800 text-base">Agreement Received</p>
+                  <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementReceived)}</p>
                 </div>
-                <div className="py-2">
-                  <p className="text-sm text-gray-500 mb-1 font-light">Funding Status</p>
-                  <p className="font-medium text-gray-800 text-base">
-                    {cryoArrangements?.fundingStatus || 'N/A'}
-                  </p>
+              )}
+              {membershipStatus?.agreementSent && (
+                <div>
+                  <p className="font-medium text-gray-800 text-base">Agreement Sent</p>
+                  <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementSent)}</p>
                 </div>
-                <div className="py-2">
-                  <p className="text-sm text-gray-500 mb-1 font-light">Public Disclosure</p>
-                  <p className="font-medium text-gray-800 text-base">
-                    {cryoArrangements?.memberPublicDisclosure?.includes('reasonable efforts') 
-                      ? 'Confidential' 
-                      : cryoArrangements?.memberPublicDisclosure?.includes('freely') 
-                      ? 'Public' 
-                      : 'Limited'}
-                  </p>
-                </div>
+              )}
+              <div>
+                <p className="font-medium text-gray-800 text-base">Joined Alcor</p>
+                <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.memberJoinDate)}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Section Separator */}
-      <div className="h-1 my-12 w-1/5 rounded-full bg-gray-400 mx-auto"></div>
 
       {/* Second row grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        {/* Membership Timeline - 2/3 width */}
-        <div className="lg:col-span-2 flex">
-          <div className="bg-white rounded-xl shadow-md p-8 animate-fadeInUp animation-delay-300 w-full border border-gray-200">
-            <div className="h-full flex flex-col">
-              <h3 className="text-xl font-semibold text-gray-800 mb-6">Membership Timeline</h3>
-              <div className="space-y-5 flex-grow">
-                {membershipStatus?.contractComplete && (
-                  <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-2.5 rounded-xl shadow-sm" style={{ background: 'linear-gradient(135deg, #4e3a6f 0%, #5d4480 50%, #6c5578 100%)' }}>
-                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 border-b border-dotted border-purple-100 pb-2">
-                      <p className="font-medium text-gray-800 text-base">Contract Completed</p>
-                      <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.contractDate)}</p>
-                    </div>
-                  </div>
-                )}
-                {membershipStatus?.agreementReceived && (
-                  <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-2.5 rounded-xl shadow-sm" style={{ background: 'linear-gradient(135deg, #5d4480 0%, #6c5578 50%, #7b5670 100%)' }}>
-                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800 text-base">Agreement Received</p>
-                      <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementReceived)}</p>
-                    </div>
-                  </div>
-                )}
-                {membershipStatus?.agreementSent && (
-                  <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                    <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #6c5578 0%, #7b5670 50%, #8a5f64 100%)' }}>
-                      <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800 text-base">Agreement Sent</p>
-                      <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.agreementSent)}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-start gap-4 group hover:translate-x-1 transition-transform">
-                  <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #7b5670 0%, #8a5f64 50%, #996b66 100%)' }}>
-                    <svg className="w-[22px] h-[22px] text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800 text-base">Joined Alcor</p>
-                    <p className="text-sm text-gray-500 font-light">{formatDate(membershipStatus?.memberJoinDate)}</p>
-                  </div>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 mb-8 max-w-full">
+        {/* Funding & Privacy - 2/3 width (moved from top right) */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl animate-fadeInUp animation-delay-300 border border-gray-200 h-full p-4 sm:p-8" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
+            <h3 className="text-xl font-medium text-gray-800 mb-6 flex items-center gap-3">
+              <div className="bg-[#5d4480] p-3 rounded-lg">
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+              </div>
+              Funding & Privacy
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">CMS Fee Waiver</p>
+                <p className="font-medium text-gray-800 text-lg">
+                  {cryoArrangements?.cmsWaiver || 'N/A'}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Funding Status</p>
+                <p className="font-medium text-gray-800 text-lg">
+                  {cryoArrangements?.fundingStatus || 'N/A'}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500 mb-1 font-light">Public Disclosure</p>
+                <p className="font-medium text-gray-800 text-lg">
+                  {cryoArrangements?.memberPublicDisclosure?.includes('reasonable efforts') 
+                    ? 'Confidential' 
+                    : cryoArrangements?.memberPublicDisclosure?.includes('freely') 
+                    ? 'Public' 
+                    : 'Limited'}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Membership Requirements - narrow, 1/3 width */}
-        <div className="lg:col-span-1 flex">
-          <div className="bg-white rounded-xl shadow-md p-6 animate-fadeInUp animation-delay-400 w-full border border-gray-200">
-            <div className="h-full flex flex-col">
-              <h3 className="text-lg font-semibold text-gray-800 mb-6">Membership Requirements</h3>
-              <div className="space-y-4 flex-grow">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-white border-2" 
-                    style={{ borderColor: membershipStatus?.hasESignature ? '#5d4480' : '#e5e7eb' }}>
-                    {membershipStatus?.hasESignature ? (
-                      <svg className="w-5 h-5" fill="none" stroke="#5d4480" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-gray-800 text-sm font-normal">E-Signature Completed</span>
+        {/* Membership Requirements - 1/3 width */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 animate-fadeInUp animation-delay-400 border border-gray-200 h-full" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
+            <h3 className="text-lg font-medium text-gray-800 mb-8 flex items-center gap-3">
+              <div className="bg-[#806a9c] p-3 rounded-lg">
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              Membership Requirements
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center">
+                  {membershipStatus?.hasESignature ? (
+                    <svg className="w-5 h-5 text-blue-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-white border-2"
-                    style={{ borderColor: membershipStatus?.hasAuthorizationConsent ? '#6c5578' : '#e5e7eb' }}>
-                    {membershipStatus?.hasAuthorizationConsent ? (
-                      <svg className="w-5 h-5" fill="none" stroke="#6c5578" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-gray-800 text-sm font-normal">Authorization Consent</span>
+                <span className="text-gray-800 text-base font-normal">E-Signature Completed</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center">
+                  {membershipStatus?.hasAuthorizationConsent ? (
+                    <svg className="w-5 h-5 text-blue-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-white border-2"
-                    style={{ borderColor: membershipStatus?.paidInitialDues ? '#7b5670' : '#e5e7eb' }}>
-                    {membershipStatus?.paidInitialDues ? (
-                      <svg className="w-5 h-5" fill="none" stroke="#7b5670" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-gray-800 text-sm font-normal">Initial Dues Paid</span>
+                <span className="text-gray-800 text-base font-normal">Authorization Consent</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center">
+                  {membershipStatus?.paidInitialDues ? (
+                    <svg className="w-5 h-5 text-blue-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-white border-2"
-                    style={{ borderColor: membershipStatus?.hasProofOfFunding ? '#8a5f64' : '#e5e7eb' }}>
-                    {membershipStatus?.hasProofOfFunding ? (
-                      <svg className="w-5 h-5" fill="none" stroke="#8a5f64" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="#9ca3af" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-gray-800 text-sm font-normal">Proof of Funding</span>
+                <span className="text-gray-800 text-base font-normal">Initial Dues Paid</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white border border-gray-300 rounded flex items-center justify-center">
+                  {membershipStatus?.hasProofOfFunding ? (
+                    <svg className="w-5 h-5 text-blue-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
                 </div>
+                <span className="text-gray-800 text-base font-normal">Proof of Funding</span>
               </div>
             </div>
           </div>

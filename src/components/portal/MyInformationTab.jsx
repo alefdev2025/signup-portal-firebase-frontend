@@ -860,7 +860,9 @@ const loadAllData = async () => {
   );
   
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    //<div className="px-4 sm:px-6 lg:px-8">
+    //<div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-0 min-h-screen overflow-x-hidden max-w-full mx-auto">
+    <div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
       {/* Save Message */}
       {saveMessage.text && (
         <Alert 

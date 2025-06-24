@@ -48,8 +48,11 @@ const DocumentsTab = ({ contactId }) => {
         console.log('[DocumentsTab] Documents count:', docs.length);
         console.log('[DocumentsTab] First document:', docs[0]);
         
-        // Filter out .snote files
-        const filteredDocs = docs.filter(doc => !doc.name.toLowerCase().endsWith('.snote'));
+        // Filter out .snote files and video testimony files
+        const filteredDocs = docs.filter(doc => {
+          const nameLC = doc.name.toLowerCase();
+          return !nameLC.endsWith('.snote') && !nameLC.includes('video testimony');
+        });
         
         setDocuments(filteredDocs);
         
@@ -238,6 +241,13 @@ const DocumentsTab = ({ contactId }) => {
     return formatted;
   };
 
+  const scrollToUpload = () => {
+    const uploadSection = document.getElementById('upload-section');
+    if (uploadSection) {
+      uploadSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Filter and search documents
   const filteredDocuments = React.useMemo(() => {
     let filtered = [...documents];
@@ -281,7 +291,7 @@ const DocumentsTab = ({ contactId }) => {
 
   if (loading) {
     return (
-      <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden flex items-center justify-center">
+      <div className="bg-gray-50 -m-8 p-8 min-h-screen relative flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 relative mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
@@ -295,7 +305,7 @@ const DocumentsTab = ({ contactId }) => {
 
   if (error && !documents.length) {
     return (
-      <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
+      <div className="bg-gray-50 -m-8 p-8 min-h-screen relative">
         {/* Content wrapper */}
         <div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -320,8 +330,8 @@ const DocumentsTab = ({ contactId }) => {
   }
 
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
-      <div>
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-x-hidden" style={{ maxWidth: '100vw' }}>
+      <div className="overflow-x-hidden">
         {/* Your Membership Documents Section */}
         <div className="mb-16">
           {error && documents.length > 0 && (
@@ -344,7 +354,7 @@ const DocumentsTab = ({ contactId }) => {
               <p className="text-[#6a5b8a] text-sm mt-2">Your membership documents will appear here once uploaded by Alcor staff</p>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-xl p-8 animate-fadeInUp">
+            <div className="bg-white rounded-lg shadow-xl p-4 sm:p-8 animate-fadeInUp overflow-hidden">
               <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
                 {/* Text content - left side */}
                 <div className="flex-1">
@@ -359,17 +369,27 @@ const DocumentsTab = ({ contactId }) => {
                     }
                   `}</style>
                   {/* Mobile gradient - shows above title */}
-                  <div className="mb-3 sm:hidden">
-                    <div className="h-4 w-40" style={{
+                  <div className="mb-4 sm:hidden">
+                    <div className="h-2 w-40" style={{
                       background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
                     }}></div>
                   </div>
-                  <h2 className="member-files-title font-thin text-[#2a2346] mb-6 tracking-widest">MEMBER FILES</h2>
-                  <p className="text-gray-600 text-base leading-relaxed max-w-xl">
-                    Access and manage your important membership documents in one secure location. 
-                    All your cryopreservation agreements and documents are 
-                    safely stored and easily accessible whenever you need them.
-                  </p>
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      {/* <div className="bg-[#1b163a] p-3 rounded-lg hidden sm:block">
+                        <svg className="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                      </div> */}
+                      <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 sm:normal-case uppercase">Member Files</h2>
+                    </div>
+                    <p className="text-base text-gray-600 leading-relaxed max-w-3xl">
+                      Access your secure membership documents anytime. Download agreements, forms, and official correspondence stored safely with 24/7 availability. 
+                      Your designated representatives and medical providers can access 
+                      these files when needed, ensuring your cryopreservation arrangements are always accessible. You can download, print, or share your documents 
+                      directly from this portal at any time.
+                    </p>
+                  </div>
                 </div>
                 
                 {/* Image - right side */}
@@ -396,7 +416,7 @@ const DocumentsTab = ({ contactId }) => {
                   filteredDocuments.map((doc, index) => (
                     <div 
                       key={doc.id} 
-                      className={`bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-28 animate-fadeIn ${
+                      className={`bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-28 animate-fadeIn ${
                         index < 3 ? 'animation-delay-100' : 
                         index < 6 ? 'animation-delay-200' : 
                         index < 9 ? 'animation-delay-300' : 
@@ -410,7 +430,7 @@ const DocumentsTab = ({ contactId }) => {
                         
                         <div className="flex-1 flex flex-col">
                           <div className="flex-1">
-                            <h3 className="font-medium text-[#2a2346] text-base leading-tight">{formatDocumentName(doc.name)}</h3>
+                            <h3 className="font-medium text-[#2a2346] text-lg leading-tight">{formatDocumentName(doc.name)}</h3>
                           </div>
                           
                           <button 
@@ -458,7 +478,7 @@ const DocumentsTab = ({ contactId }) => {
         </div>
 
         {/* Upload Documents Section */}
-        <div className="mt-12 bg-white rounded-lg shadow-2xl p-8 animate-fadeInUp animation-delay-200">
+        <div id="upload-section" className="mt-12 bg-white rounded-lg shadow-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-200 overflow-hidden">
           <div className="h-4"></div>
           <style>{`
             .upload-files-title {
@@ -539,6 +559,12 @@ const DocumentsTab = ({ contactId }) => {
         </div>
 
         <style>{`
+          /* Prevent horizontal scroll on mobile */
+          html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+          }
+          
           @keyframes fadeIn {
             from {
               opacity: 0;

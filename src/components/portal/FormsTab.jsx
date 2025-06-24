@@ -94,11 +94,16 @@ const FormsTab = () => {
   );
 
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-hidden">
-      <div>
+    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative overflow-x-hidden" style={{ maxWidth: '100vw' }}>
+      <div className="overflow-x-hidden">
         {/* Forms Section */}
         <div className="mb-16">
-          <div className="bg-white rounded-lg shadow-xl p-8 animate-fadeInUp">
+          <div 
+            className="bg-white rounded-lg p-4 sm:p-8 animate-fadeInUp overflow-hidden" 
+            style={{ 
+              boxShadow: '0 -20px 40px rgba(0, 0, 0, 0.25), 0 -10px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+          >
             <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
               {/* Text content - left side */}
               <div className="flex-1">
@@ -113,16 +118,19 @@ const FormsTab = () => {
                   }
                 `}</style>
                 {/* Mobile gradient - shows above title */}
-                <div className="mb-3 sm:hidden">
-                  <div className="h-4 w-40" style={{
+                <div className="mb-4 sm:hidden">
+                  <div className="h-2 w-40" style={{
                     background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
                   }}></div>
                 </div>
-                <h2 className="forms-title font-thin text-[#2a2346] mb-6 tracking-widest">FORMS</h2>
-                <p className="text-gray-600 text-base leading-relaxed max-w-xl">
+                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 sm:normal-case uppercase mb-6">Forms</h2>
+                <p className="text-gray-600 text-base leading-relaxed max-w-3xl">
                   Essential forms and documents for your Alcor membership. 
                   Download, complete, and submit these forms to ensure your 
                   cryopreservation arrangements are properly documented.
+                  Each form has been carefully designed to capture important information
+                  about your preferences and medical history. All submissions are 
+                  securely stored and can be updated at any time through your member portal.
                 </p>
               </div>
               
@@ -131,7 +139,7 @@ const FormsTab = () => {
                 <img 
                   src={formsHeaderImage} 
                   alt="Forms" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover grayscale"
                 />
                 <div className="absolute bottom-0 right-0">
                   <div className="px-3 py-1 sm:px-4 sm:py-2" style={{
@@ -151,7 +159,7 @@ const FormsTab = () => {
                 return (
                   <div 
                     key={index} 
-                    className={`bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
+                    className={`bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
                       index < 3 ? 'animation-delay-100' : 
                       index < 6 ? 'animation-delay-200' : 
                       index < 9 ? 'animation-delay-300' : 
@@ -169,7 +177,7 @@ const FormsTab = () => {
                       
                       <div className="flex-1 flex flex-col">
                         <div className="flex-1">
-                          <h3 className="font-medium text-[#2a2346] text-base leading-tight">{form.title}</h3>
+                          <h3 className="font-medium text-[#2a2346] text-lg leading-tight">{form.title}</h3>
                           <p className="text-xs text-[#6a5b8a] mt-1 line-clamp-2">{form.description}</p>
                         </div>
                         
@@ -204,6 +212,12 @@ const FormsTab = () => {
         {/* Form Categories Info Section */}
 
         <style>{`
+          /* Prevent horizontal scroll on mobile */
+          html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+          }
+          
           @keyframes fadeIn {
             from {
               opacity: 0;

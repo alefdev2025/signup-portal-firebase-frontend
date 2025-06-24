@@ -125,6 +125,7 @@ const OverviewTab = () => {
           className="absolute inset-0"
           style={{ 
             background: 'linear-gradient(135deg, #0e0e2f 0%, #1b163a 15%, #2a1b3d 30%, #3f2541 45%, rgba(46, 65, 104, 0.7) 65%, rgba(56, 78, 122, 0.4) 90%, rgba(255, 179, 102, 0.1) 100%)',
+            //background: 'linear-gradient(135deg, #12233b 0%, #2a3651 15%, #453f67 30%, #614d7d 45%, rgba(124, 92, 135, 0.7) 65%, rgba(124, 92, 135, 0.4) 90%, rgba(124, 92, 135, 0.1) 100%)',
           }}
         />
         
