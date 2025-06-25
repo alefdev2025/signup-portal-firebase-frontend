@@ -1,4 +1,4 @@
-// OLDER ONE
+// OLDER
 
 import React, { useState, useEffect, useRef } from 'react';
 import { getContactInfo } from '../../services/contact';

@@ -90,12 +90,15 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
   return (
     <div
       className={`
-        w-[200px] md:w-[220px] h-full flex-shrink-0 flex flex-col 
+        w-[230px] md:w-[250px] h-full flex-shrink-0 flex flex-col 
         transition-transform duration-300 ease-in-out
         fixed md:relative
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}
       aria-label="Sidebar"
+      style={{
+        background: 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)'
+      }}
     >
       {/* Content layer */}
       <div className="relative z-10 flex flex-col h-full">

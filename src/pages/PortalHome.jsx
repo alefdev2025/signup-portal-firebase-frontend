@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
 
 // Import all the component parts
@@ -51,12 +51,52 @@ const ResourcesTab = () => (
 );
 
 const PortalHome = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  // Get initial tab from URL hash or default to 'overview'
+  const getInitialTab = () => {
+    const hash = window.location.hash.slice(1);
+    return hash || 'overview';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [profileImage, setProfileImage] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Get the IDs from context
   const { customerId, salesforceContactId } = useMemberPortal();
+
+  // Handle tab changes with history
+  const handleTabChange = (newTab) => {
+    // Don't push to history if it's the same tab
+    if (newTab !== activeTab) {
+      // Just update the hash - this automatically creates a history entry
+      window.location.hash = newTab;
+      // The hashchange event listener will handle updating the activeTab
+    }
+  };
+
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    // Handle hash changes (including back button)
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        setActiveTab(hash);
+      } else {
+        setActiveTab('overview');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Set initial hash if none exists
+    if (!window.location.hash) {
+      window.location.hash = 'overview';
+    }
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -72,7 +112,7 @@ const PortalHome = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'overview': 
-        return <OverviewTab />;
+        return <OverviewTab setActiveTab={handleTabChange} />;
       
       // Account tabs
       case 'account':
@@ -123,7 +163,7 @@ const PortalHome = () => {
         return <SupportTab />;
       
       default: 
-        return <OverviewTab />;
+        return <OverviewTab setActiveTab={handleTabChange} />;
     }
   };
 
@@ -138,7 +178,7 @@ const PortalHome = () => {
       <div 
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(to bottom, #12243b 0%, #44365f 50%, #806083 100%)'
+          background: 'linear-gradient(to bottom right, #12243c 0%, #3a2e51 35%, #533966 65%, #6e4376 100%)'
         }}
       />
 
@@ -153,30 +193,33 @@ const PortalHome = () => {
           />
         )}
 
-        {/* Sidebar */}
+        {/* Main content area with rounded corners - behind sidebar */}
+        <div className="absolute inset-0 flex">
+          <div className="w-[230px] md:w-[250px] flex-shrink-0" /> {/* Spacer for sidebar */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 bg-white rounded-l-2xl md:rounded-l-3xl shadow-2xl overflow-hidden">
+              <PortalHeader 
+                setIsMobileMenuOpen={setIsMobileMenuOpen} 
+                activeTab={activeTab}
+                setActiveTab={handleTabChange}
+              />
+              
+              <main className="h-[calc(100%-4rem)] p-4 sm:p-8 overflow-y-auto bg-gray-50">
+                {renderActiveTab()}
+              </main>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar on top */}
         <div className="relative z-20">
           <PortalSidebar
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
             profileImage={profileImage}
             isMobileMenuOpen={isMobileMenuOpen}
             setIsMobileMenuOpen={setIsMobileMenuOpen}
           />
-        </div>
-
-        {/* Main content area with rounded corners */}
-        <div className="flex-1 flex flex-col p-2 md:p-3">
-          <div className="flex-1 bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden">
-            <PortalHeader 
-              setIsMobileMenuOpen={setIsMobileMenuOpen} 
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-            
-            <main className="h-[calc(100%-4rem)] p-4 sm:p-8 overflow-y-auto bg-gray-50">
-              {renderActiveTab()}
-            </main>
-          </div>
         </div>
       </div>
     </div>
