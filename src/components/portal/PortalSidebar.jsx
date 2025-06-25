@@ -58,7 +58,15 @@ const navigationItems = [
     }
 ];
 
-const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const PortalSidebar = ({ 
+  activeTab, 
+  setActiveTab, 
+  profileImage, 
+  isMobileMenuOpen, 
+  setIsMobileMenuOpen, 
+  isElevated,
+  layoutMode = 'floating' 
+}) => {
   const [expandedItems, setExpandedItems] = useState([]);
 
   const handleNavClick = (tabId) => {
@@ -87,108 +95,250 @@ const PortalSidebar = ({ activeTab, setActiveTab, profileImage, isMobileMenuOpen
     return activeTab === itemId || activeTab.startsWith(`${itemId}-`);
   };
 
-  return (
-    <div
-      className={`
-        w-[230px] md:w-[250px] h-full flex-shrink-0 flex flex-col 
-        transition-transform duration-300 ease-in-out
-        fixed md:relative
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}
-      aria-label="Sidebar"
-      style={{
-        background: 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)'
-      }}
-    >
-      {/* Content layer */}
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
-          <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
-          <button 
-            className="text-white/60 hover:text-white md:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-            aria-label="Close menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+  // Different styles based on layout mode
+  const sidebarStyles = layoutMode === 'floating' 
+    ? { background: 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)' }
+    : { backgroundColor: '#1a2744' };
 
-        <nav className="flex-1 p-4 pt-6 overflow-y-auto">
-          <div className="space-y-1">
-            {navigationItems.map((item) => (
-              <div key={item.id} className="group">
-                <button
-                  onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
-                    isItemActive(item.id)
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/80 hover:text-white hover:bg-white/5'
-                  }`}
+  // Same width for both modes, but narrower
+  const sidebarWidth = 'w-[240px] md:w-[260px]';
+
+  const sidebarClasses = layoutMode === 'floating'
+    ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
+       transition-all duration-700 ease-in-out
+       fixed md:relative
+       ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+       ${isElevated ? 'shadow-2xl' : ''}`
+    : `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
+       transition-all duration-700 ease-in-out
+       fixed md:relative shadow-2xl
+       ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+       md:rounded-r-3xl overflow-hidden z-50`;
+
+  return (
+    <>
+      {/* Rounded corner masks when elevated (only in floating mode) */}
+      {layoutMode === 'floating' && isElevated && (
+        <>
+          {/* Top right corner mask */}
+          <div 
+            className="absolute top-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            style={{
+              background: 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)'
+            }}
+          >
+            <div 
+              className="absolute inset-0 bg-gray-50 rounded-tl-3xl"
+            />
+          </div>
+          
+          {/* Bottom right corner mask */}
+          <div 
+            className="absolute bottom-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            style={{
+              background: 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
+            }}
+          >
+            <div 
+              className="absolute inset-0 bg-gray-50 rounded-bl-3xl"
+            />
+          </div>
+        </>
+      )}
+      
+      {/* Sidebar content without wrapper for traditional mode */}
+      {layoutMode === 'traditional' ? (
+        <div
+          className={sidebarClasses}
+          aria-label="Sidebar"
+          style={sidebarStyles}
+        >
+            {/* Content layer */}
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
+                <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
+                <button 
+                  className="text-white/60 hover:text-white md:hidden"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close menu"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
-                      {item.icon}
-                    </span>
-                    <span className="text-lg">{item.label}</span>
-                  </div>
-                  {item.subItems && (
-                    <svg 
-                      className={`w-4 h-4 transition-all duration-200 opacity-0 md:group-hover:opacity-100 ${
-                        expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
-                      }`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-                
-                {/* Subitems */}
-                {item.subItems && expandedItems.includes(item.id) && (
-                  <div className="mt-1 ml-11 space-y-1">
-                    {item.subItems.map((subItem) => (
+              </div>
+
+              <nav className="flex-1 p-4 pt-6 overflow-y-auto">
+                <div className="space-y-1">
+                  {navigationItems.map((item) => (
+                    <div key={item.id} className="group">
                       <button
-                        key={subItem.id}
-                        onClick={() => handleSubItemClick(item.id, subItem.id)}
-                        className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
-                          activeTab === `${item.id}-${subItem.id}`
+                        onClick={() => handleNavClick(item.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
+                          isItemActive(item.id)
                             ? 'bg-white/10 text-white'
-                            : 'text-white/70 hover:text-white hover:bg-white/5'
+                            : 'text-white/80 hover:text-white hover:bg-white/5'
                         }`}
                       >
-                        {subItem.label}
+                        <div className="flex items-center gap-3">
+                          <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
+                            {item.icon}
+                          </span>
+                          <span className="text-lg">{item.label}</span>
+                        </div>
+                        {item.subItems && (
+                          <svg 
+                            className={`w-4 h-4 transition-all duration-200 opacity-0 md:group-hover:opacity-100 ${
+                              expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
+                            }`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </nav>
+                      
+                      {/* Subitems */}
+                      {item.subItems && expandedItems.includes(item.id) && (
+                        <div className="mt-1 ml-11 space-y-1">
+                          {item.subItems.map((subItem) => (
+                            <button
+                              key={subItem.id}
+                              onClick={() => handleSubItemClick(item.id, subItem.id)}
+                              className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
+                                activeTab === `${item.id}-${subItem.id}`
+                                  ? 'bg-white/10 text-white'
+                                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              {subItem.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </nav>
 
-        <div className="p-4 border-t border-white/20">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
-              {profileImage ? (
-                <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-              )}
+              <div className="p-4 border-t border-white/20">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
+                    {profileImage ? (
+                      <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
+                    <p className="text-white/80 text-xs truncate">Associate Member</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
-              <p className="text-white/80 text-xs truncate">Associate Member</p>
+        </div>
+      ) : (
+        <div
+          className={sidebarClasses}
+          aria-label="Sidebar"
+          style={sidebarStyles}
+        >
+          {/* Content layer for floating mode */}
+          <div className="relative z-10 flex flex-col h-full">
+            <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
+              <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
+              <button 
+                className="text-white/60 hover:text-white md:hidden"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <nav className="flex-1 p-4 pt-6 overflow-y-auto">
+              <div className="space-y-1">
+                {navigationItems.map((item) => (
+                  <div key={item.id} className="group">
+                    <button
+                      onClick={() => handleNavClick(item.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
+                        isItemActive(item.id)
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
+                          {item.icon}
+                        </span>
+                        <span className="text-lg">{item.label}</span>
+                      </div>
+                      {item.subItems && (
+                        <svg 
+                          className={`w-4 h-4 transition-all duration-200 opacity-0 md:group-hover:opacity-100 ${
+                            expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
+                          }`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+                    
+                    {/* Subitems */}
+                    {item.subItems && expandedItems.includes(item.id) && (
+                      <div className="mt-1 ml-11 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <button
+                            key={subItem.id}
+                            onClick={() => handleSubItemClick(item.id, subItem.id)}
+                            className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
+                              activeTab === `${item.id}-${subItem.id}`
+                                ? 'bg-white/10 text-white'
+                                : 'text-white/70 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {subItem.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </nav>
+
+            <div className="p-4 border-t border-white/20">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
+                  <p className="text-white/80 text-xs truncate">Associate Member</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

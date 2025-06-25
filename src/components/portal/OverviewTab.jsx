@@ -153,7 +153,7 @@ const OverviewTab = ({ setActiveTab }) => {
     <div className="-mt-4 px-6 md:px-8 lg:px-12">
       {/* Hero Banner - Almost completely square */}
       <div 
-        className="relative h-64 rounded-lg overflow-hidden mb-12 animate-fadeIn"
+        className="relative h-64 rounded-sm overflow-hidden mb-12 animate-fadeIn"
         style={{ 
           animation: 'fadeIn 0.8s ease-in-out'
         }}
@@ -257,24 +257,24 @@ const OverviewTab = ({ setActiveTab }) => {
             
             {/* Latest Media on the right */}
             {podcastEpisodes && podcastEpisodes[0] && latestMediaItems && latestMediaItems[0] && (
-              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded-md p-4 max-w-sm border border-white/20">
-                <div className="flex items-center gap-1 mb-2">
+              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-4 max-w-sm border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-white text-sm font-medium drop-shadow">LATEST MEDIA</h3>
                   <img 
                     src={alcorStar} 
                     alt="Alcor Star" 
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                   />
                 </div>
                 <div className="flex items-start gap-3">
                   <img 
                     src={latestMediaItems[0].image} 
                     alt={podcastEpisodes[0].title}
-                    className="w-24 h-16 object-cover rounded-md flex-shrink-0"
+                    className="w-24 h-16 object-cover rounded flex-shrink-0"
                   />
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                      <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
                         PODCAST
                       </span>
                       <span className="text-xs text-white/70">
@@ -305,82 +305,78 @@ const OverviewTab = ({ setActiveTab }) => {
         <h2 className={`text-2xl font-light text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-md p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
               transitionDelay: '100ms',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             }}
-            onClick={() => setActiveTab('account-settings')}
           >
             <div 
-              className="w-14 h-14 rounded-md flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
               <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Account</h3>
+            <h3 className="font-medium text-base text-[#2a2346] mb-1">Account</h3>
             <p className="text-xs text-gray-400">Manage your profile and preferences</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-md p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
               transitionDelay: '200ms',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             }}
-            onClick={() => setActiveTab('membership-status')}
           >
             <div 
-              className="w-14 h-14 rounded-md flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
               <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
               </svg>
             </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Membership</h3>
+            <h3 className="font-medium text-base text-[#2a2346] mb-1">Membership</h3>
             <p className="text-xs text-gray-400">Check your membership details</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-md p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
               transitionDelay: '300ms',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             }}
-            onClick={() => setActiveTab('payments-history')}
           >
             <div 
-              className="w-14 h-14 rounded-md flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
               <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Payments</h3>
+            <h3 className="font-medium text-base text-[#2a2346] mb-1">Payments</h3>
             <p className="text-xs text-gray-400">Review recent transactions</p>
           </div>
           
           <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded-md p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ 
               transitionDelay: '400ms',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             }}
-            onClick={() => setActiveTab('resources-support')}
           >
             <div 
-              className="w-14 h-14 rounded-md flex items-center justify-center mb-4 relative overflow-hidden"
+              className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
               <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Support</h3>
+            <h3 className="font-medium text-base text-[#2a2346] mb-1">Support</h3>
             <p className="text-xs text-gray-400">Get help when you need it</p>
           </div>
         </div>
