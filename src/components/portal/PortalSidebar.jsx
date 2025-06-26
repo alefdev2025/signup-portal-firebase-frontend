@@ -106,17 +106,26 @@ const PortalSidebar = ({
   const sidebarClasses = layoutMode === 'floating'
     ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
-       fixed md:relative
+       fixed md:relative z-50
        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
        ${isElevated ? 'shadow-2xl' : ''}`
     : `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
-       fixed md:relative shadow-2xl
+       fixed md:relative shadow-2xl z-50
        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-       md:rounded-r-3xl overflow-hidden z-50`;
+       md:rounded-r-3xl overflow-hidden`;
 
   return (
     <>
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
       {/* Rounded corner masks when elevated (only in floating mode) */}
       {layoutMode === 'floating' && isElevated && (
         <>

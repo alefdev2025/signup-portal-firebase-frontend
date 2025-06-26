@@ -51,6 +51,78 @@ const ResourcesTab = () => (
 );
 
 const PortalHome = () => {
+  // Mobile notification bell component
+  const MobileNotificationBell = ({ activeTab, setActiveTab }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [notifications] = useState([
+      {
+        id: 1,
+        type: 'podcast',
+        title: 'New Podcast Episode',
+        content: 'Deployment and Recovery: Inside Alcor\'s DART Team - Part 2',
+        time: '5 minutes ago',
+        read: false,
+      },
+      {
+        id: 2,
+        type: 'newsletter',
+        title: 'New Member Newsletter',
+        content: 'June: Alcor makes strong showing at Vitalist Bay Biostasis Conference',
+        time: '1 hour ago',
+        read: false,
+      },
+    ]);
+
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    return (
+      <div className="relative">
+        <button 
+          className="relative text-white p-1.5"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-white text-[#1a2744] text-xs rounded-full flex items-center justify-center font-bold">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+
+        {/* Dropdown */}
+        {isOpen && (
+          <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+            <div className="px-4 py-3 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Notifications</h3>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.map((notification) => (
+                <div key={notification.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                  <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>
+                  <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t border-gray-200">
+              <button 
+                onClick={() => {
+                  setIsOpen(false);
+                  setActiveTab('account-notifications');
+                }}
+                className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
+              >
+                View all notifications
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Get initial tab from URL hash or default to 'overview'
   const getInitialTab = () => {
     const hash = window.location.hash.slice(1);
@@ -239,14 +311,10 @@ const PortalHome = () => {
             </button>
             <h1 className="text-white text-base font-medium ml-3">Alcor Portal</h1>
           </div>
-          <button 
-            className="text-white p-1.5"
-            onClick={() => handleTabChange('account-notifications')}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </button>
+          <MobileNotificationBell 
+            activeTab={activeTab} 
+            setActiveTab={handleTabChange}
+          />
         </div>
 
         {/* Mobile menu overlay */}
@@ -270,9 +338,9 @@ const PortalHome = () => {
                 className="hidden md:block"
               />
               
-              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'p-4 sm:p-8' : 'p-8 md:p-12 lg:p-16'} overflow-y-auto ${activeTab === 'overview' ? 'bg-gray-50' : 'bg-gray-300'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'p-4 sm:p-8' : 'p-8 md:p-12 lg:p-16'} overflow-y-auto ${activeTab === 'overview' ? 'bg-gray-50' : 'bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                 {activeTab !== 'overview' ? (
-                  <div className="bg-white border border-gray-200 rounded-xl p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+                  <div className="bg-white border border-gray-50 rounded-xl p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
                     {renderActiveTab()}
                   </div>
                 ) : (
@@ -340,7 +408,7 @@ const PortalHome = () => {
       )}
 
       {/* Main content - positioned absolutely to fill screen */}
-      <div className="absolute inset-0 flex flex-col bg-gray-300 md:ml-[260px] pt-28 md:pt-0">
+      <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[260px] pt-28 md:pt-0">
         <PortalHeader 
           setIsMobileMenuOpen={setIsMobileMenuOpen} 
           activeTab={activeTab}
@@ -348,7 +416,7 @@ const PortalHome = () => {
           className="bg-white hidden md:block"
         />
         <main className={`flex-1 p-8 md:p-12 lg:p-16 overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="bg-white border border-gray-200 rounded-xl p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+          <div className="bg-white border border-gray-50 rounded-xl p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
             {renderActiveTab()}
           </div>
         </main>

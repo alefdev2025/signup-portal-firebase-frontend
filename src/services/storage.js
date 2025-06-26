@@ -15,6 +15,11 @@ const ACCOUNT_LINKING_ACTIVE_KEY = "account_linking_active";
 const LINKING_EMAIL_KEY = "linkingEmail";
 const SHOW_LINKING_MODAL_KEY = "showLinkingModal";
 
+// NEW: Staff-specific keys
+const STAFF_AUTH_KEY = "alcor_staff_auth";
+const STAFF_PREFERENCES_KEY = "alcor_staff_preferences";
+const STAFF_LAST_TAB_KEY = "alcor_staff_last_tab";
+
 // ===== Signup State =====
 export const saveSignupState = (state) => {
   try {
@@ -476,6 +481,137 @@ export const clearAllNavigationControls = () => {
   }
 };
 
+// ===== NEW: Staff-specific Storage Functions =====
+
+/**
+ * Save staff authentication state
+ * @param {Object} authData Staff auth data (user info, timestamp)
+ * @returns {boolean} Success status
+ */
+export const saveStaffAuth = (authData) => {
+  try {
+    localStorage.setItem(STAFF_AUTH_KEY, JSON.stringify({
+      ...authData,
+      timestamp: Date.now()
+    }));
+    return true;
+  } catch (error) {
+    console.error("Error saving staff auth:", error);
+    return false;
+  }
+};
+
+/**
+ * Get staff authentication state
+ * @returns {Object|null} Staff auth data or null
+ */
+export const getStaffAuth = () => {
+  try {
+    const auth = localStorage.getItem(STAFF_AUTH_KEY);
+    return auth ? JSON.parse(auth) : null;
+  } catch (error) {
+    console.error("Error getting staff auth:", error);
+    return null;
+  }
+};
+
+/**
+ * Clear staff authentication state
+ * @returns {boolean} Success status
+ */
+export const clearStaffAuth = () => {
+  try {
+    localStorage.removeItem(STAFF_AUTH_KEY);
+    return true;
+  } catch (error) {
+    console.error("Error clearing staff auth:", error);
+    return false;
+  }
+};
+
+/**
+ * Save staff preferences (theme, layout, etc.)
+ * @param {Object} preferences Staff preferences
+ * @returns {boolean} Success status
+ */
+export const saveStaffPreferences = (preferences) => {
+  try {
+    const existing = getStaffPreferences();
+    const updated = { ...existing, ...preferences };
+    localStorage.setItem(STAFF_PREFERENCES_KEY, JSON.stringify(updated));
+    return true;
+  } catch (error) {
+    console.error("Error saving staff preferences:", error);
+    return false;
+  }
+};
+
+/**
+ * Get staff preferences
+ * @returns {Object} Staff preferences
+ */
+export const getStaffPreferences = () => {
+  try {
+    const prefs = localStorage.getItem(STAFF_PREFERENCES_KEY);
+    return prefs ? JSON.parse(prefs) : {
+      theme: 'light',
+      compactView: false,
+      defaultTab: 'overview'
+    };
+  } catch (error) {
+    console.error("Error getting staff preferences:", error);
+    return {
+      theme: 'light',
+      compactView: false,
+      defaultTab: 'overview'
+    };
+  }
+};
+
+/**
+ * Save last active tab in staff dashboard
+ * @param {string} tabName The tab name
+ * @returns {boolean} Success status
+ */
+export const saveStaffLastTab = (tabName) => {
+  try {
+    localStorage.setItem(STAFF_LAST_TAB_KEY, tabName);
+    return true;
+  } catch (error) {
+    console.error("Error saving staff last tab:", error);
+    return false;
+  }
+};
+
+/**
+ * Get last active tab in staff dashboard
+ * @returns {string} Tab name
+ */
+export const getStaffLastTab = () => {
+  try {
+    return localStorage.getItem(STAFF_LAST_TAB_KEY) || 'overview';
+  } catch (error) {
+    console.error("Error getting staff last tab:", error);
+    return 'overview';
+  }
+};
+
+/**
+ * Clear all staff-related data
+ * @returns {boolean} Success status
+ */
+export const clearAllStaffData = () => {
+  try {
+    clearStaffAuth();
+    localStorage.removeItem(STAFF_PREFERENCES_KEY);
+    localStorage.removeItem(STAFF_LAST_TAB_KEY);
+    return true;
+  } catch (error) {
+    console.error("Error clearing staff data:", error);
+    return false;
+  }
+};
+
 // ===== Utility Functions =====
 
 /**
@@ -526,4 +662,15 @@ export const clearAllSignupData = () => {
   clearAllNavigationControls();
   setAccountCreated(false);
   // Don't clear navigation history as it might be useful for other parts of the app
+};
+
+/**
+ * Clear all application data (member and staff)
+ * Used for complete logout
+ */
+export const clearAllAppData = () => {
+  clearAllSignupData();
+  clearAllStaffData();
+  // Optionally clear navigation history
+  localStorage.removeItem(NAVIGATION_HISTORY_KEY);
 };

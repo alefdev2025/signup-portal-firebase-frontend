@@ -3,21 +3,26 @@ import { getContactInfo } from '../../services/contact';
 import { getMemberProfile } from './services/salesforce/memberInfo';
 import { useUser } from '../../contexts/UserContext';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
-import { latestMediaItems } from './LatestMedia';
-import { podcastEpisodes } from './podcastConfig';
-import { memberNewsletters } from './MemberNewsletters';
-import { announcements } from './Announcements';
 import GradientButton from './GradientButton';
 import alcorStar from '../../assets/images/alcor-star.png';
 import dewarsImage from '../../assets/images/dewars2.jpg';
-
+import podcastImage from '../../assets/images/podcast-image2.png';
 
 const OverviewTab = ({ setActiveTab }) => {
   const { currentUser } = useUser();
-  const { salesforceContactId } = useMemberPortal();
+  const { 
+    salesforceContactId, 
+    isPreloading, 
+    announcements = [], 
+    mediaItems = [], 
+    contentLoaded,
+    refreshContent,
+    lastRefresh
+  } = useMemberPortal();
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [visibleSections, setVisibleSections] = useState(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Profile data state
   const [profileData, setProfileData] = useState(null);
@@ -29,6 +34,45 @@ const OverviewTab = ({ setActiveTab }) => {
   const newslettersRef = useRef(null);
   const recentActivityRef = useRef(null);
 
+  // Helper function to format notification time
+  const formatNotificationTime = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+      if (diffMinutes < 60) {
+        return `${diffMinutes}m ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours}h ago`;
+      } else if (diffDays < 7) {
+        return `${diffDays}d ago`;
+      } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+    } catch (e) {
+      return '';
+    }
+  };
+
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshContent();
+      console.log('✅ [OverviewTab] Manual refresh completed');
+    } catch (error) {
+      console.error('❌ [OverviewTab] Manual refresh failed:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Fetch user name
   useEffect(() => {
     const fetchUserName = async () => {
@@ -36,17 +80,12 @@ const OverviewTab = ({ setActiveTab }) => {
         try {
           const response = await getContactInfo();
           if (response.success && response.contactInfo) {
-            const firstName = response.contactInfo.firstName || 'Nikki';
+            const firstName = response.contactInfo.firstName || '';
             setUserName(firstName);
-          } else {
-            setUserName('Nikki');
           }
         } catch (error) {
           console.error('Error fetching user info:', error);
-          setUserName('Nikki');
         }
-      } else {
-        setUserName('Nikki');
       }
       setLoading(false);
     };
@@ -57,7 +96,7 @@ const OverviewTab = ({ setActiveTab }) => {
   // Fetch profile data
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (salesforceContactId) {
+      if (salesforceContactId && !isPreloading) {
         try {
           setProfileLoading(true);
           const result = await getMemberProfile(salesforceContactId);
@@ -75,7 +114,22 @@ const OverviewTab = ({ setActiveTab }) => {
     };
 
     fetchProfileData();
-  }, [salesforceContactId]);
+  }, [salesforceContactId, isPreloading]);
+
+  // Content logging effect
+  useEffect(() => {
+    console.log('OverviewTab received content from context:', {
+      announcements: announcements?.length || 0,
+      media: mediaItems?.length || 0,
+      contentLoaded,
+      lastRefresh: lastRefresh?.toLocaleTimeString()
+    });
+    
+    // Debug: Log newsletter items specifically
+    const newsletters = mediaItems.filter(item => item.type === 'newsletter');
+    console.log('Newsletter items:', newsletters);
+    console.log('All media items:', mediaItems);
+  }, [announcements, mediaItems, contentLoaded, lastRefresh]);
 
   // Scroll animations
   useEffect(() => {
@@ -117,43 +171,22 @@ const OverviewTab = ({ setActiveTab }) => {
     };
   }, []);
 
-  // Helper functions for Member Overview card
-  const getStatus = () => {
-    if (!profileData) return 'Active'; // Default fallback
-    const membershipStatus = profileData.membershipStatus || {};
-    if (!membershipStatus.isActive) return 'Inactive';
-    if (membershipStatus.contractComplete) return 'Active';
-    return 'In Progress';
-  };
-
-  const getPreservationType = () => {
-    if (!profileData) return 'Whole Body'; // Default fallback
-    const cryoArrangements = profileData.cryoArrangements || {};
-    if (cryoArrangements.methodOfPreservation?.includes('Whole Body')) {
-      return 'Whole Body';
-    } else if (cryoArrangements.methodOfPreservation?.includes('Neuro')) {
-      return 'Neuro';
-    }
-    return 'N/A';
-  };
-
-  const getYearsOfMembership = () => {
-    if (!profileData) return '5'; // Default fallback
-    const membershipStatus = profileData.membershipStatus || {};
-    const memberSince = membershipStatus.memberJoinDate ? new Date(membershipStatus.memberJoinDate) : null;
-    return memberSince ? Math.floor((new Date() - memberSince) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-  };
-
-  const getMemberId = () => {
-    if (!profileData) return `A-${userName ? userName.charAt(0).toUpperCase() : 'N'}001`; // Default fallback
-    return profileData.personalInfo?.alcorId || `A-${userName ? userName.charAt(0).toUpperCase() : 'N'}001`;
-  };
+  // Loading skeleton component
+  const ContentSkeleton = () => (
+    <div className="animate-pulse">
+      <div className="h-64 bg-gray-200 rounded-lg mb-4"></div>
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="-mt-4 px-6 md:px-8 lg:px-12">
-      {/* Hero Banner - Almost completely square */}
+      {/* Hero Banner */}
       <div 
-        className="relative h-64 rounded-sm overflow-hidden mb-12 animate-fadeIn"
+        className="relative h-64 rounded-xl overflow-hidden mb-12 animate-fadeIn"
         style={{ 
           animation: 'fadeIn 0.8s ease-in-out'
         }}
@@ -183,7 +216,7 @@ const OverviewTab = ({ setActiveTab }) => {
           }}
         />
         
-        {/* Main gradient that transitions to transparent */}
+        {/* Main gradient */}
         <div 
           className="absolute inset-0"
           style={{
@@ -203,7 +236,7 @@ const OverviewTab = ({ setActiveTab }) => {
           }}
         />
         
-        {/* Right side gradient overlay - smooth blue to purple with hint of warm tones */}
+        {/* Right side gradient overlay */}
         <div 
           className="absolute inset-0"
           style={{
@@ -226,7 +259,7 @@ const OverviewTab = ({ setActiveTab }) => {
           }}
         />
         
-        {/* Vignette overlay for depth */}
+        {/* Vignette overlay */}
         <div 
           className="absolute inset-0"
           style={{
@@ -236,17 +269,24 @@ const OverviewTab = ({ setActiveTab }) => {
         
         <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
-            {/* Welcome message on the left */}
+            {/* Welcome message */}
             <div className="flex-1">
               <h1 className="font-light text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2rem' }}>
                 <span className="text-white/90">Welcome</span>
-                <span className="text-white font-normal">{loading ? '...' : (userName ? `, ${userName}!` : '!')}</span>
+                <span className="text-white font-normal">{userName ? `, ${userName}!` : '!'}</span>
               </h1>
               <p className="text-base md:text-lg text-white/90 mb-6 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
-                onClick={() => console.log('View membership status')}
+                onClick={() => {
+                  console.log('🔄 [OverviewTab] Navigating to membership status tab');
+                  if (setActiveTab) {
+                    setActiveTab('membership-status');
+                  } else {
+                    console.error('❌ [OverviewTab] setActiveTab function not provided');
+                  }
+                }}
                 variant="outline"
                 size="md"
                 className="border-white/30 text-white hover:bg-white/10"
@@ -255,8 +295,8 @@ const OverviewTab = ({ setActiveTab }) => {
               </GradientButton>
             </div>
             
-            {/* Latest Media on the right */}
-            {podcastEpisodes && podcastEpisodes[0] && latestMediaItems && latestMediaItems[0] && (
+            {/* Latest Media - only show if we have podcasts */}
+            {mediaItems.filter(item => item.type === 'podcast').length > 0 && (
               <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-4 max-w-sm border border-white/20">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-white text-sm font-medium drop-shadow">LATEST MEDIA</h3>
@@ -267,32 +307,43 @@ const OverviewTab = ({ setActiveTab }) => {
                   />
                 </div>
                 <div className="flex items-start gap-3">
-                  <img 
-                    src={latestMediaItems[0].image} 
-                    alt={podcastEpisodes[0].title}
-                    className="w-24 h-16 object-cover rounded flex-shrink-0"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-                        PODCAST
-                      </span>
-                      <span className="text-xs text-white/70">
-                        {podcastEpisodes[0].timeAgo}
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-medium text-white line-clamp-2 mb-1.5 drop-shadow">
-                      {podcastEpisodes[0].title}
-                    </h4>
-                    <a 
-                      href={podcastEpisodes[0].link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-white/90 hover:text-white transition-colors font-medium inline-block"
-                    >
-                      LISTEN NOW →
-                    </a>
-                  </div>
+                  {(() => {
+                    const latestPodcast = mediaItems.find(item => item.type === 'podcast');
+                    if (!latestPodcast) return null;
+                    
+                    return (
+                      <>
+                        <img 
+                          src={podcastImage} 
+                          alt={latestPodcast.title}
+                          className="w-24 h-16 object-cover rounded flex-shrink-0"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
+                              PODCAST
+                            </span>
+                            <span className="text-xs text-white/70">
+                              {formatNotificationTime(latestPodcast.publishDate)}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-medium text-white line-clamp-2 mb-1.5 drop-shadow">
+                            {latestPodcast.title}
+                          </h4>
+                          {latestPodcast.link && (
+                            <a 
+                              href={latestPodcast.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-white/90 hover:text-white transition-colors font-medium inline-block"
+                            >
+                              LISTEN NOW →
+                            </a>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -315,8 +366,8 @@ const OverviewTab = ({ setActiveTab }) => {
               className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
-              <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
             <h3 className="font-medium text-base text-[#2a2346] mb-1">Account</h3>
@@ -334,8 +385,8 @@ const OverviewTab = ({ setActiveTab }) => {
               className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
-              <svg className="w-7 h-7 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
               </svg>
             </div>
             <h3 className="font-medium text-base text-[#2a2346] mb-1">Membership</h3>
@@ -353,8 +404,8 @@ const OverviewTab = ({ setActiveTab }) => {
               className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
               </svg>
             </div>
             <h3 className="font-medium text-base text-[#2a2346] mb-1">Payments</h3>
@@ -372,8 +423,8 @@ const OverviewTab = ({ setActiveTab }) => {
               className="w-14 h-14 rounded flex items-center justify-center mb-4 relative overflow-hidden"
               style={{ backgroundColor: '#6f2d74' }}
             >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
               </svg>
             </div>
             <h3 className="font-medium text-base text-[#2a2346] mb-1">Support</h3>
@@ -383,26 +434,47 @@ const OverviewTab = ({ setActiveTab }) => {
       </div>
 
       {/* Announcements Section */}
-      {announcements && announcements.length > 0 && (
-        <div ref={announcementsRef} id="announcements" className="mt-16">
-          <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>Announcements</h2>
+      <div ref={announcementsRef} id="announcements" className="mt-16">
+        <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+          Announcements
+        </h2>
+        {!contentLoaded && announcements.length === 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ContentSkeleton />
+            <ContentSkeleton />
+          </div>
+        ) : announcements.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {announcements.slice(0, 2).map((announcement, index) => (
               <div 
                 key={announcement.id}
                 className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-1000 cursor-pointer border-2 border-purple-200 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                 style={{ transitionDelay: `${200 + (index * 200)}ms` }}
+                onClick={() => {
+                  if (announcement.link) {
+                    window.open(announcement.link, '_blank');
+                  }
+                }}
               >
                 <div className="relative h-64 overflow-hidden">
-                  <img 
-                    src={announcement.image}
-                    alt={announcement.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Full overlay with gradient */}
+                  {announcement.imageUrl ? (
+                    <img 
+                      src={announcement.imageUrl}
+                      alt={announcement.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                        <p className="text-sm opacity-75">Announcement</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
                   
-                  {/* Text overlay content */}
                   <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
                     <h3 className="text-2xl font-medium mb-2">{announcement.title}</h3>
                     {announcement.subtitle && (
@@ -439,61 +511,106 @@ const OverviewTab = ({ setActiveTab }) => {
                 </div>
                 <div className="p-6 bg-white">
                   <p className="text-gray-600 mb-4">{announcement.description}</p>
-                  <a 
-                    href={announcement.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[#6b5b7e] hover:text-[#4a4266] font-medium transition-colors inline-flex items-center gap-2 underline underline-offset-4"
-                  >
-                    Learn More
-                    <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </a>
+                  {announcement.link && (
+                    <a 
+                      href={announcement.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#6b5b7e] hover:text-[#4a4266] font-medium transition-colors inline-flex items-center gap-2 underline underline-offset-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Learn More
+                      <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-12 text-center">
+            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+            <p className="text-gray-500 text-lg mb-2">No announcements at this time</p>
+            <p className="text-gray-400 text-sm">Check back later for updates</p>
+          </div>
+        )}
+      </div>
 
       {/* Member Newsletter Section */}
-      {memberNewsletters && memberNewsletters.length > 0 && (
-        <div ref={newslettersRef} id="newsletters" className="mt-20">
-          <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Member Newsletters</h2>
+      <div ref={newslettersRef} id="newsletters" className="mt-20">
+        <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          Member Newsletters
+        </h2>
+        {!contentLoaded && mediaItems.filter(item => item.type === 'newsletter').length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {memberNewsletters.slice(0, 3).map((newsletter, index) => (
-              <div 
-                key={newsletter.id}
-                className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 cursor-pointer ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                style={{ transitionDelay: `${(index + 1) * 100}ms` }}
-              >
-                <div className="relative h-64 overflow-hidden">
-                  <img 
-                    src={newsletter.image}
-                    alt={newsletter.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <h3 className="text-xl font-medium mb-1">{newsletter.title}</h3>
-                    <p className="text-sm opacity-90">{newsletter.formattedDate}</p>
+            <ContentSkeleton />
+            <ContentSkeleton />
+            <ContentSkeleton />
+          </div>
+        ) : mediaItems.filter(item => item.type === 'newsletter').length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {mediaItems
+              .filter(item => item.type === 'newsletter')
+              .slice(0, 3)
+              .map((newsletter, index) => (
+                <div 
+                  key={newsletter.id}
+                  className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 cursor-pointer ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                  style={{ transitionDelay: `${(index + 1) * 100}ms` }}
+                  onClick={() => {
+                    if (newsletter.link) {
+                      window.open(newsletter.link, '_blank');
+                    }
+                  }}
+                >
+                  <div className="relative h-64 overflow-hidden">
+                    {newsletter.imageUrl ? (
+                      <img 
+                        src={newsletter.imageUrl}
+                        alt={newsletter.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h3 className="text-xl font-medium mb-1">{newsletter.title}</h3>
+                      <p className="text-sm opacity-90">
+                        {newsletter.publishDate ? new Date(newsletter.publishDate).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        }) : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-6 bg-white border-2 border-[#f5e6d3] border-t-0 rounded-b-lg">
+                    <p className="text-gray-600 mb-4 line-clamp-2">{newsletter.description}</p>
+                    <button className="text-[#d09163] hover:text-[#b87a52] font-medium transition-colors flex items-center gap-2 underline underline-offset-4">
+                      Read Newsletter
+                      <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-                <div className="p-6 bg-white border-2 border-[#f5e6d3] border-t-0 rounded-b-lg">
-                  <p className="text-gray-600 mb-4 line-clamp-2">{newsletter.description}</p>
-                  <button className="text-[#d09163] hover:text-[#b87a52] font-medium transition-colors flex items-center gap-2 underline underline-offset-4">
-                    Read Newsletter
-                    <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-12 text-center">
+            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            <p className="text-gray-500 text-lg mb-2">No newsletters available</p>
+            <p className="text-gray-400 text-sm">Check back later for new content</p>
+          </div>
+        )}
+      </div>
 
       {/* Recent Activity */}
       <div ref={recentActivityRef} id="recentActivity" className="mt-16">

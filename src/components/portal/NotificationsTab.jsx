@@ -1,117 +1,142 @@
 import React, { useState, useEffect } from 'react';
+import { useMemberPortal } from '../../contexts/MemberPortalProvider';
+import { markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/notifications';
+import { db } from '../../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { X, Clock, User } from 'lucide-react';
 
 const NotificationsTab = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState([]);
+  const { notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
   const [filter, setFilter] = useState('all'); // all, unread, read
   const [typeFilter, setTypeFilter] = useState('all'); // all, message, alert, podcast, newsletter, travel, update
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [messageContent, setMessageContent] = useState(null);
+  const [loadingMessage, setLoadingMessage] = useState(false);
 
-  // Simulate loading notifications
   useEffect(() => {
-    const loadNotifications = async () => {
-      setIsLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setNotifications([
-        {
-          id: 1,
-          type: 'podcast',
-          title: 'New Podcast Episode',
-          content: 'Deployment and Recovery: Inside Alcor\'s DART Team - Part 2',
-          time: '5 minutes ago',
-          date: '2025-06-24',
-          read: false,
-        },
-        {
-          id: 2,
-          type: 'newsletter',
-          title: 'New Member Newsletter',
-          content: 'June: Alcor makes strong showing at Vitalist Bay Biostasis Conference',
-          time: '1 hour ago',
-          date: '2025-06-24',
-          read: false,
-        },
-        {
-          id: 3,
-          type: 'travel',
-          title: 'James Arrowood Will Be Visiting Texas',
-          content: 'CEO James Arrowood will be in Texas next week for member meetings',
-          time: '3 hours ago',
-          date: '2025-06-24',
-          read: true,
-        },
-        {
-          id: 4,
-          type: 'message',
-          title: 'New Message from Member Services',
-          content: 'Response to your inquiry about membership documentation',
-          time: 'Yesterday',
-          date: '2025-06-23',
-          read: true,
-        },
-        {
-          id: 5,
-          type: 'update',
-          title: 'Account Update',
-          content: 'Your payment method has been successfully updated',
-          time: '2 days ago',
-          date: '2025-06-22',
-          read: true,
-        },
-        {
-          id: 6,
-          type: 'alert',
-          title: 'Important: Annual Documentation Review',
-          content: 'Please review and update your emergency contact information',
-          time: '3 days ago',
-          date: '2025-06-21',
-          read: true,
-        },
-        {
-          id: 7,
-          type: 'podcast',
-          title: 'New Podcast Episode',
-          content: 'Deployment and Recovery: Inside Alcor\'s DART Team - Part 1',
-          time: '1 week ago',
-          date: '2025-06-17',
-          read: true,
-        },
-        {
-          id: 8,
-          type: 'newsletter',
-          title: 'May Member Newsletter',
-          content: 'Updates on new research initiatives and member services improvements',
-          time: '2 weeks ago',
-          date: '2025-06-10',
-          read: true,
-        },
-      ]);
-      
-      setIsLoading(false);
-    };
-
-    loadNotifications();
+    // Refresh notifications when component mounts
+    refreshNotifications();
   }, []);
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if not already
+    if (!notification.read) {
+      try {
+        await markNotificationAsRead(notification.id);
+        await refreshNotifications();
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+
+    // Handle different notification types
+    if (notification.type === 'message' && notification.metadata?.messageId) {
+      // For messages, show the modal
+      setLoadingMessage(true);
+      try {
+        const messageDoc = await getDoc(doc(db, 'staff_messages', notification.metadata.messageId));
+        if (messageDoc.exists()) {
+          setMessageContent({
+            id: messageDoc.id,
+            ...messageDoc.data()
+          });
+          setSelectedMessage(notification);
+        }
+      } catch (error) {
+        console.error('Error fetching message:', error);
+      } finally {
+        setLoadingMessage(false);
+      }
+    } else if (notification.type === 'podcast' || notification.type === 'newsletter') {
+      // For media items, check if there's a link in metadata or actionUrl
+      if (notification.actionUrl) {
+        // If actionUrl starts with http, open in new tab
+        if (notification.actionUrl.startsWith('http')) {
+          window.open(notification.actionUrl, '_blank');
+        } else if (notification.actionType === 'external') {
+          window.open(notification.actionUrl, '_blank');
+        } else {
+          // Navigate to resources-media tab
+          console.log('Navigate to:', notification.actionUrl);
+          // You would implement navigation here based on your routing setup
+          // For example: setActiveTab('resources-media') or navigate('/resources-media')
+        }
+      } else if (notification.metadata?.link) {
+        // If there's a direct link in metadata
+        window.open(notification.metadata.link, '_blank');
+      }
+    } else if (notification.type === 'update' || notification.type === 'announcement') {
+      // For announcements, check for links
+      if (notification.actionUrl) {
+        if (notification.actionUrl.startsWith('http') || notification.actionType === 'external') {
+          window.open(notification.actionUrl, '_blank');
+        } else {
+          console.log('Navigate to:', notification.actionUrl);
+          // Internal navigation
+        }
+      } else if (notification.metadata?.link) {
+        window.open(notification.metadata.link, '_blank');
+      }
+    } else if (notification.actionUrl) {
+      // Default behavior for any other types
+      if (notification.actionType === 'external' || notification.actionUrl.startsWith('http')) {
+        window.open(notification.actionUrl, '_blank');
+      } else {
+        console.log('Navigate to:', notification.actionUrl);
+      }
+    }
   };
 
-  const markAsUnread = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: false } : n
-    ));
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markNotificationAsRead(id);
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAsUnread = async (id) => {
+    // This would need a backend implementation
+    console.log('Mark as unread not implemented yet');
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      await deleteNotification(id);
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const closeMessageModal = () => {
+    setSelectedMessage(null);
+    setMessageContent(null);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
   const getIcon = (type) => {
@@ -130,6 +155,7 @@ const NotificationsTab = () => {
           </svg>
         );
       case 'alert':
+      case 'update':
         return (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -147,14 +173,12 @@ const NotificationsTab = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
           </svg>
         );
-      case 'update':
+      default:
         return (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
-      default:
-        return null;
     }
   };
 
@@ -183,279 +207,248 @@ const NotificationsTab = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // Loading state
-  if (isLoading) {
+  if (!notificationsLoaded) {
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 animate-fadeInDown">
+        <div className="mb-8">
           <div className="h-9 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-          <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 animate-fadeIn animation-delay-100">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex flex-wrap gap-3">
-              <div className="h-10 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
-            </div>
-            <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse"></div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fadeIn animation-delay-200">
-          {[...Array(5)].map((_, index) => (
-            <div key={index} className="px-6 py-4 border-b border-gray-200 last:border-b-0">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
-                <div className="flex-1">
-                  <div className="h-5 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto" style={{ fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif" }}>
-      <div className="mb-8 animate-fadeInDown">
-        <h1 className="text-3xl font-medium text-gray-900 mb-2">Notifications</h1>
-      </div>
+    <>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-gray-900 mb-2">Notifications</h1>
+        </div>
 
-      {/* Filters and Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 animate-fadeIn animation-delay-100">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex flex-wrap gap-3">
-            {/* Read Status Filter */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  filter === 'all' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+        {/* Filters and Actions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-wrap gap-3">
+              {/* Read Status Filter */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filter === 'all' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter('unread')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filter === 'unread' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Unread ({unreadCount})
+                </button>
+                <button
+                  onClick={() => setFilter('read')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filter === 'read' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Read
+                </button>
+              </div>
+
+              {/* Type Filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-4 pr-10 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#9662a2]"
               >
-                All
-              </button>
-              <button
-                onClick={() => setFilter('unread')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  filter === 'unread' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Unread ({unreadCount})
-              </button>
-              <button
-                onClick={() => setFilter('read')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  filter === 'read' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Read
-              </button>
+                <option value="all">All Types</option>
+                <option value="message">Messages</option>
+                <option value="alert">Alerts</option>
+                <option value="podcast">Podcasts</option>
+                <option value="newsletter">Newsletters</option>
+                <option value="travel">Travel Updates</option>
+                <option value="update">Account Updates</option>
+              </select>
             </div>
 
-            {/* Type Filter */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 pr-10 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#9662a2]"
-              style={{ fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif" }}
-            >
-              <option value="all">All Types</option>
-              <option value="message">Messages</option>
-              <option value="alert">Alerts</option>
-              <option value="podcast">Podcasts</option>
-              <option value="newsletter">Newsletters</option>
-              <option value="travel">Travel Updates</option>
-              <option value="update">Account Updates</option>
-            </select>
-          </div>
-
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="px-4 py-2 text-sm font-medium text-[#5b2f4b] hover:text-[#3f2541] hover:bg-gray-50 rounded-lg transition-all"
-            >
-              Mark all as read
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Notifications List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {filteredNotifications.length === 0 ? (
-          <div className="px-6 py-16 text-center animate-fadeIn">
-            <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-gray-500 text-lg">No notifications found</p>
-            <p className="text-gray-400 text-sm mt-1">
-              {filter !== 'all' && 'Try adjusting your filters'}
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {filteredNotifications.map((notification, index) => (
-              <div
-                key={notification.id}
-                className={`px-6 py-4 hover:bg-gray-50 transition-all animate-fadeInUp ${
-                  !notification.read ? 'bg-[#3f2541]/5' : ''
-                }`}
-                style={{animationDelay: `${200 + index * 50}ms`}}
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="px-4 py-2 text-sm font-medium text-[#5b2f4b] hover:text-[#3f2541] hover:bg-gray-50 rounded-lg transition-all"
               >
-                <div className="flex items-start gap-4">
-                  <div className={`flex-shrink-0 ${getTypeColor(notification.type)}`}>
-                    {getIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h3 className={`text-base font-medium text-gray-900 mb-1 ${
-                          !notification.read ? 'font-semibold' : ''
-                        }`}>
-                          {notification.title}
-                        </h3>
-                        <p className="text-sm text-gray-600">{notification.content}</p>
-                        <p className="text-xs text-gray-400 mt-2">{notification.time}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {!notification.read && (
-                          <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full"></span>
-                        )}
+                Mark all as read
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Notifications List */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {filteredNotifications.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p className="text-gray-500 text-lg">No notifications found</p>
+              <p className="text-gray-400 text-sm mt-1">
+                {filter !== 'all' && 'Try adjusting your filters'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`px-6 py-4 hover:bg-gray-50 transition-all cursor-pointer ${
+                    !notification.read ? 'bg-[#3f2541]/5' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 ${getTypeColor(notification.type)}`}>
+                      {getIcon(notification.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className={`text-base font-medium text-gray-900 mb-1 ${
+                            !notification.read ? 'font-semibold' : ''
+                          }`}>
+                            {notification.title}
+                          </h3>
+                          <p className="text-sm text-gray-600">{notification.content}</p>
+                          <p className="text-xs text-gray-400 mt-2">{formatDate(notification.createdAt)}</p>
+                        </div>
                         
-                        {/* Actions Menu */}
-                        <div className="relative group">
-                          <button className="p-1 rounded hover:bg-gray-100">
-                            <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                            </svg>
-                          </button>
+                        <div className="flex items-center gap-2">
+                          {!notification.read && (
+                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full"></span>
+                          )}
                           
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                            {notification.read ? (
-                              <button
-                                onClick={() => markAsUnread(notification.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
-                              >
-                                Mark as unread
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => markAsRead(notification.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
-                              >
-                                Mark as read
-                              </button>
-                            )}
-                            <button
-                              onClick={() => deleteNotification(notification.id)}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                          {/* Actions Menu */}
+                          <div className="relative group">
+                            <button 
+                              className="p-1 rounded hover:bg-gray-100"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              Delete
+                              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
                             </button>
+                            
+                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                              {notification.read ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsUnread(notification.id);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                                >
+                                  Mark as unread
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                                >
+                                  Mark as read
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNotification(notification.id);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Message Modal */}
+      {selectedMessage && messageContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="border-b border-gray-200 p-6 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {messageContent.subject}
+                </h2>
+                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    From: Alcor Staff
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {formatDate(messageContent.createdAt?.toDate?.() || messageContent.createdAt)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={closeMessageModal}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingMessage ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : (
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap">{messageContent.content}</p>
+                </div>
+              )}
+            </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-fadeInDown {
-          animation: fadeInDown 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animation-delay-100 {
-          animation-delay: 100ms;
-        }
-
-        .animation-delay-200 {
-          animation-delay: 200ms;
-        }
-
-        .animation-delay-300 {
-          animation-delay: 300ms;
-        }
-
-        .animation-delay-400 {
-          animation-delay: 400ms;
-        }
-
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: .5;
-          }
-        }
-      `}</style>
-    </div>
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-4 flex justify-end">
+              <button
+                onClick={closeMessageModal}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

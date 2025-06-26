@@ -1,4 +1,4 @@
-// App.jsx - Integrated with Demo Service
+// App.jsx - Updated with Staff Routes
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { UserProvider } from "./contexts/UserContext";
@@ -14,6 +14,8 @@ import StandalonePaymentPage from './pages/PaymentPage';
 import WelcomeMember from './pages/WelcomeMember';
 import DemoPasswordPage from './pages/DemoPasswordPage';
 import PortalHome from './pages/PortalHome';
+import StaffPage from './pages/StaffPage'; // Add this import
+import StaffPasswordReset from './pages/StaffPasswordReset';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -116,6 +118,11 @@ function App() {
 
           {/* Payment page (used in signup flow) */}
           <Route path="/payment" element={<StandalonePaymentPage />} />
+          
+          {/* Staff Portal Routes */}
+          <Route path="/staff" element={<StaffPage />} />
+          <Route path="/staff/reset-password" element={<StaffPasswordReset />} />
+          <Route path="/staff/*" element={<StaffPage />} />
           
           {/* Member-only routes wrapped with MemberPortalProvider */}
           <Route path="/welcome-member" element={

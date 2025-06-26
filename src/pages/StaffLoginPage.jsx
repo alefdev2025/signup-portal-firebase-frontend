@@ -1,0 +1,985 @@
+import React, { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, functions } from '../services/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { Lock, Mail, AlertCircle, User, Eye, EyeOff, Check, X } from 'lucide-react';
+import darkLogo from "../assets/images/alcor-white-logo.png";
+import yellowStar from "../assets/images/alcor-yellow-star.png";
+
+const StaffLoginPage = ({ onAuthenticated }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmittingReset, setIsSubmittingReset] = useState(false);
+  const [isCreateAccount, setIsCreateAccount] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: [] });
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [showTwoFactorInput, setShowTwoFactorInput] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState(null);
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [verificationStep, setVerificationStep] = useState('form'); // 'form', 'verification', 'twoFactorSetup'
+  const [verificationId, setVerificationId] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+
+  // Password strength checker
+  const checkPasswordStrength = (pwd) => {
+    const feedback = [];
+    let score = 0;
+    
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[a-z]/.test(pwd)) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    
+    if (pwd.length < 8) feedback.push('At least 8 characters');
+    if (!/[a-z]/.test(pwd)) feedback.push('Include lowercase letter');
+    if (!/[A-Z]/.test(pwd)) feedback.push('Include uppercase letter');
+    if (!/[0-9]/.test(pwd)) feedback.push('Include number');
+    if (!/[^A-Za-z0-9]/.test(pwd)) feedback.push('Include special character');
+    
+    return { score: Math.min(Math.floor((score / 6) * 4), 4), feedback };
+  };
+
+  // Update password strength when password changes
+  useEffect(() => {
+    if (password) {
+      setPasswordStrength(checkPasswordStrength(password));
+    } else {
+      setPasswordStrength({ score: 0, feedback: [] });
+    }
+  }, [password]);
+
+  const checkStaffAccess = async (user) => {
+    try {
+      // Check custom claims first
+      const idTokenResult = await user.getIdTokenResult();
+      const hasStaffRole = idTokenResult.claims.roles?.includes('staff') || 
+                          idTokenResult.claims.roles?.includes('admin');
+      
+      if (hasStaffRole) return true;
+      
+      // Check Firestore as fallback
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.roles?.includes('staff') || userData.roles?.includes('admin');
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking staff access:', error);
+      return false;
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // First, try to sign in with Firebase Auth to validate credentials
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Check if user has staff access
+      const isStaff = await checkStaffAccess(user);
+      
+      if (!isStaff) {
+        // Sign out if not staff
+        await auth.signOut();
+        setError('Access denied. This portal is for staff members only.');
+        return;
+      }
+      
+      // Now call the backend to handle 2FA
+      const signInStaff = httpsCallable(functions, 'authCore');
+      const result = await signInStaff({
+        action: 'signInStaff',
+        email: email,
+        password: password,
+        twoFactorCode: null // Will be required on subsequent calls
+      });
+      
+      if (result.data.success) {
+        setSuccessMessage('Successfully signed in. Redirecting...');
+        if (onAuthenticated) {
+          onAuthenticated(user);
+        }
+      } else if (result.data.requiresTwoFactor) {
+        // TODO: Show 2FA input screen
+        setError('Please enter your two-factor authentication code.');
+        console.log('2FA required');
+      } else if (result.data.requiresTwoFactorSetup) {
+        // TODO: Show 2FA setup screen
+        console.log('2FA setup required:', result.data);
+        setError('Please set up two-factor authentication.');
+      } else if (result.data.requiresEmailVerification) {
+        setError('Please verify your email address first.');
+      } else {
+        setError(result.data.error || 'Sign in failed');
+      }
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      switch(err.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          setError('Invalid email or password. Please check your credentials and try again.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Too many failed login attempts. Please try again later or reset your password.');
+          break;
+        case 'auth/user-disabled':
+          setError('This account has been disabled. Please contact support.');
+          break;
+        case 'auth/network-request-failed':
+          setError('Network error. Please check your internet connection and try again.');
+          break;
+        default:
+          setError('Sign in failed. Please check your credentials and try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAccount = async (e) => {
+    e.preventDefault();
+    
+    if (!email || !password || !confirmPassword || !displayName) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    // Validate email domain
+    const emailLower = email.toLowerCase();
+    const isValidDomain = emailLower.endsWith('@alcor.org') || emailLower === 'alcor.dev.2025@gmail.com';
+    
+    if (!isValidDomain) {
+      setError('Staff accounts can only be created with @alcor.org email addresses');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (passwordStrength.score < 3) {
+      setError('Password is too weak. Please use a stronger password.');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // First, send verification email
+      const createEmailVerification = httpsCallable(functions, 'authCore');
+      const verificationResult = await createEmailVerification({
+        action: 'createEmailVerification',
+        email: emailLower,
+        name: displayName
+      });
+      
+      console.log('Email verification result:', verificationResult.data);
+      
+      if (verificationResult.data.success) {
+        if (verificationResult.data.isExistingUser) {
+          setError('An account with this email already exists. Please sign in instead.');
+          setTimeout(() => {
+            setIsCreateAccount(false);
+          }, 2000);
+          return;
+        }
+        
+        // Store verification ID and user data for after verification
+        setVerificationId(verificationResult.data.verificationId);
+        sessionStorage.setItem('pendingStaffAccount', JSON.stringify({
+          email: emailLower,
+          displayName: displayName,
+          password: password,
+          verificationId: verificationResult.data.verificationId
+        }));
+        
+        // Switch to verification code input
+        setVerificationStep('verification');
+        setSuccessMessage('');
+        
+        // Log the verification code for development
+        if (verificationResult.data.__devOnly?.code) {
+          console.log('DEV: Verification code:', verificationResult.data.__devOnly.code);
+        }
+      } else {
+        setError(verificationResult.data.error || 'Failed to send verification email');
+      }
+      
+    } catch (err) {
+      console.error('Create account error:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (successMessage) {
+      setSuccessMessage('');
+    }
+    
+    switch(name) {
+      case 'email':
+        setEmail(value);
+        break;
+      case 'password':
+        setPassword(value);
+        break;
+      case 'confirmPassword':
+        setConfirmPassword(value);
+        break;
+      case 'displayName':
+        setDisplayName(value);
+        break;
+    }
+    
+    if (error) {
+      setError('');
+    }
+  };
+
+  const handleShowResetForm = () => {
+    setResetEmail(email || '');
+    setShowResetForm(true);
+  };
+
+  const handleCancelReset = () => {
+    setShowResetForm(false);
+    setResetEmail('');
+    setResetError('');
+  };
+
+  const handleResetEmailChange = (e) => {
+    setResetEmail(e.target.value);
+    setResetError('');
+  };
+
+  const validateResetForm = () => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!resetEmail.trim()) {
+      setResetError('Email is required');
+      return false;
+    }
+    
+    if (!emailPattern.test(resetEmail)) {
+      setResetError('Please enter a valid email address');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (isSubmittingReset) return;
+    if (!validateResetForm()) return;
+    
+    setIsSubmittingReset(true);
+    
+    try {
+      // Call the backend function for staff password reset
+      const sendStaffPasswordReset = httpsCallable(functions, 'authCore');
+      const result = await sendStaffPasswordReset({
+        action: 'sendStaffPasswordResetLink',
+        email: resetEmail
+      });
+      
+      console.log('Password reset result:', result.data);
+      
+      if (result.data.success) {
+        const message = result.data.message || `If a staff account exists for ${resetEmail}, we've sent a password reset link. Please check your email.`;
+        setSuccessMessage(message);
+        setShowResetForm(false);
+        setResetEmail('');
+      } else {
+        setResetError(result.data.error || 'Unable to send reset email. Please try again later.');
+      }
+      
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setResetError('Unable to send reset email. Please try again later.');
+    } finally {
+      setIsSubmittingReset(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    
+    if (!verificationCode || verificationCode.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Verify the code
+      const verifyEmailCode = httpsCallable(functions, 'authCore');
+      const verifyResult = await verifyEmailCode({
+        action: 'verifyEmailCode',
+        verificationId: verificationId,
+        code: verificationCode
+      });
+      
+      console.log('Verification result:', verifyResult.data);
+      
+      if (verifyResult.data.success) {
+        // Get stored account data
+        const pendingAccount = JSON.parse(sessionStorage.getItem('pendingStaffAccount') || '{}');
+        
+        // Now create the staff account
+        const createStaffAccount = httpsCallable(functions, 'authCore');
+        const createResult = await createStaffAccount({
+          action: 'createStaffAccount',
+          email: pendingAccount.email,
+          displayName: pendingAccount.displayName,
+          password: pendingAccount.password
+        });
+        
+        if (createResult.data.success) {
+          // Clear stored data
+          sessionStorage.removeItem('pendingStaffAccount');
+          
+          // Auto-login the user
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, pendingAccount.email, pendingAccount.password);
+            
+            if (createResult.data.requiresTwoFactorSetup) {
+              setQrCodeData(createResult.data.qrCode);
+              setTwoFactorSecret(createResult.data.secret);
+              setVerificationStep('twoFactorSetup');
+            } else {
+              setSuccessMessage('Account created and signed in successfully!');
+              if (onAuthenticated) {
+                onAuthenticated(userCredential.user);
+              }
+            }
+          } catch (loginError) {
+            console.error('Auto-login failed:', loginError);
+            setSuccessMessage('Account created successfully! Please sign in.');
+            setTimeout(() => {
+              setIsCreateAccount(false);
+              setVerificationStep('form');
+            }, 3000);
+          }
+        } else {
+          setError(createResult.data.error || 'Failed to create account');
+        }
+      } else {
+        setError(verifyResult.data.error || 'Invalid verification code');
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError('Failed to verify code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerificationCode = async () => {
+    setError('');
+    setLoading(true);
+    const pendingAccount = JSON.parse(sessionStorage.getItem('pendingStaffAccount') || '{}');
+    
+    if (!pendingAccount.email) return;
+    
+    try {
+      const createEmailVerification = httpsCallable(functions, 'authCore');
+      const result = await createEmailVerification({
+        action: 'createEmailVerification',
+        email: pendingAccount.email,
+        name: pendingAccount.displayName
+      });
+      
+      if (result.data.success) {
+        // Update the verification ID with the new one
+        setVerificationId(result.data.verificationId);
+        
+        // Update the stored pending account with new verification ID
+        const updatedAccount = {
+          ...pendingAccount,
+          verificationId: result.data.verificationId
+        };
+        sessionStorage.setItem('pendingStaffAccount', JSON.stringify(updatedAccount));
+        
+        setSuccessMessage('Verification code resent!');
+        setVerificationCode(''); // Clear the old code
+        
+        if (result.data.__devOnly?.code) {
+          console.log('DEV: New verification code:', result.data.__devOnly.code);
+        }
+      } else {
+        setError('Failed to resend code');
+      }
+    } catch (err) {
+      console.error('Resend error:', err);
+      setError('Failed to resend verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeEmail = () => {
+    sessionStorage.removeItem('pendingStaffAccount');
+    setVerificationStep('form');
+    setVerificationCode('');
+    setVerificationId('');
+    setError('');
+  };
+
+  const toggleAccountMode = () => {
+    setIsCreateAccount(!isCreateAccount);
+    setError('');
+    setSuccessMessage('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setDisplayName('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setVerificationStep('form');
+    setVerificationCode('');
+    sessionStorage.removeItem('pendingStaffAccount');
+  };
+
+  const getPasswordStrengthColor = () => {
+    switch(passwordStrength.score) {
+      case 0: return 'bg-gray-300';
+      case 1: return 'bg-red-500';
+      case 2: return 'bg-orange-500';
+      case 3: return 'bg-yellow-500';
+      case 4: return 'bg-green-500';
+      default: return 'bg-gray-300';
+    }
+  };
+
+  return (
+    <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
+      {/* Custom Compact Banner */}
+      <div className="relative">
+        {/* Mobile Banner */}
+        <div className="md:hidden">
+          <div 
+            className="text-white px-4 py-6 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(90deg, #0a1629 0%, #1e2650 100%)',
+              fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <img 
+                src={darkLogo} 
+                alt="Alcor Logo" 
+                className="h-10"
+              />
+              <h1 className="text-lg font-bold">Staff Portal</h1>
+            </div>
+            <p className="text-sm text-white/90 mt-2 text-center">
+              {isCreateAccount ? "Create staff account" : "Sign in to staff dashboard"}
+            </p>
+          </div>
+        </div>
+        
+        {/* Desktop Banner */}
+        <div 
+          className="hidden md:block"
+          style={{
+            background: 'linear-gradient(90deg, #0a1629 0%, #1e2650 100%)',
+            fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif"
+          }}
+        >
+          <div className="text-white px-10 pt-8 pb-12">
+            <div className="flex justify-start mb-6">
+              <img 
+                src={darkLogo} 
+                alt="Alcor Logo" 
+                className="h-16"
+              />
+            </div>
+            
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="flex items-center justify-center">
+                <span className="text-3xl md:text-4xl font-bold">
+                  Staff Portal
+                </span>
+                <img src={yellowStar} alt="" className="h-7 ml-1" />
+              </h1>
+              <p className="text-lg md:text-xl mt-3 text-white/90">
+                {isCreateAccount ? "Create a new staff account" : "Sign in to access the Alcor staff dashboard."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 flex justify-center items-start px-4 sm:px-8 md:px-12 pb-16 sm:pb-12 pt-8 sm:pt-12">
+        <div className="w-full max-w-lg bg-white rounded-xl shadow-md overflow-hidden">
+          {showResetForm ? (
+            // Password Reset Form
+            <form onSubmit={handleResetPassword} className="p-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Reset Your Password</h2>
+              <p className="text-base text-gray-600 mb-6">Enter your email address below and we'll send you a link to reset your password.</p>
+              
+              {resetError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-3 mb-6 text-base">
+                  {resetError}
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <label htmlFor="resetEmail" className="block text-gray-800 text-base font-medium mb-2">Email</label>
+                <input 
+                  type="email" 
+                  id="resetEmail"
+                  value={resetEmail}
+                  onChange={handleResetEmailChange}
+                  placeholder="e.g. john.smith@alcor.org" 
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                  disabled={isSubmittingReset}
+                />
+              </div>
+              
+              <div className="flex flex-col space-y-3">
+                <button 
+                  type="submit"
+                  disabled={isSubmittingReset}
+                  style={{ backgroundColor: "#6f2d74", color: "white" }}
+                  className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                >
+                  {isSubmittingReset ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    <>Send Reset Link</>
+                  )}
+                </button>
+                
+                <button 
+                  type="button"
+                  onClick={handleCancelReset}
+                  disabled={isSubmittingReset}
+                  className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-gray-50 disabled:opacity-70"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </form>
+          ) : isCreateAccount ? (
+            verificationStep === 'verification' ? (
+              // Verification Code Form
+              <form onSubmit={handleVerifyCode} className="p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Verify Your Email</h2>
+                
+                {successMessage && (
+                  <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-3 mb-6 text-base">
+                    {successMessage}
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-3 mb-6 flex items-start gap-3 text-base">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                
+                <div className="mb-6">
+                  <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-2">
+                    Verification Code
+                  </label>
+                  <input 
+                    type="text" 
+                    id="verificationCode"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="Enter the 6-digit code" 
+                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest"
+                    disabled={loading}
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                  />
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-8">
+                  A verification code has been sent to <strong>{email}</strong>
+                </p>
+                
+                <div className="space-y-3">
+                  <button 
+                    type="submit"
+                    disabled={loading || verificationCode.length !== 6}
+                    style={{ backgroundColor: "#6f2d74", color: "white" }}
+                    className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Verifying...
+                      </>
+                    ) : (
+                      <>Verify</>
+                    )}
+                  </button>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      type="button"
+                      onClick={resendVerificationCode}
+                      disabled={loading}
+                      className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-full font-medium text-sm flex items-center justify-center hover:bg-gray-50 disabled:opacity-70"
+                    >
+                      Resend Code
+                    </button>
+                    
+                    <button 
+                      type="button"
+                      onClick={changeEmail}
+                      disabled={loading}
+                      className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-full font-medium text-sm flex items-center justify-center hover:bg-gray-50 disabled:opacity-70"
+                    >
+                      Change Email
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              // Create Account Form
+            <form onSubmit={handleCreateAccount} className="p-8">
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-3 mb-6 text-base">
+                  {successMessage}
+                </div>
+              )}
+              
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-3 mb-6 flex items-start gap-3 text-base">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <label htmlFor="displayName" className="block text-gray-800 text-base font-medium mb-2">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="text" 
+                    id="displayName"
+                    name="displayName"
+                    value={displayName}
+                    onChange={handleInputChange}
+                    placeholder="e.g. John Smith" 
+                    className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <label htmlFor="email" className="block text-gray-800 text-base font-medium mb-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="email" 
+                    id="email"
+                    name="email"
+                    value={email}
+                    onChange={handleInputChange}
+                    placeholder="e.g. john.smith@alcor.org" 
+                    className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Must use @alcor.org email address</p>
+              </div>
+              
+              <div className="mb-6">
+                <label htmlFor="password" className="block text-gray-800 text-base font-medium mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={handleInputChange}
+                    placeholder="Create a strong password" 
+                    className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div className="mt-3">
+                    <div className="flex gap-1 mb-2">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded ${
+                            i < passwordStrength.score ? getPasswordStrengthColor() : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    {passwordStrength.feedback.length > 0 && (
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        {passwordStrength.feedback.map((item, index) => (
+                          <li key={index} className="flex items-center gap-1">
+                            <X className="w-3 h-3 text-red-500" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {passwordStrength.score === 4 && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Strong password
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="mb-8">
+                <label htmlFor="confirmPassword" className="block text-gray-800 text-base font-medium mb-2">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Re-enter your password" 
+                    className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                    <X className="w-3 h-3" />
+                    Passwords do not match
+                  </p>
+                )}
+                {confirmPassword && password === confirmPassword && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    Passwords match
+                  </p>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                <button 
+                  type="submit"
+                  disabled={loading || passwordStrength.score < 3}
+                  style={{ backgroundColor: "#6f2d74", color: "white" }}
+                  className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>Create Staff Account</>
+                  )}
+                </button>
+              </div>
+              
+              <div className="text-center mt-6">
+                <span className="text-gray-600 text-base">Already have an account? </span>
+                <button
+                  type="button"
+                  onClick={toggleAccountMode}
+                  className="text-purple-700 text-base hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </form>
+            )
+          ) : (
+            // Login Form
+            <form onSubmit={handleLogin} className="p-8">
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-3 mb-6 text-base">
+                  {successMessage}
+                </div>
+              )}
+              
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-3 mb-6 flex items-start gap-3 text-base">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <label htmlFor="email" className="block text-gray-800 text-base font-medium mb-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="email" 
+                    id="email"
+                    name="email"
+                    value={email}
+                    onChange={handleInputChange}
+                    placeholder="e.g. john.smith@alcor.org" 
+                    className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="password" className="block text-gray-800 text-base font-medium">Password</label>
+                  <button 
+                    type="button" 
+                    onClick={handleShowResetForm}
+                    className="text-purple-700 text-sm hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password" 
+                    className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  style={{ backgroundColor: "#6f2d74", color: "white" }}
+                  className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Signing in...
+                    </>
+                  ) : (
+                    <>Sign In</>
+                  )}
+                </button>
+              </div>
+              
+              <div className="text-center mt-6">
+                <span className="text-gray-600 text-base">Need a staff account? </span>
+                <button
+                  type="button"
+                  onClick={toggleAccountMode}
+                  className="text-purple-700 text-base hover:underline"
+                >
+                  Create account
+                </button>
+              </div>
+              
+              <div className="text-center mt-8 pt-8 border-t border-gray-200">
+                <a
+                  href="/"
+                  className="text-gray-500 hover:text-gray-700 underline text-base"
+                >
+                  Back to Member Portal
+                </a>
+              </div>
+              
+              <div className="text-center mt-6 text-sm text-gray-500">
+                <p>© 2025 Alcor Life Extension Foundation</p>
+                <p className="mt-1">Staff Access Only</p>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StaffLoginPage;

@@ -1,69 +1,144 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead,
+  formatNotificationTime 
+} from '../../services/notifications';
+import { useMemberPortal } from '../../contexts/MemberPortalProvider';
+
+console.log('📢 [NotificationBell] Module loaded');
 
 const NotificationBell = ({ activeTab, setActiveTab }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'podcast',
-      title: 'New Podcast Episode',
-      content: 'Deployment and Recovery: Inside Alcor\'s DART Team - Part 2',
-      time: '5 minutes ago',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'newsletter',
-      title: 'New Member Newsletter',
-      content: 'June: Alcor makes strong showing at Vitalist Bay Biostasis Conference',
-      time: '1 hour ago',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'travel',
-      title: 'James Arrowood Will Be Visiting Texas',
-      content: 'CEO James Arrowood will be in Texas next week for member meetings',
-      time: '3 hours ago',
-      read: true,
-    },
-    {
-      id: 4,
-      type: 'message',
-      title: 'New Message from Member Services',
-      content: 'Response to your inquiry about membership documentation',
-      time: 'Yesterday',
-      read: true,
-    },
-  ]);
-
-  const dropdownRef = useRef(null);
-  const buttonRef = useRef(null);
+  console.log('🚀 [NotificationBell] Component rendering...');
   
-  const isOverviewTab = activeTab === 'overview';
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
+  const navigate = useNavigate();
+  const notificationRef = useRef(null); // Single ref for the entire notification component
+  
+  // Get notifications from context
+  const { notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
+  
+  console.log('🔔 [NotificationBell] Got notifications from context:', {
+    count: notifications?.length || 0,
+    loaded: notificationsLoaded,
+    notifications: notifications
+  });
+  
+  // Memoize the displayed notifications to prevent excessive re-renders
+  const displayedNotifications = useMemo(() => {
+    return notifications.slice(0, 10).map(notification => ({
+      ...notification,
+      formattedTime: formatNotificationTime(notification.createdAt)
+    }));
+  }, [notifications]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          buttonRef.current && !buttonRef.current.contains(event.target)) {
+      // Check if click is outside the entire notification component
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        console.log('🔄 [NotificationBell] Click outside detected, closing dropdown');
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        console.log('🔄 [NotificationBell] Escape key pressed, closing dropdown');
+        setIsOpen(false);
+      }
+    };
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+    console.log('📌 [NotificationBell] Adding event listeners');
+    
+    // Add listeners after a small delay to avoid immediate closing
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside, true);
+      document.addEventListener('keydown', handleEscapeKey);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      console.log('🧹 [NotificationBell] Removing event listeners');
+      document.removeEventListener('click', handleClickOutside, true);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen]);
+
+  // Refresh notifications when dropdown opens (but only once)
+  useEffect(() => {
+    if (isOpen && refreshNotifications && !hasRefreshed) {
+      console.log('🔄 [NotificationBell] Dropdown opened, refreshing notifications ONCE');
+      setHasRefreshed(true);
+      refreshNotifications();
+    }
+    
+    // Reset the flag when dropdown closes
+    if (!isOpen) {
+      setHasRefreshed(false);
+    }
+  }, [isOpen, hasRefreshed]); // Remove refreshNotifications from dependencies
+
+  const handleNotificationClick = async (notification) => {
+    console.log('👆 [NotificationBell] Notification clicked:', {
+      id: notification.id,
+      type: notification.type,
+      read: notification.read,
+      actionUrl: notification.actionUrl,
+      actionType: notification.actionType
+    });
+    
+    // Mark as read if not already
+    if (!notification.read) {
+      try {
+        console.log('📝 [NotificationBell] Marking notification as read:', notification.id);
+        await markNotificationAsRead(notification.id);
+        // Refresh notifications to update the list
+        await refreshNotifications();
+        console.log('✅ [NotificationBell] Notification marked as read');
+      } catch (error) {
+        console.error('❌ [NotificationBell] Error marking notification as read:', error);
+      }
+    }
+
+    // Handle navigation based on action type
+    if (notification.actionUrl) {
+      console.log('🚀 [NotificationBell] Navigating to:', notification.actionUrl);
+      
+      if (notification.actionType === 'external') {
+        window.open(notification.actionUrl, '_blank');
+      } else if (notification.actionType === 'navigate') {
+        setIsOpen(false);
+        // Convert actionUrl to tab format if needed
+        const tabRoute = notification.actionUrl.replace(/^\//, '').replace(/\//g, '-');
+        console.log('🗂️ [NotificationBell] Setting active tab to:', tabRoute);
+        setActiveTab(tabRoute);
+      }
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async () => {
+    console.log('📑 [NotificationBell] Marking all notifications as read...');
+    try {
+      await markAllNotificationsAsRead();
+      // Refresh notifications to update the list
+      await refreshNotifications();
+      console.log('✅ [NotificationBell] All notifications marked as read');
+    } catch (error) {
+      console.error('❌ [NotificationBell] Error marking all as read:', error);
+    }
+  };
+
+  const handleViewAllNotifications = () => {
+    console.log('📂 [NotificationBell] Navigating to all notifications page');
+    setIsOpen(false);
+    setActiveTab('account-notifications');
   };
 
   const getIcon = (type) => {
@@ -82,6 +157,7 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
           </svg>
         );
       case 'alert':
+      case 'update':
         return (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -99,27 +175,55 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
           </svg>
         );
-      case 'update':
+      case 'payment':
+        return (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        );
+      case 'membership':
+        return (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+          </svg>
+        );
+      case 'document':
+        return (
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        );
+      default:
         return (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
-      default:
-        return null;
     }
   };
 
-  const handleViewAllNotifications = () => {
-    setIsOpen(false);
-    setActiveTab('account-notifications');
+  const getTypeColor = (type) => {
+    switch(type) {
+      case 'message': return 'text-[#9662a2]';
+      case 'alert': return 'text-[#8551a1]';
+      case 'update': return 'text-[#8551a1]';
+      case 'podcast': return 'text-[#a770b2]';
+      case 'newsletter': return 'text-[#7f4fa0]';
+      case 'travel': return 'text-[#8e5ba3]';
+      case 'payment': return 'text-[#6b5b7e]';
+      case 'membership': return 'text-[#7a4e8f]';
+      case 'document': return 'text-[#8f5da1]';
+      default: return 'text-[#9662a2]';
+    }
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={notificationRef}>
       <button 
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          console.log('🔔 [NotificationBell] Bell clicked, isOpen:', !isOpen);
+          setIsOpen(!isOpen);
+        }}
         className="relative text-gray-700 hover:text-gray-900 p-1.5 md:p-2 rounded-lg hover:bg-gray-100 transition-all"
       >
         <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +239,6 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
       {/* Dropdown */}
       {isOpen && (
         <div 
-          ref={dropdownRef}
           className="absolute right-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
         >
           {/* Header */}
@@ -143,7 +246,7 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
             <h3 className="font-semibold text-gray-900">Notifications</h3>
             {unreadCount > 0 && (
               <button 
-                onClick={markAllAsRead}
+                onClick={handleMarkAllAsRead}
                 className="text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
               >
                 Mark all as read
@@ -153,28 +256,37 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
 
           {/* Notification List */}
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {!notificationsLoaded ? (
+              <div className="px-4 py-8 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                Loading notifications...
+              </div>
+            ) : error ? (
+              <div className="px-4 py-8 text-center">
+                <p className="text-red-500 mb-2">{error}</p>
+                <button 
+                  onClick={refreshNotifications}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
                 No notifications
               </div>
             ) : (
-              notifications.map((notification) => (
+              displayedNotifications.map((notification, index) => (
                 <div
                   key={notification.id}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                   className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
                     !notification.read ? 'bg-[#3f2541]/5' : ''
                   }`}
+                  title={`ID: ${notification.id}, Type: ${notification.type}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`${
-                      notification.type === 'message' ? 'text-[#9662a2]' :
-                      notification.type === 'alert' ? 'text-[#8551a1]' :
-                      notification.type === 'podcast' ? 'text-[#a770b2]' :
-                      notification.type === 'newsletter' ? 'text-[#7f4fa0]' :
-                      notification.type === 'travel' ? 'text-[#8e5ba3]' :
-                      'text-[#9662a2]'
-                    }`}>
+                    <div className={`${getTypeColor(notification.type)}`}>
                       {getIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -187,7 +299,9 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
                         )}
                       </div>
                       <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>
-                      <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {notification.formattedTime}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -201,7 +315,7 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
               onClick={handleViewAllNotifications}
               className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
             >
-              View all notifications
+              View all notifications ({notifications.length} total)
             </button>
           </div>
         </div>
