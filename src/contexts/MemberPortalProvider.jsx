@@ -23,6 +23,7 @@ const DEMO_CONFIG = {
 const CACHE_KEYS = {
   ANNOUNCEMENTS: 'alcor_announcements_cache',
   MEDIA: 'alcor_media_cache',
+  DOCUMENTS: 'alcor_documents_cache',
   CACHE_TIMESTAMP: 'alcor_content_cache_timestamp'
 };
 
@@ -97,8 +98,10 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
   const [announcements, setAnnouncements] = useState([]);
   const [mediaItems, setMediaItems] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [contentLoaded, setContentLoaded] = useState(false);
   const [notificationsLoaded, setNotificationsLoaded] = useState(false);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
   
   // Refs for intervals
@@ -113,7 +116,7 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     }
     
     try {
-      const [announcementsData, mediaData, notificationsData] = await Promise.all([
+      const [announcementsData, mediaData, notificationsData, documentsData] = await Promise.all([
         fetchWithRetry(() => getAnnouncements()).catch(err => {
           console.error('[MemberPortal] Failed to load announcements after retries:', err);
           return getCachedData(CACHE_KEYS.ANNOUNCEMENTS) || [];
@@ -125,6 +128,27 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         fetchWithRetry(() => getNotifications()).catch(err => {
           console.error('[MemberPortal] Failed to load notifications after retries:', err);
           return [];
+        }),
+        fetchWithRetry(async () => {
+          if (salesforceCustomer?.id) {
+            console.log('[MemberPortal] Fetching documents for:', salesforceCustomer.id);
+            const result = await memberDataService.getDocuments(salesforceCustomer.id);
+            if (result.success && result.data) {
+              const docs = Array.isArray(result.data) ? result.data : 
+                         result.data.documents || 
+                         result.data.data?.documents || 
+                         [];
+              // Filter out .snote files and video testimony files
+              return docs.filter(doc => {
+                const nameLC = doc.name.toLowerCase();
+                return !nameLC.endsWith('.snote') && !nameLC.includes('video testimony');
+              });
+            }
+          }
+          return [];
+        }).catch(err => {
+          console.error('[MemberPortal] Failed to load documents after retries:', err);
+          return getCachedData(CACHE_KEYS.DOCUMENTS) || [];
         })
       ]);
       
@@ -135,13 +159,18 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
       if (mediaData && mediaData.length > 0) {
         setCachedData(CACHE_KEYS.MEDIA, mediaData);
       }
+      if (documentsData && documentsData.length > 0) {
+        setCachedData(CACHE_KEYS.DOCUMENTS, documentsData);
+      }
       
       if (updateUI) {
         setAnnouncements(announcementsData || []);
         setMediaItems(mediaData || []);
         setNotifications(notificationsData || []);
+        setDocuments(documentsData || []);
         setContentLoaded(true);
         setNotificationsLoaded(true);
+        setDocumentsLoaded(true);
         setLastRefresh(new Date());
       }
       
@@ -149,22 +178,26 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         announcements: announcementsData?.length || 0,
         media: mediaData?.length || 0,
         notifications: notificationsData?.length || 0,
+        documents: documentsData?.length || 0,
         timestamp: new Date().toLocaleTimeString()
       });
       
-      return { announcementsData, mediaData, notificationsData };
+      return { announcementsData, mediaData, notificationsData, documentsData };
     } catch (error) {
       console.error('❌ [MemberPortal] Content fetch failed:', error);
       
       // Try to use cache as fallback
       const cachedAnnouncements = getCachedData(CACHE_KEYS.ANNOUNCEMENTS) || [];
       const cachedMedia = getCachedData(CACHE_KEYS.MEDIA) || [];
+      const cachedDocuments = getCachedData(CACHE_KEYS.DOCUMENTS) || [];
       
       if (updateUI) {
         setAnnouncements(cachedAnnouncements);
         setMediaItems(cachedMedia);
+        setDocuments(cachedDocuments);
         setContentLoaded(true);
         setNotificationsLoaded(true);
+        setDocumentsLoaded(true);
       }
       
       setPreloadError(error.message);
@@ -189,12 +222,15 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
       // Try to load from cache first for instant display
       const cachedAnnouncements = getCachedData(CACHE_KEYS.ANNOUNCEMENTS);
       const cachedMedia = getCachedData(CACHE_KEYS.MEDIA);
+      const cachedDocuments = getCachedData(CACHE_KEYS.DOCUMENTS);
       
-      if (cachedAnnouncements || cachedMedia) {
+      if (cachedAnnouncements || cachedMedia || cachedDocuments) {
         console.log('📦 [MemberPortal] Displaying cached content while fetching fresh data');
         setAnnouncements(cachedAnnouncements || []);
         setMediaItems(cachedMedia || []);
+        setDocuments(cachedDocuments || []);
         setContentLoaded(true);
+        setDocumentsLoaded(true);
         
         // Fetch fresh data in background
         fetchFreshContent(true, false);
@@ -273,6 +309,39 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     }
   };
 
+  // Function to refresh just documents
+  const refreshDocuments = async () => {
+    console.log('🔄 [MemberPortal] Refreshing documents...');
+    try {
+      if (!salesforceCustomer?.id) {
+        console.warn('[MemberPortal] No Salesforce customer ID available for documents');
+        return [];
+      }
+      
+      const result = await memberDataService.getDocuments(salesforceCustomer.id);
+      if (result.success && result.data) {
+        const docs = Array.isArray(result.data) ? result.data : 
+                     result.data.documents || 
+                     result.data.data?.documents || 
+                     [];
+        // Filter out .snote files and video testimony files
+        const filteredDocs = docs.filter(doc => {
+          const nameLC = doc.name.toLowerCase();
+          return !nameLC.endsWith('.snote') && !nameLC.includes('video testimony');
+        });
+        
+        setDocuments(filteredDocs);
+        setDocumentsLoaded(true);
+        setCachedData(CACHE_KEYS.DOCUMENTS, filteredDocs);
+        console.log('✅ [MemberPortal] Documents refreshed:', filteredDocs?.length || 0);
+        return filteredDocs;
+      }
+    } catch (error) {
+      console.error('❌ [MemberPortal] Documents refresh failed:', error);
+      return [];
+    }
+  };
+
   const value = {
     // Existing values
     isPreloading,
@@ -288,10 +357,13 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     announcements,
     mediaItems,
     notifications,
+    documents,
     contentLoaded,
     notificationsLoaded,
+    documentsLoaded,
     refreshContent,
     refreshNotifications,
+    refreshDocuments,
     lastRefresh
   };
 

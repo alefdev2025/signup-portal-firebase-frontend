@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, FileText, Users, LogOut, Send } from 'lucide-react';
+import { Bell, FileText, Users, LogOut, Send, Menu, X } from 'lucide-react';
 import { auth } from '../../services/firebase';
 import StaffNotifications from './StaffNotifications';
 import StaffContent from './StaffContent';
@@ -12,6 +12,7 @@ const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState('content');
   const [isStaff, setIsStaff] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -44,6 +45,11 @@ const StaffDashboard = () => {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
   if (!currentUser || loading) {
@@ -83,17 +89,55 @@ const StaffDashboard = () => {
 
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
-      {/* Sidebar - Fixed with matching styles */}
+      {/* Mobile header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100"
+          >
+            <Menu className="w-6 h-6 text-gray-700" />
+          </button>
+          <div className="flex items-center gap-2">
+            <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-8 w-auto" />
+            <span className="text-sm text-gray-600 font-medium">Staff Portal</span>
+          </div>
+          <div className="w-10" /> {/* Spacer for center alignment */}
+        </div>
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Fixed on desktop, drawer on mobile */}
       <div 
-        className="w-[260px] shadow-2xl flex flex-col flex-shrink-0"
+        className={`
+          fixed lg:relative inset-y-0 left-0 z-50 
+          w-[260px] shadow-2xl flex flex-col flex-shrink-0
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
         style={{
           background: 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)'
         }}
       >
+        {/* Mobile close button */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 text-white/80 hover:text-white"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
         {/* Logo Section */}
-        <div className="p-6 pt-10 pb-8 border-b border-white/20 text-center">
-          <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto mx-auto" />
-          <p className="text-sm text-white/80 mt-2">Staff Portal</p>
+        <div className="p-6 pt-6 pb-8 border-b border-white/20">
+          <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
+          <p className="text-sm text-white/80 mt-2 pl-2">Staff Portal</p>
         </div>
         
         {/* Navigation */}
@@ -104,7 +148,7 @@ const StaffDashboard = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabChange(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-normal ${
                     activeTab === item.id
                       ? 'bg-white/10 text-white'
@@ -146,8 +190,9 @@ const StaffDashboard = () => {
 
       {/* Main Content - Scrollable */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto bg-gray-100">
-          <div className="p-8">
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-100 pt-16 lg:pt-0">
+          <div className="p-4 lg:p-8">
             {activeTab === 'content' && <StaffContent />}
             {activeTab === 'messages' && <StaffMessages />}
             {activeTab === 'notifications' && <StaffNotifications />}

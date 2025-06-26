@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { memberDataService } from './services/memberDataService';
 import { downloadDocument, formatFileSize } from './services/salesforce/memberDocuments';
 import documentImage from '../../assets/images/document-image.png';
@@ -6,6 +7,9 @@ import pdfImage from '../../assets/images/pdf-image.png';
 import documentsHeaderImage from '../../assets/images/documents-image.jpg';
 
 const DocumentsTab = ({ contactId }) => {
+  // Get preloaded documents from context
+  const { documents: preloadedDocuments, documentsLoaded, refreshDocuments } = useMemberPortal();
+  
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,16 +22,42 @@ const DocumentsTab = ({ contactId }) => {
 
   console.log('[DocumentsTab] Component rendered with contactId:', contactId);
 
+  // Use preloaded documents on mount
   useEffect(() => {
-    console.log('[DocumentsTab] useEffect triggered, contactId:', contactId);
-    if (contactId) {
+    if (documentsLoaded && preloadedDocuments) {
+      console.log('[DocumentsTab] Using preloaded documents:', preloadedDocuments.length);
+      setDocuments(preloadedDocuments);
+      
+      // Group documents by source
+      const grouped = preloadedDocuments.reduce((acc, doc) => {
+        const source = doc.source || 'Other';
+        const groupName = (source === 'Attachment Documents' || source === 'File Documents') 
+          ? 'Member Documents' 
+          : source;
+        if (!acc[groupName]) acc[groupName] = [];
+        acc[groupName].push(doc);
+        return acc;
+      }, {});
+      
+      setGroupedDocs(grouped);
+      setLoading(false);
+    } else if (documentsLoaded) {
+      // Documents loaded but empty
+      setLoading(false);
+    }
+  }, [preloadedDocuments, documentsLoaded]);
+
+  // Only load documents if not preloaded
+  useEffect(() => {
+    console.log('[DocumentsTab] useEffect triggered, contactId:', contactId, 'documentsLoaded:', documentsLoaded);
+    if (!documentsLoaded && contactId) {
       loadDocuments();
-    } else {
+    } else if (!contactId) {
       console.warn('[DocumentsTab] No contactId provided');
       setLoading(false);
       setError('No contact ID provided');
     }
-  }, [contactId]);
+  }, [contactId, documentsLoaded]);
 
   const loadDocuments = async () => {
     try {
@@ -35,6 +65,16 @@ const DocumentsTab = ({ contactId }) => {
       setError(null);
       
       console.log('[DocumentsTab] Loading documents for contactId:', contactId);
+      
+      // Try to use the refresh function from context first
+      if (refreshDocuments) {
+        const refreshedDocs = await refreshDocuments();
+        if (refreshedDocs && refreshedDocs.length >= 0) {
+          return; // Documents will be updated through context
+        }
+      }
+      
+      // Fallback to direct loading if refresh didn't work
       const result = await memberDataService.getDocuments(contactId);
       console.log('[DocumentsTab] Raw result:', result);
       
@@ -182,7 +222,13 @@ const DocumentsTab = ({ contactId }) => {
             
             // Clear cache and reload
             memberDataService.clearCacheEntry(contactId, 'documents');
-            await loadDocuments();
+            
+            // Use context refresh if available
+            if (refreshDocuments) {
+              await refreshDocuments();
+            } else {
+              await loadDocuments();
+            }
           } else {
             setError(`Upload failed: ${responseData.error || 'Unknown error'}`);
           }

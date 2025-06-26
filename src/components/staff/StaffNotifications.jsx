@@ -54,25 +54,10 @@ const StaffNotifications = () => {
       const data = await response.json();
       console.log('Response data:', data);
       console.log('Filter type:', filterType);
-      console.log('Raw notifications before filtering:', data.notifications);
       
       if (data.success && data.notifications) {
-        // Additional client-side filtering to ensure we only show the correct type
-        let filteredNotifications = data.notifications;
-        
-        if (filterType && filterType !== 'all') {
-          filteredNotifications = data.notifications.filter(n => {
-            // For messages, ensure we're only showing actual messages
-            if (filterType === 'message') {
-              return n.type === 'message';
-            }
-            // For other types, match exactly
-            return n.type === filterType;
-          });
-          console.log(`Client-side filtered to ${filteredNotifications.length} ${filterType} notifications`);
-        }
-        
-        setNotifications(filteredNotifications);
+        console.log('Notifications count:', data.notifications.length);
+        setNotifications(data.notifications);
       } else {
         console.log('No notifications in response');
         setNotifications([]);
@@ -186,12 +171,6 @@ const StaffNotifications = () => {
     a.click();
   };
 
-  // Get unique notification types from current data
-  const getAvailableTypes = () => {
-    const types = new Set(notifications.map(n => n.type));
-    return Array.from(types).sort();
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
@@ -250,15 +229,15 @@ const StaffNotifications = () => {
         {/* Debug Info */}
         <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs font-mono">
           <p><strong>Current Filter:</strong> {filterType}</p>
-          <p><strong>Total Notifications (filtered):</strong> {notifications.length}</p>
+          <p><strong>Total Notifications:</strong> {notifications.length}</p>
           <p><strong>URL:</strong> {`${API_BASE_URL}/api/staff/notifications/notifications-staff?all=true${filterType && filterType !== 'all' ? `&type=${filterType}` : ''}`}</p>
-          <p><strong>Unique Types in Current View:</strong> {getAvailableTypes().join(', ') || 'none'}</p>
+          <p><strong>Unique Types in Database:</strong> {[...new Set(notifications.map(n => n.type))].join(', ')}</p>
           <details>
-            <summary className="cursor-pointer text-blue-600 hover:text-blue-800">View Current Notifications</summary>
+            <summary className="cursor-pointer text-blue-600 hover:text-blue-800">View Notification Types</summary>
             <div className="mt-2 space-y-1">
               {notifications.slice(0, 10).map((n, idx) => (
                 <div key={idx} className="text-xs">
-                  {idx + 1}. Type: <span className="font-bold text-red-600">{n.type || 'undefined'}</span> | Title: {n.title} | ID: {n.id}
+                  {idx + 1}. Type: <span className="font-bold">{n.type || 'undefined'}</span> | Title: {n.title}
                 </div>
               ))}
             </div>
@@ -321,27 +300,21 @@ const StaffNotifications = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">{notification.title}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                              notification.type === 'podcast' || (notification.type === 'media' && notification.metadata?.mediaType === 'podcast')
-                                ? 'bg-purple-100 text-purple-700'
-                                : notification.type === 'newsletter' || (notification.type === 'media' && notification.metadata?.mediaType === 'newsletter')
-                                ? 'bg-blue-100 text-blue-700'
-                                : notification.type === 'announcement'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : notification.type === 'update'
-                                ? 'bg-gray-100 text-gray-700'
-                                : notification.type === 'message'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {getNotificationTypeLabel(notification.type, notification.metadata)}
-                            </span>
-                            {/* Show actual type for debugging */}
-                            <span className="text-xs text-gray-400">
-                              (type: {notification.type})
-                            </span>
-                          </div>
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                            notification.type === 'podcast' || (notification.type === 'media' && notification.metadata?.mediaType === 'podcast')
+                              ? 'bg-purple-100 text-purple-700'
+                              : notification.type === 'newsletter' || (notification.type === 'media' && notification.metadata?.mediaType === 'newsletter')
+                              ? 'bg-blue-100 text-blue-700'
+                              : notification.type === 'announcement'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : notification.type === 'update'
+                              ? 'bg-gray-100 text-gray-700'
+                              : notification.type === 'message'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {getNotificationTypeLabel(notification.type, notification.metadata)}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3">
                           {notification.read && (
@@ -369,8 +342,6 @@ const StaffNotifications = () => {
                           <Users className="w-3 h-3" />
                           {notification.recipientCount 
                             ? `Sent to ${notification.recipientCount} member${notification.recipientCount > 1 ? 's' : ''}`
-                            : notification.users?.length 
-                            ? `Sent to ${notification.users.length} member${notification.users.length > 1 ? 's' : ''}`
                             : notification.user?.email || 'All members'}
                         </span>
                         {notification.actionUrl && (
@@ -378,18 +349,7 @@ const StaffNotifications = () => {
                             • {notification.actionType === 'external' ? 'External link' : 'In-app link'}
                           </span>
                         )}
-                        {notification.metadata?.messageId && (
-                          <span className="text-gray-400">
-                            • Message ID: {notification.metadata.messageId}
-                          </span>
-                        )}
                       </div>
-                      {/* Show recipient emails if available */}
-                      {notification.users && notification.users.length > 0 && (
-                        <div className="mt-2 text-xs text-gray-400">
-                          Recipients: {notification.users.map(u => u.email).join(', ')}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
