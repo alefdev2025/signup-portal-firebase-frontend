@@ -56,8 +56,35 @@ const StaffNotifications = () => {
       console.log('Filter type:', filterType);
       
       if (data.success && data.notifications) {
-        console.log('Notifications count:', data.notifications.length);
-        setNotifications(data.notifications);
+        console.log('Notifications count before filtering:', data.notifications.length);
+        
+        // Filter out duplicates based on title, content, and createdAt timestamp
+        const uniqueNotifications = data.notifications.reduce((acc, notification) => {
+          const key = `${notification.type}-${notification.title}-${notification.content}-${new Date(notification.createdAt).getTime()}`;
+          const existingIndex = acc.findIndex(n => 
+            `${n.type}-${n.title}-${n.content}-${new Date(n.createdAt).getTime()}` === key
+          );
+          
+          if (existingIndex === -1) {
+            // If it's a new unique notification, add it with recipient count
+            acc.push({
+              ...notification,
+              recipientCount: notification.recipientCount || 1
+            });
+          } else {
+            // If we found a duplicate, increment the recipient count
+            if (!acc[existingIndex].recipientCount) {
+              acc[existingIndex].recipientCount = 2;
+            } else {
+              acc[existingIndex].recipientCount++;
+            }
+          }
+          
+          return acc;
+        }, []);
+        
+        console.log('Notifications count after filtering:', uniqueNotifications.length);
+        setNotifications(uniqueNotifications);
       } else {
         console.log('No notifications in response');
         setNotifications([]);
@@ -152,13 +179,13 @@ const StaffNotifications = () => {
 
   const exportNotifications = () => {
     const csv = [
-      ['Date', 'Type', 'Title', 'Content', 'Recipient', 'Read Status'],
+      ['Date', 'Type', 'Title', 'Content', 'Recipients', 'Read Status'],
       ...notifications.map(n => [
         formatDate(n.createdAt),
         getNotificationTypeLabel(n.type, n.metadata),
         n.title,
         n.content,
-        n.user?.email || 'Unknown',
+        n.recipientCount ? `${n.recipientCount} members` : (n.user?.email || 'All members'),
         n.read ? 'Read' : 'Unread'
       ])
     ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
@@ -229,7 +256,7 @@ const StaffNotifications = () => {
         {/* Debug Info */}
         <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs font-mono">
           <p><strong>Current Filter:</strong> {filterType}</p>
-          <p><strong>Total Notifications:</strong> {notifications.length}</p>
+          <p><strong>Total Unique Notifications:</strong> {notifications.length}</p>
           <p><strong>URL:</strong> {`${API_BASE_URL}/api/staff/notifications/notifications-staff?all=true${filterType && filterType !== 'all' ? `&type=${filterType}` : ''}`}</p>
           <p><strong>Unique Types in Database:</strong> {[...new Set(notifications.map(n => n.type))].join(', ')}</p>
           <details>
@@ -237,7 +264,7 @@ const StaffNotifications = () => {
             <div className="mt-2 space-y-1">
               {notifications.slice(0, 10).map((n, idx) => (
                 <div key={idx} className="text-xs">
-                  {idx + 1}. Type: <span className="font-bold">{n.type || 'undefined'}</span> | Title: {n.title}
+                  {idx + 1}. Type: <span className="font-bold">{n.type || 'undefined'}</span> | Title: {n.title} | Recipients: {n.recipientCount || 1}
                 </div>
               ))}
             </div>
@@ -340,8 +367,8 @@ const StaffNotifications = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          {notification.recipientCount 
-                            ? `Sent to ${notification.recipientCount} member${notification.recipientCount > 1 ? 's' : ''}`
+                          {notification.recipientCount && notification.recipientCount > 1
+                            ? `Sent to ${notification.recipientCount} members`
                             : notification.user?.email || 'All members'}
                         </span>
                         {notification.actionUrl && (
