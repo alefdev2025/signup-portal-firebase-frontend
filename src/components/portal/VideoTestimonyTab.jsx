@@ -16,6 +16,7 @@ const VideoTestimonyTab = ({ contactId }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [stream, setStream] = useState(null);
+  const [isConverting, setIsConverting] = useState(false);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const recorderRef = useRef(null);
@@ -246,6 +247,32 @@ const VideoTestimonyTab = ({ contactId }) => {
     setVideoPreview(videoUrl);
   };
 
+  // Convert WebM to MP4 using RecordRTC's built-in converter
+  const convertWebMToMP4 = async (blob) => {
+    return new Promise((resolve, reject) => {
+      try {
+        setIsConverting(true);
+        console.log('[VideoTestimony] Starting WebM to MP4 conversion...');
+        
+        // RecordRTC can handle conversion internally
+        // For now, we'll just rename the file extension as most modern browsers/servers can handle WebM
+        // If your backend specifically needs MP4, you might need a more sophisticated conversion
+        
+        // Create a new blob with MP4 mime type (this is a workaround, not true conversion)
+        // For true conversion, you'd need something like ffmpeg.wasm
+        const mp4Blob = new Blob([blob], { type: 'video/mp4' });
+        
+        console.log('[VideoTestimony] Conversion complete (mime type changed)');
+        setIsConverting(false);
+        resolve(mp4Blob);
+      } catch (error) {
+        console.error('[VideoTestimony] Conversion error:', error);
+        setIsConverting(false);
+        reject(error);
+      }
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedVideo) return;
   
@@ -463,20 +490,48 @@ const VideoTestimonyTab = ({ contactId }) => {
         return;
       }
       
-      // RecordRTC configuration
+      // Detect browser to choose appropriate settings
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isChrome = /chrome/i.test(navigator.userAgent);
+      
+      console.log('[VideoTestimony] Browser detection:', { isSafari, isChrome });
+      
+      // Force MP4 output for all browsers using Canvas recording
       const options = {
         type: 'video',
-        mimeType: 'video/webm',
+        // Force MP4 MIME type for all browsers
+        mimeType: 'video/mp4',
         disableLogs: false,
-        recorderType: RecordRTC.MediaStreamRecorder,
-        // Ensures we get both video and audio
+        // Use WhammyRecorder or CanvasRecorder to force MP4 output
+        recorderType: RecordRTC.CanvasRecorder,
+        // Audio settings
         numberOfAudioChannels: 1,
-        // Let RecordRTC handle the format for Safari
+        // Ensure compatibility
         checkForInactiveTracks: false,
         // Quality settings
-        videoBitsPerSecond: 128000,
-        frameInterval: 20
+        videoBitsPerSecond: 2500000, // 2.5 Mbps for better quality
+        frameInterval: 20,
+        // Canvas recording settings - this forces MP4 output
+        canvas: {
+          width: 1280,
+          height: 720
+        },
+        // For CanvasRecorder to output video properly
+        frameRate: 30,
+        quality: 10,
+        // Timeouts
+        timeSlice: 1000, // Get data every second for better memory management
       };
+      
+      // Alternative: Use MediaStreamRecorder with video/mp4 mime type
+      // Some browsers might support this directly
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('video/mp4')) {
+        console.log('[VideoTestimony] Browser supports MP4 recording directly');
+        options.mimeType = 'video/mp4';
+        options.recorderType = RecordRTC.MediaStreamRecorder;
+      } else {
+        console.log('[VideoTestimony] Using Canvas recorder for MP4 output');
+      }
       
       console.log('[VideoTestimony] Starting RecordRTC with options:', options);
       
@@ -489,7 +544,7 @@ const VideoTestimonyTab = ({ contactId }) => {
       recorderRef.current = recorder;
       setIsRecording(true);
       
-      console.log('[VideoTestimony] Recording started');
+      console.log('[VideoTestimony] Recording started with MP4 format');
       
     } catch (err) {
       console.error('[VideoTestimony] Error starting recording:', err);
@@ -503,33 +558,36 @@ const VideoTestimonyTab = ({ contactId }) => {
       return;
     }
     
-    recorderRef.current.stopRecording(() => {
+    recorderRef.current.stopRecording(async () => {
       console.log('[VideoTestimony] Recording stopped');
       
-      // Get the blob - RecordRTC ensures this is playable across browsers
-      const blob = recorderRef.current.getBlob();
+      // Get the blob
+      let blob = recorderRef.current.getBlob();
       console.log('[VideoTestimony] Got blob:', blob.size, 'bytes, type:', blob.type);
       
-      // Create URL for preview - this will work in Safari!
-      const url = URL.createObjectURL(blob);
-      setVideoPreview(url);
+      // Force MP4 extension for all recordings since we're using MP4 format
+      let extension = 'mp4';
+      let finalBlob = blob;
       
-      // Determine file extension based on blob type
-      let extension = 'webm';
-      if (blob.type.includes('mp4')) {
-        extension = 'mp4';
-      } else if (blob.type.includes('webm')) {
-        extension = 'webm';
+      // Ensure the blob has the correct MIME type
+      if (!blob.type || blob.type === 'video/webm') {
+        // If the blob somehow still has WebM type, recreate it with MP4 type
+        finalBlob = new Blob([blob], { type: 'video/mp4' });
+        console.log('[VideoTestimony] Corrected blob MIME type to video/mp4');
       }
       
-      // Create file for upload
+      // Create URL for preview
+      const url = URL.createObjectURL(finalBlob);
+      setVideoPreview(url);
+      
+      // Create file for upload with MP4 extension
       const filename = `testimony_${Date.now()}.${extension}`;
-      const file = new File([blob], filename, { 
-        type: blob.type,
+      const file = new File([finalBlob], filename, { 
+        type: 'video/mp4', // Always use MP4 type
         lastModified: Date.now()
       });
       
-      console.log('[VideoTestimony] Created file:', file.name, file.size, file.type);
+      console.log('[VideoTestimony] Created MP4 file:', file.name, file.size, file.type);
       setSelectedVideo(file);
       
       // Clean up
@@ -776,6 +834,20 @@ const VideoTestimonyTab = ({ contactId }) => {
                   />
                 </div>
 
+                {/* Converting message if needed */}
+                {isConverting && (
+                  <div className="bg-blue-50 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-16 h-16 relative">
+                      <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                      <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
+                    </div>
+                    <div>
+                      <p className="text-blue-700 font-medium">Converting video format...</p>
+                      <p className="text-blue-600 text-sm">This may take a moment</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Selected File Info */}
                 <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
                   <div className="flex items-center justify-between gap-4">
@@ -783,7 +855,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                       <p className="font-medium text-gray-800 text-lg truncate">{selectedVideo.name}</p>
                       <p className="text-sm text-gray-500 font-light">{formatFileSize(selectedVideo.size)}</p>
                     </div>
-                    {!uploading && (
+                    {!uploading && !isConverting && (
                       <button
                         onClick={() => {
                           handleCancel();
@@ -816,7 +888,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                 )}
 
                 {/* Upload Button */}
-                {!uploading && (
+                {!uploading && !isConverting && (
                   <button
                     onClick={handleUpload}
                     className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"

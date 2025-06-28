@@ -4,6 +4,7 @@ import { getMemberProfile } from './services/salesforce/memberInfo';
 import { useUser } from '../../contexts/UserContext';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import GradientButton from './GradientButton';
+import { bannerStyles, fadeInAnimation } from './OverviewBannerStyles';
 import alcorStar from '../../assets/images/alcor-star.png';
 import dewarsImage from '../../assets/images/dewars2.jpg';
 import podcastImage from '../../assets/images/podcast-image2.png';
@@ -17,7 +18,8 @@ const OverviewTab = ({ setActiveTab }) => {
     mediaItems = [], 
     contentLoaded,
     refreshContent,
-    lastRefresh
+    lastRefresh,
+    salesforceCustomer
   } = useMemberPortal();
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -73,25 +75,45 @@ const OverviewTab = ({ setActiveTab }) => {
     }
   };
 
-  // Fetch user name
+  // Fetch user name - now using profile data as primary source
   useEffect(() => {
     const fetchUserName = async () => {
+      // If we already have a valid userName, skip
+      if (userName && userName !== '0031I00000tRcNZ') {
+        return;
+      }
+
+      // First try to get from profile data if available
+      if (profileData?.personalInfo?.firstName) {
+        console.log('✅ [OverviewTab] Using firstName from profile data:', profileData.personalInfo.firstName);
+        setUserName(profileData.personalInfo.firstName);
+        setLoading(false);
+        return;
+      }
+
+      // Then try getContactInfo if we have currentUser
       if (currentUser) {
         try {
+          console.log('📞 [OverviewTab] Calling getContactInfo()...');
           const response = await getContactInfo();
-          if (response.success && response.contactInfo) {
-            const firstName = response.contactInfo.firstName || '';
-            setUserName(firstName);
+          console.log('📦 [OverviewTab] getContactInfo response:', response);
+          
+          if (response.success && response.contactInfo?.firstName) {
+            console.log('✅ [OverviewTab] Found firstName in contactInfo:', response.contactInfo.firstName);
+            setUserName(response.contactInfo.firstName);
+          } else {
+            console.warn('⚠️ [OverviewTab] No valid contactInfo, will wait for profile data');
           }
         } catch (error) {
-          console.error('Error fetching user info:', error);
+          console.error('❌ [OverviewTab] Error fetching contact info:', error);
         }
       }
+      
       setLoading(false);
     };
 
     fetchUserName();
-  }, [currentUser]);
+  }, [currentUser, profileData, userName]);
 
   // Fetch profile data
   useEffect(() => {
@@ -99,12 +121,23 @@ const OverviewTab = ({ setActiveTab }) => {
       if (salesforceContactId && !isPreloading) {
         try {
           setProfileLoading(true);
+          console.log('📞 [OverviewTab] Calling getMemberProfile with ID:', salesforceContactId);
           const result = await getMemberProfile(salesforceContactId);
+          console.log('📦 [OverviewTab] getMemberProfile result:', result);
+          
           if (result.success && result.data) {
-            setProfileData(result.data.data || result.data);
+            const profileInfo = result.data.data || result.data;
+            console.log('✅ [OverviewTab] Profile data received:', profileInfo);
+            setProfileData(profileInfo);
+            
+            // Set userName from profile data if not already set
+            if ((!userName || userName === '0031I00000tRcNZ') && profileInfo.personalInfo?.firstName) {
+              console.log('🔄 [OverviewTab] Setting userName from profile data:', profileInfo.personalInfo.firstName);
+              setUserName(profileInfo.personalInfo.firstName);
+            }
           }
         } catch (error) {
-          console.error('Error fetching profile data:', error);
+          console.error('❌ [OverviewTab] Error fetching profile data:', error);
         } finally {
           setProfileLoading(false);
         }
@@ -124,11 +157,6 @@ const OverviewTab = ({ setActiveTab }) => {
       contentLoaded,
       lastRefresh: lastRefresh?.toLocaleTimeString()
     });
-    
-    // Debug: Log newsletter items specifically
-    const newsletters = mediaItems.filter(item => item.type === 'newsletter');
-    console.log('Newsletter items:', newsletters);
-    console.log('All media items:', mediaItems);
   }, [announcements, mediaItems, contentLoaded, lastRefresh]);
 
   // Scroll animations
@@ -186,94 +214,44 @@ const OverviewTab = ({ setActiveTab }) => {
     <div className="-mt-4 px-6 md:px-8 lg:px-12">
       {/* Hero Banner */}
       <div 
-        className="relative h-64 rounded-xl overflow-hidden mb-12 animate-fadeIn"
-        style={{ 
-          animation: 'fadeIn 0.8s ease-in-out'
-        }}
+        className="relative rounded-xl overflow-hidden mb-12 animate-fadeIn"
+        style={bannerStyles.container}
       >
-        <style jsx>{`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
+        <style jsx>{fadeInAnimation}</style>
         
-        {/* Background image */}
         <div 
           className="absolute inset-0"
           style={{
-            backgroundImage: `url(${dewarsImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'right center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.6
+            ...bannerStyles.backgroundImage,  // Spread the styles from banner file
+            backgroundImage: `url(${dewarsImage})`,  // Keep the image URL here
           }}
         />
         
         {/* Main gradient */}
         <div 
           className="absolute inset-0"
-          style={{
-            background: `linear-gradient(to right, 
-              #12243c 0%, 
-              #1a2d4a 10%,
-              #243658 20%, 
-              #2e3f66 30%, 
-              #384874 40%, 
-              #425182 50%,
-              rgba(66, 81, 130, 0.9) 55%,
-              rgba(66, 81, 130, 0.7) 60%,
-              rgba(66, 81, 130, 0.5) 65%,
-              rgba(66, 81, 130, 0.3) 70%,
-              rgba(66, 81, 130, 0.1) 75%,
-              transparent 80%)`
-          }}
+          style={bannerStyles.mainGradient}
         />
         
         {/* Right side gradient overlay */}
         <div 
           className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, 
-              transparent 0%,
-              transparent 40%,
-              rgba(18, 36, 60, 0.2) 50%,
-              rgba(35, 45, 75, 0.3) 55%,
-              rgba(52, 54, 90, 0.4) 60%,
-              rgba(69, 63, 105, 0.5) 65%,
-              rgba(86, 72, 120, 0.6) 70%,
-              rgba(103, 81, 135, 0.6) 75%,
-              rgba(130, 95, 130, 0.5) 80%,
-              rgba(170, 120, 110, 0.4) 85%,
-              rgba(207, 145, 100, 0.5) 90%,
-              rgba(207, 145, 100, 0.6) 93%,
-              rgba(218, 187, 84, 0.7) 96%,
-              rgba(218, 187, 84, 0.8) 100%)`,
-            opacity: 0.85
-          }}
+          style={bannerStyles.rightGradientOverlay}
         />
         
         {/* Vignette overlay */}
         <div 
           className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at 80% 50%, transparent 30%, rgba(0,0,0,0.3) 100%)`
-          }}
+          style={bannerStyles.vignetteOverlay}
         />
         
         <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message */}
             <div className="flex-1">
-              <h1 className="font-light text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2rem' }}>
+              <h1 className="font-semibold text-white mb-3 drop-shadow-lg tracking-tight" style={{ fontSize: '2rem' }}>
                 <span className="text-white/90">Welcome</span>
-                <span className="text-white font-normal">{userName ? `, ${userName}!` : '!'}</span>
+                <span className="text-white font-bold">{userName ? `, ${userName}!` : '!'}</span>
               </h1>
               <p className="text-base md:text-lg text-white/90 mb-6 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
@@ -297,9 +275,9 @@ const OverviewTab = ({ setActiveTab }) => {
             
             {/* Latest Media - only show if we have podcasts */}
             {mediaItems.filter(item => item.type === 'podcast').length > 0 && (
-              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-4 max-w-sm border border-white/20">
+              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-6 max-w-md border border-white/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-white text-sm font-medium drop-shadow">LATEST MEDIA</h3>
+                  <h3 className="text-white text-sm font-semibold drop-shadow">LATEST MEDIA</h3>
                   <img 
                     src={alcorStar} 
                     alt="Alcor Star" 
@@ -353,7 +331,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
       {/* Quick Actions */}
       <div ref={quickActionsRef} id="quickActions" className="mb-8 mt-16">
-        <h2 className={`text-2xl font-light text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div 
             className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -435,7 +413,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
       {/* Announcements Section */}
       <div ref={announcementsRef} id="announcements" className="mt-16">
-        <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           Announcements
         </h2>
         {!contentLoaded && announcements.length === 0 ? (
@@ -542,7 +520,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
       {/* Member Newsletter Section */}
       <div ref={newslettersRef} id="newsletters" className="mt-20">
-        <h2 className={`text-2xl font-light text-[#2a2346] mb-10 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           Member Newsletters
         </h2>
         {!contentLoaded && mediaItems.filter(item => item.type === 'newsletter').length === 0 ? (
@@ -614,7 +592,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
       {/* Recent Activity */}
       <div ref={recentActivityRef} id="recentActivity" className="mt-16">
-        <h2 className={`text-2xl font-light text-[#2a2346] mb-4 transition-all duration-800 ${visibleSections.has('recentActivity') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Recent Activity</h2>
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-4 transition-all duration-800 ${visibleSections.has('recentActivity') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Recent Activity</h2>
         <div className="space-y-4">
           <div className={`bg-white border border-gray-200 rounded-lg p-5 flex items-center gap-6 hover:shadow-md transition-all duration-700 ${visibleSections.has('recentActivity') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '100ms' }}>
             <div 
