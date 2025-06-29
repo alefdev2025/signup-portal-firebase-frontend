@@ -328,7 +328,7 @@ const PortalHome = () => {
 
         {/* Main content area with NO rounded corners - always behind */}
         <div className="absolute inset-0 flex pt-28 md:pt-0">
-          <div className="w-[260px] md:w-[290px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
+          <div className="w-[280px] md:w-[320px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
           <div className="flex-1 flex flex-col">
             <div className={`flex-1 bg-white md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
               <PortalHeader 
@@ -408,7 +408,7 @@ const PortalHome = () => {
       )}
 
       {/* Main content - positioned absolutely to fill screen */}
-      <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[290px] pt-28 md:pt-0">
+      <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[320px] pt-28 md:pt-0">
         <PortalHeader 
           setIsMobileMenuOpen={setIsMobileMenuOpen} 
           activeTab={activeTab}
