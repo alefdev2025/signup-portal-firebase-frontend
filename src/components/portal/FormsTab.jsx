@@ -46,6 +46,9 @@ const FormsTab = () => {
       .forms-tab .slide-in-delay-2 {
         animation: slideIn 0.6s ease-out 0.2s both;
       }
+      .forms-tab .slide-in-delay-3 {
+        animation: slideIn 0.6s ease-out 0.3s both;
+      }
       .forms-tab .stagger-in > * {
         opacity: 0;
         animation: slideIn 0.5s ease-out forwards;
@@ -117,22 +120,9 @@ const FormsTab = () => {
 
   const formCategories = [
     {
-      title: "Essential Membership Forms",
-      icon: FileText,
-      description: "Core forms for Alcor membership",
-      forms: [
-        {
-          title: "Alcor Health Survey 2024",
-          description: "Health information form for cryopreservation preparation.",
-          fileName: "Health Survey.pdf",
-          pages: 3
-        }
-      ]
-    },
-    {
-      title: "Medical & Legal Forms",
+      title: "Medical & Legal",
       icon: Shield,
-      description: "Legal forms for healthcare decisions",
+      description: "Legal documents that ensure your cryopreservation wishes are respected. These forms provide critical medical directives and legal authority for your preservation.",
       forms: [
         {
           title: "Advance Directive & Power of Attorney",
@@ -143,9 +133,22 @@ const FormsTab = () => {
       ]
     },
     {
-      title: "Future Planning Forms",
+      title: "Surveys",
+      icon: FileText,
+      description: "Health and personal information surveys for cryopreservation preparation. These help Alcor understand your medical history and preservation needs.",
+      forms: [
+        {
+          title: "Alcor Health Survey 2024",
+          description: "Health information form for cryopreservation preparation.",
+          fileName: "Health Survey.pdf",
+          pages: 3
+        }
+      ]
+    },
+    {
+      title: "Future Planning",
       icon: Clock,
-      description: "Forms for revival preferences",
+      description: "Documents for expressing your preferences about revival and future care. Help guide decisions about when and how you might be revived in the future.",
       forms: [
         {
           title: "Revival Preferences Form",
@@ -157,23 +160,14 @@ const FormsTab = () => {
     }
   ];
 
-  // Flatten all forms into a single array
-  const allForms = formCategories.flatMap(category => 
-    category.forms.map(form => ({
-      ...form,
-      categoryTitle: category.title,
-      categoryIcon: category.icon
-    }))
-  );
-
   return (
     <div className="forms-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-full md:pl-2">
-      {/* Mobile: Single Box Container */}
+      {/* Mobile: Single Column Layout */}
       <div className="sm:hidden">
-        <div className="bg-white shadow-sm border border-[#6e4376] rounded-[1.5rem] overflow-hidden slide-in">
-          {/* Header */}
+        {/* Header */}
+        <div className="bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in mx-4">
           <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2">
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
               <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Forms & Documents
               <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
@@ -181,45 +175,180 @@ const FormsTab = () => {
           </div>
 
           {/* Description */}
-          <div className="p-8 pb-8 border-b border-gray-100">
-            <p className="text-gray-600 text-sm leading-relaxed">
+          <div className="p-8 pb-10 border-b border-gray-100">
+            <p className="text-gray-700 text-sm leading-relaxed font-normal">
               Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented.
             </p>
           </div>
+        </div>
 
-          {/* Forms List - Inside the same box on mobile */}
-          {allForms.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+        {/* Category Sections */}
+        {formCategories.map((category, categoryIndex) => {
+          const IconComponent = category.icon;
+          return (
+            <div key={categoryIndex} className={`bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in-delay-${categoryIndex + 1} mt-6 mx-4`}>
+              {/* Category Header */}
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                    {categoryIndex === 0 && (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    )}
+                    {categoryIndex === 1 && (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    )}
+                    {categoryIndex === 2 && (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
+                </div>
               </div>
-              <p className="text-gray-500 text-lg font-normal">No forms available</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 stagger-in">
-              {allForms.map((form, index) => {
-                const IconComponent = form.categoryIcon;
-                return (
+
+              {/* Forms List */}
+              <div className="divide-y divide-gray-200 stagger-in">
+                {category.forms.map((form, formIndex) => (
                   <div
-                    key={index}
-                    className="p-8 pb-12 hover:bg-gray-50/50 transition-all"
+                    key={formIndex}
+                    className="px-6 py-8 hover:bg-gray-50/50 transition-all"
                   >
-                    <div className="flex items-start gap-5">
-                      <div className="w-12 h-12 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-6 h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                    <h4 className="text-sm font-bold text-gray-900 mb-2">
+                      {form.title}
+                    </h4>
+                    <p className="text-xs text-gray-700 mb-4 font-normal">{form.description}</p>
+                    
+                    <button
+                      onClick={() => handleDownload(form.fileName)}
+                      disabled={downloading[form.fileName]}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {downloading[form.fileName] ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <span>Downloading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>Download</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Separated Category Boxes */}
+      <div className="hidden sm:block space-y-6">
+        {/* Header Section */}
+        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in">
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+              <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+              Forms & Documents
+              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+            </h2>
+          </div>
+
+          {/* Main Description */}
+          <div className="p-6 border-b border-gray-100">
+            <p className="text-gray-700 text-sm leading-relaxed max-w-3xl font-normal">
+              Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented. 
+              You can upload completed forms in the Member Files section of your portal.
+            </p>
+          </div>
+        </div>
+
+        {/* Category Sections */}
+        {formCategories.map((category, categoryIndex) => {
+          const IconComponent = category.icon;
+          return (
+            <div key={categoryIndex} className={`bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in-delay-${categoryIndex + 1}`}>
+              {/* Category Header with Image */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                  {/* Text content - left side */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                        {categoryIndex === 0 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        )}
+                        {categoryIndex === 1 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        )}
+                        {categoryIndex === 2 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base text-gray-900 mb-1 font-semibold">
-                          {form.title}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-2">{form.description}</p>
-                        <p className="text-xs text-gray-400 mb-3">{form.categoryTitle}</p>
+                      <h3 className="text-xl font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
+                    </div>
+                    <p className="text-gray-700 text-sm leading-relaxed max-w-xl font-normal">
+                      {category.description}
+                    </p>
+                  </div>
+                  
+                  {/* Category Image - right side (if you have images for each category) */}
+                  {categoryIndex === 0 && formsHeaderImage && (
+                    <div className="relative w-full lg:w-80 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                      <img 
+                        src={formsHeaderImage} 
+                        alt="Forms"
+                        className="w-full h-full object-cover grayscale"
+                      />
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-4 py-2" style={{
+                          background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
+                        }}>
+                          <p className="text-white font-medium text-sm tracking-wider">
+                            Member Forms
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Forms Grid */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
+                  {category.forms.map((form, formIndex) => (
+                    <div
+                      key={formIndex}
+                      className="p-5 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="text-base font-bold text-gray-900 mb-1">
+                            {form.title}
+                          </h4>
+                          <p className="text-sm text-gray-700 mb-2 font-normal">{form.description}</p>
+                          <p className="text-xs text-gray-500">{form.pages} pages</p>
+                        </div>
                         
                         <button
                           onClick={() => handleDownload(form.fileName)}
                           disabled={downloading[form.fileName]}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                         >
                           {downloading[form.fileName] ? (
                             <>
@@ -228,124 +357,21 @@ const FormsTab = () => {
                             </>
                           ) : (
                             <>
-                              <Download className="w-4 h-4" />
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
                               <span>Download</span>
                             </>
                           )}
                         </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Desktop: Separated Boxes */}
-      <div className="hidden sm:block">
-        {/* Header Section */}
-        <div className="mb-0 sm:mb-10">
-          <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in sm:rounded-b-none">
-            <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-              <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
-                <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
-                Forms & Documents
-                <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
-              </h2>
-            </div>
-
-            {/* Description */}
-            <div className="p-4 md:p-6 md:pl-4 border-b border-gray-100">
-              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                <div className="flex-1">
-                  <p className="text-gray-600 text-sm leading-relaxed max-w-3xl">
-                    Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented. 
-                    You can upload completed forms in the Member Files section of your portal.
-                  </p>
-                </div>
-                {/* Image - right side */}
-                <div className="relative w-full lg:w-64 h-32 rounded-lg overflow-hidden shadow-md flex-shrink-0">
-                  <img 
-                    src={formsHeaderImage} 
-                    alt="Forms" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 right-0">
-                    <div className="px-3 py-1.5" style={{
-                      background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
-                    }}>
-                      <p className="text-white font-medium text-xs tracking-wider">
-                        Member Forms
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Forms List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-t-0 overflow-hidden slide-in-delay-1 mt-0 rounded-t-none">
-          {allForms.length === 0 ? (
-            <div className="px-8 py-20 text-center">
-              <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
-              </div>
-              <p className="text-gray-500 text-lg font-normal">No forms available</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 stagger-in">
-              {allForms.map((form, index) => {
-                const IconComponent = form.categoryIcon;
-                return (
-                  <div
-                    key={index}
-                    className="px-6 py-5 md:px-8 md:py-6 hover:bg-gray-50/50 transition-all"
-                  >
-                    <div className="flex items-start gap-5">
-                      <div className="w-14 h-14 md:w-12 md:h-12 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-7 h-7 md:w-6 md:h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-base text-gray-900 mb-1 font-semibold">
-                              {form.title}
-                            </h3>
-                            <p className="text-sm text-gray-500 mb-1">{form.description}</p>
-                            <p className="text-xs text-gray-400">{form.categoryTitle}</p>
-                          </div>
-                          
-                          <button
-                            onClick={() => handleDownload(form.fileName)}
-                            disabled={downloading[form.fileName]}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {downloading[form.fileName] ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                <span>Downloading...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-4 h-4" />
-                                <span>Download</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

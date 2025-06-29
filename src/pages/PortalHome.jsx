@@ -553,9 +553,9 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
                className="hidden md:block"
              />
              
-             <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'p-4 sm:p-8' : 'p-6 pt-8 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6'} overflow-y-auto ${activeTab === 'overview' ? 'bg-gray-50' : 'bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+             <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8' : 'px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6'} overflow-y-auto ${activeTab === 'overview' ? 'bg-gray-50' : 'bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                {activeTab !== 'overview' ? (
-                 <div className="bg-white border border-gray-50 rounded-xl p-6 sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+                 <div className="bg-white border border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
                    {renderActiveTab()}
                  </div>
                ) : (
@@ -638,8 +638,8 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
          setActiveTab={handleTabChange}
          className="bg-white hidden md:block"
        />
-       <main className={`flex-1 p-6 pt-8 sm:p-6 md:p-8 md:pt-4 lg:p-12 lg:pt-6 overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-         <div className="bg-white border border-gray-50 rounded-xl p-6 sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+       <main className={`flex-1 px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:p-12 lg:pt-6 overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+         <div className="bg-white border border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
            {renderActiveTab()}
          </div>
        </main>

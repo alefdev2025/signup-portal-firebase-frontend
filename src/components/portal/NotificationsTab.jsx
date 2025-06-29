@@ -238,7 +238,7 @@ const NotificationsTab = () => {
     <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
       {/* Mobile: Single Box Container */}
       <div className="sm:hidden">
-        <div className="bg-white shadow-sm border border-[#6e4376] rounded-[1.5rem] overflow-hidden slide-in">
+        <div className="bg-white shadow-sm border border-gray-400 rounded-2xl overflow-hidden slide-in mx-4">
           {/* Header */}
           <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2">

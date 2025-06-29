@@ -15,6 +15,7 @@ const SettingsTab = () => {
     receiveStaffMessages: true,
     twoFactorEnabled: false
   });
+  const [animatingStars, setAnimatingStars] = useState({});
 
   // Add Helvetica font with lighter weights
   useEffect(() => {
@@ -45,8 +46,11 @@ const SettingsTab = () => {
       .settings-tab .slide-in-delay-1 {
         animation: slideIn 0.6s ease-out 0.1s both;
       }
+      .settings-tab .slide-in-delay-2 {
+        animation: slideIn 0.6s ease-out 0.25s both;
+      }
       .settings-tab .slide-in-delay-3 {
-        animation: slideIn 0.6s ease-out 0.3s both;
+        animation: slideIn 0.6s ease-out 0.4s both;
       }
       @keyframes fadeIn {
         from {
@@ -59,12 +63,50 @@ const SettingsTab = () => {
       @keyframes slideIn {
         from {
           opacity: 0;
-          transform: translateY(10px);
+          transform: translateY(20px);
         }
         to {
           opacity: 1;
           transform: translateY(0);
         }
+      }
+      @keyframes haloPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 25px rgba(255, 140, 0, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 140, 0, 0);
+        }
+      }
+      .custom-switch-handle {
+        background-color: #FFD700 !important;
+      }
+      .custom-switch-on-handle .react-switch-handle {
+        background-color: white !important;
+        border: 3px solid #d68fd6 !important;
+        box-sizing: border-box !important;
+      }
+      .custom-switch-on-handle-pulse .react-switch-handle {
+        background-color: white !important;
+        border: 3px solid #d68fd6 !important;
+        box-sizing: border-box !important;
+        animation: haloPulse 0.9s ease-out !important;
+        border-radius: 50% !important;
+      }
+      .custom-switch-off-handle .react-switch-handle {
+        background-color: #f3f4f6 !important;
+        border: 2px solid #FFCAA6 !important;
+        box-sizing: border-box !important;
+      }
+      .custom-switch-off-handle .react-switch-bg {
+        border: 2px solid #FFCAA6 !important;
+        box-sizing: border-box !important;
+      }
+      .creamsicle-outline {
+        border: 1px solid #FFB08A !important;
       }
     `;
     document.head.appendChild(style);
@@ -110,6 +152,14 @@ const SettingsTab = () => {
     
     // Update UI immediately for better UX
     setSettings(newSettings);
+    
+    // Trigger pulse animation if turning on
+    if (newValue) {
+      setAnimatingStars(prev => ({ ...prev, [settingName]: true }));
+      setTimeout(() => {
+        setAnimatingStars(prev => ({ ...prev, [settingName]: false }));
+      }, 900);
+    }
     
     try {
       // Update setting via API
@@ -177,6 +227,27 @@ const SettingsTab = () => {
     }
   };
 
+  // Custom Switch component with pulse animation
+  const CustomSwitch = ({ checked, onChange, settingName }) => (
+    <div className="relative">
+      <Switch
+        checked={checked}
+        onChange={onChange}
+        onColor="#1e3a5f"
+        offColor="#d1d5db"
+        uncheckedIcon={false}
+        checkedIcon={false}
+        height={24}
+        width={48}
+        handleDiameter={20}
+        activeBoxShadow="0 0 0 2px #12243c"
+        onHandleColor="#ffffff"
+        offHandleColor="#f3f4f6"
+        className={checked ? (animatingStars[settingName] ? "custom-switch-on-handle-pulse" : "custom-switch-on-handle") : "custom-switch-off-handle"}
+      />
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="-mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
@@ -208,7 +279,7 @@ const SettingsTab = () => {
       {/* Settings Cards */}
       <div className="space-y-8 mr-auto fade-in">
         {/* Notifications Section */}
-        <div className="bg-white shadow-sm border border-[#6e4376] sm:border-gray-200 rounded-[1.5rem] sm:rounded-xl overflow-hidden slide-in">
+        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-2xl sm:rounded-xl overflow-hidden slide-in mx-4 sm:mx-0">
           <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Sparkles className="w-5 h-5 text-white drop-shadow-sm mr-3" />
@@ -233,22 +304,15 @@ const SettingsTab = () => {
                       </p>
                     </div>
                     <div className="flex-shrink-0 ml-6">
-                      <Switch
+                      <CustomSwitch
                         checked={settings.receiveMediaNotifications}
                         onChange={() => handleToggle('receiveMediaNotifications')}
-                        onColor="#1e3a5f"
-                        offColor="#d1d5db"
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        height={24}
-                        width={48}
-                        handleDiameter={20}
-                        activeBoxShadow="0 0 0 2px #12243c"
+                        settingName="receiveMediaNotifications"
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium">
+                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium creamsicle-outline">
                       Default: Off
                     </span>
                     {settings.receiveMediaNotifications && (
@@ -276,22 +340,15 @@ const SettingsTab = () => {
                       </p>
                     </div>
                     <div className="flex-shrink-0 ml-6">
-                      <Switch
+                      <CustomSwitch
                         checked={settings.receiveStaffMessages}
                         onChange={() => handleToggle('receiveStaffMessages')}
-                        onColor="#1e3a5f"
-                        offColor="#d1d5db"
-                        uncheckedIcon={false}
-                        checkedIcon={false}
-                        height={24}
-                        width={48}
-                        handleDiameter={20}
-                        activeBoxShadow="0 0 0 2px #12243c"
+                        settingName="receiveStaffMessages"
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium">
+                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium creamsicle-outline">
                       Default: On
                     </span>
                     {settings.receiveStaffMessages && (
@@ -307,7 +364,7 @@ const SettingsTab = () => {
         </div>
 
         {/* Security Section */}
-        <div className="bg-white shadow-sm border border-[#6e4376] sm:border-gray-200 rounded-[1.5rem] sm:rounded-xl overflow-hidden slide-in-delay-1 mb-8 sm:mb-0">
+        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-2xl sm:rounded-xl overflow-hidden slide-in-delay-2 mb-8 sm:mb-0 mx-4 sm:mx-0">
           <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Shield className="w-5 h-5 text-white drop-shadow-sm mr-3" />
@@ -349,17 +406,10 @@ const SettingsTab = () => {
                 </div>
               </div>
               <div className="flex-shrink-0 self-start mt-1 sm:mt-0">
-                <Switch
+                <CustomSwitch
                   checked={settings.twoFactorEnabled}
                   onChange={() => handleToggle('twoFactorEnabled')}
-                  onColor="#1e3a5f"
-                  offColor="#d1d5db"
-                  uncheckedIcon={false}
-                  checkedIcon={false}
-                  height={24}
-                  width={48}
-                  handleDiameter={20}
-                  activeBoxShadow="0 0 0 2px #12243c"
+                  settingName="twoFactorEnabled"
                 />
               </div>
             </div>
@@ -368,7 +418,7 @@ const SettingsTab = () => {
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl slide-in-delay-2">
+      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl slide-in-delay-3 mx-4 sm:mx-0">
         <div className="text-center sm:text-left">
           <p className="text-sm text-gray-600 font-normal">Changes are saved automatically</p>
           <p className="text-xs text-gray-400 mt-0.5">Your preferences are updated in real-time</p>

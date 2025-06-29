@@ -232,9 +232,9 @@ const InformationDocumentsTab = () => {
       {/* Mobile: Single Column Layout */}
       <div className="sm:hidden">
         {/* Header */}
-        <div className="bg-white shadow-sm border border-[#6e4376] rounded-t-lg overflow-hidden slide-in">
+        <div className="bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in mx-4">
           <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2">
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
               <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Information & Resources
               <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
@@ -242,8 +242,8 @@ const InformationDocumentsTab = () => {
           </div>
 
           {/* Description */}
-          <div className="p-8 pb-8 border-b border-gray-100">
-            <p className="text-gray-600 text-sm leading-relaxed">
+          <div className="p-8 pb-10 border-b border-gray-100">
+            <p className="text-gray-700 text-sm leading-relaxed font-normal">
               Comprehensive information and educational resources about Alcor's services, procedures, and the science of cryonics. Download these documents to learn more about your membership options.
             </p>
           </div>
@@ -253,33 +253,52 @@ const InformationDocumentsTab = () => {
         {informationDocuments.map((category, categoryIndex) => {
           const IconComponent = category.icon;
           return (
-            <div key={categoryIndex} className={`bg-white shadow-sm border border-gray-200 border-t-0 overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === informationDocuments.length - 1 ? 'rounded-b-lg' : ''}`}>
+            <div key={categoryIndex} className={`bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in-delay-${categoryIndex + 1} mt-6 mx-4`}>
               {/* Category Header */}
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+              <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
-                    <IconComponent className="w-5 h-5 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                  <div className="p-3.5 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                    {categoryIndex === 0 && (
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                    {categoryIndex === 1 && (
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    )}
+                    {categoryIndex === 2 && (
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                    {categoryIndex === 3 && (
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    )}
                   </div>
                   <h3 className="text-base font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
                 </div>
               </div>
 
               {/* Documents List */}
-              <div className="divide-y divide-gray-100 stagger-in">
+              <div className="divide-y divide-gray-200 stagger-in">
                 {category.documents.map((doc, docIndex) => (
                   <div
                     key={docIndex}
-                    className="p-6 hover:bg-gray-50/50 transition-all"
+                    className="px-6 py-8 hover:bg-gray-50/50 transition-all"
                   >
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                    <h4 className="text-sm font-bold text-gray-900 mb-2">
                       {doc.title}
                     </h4>
-                    <p className="text-xs text-gray-500 mb-3">{doc.description}</p>
+                    <p className="text-xs text-gray-700 mb-4 font-normal">{doc.description}</p>
                     
                     <button
                       onClick={() => handleInfoDocDownload(doc.fileName)}
                       disabled={downloading[doc.fileName]}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {downloading[doc.fileName] ? (
                         <>
@@ -317,7 +336,7 @@ const InformationDocumentsTab = () => {
 
           {/* Main Description */}
           <div className="p-6 border-b border-gray-100">
-            <p className="text-gray-600 text-sm leading-relaxed max-w-3xl">
+            <p className="text-gray-700 text-sm leading-relaxed max-w-3xl font-normal">
               Comprehensive information and educational resources about Alcor's services, procedures, and the science of cryonics. 
               Download these documents to learn more about your membership options and the cryopreservation process.
             </p>
@@ -335,28 +354,47 @@ const InformationDocumentsTab = () => {
                   {/* Text content - left side */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-6 h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                      <div className="p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                        {categoryIndex === 0 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                        {categoryIndex === 1 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        )}
+                        {categoryIndex === 2 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                        {categoryIndex === 3 && (
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        )}
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
                     </div>
-                    <p className="text-gray-600 text-sm leading-relaxed max-w-xl">
+                    <p className="text-gray-700 text-sm leading-relaxed max-w-xl font-normal">
                       {category.description}
                     </p>
                   </div>
                   
                   {/* Category Image - right side */}
-                  <div className="relative w-full lg:w-64 h-32 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                  <div className="relative w-full lg:w-80 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
                     <img 
                       src={category.image} 
                       alt={category.imageLabel}
                       className="w-full h-full object-cover grayscale"
                     />
                     <div className="absolute bottom-0 right-0">
-                      <div className="px-3 py-1.5" style={{
+                      <div className="px-4 py-2" style={{
                         background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
                       }}>
-                        <p className="text-white font-medium text-xs tracking-wider">
+                        <p className="text-white font-medium text-sm tracking-wider">
                           {category.imageLabel}
                         </p>
                       </div>
@@ -375,11 +413,11 @@ const InformationDocumentsTab = () => {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          <h4 className="text-base font-bold text-gray-900 mb-1">
                             {doc.title}
                           </h4>
-                          <p className="text-sm text-gray-500 mb-2">{doc.description}</p>
-                          <p className="text-xs text-gray-400">{doc.pages} pages</p>
+                          <p className="text-sm text-gray-700 mb-2 font-normal">{doc.description}</p>
+                          <p className="text-xs text-gray-500 font-normal">{doc.pages} pages</p>
                         </div>
                         
                         <button
