@@ -134,18 +134,20 @@ const PortalSidebar = ({
     : { backgroundColor: USE_NEW_COLORS ? '#1a2744' : '#1a2744' };
 
   // Same width for both modes, but narrower
-  const sidebarWidth = 'w-[240px] md:w-[260px]';
+  const sidebarWidth = 'w-[70vw] md:w-[260px]';
 
   const sidebarClasses = layoutMode === 'floating'
     ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
        fixed md:relative z-50
-       ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+       right-0 md:left-0 md:right-auto
+       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
        ${isElevated ? 'shadow-2xl' : ''}`
     : `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
        fixed md:relative shadow-2xl z-50
-       ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+       right-0 md:left-0 md:right-auto
+       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
        md:rounded-r-3xl overflow-hidden`;
 
   return (

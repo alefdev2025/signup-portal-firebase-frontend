@@ -1,12 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, FileText, Shield, Clock } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
-import formsHeaderImage from '../../assets/images/forms-image.jpg'; // You may need to add this image
-import pdfImage from '../../assets/images/pdf-image.png';
+import alcorStar from '../../assets/images/alcor-star.png';
+import formsHeaderImage from '../../assets/images/forms-image.jpg';
 
 const FormsTab = () => {
   const [downloading, setDownloading] = useState({});
+
+  // Add Helvetica font
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .forms-tab * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .forms-tab .font-bold,
+      .forms-tab .font-semibold {
+        font-weight: 500 !important;
+      }
+      .forms-tab .font-bold {
+        font-weight: 700 !important;
+      }
+      .forms-tab h1 {
+        font-weight: 300 !important;
+      }
+      .forms-tab h2,
+      .forms-tab h3,
+      .forms-tab h4 {
+        font-weight: 400 !important;
+      }
+      .forms-tab .font-medium {
+        font-weight: 400 !important;
+      }
+      .forms-tab .fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+      .forms-tab .slide-in {
+        animation: slideIn 0.6s ease-out;
+      }
+      .forms-tab .slide-in-delay-1 {
+        animation: slideIn 0.6s ease-out 0.1s both;
+      }
+      .forms-tab .slide-in-delay-2 {
+        animation: slideIn 0.6s ease-out 0.2s both;
+      }
+      .forms-tab .stagger-in > * {
+        opacity: 0;
+        animation: slideIn 0.5s ease-out forwards;
+      }
+      .forms-tab .stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
+      .forms-tab .stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
+      .forms-tab .stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
+      .forms-tab .stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+      .forms-tab .stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const handleDownload = async (fileName) => {
     try {
@@ -84,7 +157,7 @@ const FormsTab = () => {
     }
   ];
 
-  // Flatten all forms into a single array for the grid
+  // Flatten all forms into a single array
   const allForms = formCategories.flatMap(category => 
     category.forms.map(form => ({
       ...form,
@@ -94,108 +167,69 @@ const FormsTab = () => {
   );
 
   return (
-    <div className="bg-gray-50 -m-8 p-8 min-h-screen relative" style={{ maxWidth: '100vw' }}>
-      <div>
-        {/* Forms Section */}
-        <div className="mb-16">
-          <div 
-            className="bg-white rounded-lg p-4 sm:p-8 animate-fadeInUp overflow-hidden" 
-            style={{ 
-              boxShadow: '0 0 20px rgba(0, 0, 0, 0.10), 0 0 10px rgba(0, 0, 0, 0.08)'
-            }}
-          >
-            <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-12">
-              {/* Text content - left side */}
-              <div className="flex-1">
-                <style>{`
-                  .forms-title {
-                    font-size: 1.375rem;
-                  }
-                  @media (min-width: 768px) {
-                    .forms-title {
-                      font-size: 1.875rem;
-                    }
-                  }
-                `}</style>
-              <h2 className="text-xl sm:text-3xl font-semibold text-gray-800 uppercase mb-6">FORMS</h2>
-              <p className="text-gray-500 text-base leading-relaxed max-w-3xl">
-                  Essential forms and documents for your Alcor membership. 
-                  Download, complete, and submit these forms to ensure your 
-                  cryopreservation arrangements are properly documented.
-                  Need help? <a href="#" className="text-blue-600 hover:underline">Contact support</a>. 
-                  You can also upload completed forms in the <a href="/member-files" className="text-blue-600 hover:underline">Member Files</a> section 
-                  of your portal.
-                </p>
+    <div className="forms-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-full md:pl-2">
+      {/* Mobile: Single Box Container */}
+      <div className="sm:hidden">
+        <div className="bg-white shadow-sm border border-[#6e4376] rounded-[1.5rem] overflow-hidden slide-in">
+          {/* Header */}
+          <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2">
+              <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+              Forms & Documents
+              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+            </h2>
+          </div>
+
+          {/* Description */}
+          <div className="p-8 pb-8 border-b border-gray-100">
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented.
+            </p>
+          </div>
+
+          {/* Forms List - Inside the same box on mobile */}
+          {allForms.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
               </div>
-              
-              {/* Image - right side */}
-              <div className="relative w-full lg:w-80 h-48 lg:h-40 rounded-lg overflow-hidden shadow-md">
-                <img 
-                  src={formsHeaderImage} 
-                  alt="Forms" 
-                  className="w-full h-full object-cover grayscale"
-                />
-                <div className="absolute bottom-0 right-0">
-                  <div className="px-3 py-1 sm:px-4 sm:py-2" style={{
-                    background: 'linear-gradient(to right, #0e0e2f 0%, #1b163a 8%, #2a1b3d 16%, #3f2541 25%, #5b2f4b 33%, #74384d 42%, #914451 50%, #a04c56 58%, #a25357 67%, #b66e5d 75%, #cb8863 83%, #d79564 100%)'
-                  }}>
-                    <p className="text-white font-semibold text-sm sm:text-base tracking-wider">
-                      Member Forms
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-gray-500 text-lg font-normal">No forms available</p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 gap-y-10">
+          ) : (
+            <div className="divide-y divide-gray-100 stagger-in">
               {allForms.map((form, index) => {
                 const IconComponent = form.categoryIcon;
                 return (
-                  <div 
-                    key={index} 
-                    className={`bg-white border border-gray-200 rounded-2xl transition-all duration-300 hover:border-gray-300 group relative overflow-hidden flex flex-col h-32 animate-fadeIn ${
-                      index < 3 ? 'animation-delay-100' : 
-                      index < 6 ? 'animation-delay-200' : 
-                      index < 9 ? 'animation-delay-300' : 
-                      'animation-delay-400'
-                    }`}
-                    style={{
-                      boxShadow: '0 0 10px rgba(0, 0, 0, 0.08)'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.12)'}
-                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.08)'}
+                  <div
+                    key={index}
+                    className="p-8 pb-12 hover:bg-gray-50/50 transition-all"
                   >
-                    <div className="p-5 pb-3 pr-3 flex h-full">
-                      <div className="flex-shrink-0 mr-4">
-                        <img 
-                          src={pdfImage} 
-                          alt="PDF" 
-                          className="w-16 h-20 object-contain"
-                        />
+                    <div className="flex items-start gap-5">
+                      <div className="w-12 h-12 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-6 h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
                       </div>
                       
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-[#2a2346] text-lg leading-tight">{form.title}</h3>
-                          <p className="text-xs text-[#6a5b8a] mt-1 line-clamp-2">{form.description}</p>
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base text-gray-900 mb-1 font-semibold">
+                          {form.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">{form.description}</p>
+                        <p className="text-xs text-gray-400 mb-3">{form.categoryTitle}</p>
                         
-                        <button 
+                        <button
                           onClick={() => handleDownload(form.fileName)}
                           disabled={downloading[form.fileName]}
-                          className="self-end mt-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {downloading[form.fileName] ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#6b5b7e]"></div>
-                              <span className="text-sm">Downloading...</span>
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              <span>Downloading...</span>
                             </>
                           ) : (
                             <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              <span className="text-sm">Download</span>
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
                             </>
                           )}
                         </button>
@@ -205,71 +239,113 @@ const FormsTab = () => {
                 );
               })}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: Separated Boxes */}
+      <div className="hidden sm:block">
+        {/* Header Section */}
+        <div className="mb-0 sm:mb-10">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in sm:rounded-b-none">
+            <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+              <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+                <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+                Forms & Documents
+                <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+              </h2>
+            </div>
+
+            {/* Description */}
+            <div className="p-4 md:p-6 md:pl-4 border-b border-gray-100">
+              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                <div className="flex-1">
+                  <p className="text-gray-600 text-sm leading-relaxed max-w-3xl">
+                    Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented. 
+                    You can upload completed forms in the Member Files section of your portal.
+                  </p>
+                </div>
+                {/* Image - right side */}
+                <div className="relative w-full lg:w-64 h-32 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                  <img 
+                    src={formsHeaderImage} 
+                    alt="Forms" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 right-0">
+                    <div className="px-3 py-1.5" style={{
+                      background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
+                    }}>
+                      <p className="text-white font-medium text-xs tracking-wider">
+                        Member Forms
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Form Categories Info Section */}
-
-        <style>{`
-          /* Prevent horizontal scroll on mobile */
-          html, body {
-            overflow-x: hidden;
-            max-width: 100%;
-          }
-          
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
-          }
-
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          .animate-fadeIn {
-            animation: fadeIn 0.6s ease-out forwards;
-            opacity: 0;
-          }
-
-          .animate-fadeInUp {
-            animation: fadeInUp 0.6s ease-out forwards;
-            opacity: 0;
-          }
-
-          .animation-delay-100 {
-            animation-delay: 100ms;
-          }
-
-          .animation-delay-200 {
-            animation-delay: 200ms;
-          }
-
-          .animation-delay-300 {
-            animation-delay: 300ms;
-          }
-
-          .animation-delay-400 {
-            animation-delay: 400ms;
-          }
-
-          .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-          }
-        `}</style>
+        {/* Forms List */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-t-0 overflow-hidden slide-in-delay-1 mt-0 rounded-t-none">
+          {allForms.length === 0 ? (
+            <div className="px-8 py-20 text-center">
+              <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+              </div>
+              <p className="text-gray-500 text-lg font-normal">No forms available</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 stagger-in">
+              {allForms.map((form, index) => {
+                const IconComponent = form.categoryIcon;
+                return (
+                  <div
+                    key={index}
+                    className="px-6 py-5 md:px-8 md:py-6 hover:bg-gray-50/50 transition-all"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div className="w-14 h-14 md:w-12 md:h-12 rounded-full border-2 border-yellow-400 bg-white flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-7 h-7 md:w-6 md:h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-base text-gray-900 mb-1 font-semibold">
+                              {form.title}
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-1">{form.description}</p>
+                            <p className="text-xs text-gray-400">{form.categoryTitle}</p>
+                          </div>
+                          
+                          <button
+                            onClick={() => handleDownload(form.fileName)}
+                            disabled={downloading[form.fileName]}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {downloading[form.fileName] ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>Downloading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                <span>Download</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

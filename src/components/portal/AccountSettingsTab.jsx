@@ -36,8 +36,35 @@ const SettingsTab = () => {
       .settings-tab h4 {
         font-weight: 400 !important;
       }
-      .settings-tab .font-medium {
-        font-weight: 400 !important;
+      .settings-tab .fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+      .settings-tab .slide-in {
+        animation: slideIn 0.6s ease-out;
+      }
+      .settings-tab .slide-in-delay-1 {
+        animation: slideIn 0.6s ease-out 0.1s both;
+      }
+      .settings-tab .slide-in-delay-3 {
+        animation: slideIn 0.6s ease-out 0.3s both;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     `;
     document.head.appendChild(style);
@@ -152,7 +179,7 @@ const SettingsTab = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="-mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
         <div className="animate-pulse">
           <div className="h-10 bg-gray-200 w-48 mb-2"></div>
           <div className="h-4 bg-gray-200 w-96 mb-12"></div>
@@ -176,115 +203,124 @@ const SettingsTab = () => {
   }
 
   return (
-    <div className="settings-tab max-w-4xl mx-auto">
+    <div className="settings-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
+      {/*<div className="settings-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-10/12 md:pl-2"></div>*/}
       {/* Settings Cards */}
-      <div className="space-y-8">
+      <div className="space-y-8 mr-auto fade-in">
         {/* Notifications Section */}
-        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+        <div className="bg-white shadow-sm border border-[#6e4376] sm:border-gray-200 rounded-[1.5rem] sm:rounded-xl overflow-hidden slide-in">
+          <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Sparkles className="w-5 h-5 text-white drop-shadow-sm mr-3" />
-              Notifications
+              Email Notifications
               <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
             </h2>
           </div>
 
           <div className="divide-y divide-gray-100">
             {/* Media Notifications */}
-            <div className="p-8 hover:bg-gray-50/50 transition-colors">
-              <div className="flex items-center justify-between gap-6">
-                <div className="flex items-start gap-5 flex-1">
-                  <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Bell className="w-7 h-7 text-[#12243c]" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
-                      Get notified when new podcasts, newsletters, and other media content is published
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded font-medium">
-                        Default: Off
-                      </span>
-                      {settings.receiveMediaNotifications && (
-                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
-                          Currently Active
-                        </span>
-                      )}
+            <div className="p-8 pb-12 sm:pb-8 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed">
+                        Get notified when new podcasts, newsletters, and other media content is published
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 ml-6">
+                      <Switch
+                        checked={settings.receiveMediaNotifications}
+                        onChange={() => handleToggle('receiveMediaNotifications')}
+                        onColor="#1e3a5f"
+                        offColor="#d1d5db"
+                        uncheckedIcon={false}
+                        checkedIcon={false}
+                        height={24}
+                        width={48}
+                        handleDiameter={20}
+                        activeBoxShadow="0 0 0 2px #12243c"
+                      />
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 mt-4">
+                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium">
+                      Default: Off
+                    </span>
+                    {settings.receiveMediaNotifications && (
+                      <span className="text-xs px-4 py-2.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded-md font-medium">
+                        Currently Active
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <Switch
-                  checked={settings.receiveMediaNotifications}
-                  onChange={() => handleToggle('receiveMediaNotifications')}
-                  onColor="#1e3a5f"
-                  offColor="#d1d5db"
-                  uncheckedIcon={false}
-                  checkedIcon={false}
-                  height={24}
-                  width={48}
-                  handleDiameter={20}
-                  activeBoxShadow="0 0 0 2px #12243c"
-                />
               </div>
             </div>
 
             {/* Staff Messages */}
-            <div className="p-8 hover:bg-gray-50/50 transition-colors">
-              <div className="flex items-center justify-between gap-6">
-                <div className="flex items-start gap-5 flex-1">
-                  <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-7 h-7 text-[#12243c]" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">
-                      Receive important updates and messages from Alcor staff members
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded font-medium">
-                        Default: On
-                      </span>
-                      {settings.receiveStaffMessages && (
-                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
-                          Currently Active
-                        </span>
-                      )}
+            <div className="p-8 pb-12 sm:pb-8 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed">
+                        Receive important updates and messages from Alcor staff members
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 ml-6">
+                      <Switch
+                        checked={settings.receiveStaffMessages}
+                        onChange={() => handleToggle('receiveStaffMessages')}
+                        onColor="#1e3a5f"
+                        offColor="#d1d5db"
+                        uncheckedIcon={false}
+                        checkedIcon={false}
+                        height={24}
+                        width={48}
+                        handleDiameter={20}
+                        activeBoxShadow="0 0 0 2px #12243c"
+                      />
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 mt-4">
+                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium">
+                      Default: On
+                    </span>
+                    {settings.receiveStaffMessages && (
+                      <span className="text-xs px-4 py-2.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded-md font-medium">
+                        Currently Active
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <Switch
-                  checked={settings.receiveStaffMessages}
-                  onChange={() => handleToggle('receiveStaffMessages')}
-                  onColor="#1e3a5f"
-                  offColor="#d1d5db"
-                  uncheckedIcon={false}
-                  checkedIcon={false}
-                  height={24}
-                  width={48}
-                  handleDiameter={20}
-                  activeBoxShadow="0 0 0 2px #12243c"
-                />
               </div>
             </div>
           </div>
         </div>
 
         {/* Security Section */}
-        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+        <div className="bg-white shadow-sm border border-[#6e4376] sm:border-gray-200 rounded-[1.5rem] sm:rounded-xl overflow-hidden slide-in-delay-1 mb-8 sm:mb-0">
+          <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Shield className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Security
               <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
             </h2>
           </div>
 
-          <div className="p-8">
+          <div className="p-8 pb-12 sm:pb-8">
             <div className="flex items-center justify-between gap-6">
               <div className="flex items-start gap-5 flex-1">
-                <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-7 h-7 text-[#0a1628]" />
+                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-semibold text-gray-900 mb-1">Two-Factor Authentication</h3>
@@ -301,36 +337,38 @@ const SettingsTab = () => {
                   )}
                   <div className="flex items-center gap-2 mt-4">
                     {settings.twoFactorEnabled ? (
-                      <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
+                      <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium inline-block">
                         Protection Enabled
                       </span>
                     ) : (
-                      <span className="text-xs px-3 py-1.5 bg-gray-700 text-white rounded font-medium">
+                      <span className="text-xs px-3 py-1.5 bg-gray-700 text-white rounded font-medium inline-block">
                         Not Protected
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-              <Switch
-                checked={settings.twoFactorEnabled}
-                onChange={() => handleToggle('twoFactorEnabled')}
-                onColor="#1e3a5f"
-                offColor="#d1d5db"
-                uncheckedIcon={false}
-                checkedIcon={false}
-                height={24}
-                width={48}
-                handleDiameter={20}
-                activeBoxShadow="0 0 0 2px #12243c"
-              />
+              <div className="flex-shrink-0 self-start mt-1 sm:mt-0">
+                <Switch
+                  checked={settings.twoFactorEnabled}
+                  onChange={() => handleToggle('twoFactorEnabled')}
+                  onColor="#1e3a5f"
+                  offColor="#d1d5db"
+                  uncheckedIcon={false}
+                  checkedIcon={false}
+                  height={24}
+                  width={48}
+                  handleDiameter={20}
+                  activeBoxShadow="0 0 0 2px #12243c"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl">
+      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl slide-in-delay-2">
         <div className="text-center sm:text-left">
           <p className="text-sm text-gray-600 font-normal">Changes are saved automatically</p>
           <p className="text-xs text-gray-400 mt-0.5">Your preferences are updated in real-time</p>
