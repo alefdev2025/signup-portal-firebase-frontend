@@ -278,7 +278,7 @@ const PortalHome = () => {
       <div 
         className="absolute inset-0 hidden md:block"
         style={{
-          background: 'linear-gradient(to bottom right, #12243c 0%, #3a2e51 35%, #533966 65%, #6e4376 100%)'
+          background: 'linear-gradient(to bottom right, #0a1628 0%, #12243c 20%, #3a2e51 45%, #533966 70%, #6e4376 100%)'
         }}
       />
 
@@ -297,7 +297,7 @@ const PortalHome = () => {
         <div 
           className="md:hidden fixed top-6 left-[2.5rem] right-[2.5rem] sm:left-[3.5rem] sm:right-[3.5rem] h-14 z-50 flex items-center justify-between px-4 rounded-2xl shadow-lg"
           style={{
-            background: 'linear-gradient(135deg, #1a2744 0%, #2a3a5a 60%, #3d3960 80%, #4a3d6b 100%)'
+            background: 'linear-gradient(135deg, #0a1628 0%, #1a2744 40%, #2a3a5a 70%, #3d3960 85%, #4a3d6b 100%)'
           }}
         >
           <div className="flex items-center">
@@ -326,11 +326,11 @@ const PortalHome = () => {
           />
         )}
 
-        {/* Main content area with rounded corners - always behind */}
+        {/* Main content area with NO rounded corners - always behind */}
         <div className="absolute inset-0 flex pt-28 md:pt-0">
-          <div className="w-[240px] md:w-[260px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
+          <div className="w-[260px] md:w-[290px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
           <div className="flex-1 flex flex-col">
-            <div className={`flex-1 bg-white md:rounded-l-2xl md:rounded-l-3xl md:rounded-tr-2xl md:rounded-tr-3xl md:rounded-br-2xl md:rounded-br-3xl md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
+            <div className={`flex-1 bg-white md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
               <PortalHeader 
                 setIsMobileMenuOpen={setIsMobileMenuOpen} 
                 activeTab={activeTab}
@@ -374,7 +374,7 @@ const PortalHome = () => {
       <div 
         className="md:hidden fixed top-4 left-4 right-4 h-14 z-50 flex items-center justify-between px-4 rounded-2xl shadow-lg"
         style={{
-          background: 'linear-gradient(180deg, #1a2744 0%, #2a3a5a 100%)'
+          background: 'linear-gradient(180deg, #0a1628 0%, #1a2744 50%, #2a3a5a 100%)'
         }}
       >
         <div className="flex items-center">
@@ -408,7 +408,7 @@ const PortalHome = () => {
       )}
 
       {/* Main content - positioned absolutely to fill screen */}
-      <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[260px] pt-28 md:pt-0">
+      <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[290px] pt-28 md:pt-0">
         <PortalHeader 
           setIsMobileMenuOpen={setIsMobileMenuOpen} 
           activeTab={activeTab}
