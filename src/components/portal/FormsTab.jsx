@@ -161,12 +161,12 @@ const FormsTab = () => {
   ];
 
   return (
-    <div className="forms-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-full md:pl-2">
+    <div className="forms-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/* Mobile: Single Column Layout */}
       <div className="sm:hidden">
         {/* Header */}
-        <div className="bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in mx-4">
-          <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+        <div className="bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+          <div className="px-6 py-6 rounded-t-[1.5rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
               <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Forms & Documents
@@ -175,7 +175,7 @@ const FormsTab = () => {
           </div>
 
           {/* Description */}
-          <div className="p-8 pb-10 border-b border-gray-100">
+          <div className="px-8 py-10 border-b border-gray-100">
             <p className="text-gray-700 text-sm leading-relaxed font-normal">
               Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented.
             </p>
@@ -186,9 +186,15 @@ const FormsTab = () => {
         {formCategories.map((category, categoryIndex) => {
           const IconComponent = category.icon;
           return (
-            <div key={categoryIndex} className={`bg-white shadow-md border border-gray-400 rounded-2xl overflow-hidden slide-in-delay-${categoryIndex + 1} mt-6 mx-4`}>
+            <React.Fragment key={categoryIndex}>
+              {categoryIndex > 0 && (
+                <div className="py-8 px-8">
+                  <div className="h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+                </div>
+              )}
+              <div className={`bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
               {/* Category Header */}
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="px-6 py-6 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                     {categoryIndex === 0 && (
@@ -207,7 +213,7 @@ const FormsTab = () => {
                       </svg>
                     )}
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
+                  <h3 className="text-base font-semibold text-gray-900">{category.title}</h3>
                 </div>
               </div>
 
@@ -216,7 +222,7 @@ const FormsTab = () => {
                 {category.forms.map((form, formIndex) => (
                   <div
                     key={formIndex}
-                    className="px-6 py-8 hover:bg-gray-50/50 transition-all"
+                    className="px-6 py-10 hover:bg-gray-50/50 transition-all"
                   >
                     <h4 className="text-sm font-bold text-gray-900 mb-2">
                       {form.title}
@@ -246,36 +252,24 @@ const FormsTab = () => {
                 ))}
               </div>
             </div>
+            </React.Fragment>
           );
         })}
       </div>
 
       {/* Desktop: Separated Category Boxes */}
-      <div className="hidden sm:block space-y-6">
-        {/* Header Section */}
-        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in">
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
-              <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
-              Forms & Documents
-              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
-            </h2>
-          </div>
-
-          {/* Main Description */}
-          <div className="p-6 border-b border-gray-100">
-            <p className="text-gray-700 text-sm leading-relaxed max-w-3xl font-normal">
-              Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented. 
-              You can upload completed forms in the Member Files section of your portal.
-            </p>
-          </div>
-        </div>
-
+      <div className="hidden sm:block">
         {/* Category Sections */}
         {formCategories.map((category, categoryIndex) => {
           const IconComponent = category.icon;
           return (
-            <div key={categoryIndex} className={`bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden slide-in-delay-${categoryIndex + 1}`}>
+            <React.Fragment key={categoryIndex}>
+              {categoryIndex > 0 && (
+                <div className="py-10">
+                  <div className="h-1 mx-8 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+                </div>
+              )}
+              <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] slide-in-delay-${categoryIndex + 1}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               {/* Category Header with Image */}
               <div className="p-6 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
@@ -299,7 +293,7 @@ const FormsTab = () => {
                           </svg>
                         )}
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900">{category.title.toUpperCase()}</h3>
+                      <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
                     </div>
                     <p className="text-gray-700 text-sm leading-relaxed max-w-xl font-normal">
                       {category.description}
@@ -318,8 +312,9 @@ const FormsTab = () => {
                         <div className="px-4 py-2" style={{
                           background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
                         }}>
-                          <p className="text-white font-medium text-sm tracking-wider">
+                          <p className="text-white font-medium text-sm tracking-wider flex items-center gap-1">
                             Member Forms
+                            <img src={alcorStar} alt="" className="w-4 h-4" />
                           </p>
                         </div>
                       </div>
@@ -370,6 +365,7 @@ const FormsTab = () => {
                 </div>
               </div>
             </div>
+            </React.Fragment>
           );
         })}
       </div>

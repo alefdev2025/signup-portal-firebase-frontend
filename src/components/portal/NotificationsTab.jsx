@@ -245,7 +245,7 @@ const NotificationsTab = () => {
     <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/* Mobile: Single Box Container */}
       <div className="sm:hidden">
-        <div className="bg-white shadow-sm border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in mx-4">
+        <div className="bg-white shadow-sm border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
           {/* Header */}
           <div className="px-6 py-8 rounded-t-[1.5rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2">
@@ -410,7 +410,7 @@ const NotificationsTab = () => {
       <div className="hidden sm:block">
         {/* Header Section */}
         <div className="mb-0 sm:mb-10">
-          <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] overflow-hidden slide-in sm:rounded-b-none">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] overflow-hidden slide-in sm:rounded-b-none" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
             <div className="px-6 py-7 rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
               <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
                 <Bell className="w-5 h-5 text-white drop-shadow-sm mr-3" />
@@ -486,7 +486,7 @@ const NotificationsTab = () => {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden slide-in-delay-1 mt-0 rounded-t-none">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden slide-in-delay-1 mt-0 rounded-t-none" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
           {filteredNotifications.length === 0 ? (
             <div className="px-8 py-20 text-center">
               <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center mx-auto mb-4">

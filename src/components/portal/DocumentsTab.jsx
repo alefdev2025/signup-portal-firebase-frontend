@@ -22,6 +22,112 @@ const DocumentsTab = ({ contactId }) => {
 
   console.log('[DocumentsTab] Component rendered with contactId:', contactId);
 
+  // Add Helvetica font
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .documents-tab * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .documents-tab .font-bold,
+      .documents-tab .font-semibold {
+        font-weight: 500 !important;
+      }
+      .documents-tab .font-bold {
+        font-weight: 700 !important;
+      }
+      .documents-tab h1 {
+        font-weight: 300 !important;
+      }
+      .documents-tab h2,
+      .documents-tab h3,
+      .documents-tab h4 {
+        font-weight: 400 !important;
+      }
+      .documents-tab .font-medium {
+        font-weight: 400 !important;
+      }
+      .documents-tab .font-thin {
+        font-weight: 100 !important;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out forwards;
+        opacity: 0;
+      }
+
+      .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+      }
+
+      .animate-fadeInDown {
+        animation: fadeInDown 0.6s ease-out forwards;
+        opacity: 0;
+      }
+
+      .animation-delay-100 {
+        animation-delay: 100ms;
+      }
+
+      .animation-delay-200 {
+        animation-delay: 200ms;
+      }
+
+      .animation-delay-300 {
+        animation-delay: 300ms;
+      }
+
+      .animation-delay-400 {
+        animation-delay: 400ms;
+      }
+
+      .animation-delay-500 {
+        animation-delay: 500ms;
+      }
+
+      .animation-delay-600 {
+        animation-delay: 600ms;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   // Use preloaded documents on mount
   useEffect(() => {
     if (documentsLoaded && preloadedDocuments) {
@@ -258,7 +364,7 @@ const DocumentsTab = ({ contactId }) => {
   const getDocumentIcon = (doc) => {
     return (
       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>
@@ -337,7 +443,7 @@ const DocumentsTab = ({ contactId }) => {
 
   if (loading) {
     return (
-      <div className="bg-gray-50 -m-8 p-8 min-h-screen flex items-center justify-center">
+      <div className="documents-tab bg-gray-50 -m-8 p-8 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 relative mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
@@ -351,7 +457,7 @@ const DocumentsTab = ({ contactId }) => {
 
   if (error && !documents.length) {
     return (
-      <div className="bg-gray-50 -m-8 p-8 min-h-screen">
+      <div className="documents-tab bg-gray-50 -m-8 p-8 min-h-screen">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
           <p className="font-medium">Error loading documents</p>
           <p className="text-sm font-light">{error}</p>
@@ -367,9 +473,9 @@ const DocumentsTab = ({ contactId }) => {
   }
 
   return (
-    <div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen max-w-full mx-auto">
+    <div className="documents-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/* Your Membership Documents Section */}
-      <div className="mb-8">
+      <div className="mb-8 mx-4 sm:mx-0">
         {error && documents.length > 0 && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl">
             <p className="font-medium">{error}</p>
@@ -377,9 +483,9 @@ const DocumentsTab = ({ contactId }) => {
         )}
 
         {documents.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 sm:p-12 animate-fadeInUp animation-delay-100 border border-gray-200 text-center" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className="bg-white rounded-2xl p-8 sm:p-12 animate-fadeInUp animation-delay-100 border border-gray-200 text-center" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+            <svg className="w-18 h-18 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <p className="text-gray-800 text-lg font-medium">No documents found</p>
             <p className="text-gray-500 text-sm mt-2 font-light">Your membership documents will appear here once uploaded by Alcor staff</p>
@@ -387,10 +493,10 @@ const DocumentsTab = ({ contactId }) => {
         ) : (
           <>
             {/* Files Section */}
-            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200" style={{ boxShadow: '0 0 4px 1px rgba(0, 0, 0, 0.1)' }}>
-              <h3 className="text-xl font-medium text-gray-800 mb-8 flex items-center gap-3 flex-wrap">
-                <div className="bg-[#2a1b3d] p-3 rounded-lg">
-                  <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+              <h3 className="text-xl font-semibold text-gray-800 mb-8 flex items-center gap-3 flex-wrap">
+                <div className="bg-[#2a1b3d] p-3.5 rounded-lg">
+                  <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -452,19 +558,19 @@ const DocumentsTab = ({ contactId }) => {
       </div>
 
       {/* Upload Documents Section - UNCHANGED */}
-      <div id="upload-section" className="mt-12 bg-white rounded-2xl shadow-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-200 overflow-hidden">
+      <div id="upload-section" className="mt-12 bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-200 overflow-hidden mx-4 sm:mx-0" style={{ boxShadow: '6px 8px 16px rgba(0, 0, 0, 0.1), -2px -2px 8px rgba(0, 0, 0, 0.04)' }}>
         <div className="h-4"></div>
         <style>{`
           .upload-files-title {
-            font-size: 1.375rem;
+            font-size: 1.25rem;
           }
           @media (min-width: 768px) {
             .upload-files-title {
               font-size: 1.5rem;
             }
         `}</style>
-        <h2 className="upload-files-title font-thin text-[#2a2346] mb-6 tracking-widest">UPLOAD FILES</h2>
-        <p className="text-gray-600 text-base leading-relaxed mb-12 max-w-2xl">
+        <h2 className="upload-files-title font-medium text-[#2a2346] mb-6 tracking-widest">UPLOAD FILES</h2>
+        <p className="text-gray-700 text-base leading-relaxed mb-12 max-w-2xl">
           Upload new documents to your member portal. Files are stored with your membership file for Alcor staff access. Please ensure all documents are clearly labeled and in an 
           acceptable format before uploading.
         </p>
@@ -530,78 +636,6 @@ const DocumentsTab = ({ contactId }) => {
           Accepted file types: PDF, DOC, DOCX, JPG, PNG (Max size: 10MB)
         </p>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-fadeInDown {
-          animation: fadeInDown 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animation-delay-100 {
-          animation-delay: 100ms;
-        }
-
-        .animation-delay-200 {
-          animation-delay: 200ms;
-        }
-
-        .animation-delay-300 {
-          animation-delay: 300ms;
-        }
-
-        .animation-delay-400 {
-          animation-delay: 400ms;
-        }
-
-        .animation-delay-500 {
-          animation-delay: 500ms;
-        }
-
-        .animation-delay-600 {
-          animation-delay: 600ms;
-        }
-      `}</style>
     </div>
   );
 };

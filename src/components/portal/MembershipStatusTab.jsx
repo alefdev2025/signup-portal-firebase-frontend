@@ -193,7 +193,7 @@ const MembershipStatusTab = () => {
   return (
     <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/* Single Container with Banner */}
-      <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0">
+      <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
         {/* Header Banner */}
         <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
           <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
