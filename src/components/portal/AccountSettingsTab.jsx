@@ -17,6 +17,9 @@ const SettingsTab = () => {
   });
   const [animatingStars, setAnimatingStars] = useState({});
 
+  // GLOBAL STYLE SETTING - Set to false for original style (different widths, square, thin outline)
+  const USE_PILL_STYLE = false;
+
   // Add Helvetica font with lighter weights
   useEffect(() => {
     const style = document.createElement('style');
@@ -106,6 +109,9 @@ const SettingsTab = () => {
         box-sizing: border-box !important;
       }
       .creamsicle-outline {
+        border: 2px solid #FFCAA6 !important;
+      }
+      .creamsicle-outline-thin {
         border: 1px solid #FFB08A !important;
       }
     `;
@@ -274,13 +280,13 @@ const SettingsTab = () => {
   }
 
   return (
-    <div className="settings-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
+    <div className="settings-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/*<div className="settings-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-10/12 md:pl-2"></div>*/}
       {/* Settings Cards */}
-      <div className="space-y-8 mr-auto fade-in">
+      <div className="space-y-20 mr-auto fade-in">
         {/* Notifications Section */}
-        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-2xl sm:rounded-xl overflow-hidden slide-in mx-4 sm:mx-0">
-          <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0">
+          <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Sparkles className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Email Notifications
@@ -299,7 +305,7 @@ const SettingsTab = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed">
+                      <p className="text-sm text-gray-600 leading-relaxed">
                         Get notified when new podcasts, newsletters, and other media content is published
                       </p>
                     </div>
@@ -312,11 +318,11 @@ const SettingsTab = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium creamsicle-outline">
+                    <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-100 text-gray-700 ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ${USE_PILL_STYLE ? 'creamsicle-outline' : 'creamsicle-outline-thin'}`}>
                       Default: Off
                     </span>
                     {settings.receiveMediaNotifications && (
-                      <span className="text-xs px-4 py-2.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded-md font-medium">
+                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ring-2 ring-[#FFCAA6] sm:ring-0`}>
                         Currently Active
                       </span>
                     )}
@@ -335,7 +341,7 @@ const SettingsTab = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed">
+                      <p className="text-sm text-gray-600 leading-relaxed">
                         Receive important updates and messages from Alcor staff members
                       </p>
                     </div>
@@ -348,11 +354,11 @@ const SettingsTab = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <span className="text-xs px-4 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium creamsicle-outline">
+                    <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-100 text-gray-700 ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ${USE_PILL_STYLE ? 'creamsicle-outline' : 'creamsicle-outline-thin'}`}>
                       Default: On
                     </span>
                     {settings.receiveStaffMessages && (
-                      <span className="text-xs px-4 py-2.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded-md font-medium">
+                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ring-2 ring-[#FFCAA6] sm:ring-0`}>
                         Currently Active
                       </span>
                     )}
@@ -364,8 +370,8 @@ const SettingsTab = () => {
         </div>
 
         {/* Security Section */}
-        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-2xl sm:rounded-xl overflow-hidden slide-in-delay-2 mb-8 sm:mb-0 mx-4 sm:mx-0">
-          <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in-delay-2 mb-8 sm:mb-0 mx-4 sm:mx-0">
+          <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
               <Shield className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Security
@@ -381,24 +387,24 @@ const SettingsTab = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-semibold text-gray-900 mb-1">Two-Factor Authentication</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">
+                  <p className="text-sm text-gray-600 leading-relaxed">
                     Add an extra layer of security to your account with 2FA verification
                   </p>
                   {!settings.twoFactorEnabled && (
                     <div className="flex items-start gap-2 mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-gray-600">
+                      <AlertCircle className="w-5 h-5 text-gray-800 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-gray-800 font-medium">
                         We strongly recommend enabling two-factor authentication to protect your account
                       </p>
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-4">
                     {settings.twoFactorEnabled ? (
-                      <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium inline-block">
-                        Protection Enabled
+                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded w-28 text-center'} font-medium inline-block`}>
+                        Enabled
                       </span>
                     ) : (
-                      <span className="text-xs px-3 py-1.5 bg-gray-700 text-white rounded font-medium inline-block">
+                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-700 text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded w-28 text-center'} font-medium inline-block`}>
                         Not Protected
                       </span>
                     )}
@@ -418,10 +424,10 @@ const SettingsTab = () => {
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl slide-in-delay-3 mx-4 sm:mx-0">
+      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl sm:rounded-2xl slide-in-delay-3 mx-4 sm:mx-0">
         <div className="text-center sm:text-left">
-          <p className="text-sm text-gray-600 font-normal">Changes are saved automatically</p>
-          <p className="text-xs text-gray-400 mt-0.5">Your preferences are updated in real-time</p>
+          <p className="text-sm text-gray-700 font-normal">Changes are saved automatically</p>
+          <p className="text-xs text-gray-500 mt-0.5">Your preferences are updated in real-time</p>
         </div>
         <button
           onClick={handleRestoreDefaults}
