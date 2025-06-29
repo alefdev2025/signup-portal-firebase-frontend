@@ -72,6 +72,9 @@ const MembershipStatusTab = () => {
           transform: translateY(0);
         }
       }
+      .creamsicle-outline-faint {
+        border: 1px solid #FFCAA630 !important;
+      }
     `;
     document.head.appendChild(style);
     
@@ -123,7 +126,7 @@ const MembershipStatusTab = () => {
 
   if (error) {
     return (
-      <div className="-mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
+      <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
           <p className="font-medium">Error loading membership information</p>
           <p className="text-sm font-light">{error}</p>
@@ -140,7 +143,7 @@ const MembershipStatusTab = () => {
 
   if (!profileData) {
     return (
-      <div className="-mx-6 -mt-6 md:mx-0 md:mt-0 md:w-11/12 md:pl-8">
+      <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
         <div className="text-center py-16">
           <p className="text-gray-500 text-lg font-light">No membership data available</p>
         </div>
@@ -188,11 +191,11 @@ const MembershipStatusTab = () => {
   };
 
   return (
-    <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:mt-0 md:w-full md:pl-2">
+    <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
       {/* Single Container with Banner */}
-      <div className="bg-white shadow-sm border border-[#6e4376] sm:border-gray-200 rounded-[1.5rem] sm:rounded-xl overflow-hidden slide-in">
+      <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0">
         {/* Header Banner */}
-        <div className="px-6 py-6 sm:py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+        <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
           <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
             <User className="w-5 h-5 text-white drop-shadow-sm mr-3" />
             Membership Status
@@ -201,13 +204,13 @@ const MembershipStatusTab = () => {
         </div>
 
         {/* All Content in Single Container */}
-        <div className="p-6 sm:p-8 lg:p-12">
+        <div className="p-6 sm:p-8 lg:p-10">
           {/* Member Header Info */}
           <div className="mb-10 pb-10 sm:mb-8 sm:pb-8 lg:mb-6 lg:pb-6 border-b border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 sm:gap-4">
               <div className="flex flex-col sm:block">
                 <div className="flex justify-between items-start sm:block">
-                  <h3 className="text-2xl lg:text-3xl font-semibold text-gray-900 mb-3 sm:mb-2">
+                  <h3 className="text-xl lg:text-2xl font-semibold text-gray-900 mb-3 sm:mb-2">
                     {personalInfo?.firstName} {personalInfo?.lastName}
                   </h3>
                   <div className="sm:hidden">
@@ -238,8 +241,8 @@ const MembershipStatusTab = () => {
               </div>
             </div>
 
-            {/* Section Navigation Tabs */}
-            <div className="mt-10 sm:mt-8 lg:mt-6 flex flex-wrap gap-3">
+            {/* Section Navigation Tabs - Mobile */}
+            <div className="mt-10 sm:mt-8 lg:mt-6 flex flex-wrap gap-3 sm:hidden">
               <button
                 onClick={() => setActiveSection('personal')}
                 className={`w-36 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
@@ -287,6 +290,58 @@ const MembershipStatusTab = () => {
                 <Clock className="w-3.5 h-3.5" />
                 Timeline
                 {activeSection === 'timeline' && <img src={alcorStar} alt="" className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Section Navigation Tabs - Desktop */}
+            <div className="hidden sm:flex mt-8 lg:mt-6 gap-3">
+              <button
+                onClick={() => setActiveSection('personal')}
+                className={`flex-1 max-w-[160px] px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  activeSection === 'personal'
+                    ? 'bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                Personal Info
+                {activeSection === 'personal' && <img src={alcorStar} alt="" className="w-4 h-4 ml-0.5" />}
+              </button>
+              <button
+                onClick={() => setActiveSection('cryo')}
+                className={`flex-1 max-w-[160px] px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  activeSection === 'cryo'
+                    ? 'bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Cryopreservation
+                {activeSection === 'cryo' && <img src={alcorStar} alt="" className="w-4 h-4 ml-0.5" />}
+              </button>
+              <button
+                onClick={() => setActiveSection('requirements')}
+                className={`flex-1 max-w-[160px] px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  activeSection === 'requirements'
+                    ? 'bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                Requirements
+                {activeSection === 'requirements' && <img src={alcorStar} alt="" className="w-4 h-4 ml-0.5" />}
+              </button>
+              <button
+                onClick={() => setActiveSection('timeline')}
+                className={`flex-1 max-w-[160px] px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  activeSection === 'timeline'
+                    ? 'bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Timeline
+                {activeSection === 'timeline' && <img src={alcorStar} alt="" className="w-4 h-4 ml-0.5" />}
               </button>
             </div>
           </div>
