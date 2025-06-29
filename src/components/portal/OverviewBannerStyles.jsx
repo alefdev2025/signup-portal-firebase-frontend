@@ -2,7 +2,7 @@
 export const bannerStyles = {
   container: {
     animation: 'fadeIn 0.8s ease-in-out',
-    height: '280px' // Increased height for better proportion
+    height: '260px' // Slightly reduced height for better proportion
   },
   
   backgroundImage: {
@@ -14,11 +14,11 @@ export const bannerStyles = {
   
   mainGradient: {
     background: `linear-gradient(to right, 
-      #0a1629 0%, 
-      #1a2744 15%, 
-      #243456 30%, 
-      #2e4168 45%, 
-      #384e7a 55%,
+      #1a2744 0%, 
+      #243456 15%, 
+      #2e4168 30%, 
+      #384e7a 45%, 
+      #425686 55%,
       rgba(56, 78, 122, 0.9) 60%,
       rgba(56, 78, 122, 0.7) 65%,
       rgba(56, 78, 122, 0.4) 70%,

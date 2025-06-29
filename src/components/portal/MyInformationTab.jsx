@@ -152,7 +152,32 @@ const MyInformationTab = () => {
     }
   }, [isLoading, personalInfo.firstName]);
   
-// Updated loadAllData function in MyInformationTab.jsx
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .my-information-tab * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .my-information-tab .font-bold,
+      .my-information-tab .font-semibold,
+      .my-information-tab h1,
+      .my-information-tab h2,
+      .my-information-tab h3,
+      .my-information-tab h4 {
+        font-weight: 700 !important;
+      }
+      .my-information-tab .font-medium {
+        font-weight: 500 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
 const loadAllData = async () => {
   setIsLoading(true);
@@ -862,7 +887,8 @@ const loadAllData = async () => {
   return (
     //<div className="px-4 sm:px-6 lg:px-8">
     //<div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-0 min-h-screen overflow-x-hidden max-w-full mx-auto">
-    <div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
+    //<div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
+    <div className="my-information-tab bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
       {/* Save Message */}
       {saveMessage.text && (
         <Alert 

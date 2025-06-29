@@ -182,11 +182,37 @@ const PortalHeader = ({
   setActiveTab,
   className = ""
 }) => {
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .portal-header * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .portal-header .font-bold,
+      .portal-header .font-semibold,
+      .portal-header h1,
+      .portal-header h2,
+      .portal-header h3,
+      .portal-header h4 {
+        font-weight: 700 !important;
+      }
+      .portal-header .font-medium {
+        font-weight: 500 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
-    <header className={`bg-white px-6 py-3 md:py-4 border-b border-gray-200 ${className}`}>
+    <header className={`portal-header bg-white px-6 py-3 md:py-4 border-b border-gray-200 ${className}`}>
       <div className="flex items-center justify-between">
         {/* Left side - Search bar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
           <button 
             onClick={() => setIsMobileMenuOpen(true)} 
             className="md:hidden text-gray-500 hover:text-gray-900"
@@ -196,7 +222,7 @@ const PortalHeader = ({
             </svg>
           </button>
           
-          <div className="hidden md:block relative">
+          <div className="hidden md:block relative ml-auto mr-8">
             <input 
               type="text" 
               placeholder="Search..." 

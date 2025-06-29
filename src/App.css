@@ -16,6 +16,7 @@
   }
 }
 
+
 /* Disable browser auto-scaling - CRITICAL FIX FOR DEPLOYMENT ZOOM */
 html {
   -webkit-text-size-adjust: none !important;
@@ -35,7 +36,9 @@ body {
   width: 100vw !important;
   min-height: 100vh !important;
   overflow-x: hidden !important;
+  font-family: 'Roboto', sans-serif;
 }
+
 
 #root {
   width: 100% !important;

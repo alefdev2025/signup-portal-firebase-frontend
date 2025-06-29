@@ -1,70 +1,124 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Mail, Shield } from 'lucide-react';
-import { auth, db } from '../../services/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { Bell, Mail, Shield, Check, Sparkles, AlertCircle } from 'lucide-react';
+import Switch from 'react-switch';
+import { useMemberPortal } from '../../contexts/MemberPortalProvider';
+import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
+import { settingsApi } from '../../services/settingsApi';
+import alcorStar from '../../assets/images/alcor-star.png';
 
 const SettingsTab = () => {
+  const { salesforceContactId } = useMemberPortal();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [settings, setSettings] = useState({
     receiveMediaNotifications: false,
     receiveStaffMessages: true,
     twoFactorEnabled: false
   });
 
+  // Add Helvetica font with lighter weights
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .settings-tab * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .settings-tab .font-bold,
+      .settings-tab .font-semibold {
+        font-weight: 500 !important;
+      }
+      .settings-tab h1 {
+        font-weight: 300 !important;
+      }
+      .settings-tab h2,
+      .settings-tab h3,
+      .settings-tab h4 {
+        font-weight: 400 !important;
+      }
+      .settings-tab .font-medium {
+        font-weight: 400 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   useEffect(() => {
     fetchUserSettings();
-  }, []);
+    
+    // Report viewing settings
+    if (salesforceContactId) {
+      reportActivity(salesforceContactId, ACTIVITY_TYPES.VIEWED_SETTINGS)
+        .catch(error => console.error('Failed to report activity:', error));
+    }
+  }, [salesforceContactId]);
 
   const fetchUserSettings = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setSettings({
-          receiveMediaNotifications: userData.receiveMediaNotifications || false,
-          receiveStaffMessages: userData.receiveStaffMessages !== false, // Default true
-          twoFactorEnabled: userData.twoFactorEnabled || false
-        });
-      }
+      const userSettings = await settingsApi.getSettings();
+      setSettings(userSettings);
     } catch (error) {
       console.error('Error fetching settings:', error);
+      // Set defaults if fetch fails
+      setSettings({
+        receiveMediaNotifications: false,
+        receiveStaffMessages: true,
+        twoFactorEnabled: false
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggle = (settingName) => {
+  const handleToggle = async (settingName) => {
+    const newValue = !settings[settingName];
     const newSettings = {
       ...settings,
-      [settingName]: !settings[settingName]
+      [settingName]: newValue
     };
+    
+    // Update UI immediately for better UX
     setSettings(newSettings);
-    // Autosave
-    saveSettings(newSettings);
-  };
-
-  const saveSettings = async (newSettings) => {
+    
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      await updateDoc(doc(db, 'users', user.uid), {
-        receiveMediaNotifications: newSettings.receiveMediaNotifications,
-        receiveStaffMessages: newSettings.receiveStaffMessages,
-        twoFactorEnabled: newSettings.twoFactorEnabled,
-        settingsUpdatedAt: new Date()
-      });
-
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2000);
+      // Update setting via API
+      await settingsApi.updateSetting(settingName, newValue);
+      
+      // Report the activity based on what was toggled
+      if (salesforceContactId) {
+        let activityType;
+        
+        switch (settingName) {
+          case 'receiveMediaNotifications':
+            activityType = newValue 
+              ? ACTIVITY_TYPES.ENABLED_MEDIA_NOTIFICATIONS 
+              : ACTIVITY_TYPES.DISABLED_MEDIA_NOTIFICATIONS;
+            break;
+          case 'receiveStaffMessages':
+            activityType = newValue 
+              ? ACTIVITY_TYPES.ENABLED_STAFF_MESSAGES 
+              : ACTIVITY_TYPES.DISABLED_STAFF_MESSAGES;
+            break;
+          case 'twoFactorEnabled':
+            activityType = newValue 
+              ? ACTIVITY_TYPES.ENABLED_TWO_FACTOR 
+              : ACTIVITY_TYPES.DISABLED_TWO_FACTOR;
+            break;
+        }
+        
+        if (activityType) {
+          await reportActivity(salesforceContactId, activityType);
+        }
+      }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
+      console.error('Failed to update setting:', error);
+      // Revert on error
+      setSettings(settings);
+      alert('Failed to update setting. Please try again.');
     }
   };
 
@@ -75,25 +129,19 @@ const SettingsTab = () => {
       twoFactorEnabled: false
     };
     
-    setSettings(defaultSettings);
     setSaving(true);
     
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        alert('Please log in to restore defaults');
-        return;
+      // Update all settings at once via API
+      await settingsApi.updateSettings(defaultSettings);
+      
+      // Update local state
+      setSettings(defaultSettings);
+
+      // Report activity for restoring defaults
+      if (salesforceContactId) {
+        await reportActivity(salesforceContactId, ACTIVITY_TYPES.RESTORED_DEFAULT_SETTINGS);
       }
-
-      await updateDoc(doc(db, 'users', user.uid), {
-        receiveMediaNotifications: defaultSettings.receiveMediaNotifications,
-        receiveStaffMessages: defaultSettings.receiveStaffMessages,
-        twoFactorEnabled: defaultSettings.twoFactorEnabled,
-        settingsUpdatedAt: new Date()
-      });
-
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error('Error restoring defaults:', error);
       alert('Failed to restore defaults. Please try again.');
@@ -104,14 +152,21 @@ const SettingsTab = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8">
+      <div className="max-w-4xl mx-auto">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
+          <div className="h-10 bg-gray-200 w-48 mb-2"></div>
+          <div className="h-4 bg-gray-200 w-96 mb-12"></div>
           <div className="space-y-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="p-6 bg-gray-100 rounded-xl">
-                <div className="h-6 bg-gray-200 rounded w-64 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-96"></div>
+              <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-100 p-8">
+                <div className="flex items-start gap-6">
+                  <div className="w-14 h-14 bg-gray-200 rounded-lg"></div>
+                  <div className="flex-1">
+                    <div className="h-6 bg-gray-200 rounded w-64 mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-96"></div>
+                  </div>
+                  <div className="w-12 h-6 bg-gray-200 rounded-full"></div>
+                </div>
               </div>
             ))}
           </div>
@@ -121,103 +176,183 @@ const SettingsTab = () => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-8">
-      {showSuccess && (
-        <div className="mb-6 bg-green-50 text-green-700 px-4 py-3 rounded-lg flex items-center">
-          <svg className="w-5 h-5 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M5 13l4 4L19 7"></path>
-          </svg>
-          Settings saved automatically
-        </div>
-      )}
+    <div className="settings-tab max-w-4xl mx-auto">
+      {/* Settings Cards */}
+      <div className="space-y-8">
+        {/* Notifications Section */}
+        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+              <Sparkles className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+              Notifications
+              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+            </h2>
+          </div>
 
-      <h2 className="text-2xl font-medium text-gray-900 mb-8">Settings</h2>
-
-      <div className="space-y-4">
-        {/* Media Notifications */}
-        <div className="p-6 bg-gray-50 rounded-xl">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4 flex-1">
-              <Bell className="w-6 h-6 text-gray-600 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900">Receive email notifications about new Alcor media</h3>
-                <p className="text-sm text-gray-500 mt-1">Default: Off</p>
+          <div className="divide-y divide-gray-100">
+            {/* Media Notifications */}
+            <div className="p-8 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-start gap-5 flex-1">
+                  <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-7 h-7 text-[#12243c]" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                      Get notified when new podcasts, newsletters, and other media content is published
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded font-medium">
+                        Default: Off
+                      </span>
+                      {settings.receiveMediaNotifications && (
+                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
+                          Currently Active
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Switch
+                  checked={settings.receiveMediaNotifications}
+                  onChange={() => handleToggle('receiveMediaNotifications')}
+                  onColor="#1e3a5f"
+                  offColor="#d1d5db"
+                  uncheckedIcon={false}
+                  checkedIcon={false}
+                  height={24}
+                  width={48}
+                  handleDiameter={20}
+                  activeBoxShadow="0 0 0 2px #12243c"
+                />
               </div>
             </div>
-            <button
-              onClick={() => handleToggle('receiveMediaNotifications')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
-                settings.receiveMediaNotifications ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
-              }`}
-            >
-              <span
-                className={`${
-                  settings.receiveMediaNotifications ? 'translate-x-3' : '-translate-x-2.5'
-                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
-              />
-            </button>
+
+            {/* Staff Messages */}
+            <div className="p-8 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-start gap-5 flex-1">
+                  <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-7 h-7 text-[#12243c]" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                      Receive important updates and messages from Alcor staff members
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded font-medium">
+                        Default: On
+                      </span>
+                      {settings.receiveStaffMessages && (
+                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
+                          Currently Active
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Switch
+                  checked={settings.receiveStaffMessages}
+                  onChange={() => handleToggle('receiveStaffMessages')}
+                  onColor="#1e3a5f"
+                  offColor="#d1d5db"
+                  uncheckedIcon={false}
+                  checkedIcon={false}
+                  height={24}
+                  width={48}
+                  handleDiameter={20}
+                  activeBoxShadow="0 0 0 2px #12243c"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Staff Messages */}
-        <div className="p-6 bg-gray-50 rounded-xl">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4 flex-1">
-              <Mail className="w-6 h-6 text-gray-600 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900">Receive email notifications for messages from Alcor staff</h3>
-                <p className="text-sm text-gray-500 mt-1">Default: On</p>
-              </div>
-            </div>
-            <button
-              onClick={() => handleToggle('receiveStaffMessages')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
-                settings.receiveStaffMessages ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
-              }`}
-            >
-              <span
-                className={`${
-                  settings.receiveStaffMessages ? 'translate-x-3' : '-translate-x-2.5'
-                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
-              />
-            </button>
+        {/* Security Section */}
+        <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
+              <Shield className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+              Security
+              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+            </h2>
           </div>
-        </div>
 
-        {/* 2FA */}
-        <div className="p-6 bg-gray-50 rounded-xl">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4 flex-1">
-              <Shield className="w-6 h-6 text-gray-600 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account</p>
+          <div className="p-8">
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex items-start gap-5 flex-1">
+                <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-7 h-7 text-[#0a1628]" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">Two-Factor Authentication</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Add an extra layer of security to your account with 2FA verification
+                  </p>
+                  {!settings.twoFactorEnabled && (
+                    <div className="flex items-start gap-2 mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-gray-600">
+                        We strongly recommend enabling two-factor authentication to protect your account
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-4">
+                    {settings.twoFactorEnabled ? (
+                      <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white rounded font-medium">
+                        Protection Enabled
+                      </span>
+                    ) : (
+                      <span className="text-xs px-3 py-1.5 bg-gray-700 text-white rounded font-medium">
+                        Not Protected
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => handleToggle('twoFactorEnabled')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ml-4 flex-shrink-0 ${
-                settings.twoFactorEnabled ? 'bg-[#6f2d74] focus:ring-[#6f2d74]' : 'bg-gray-300 focus:ring-gray-500'
-              }`}
-            >
-              <span
-                className={`${
-                  settings.twoFactorEnabled ? 'translate-x-3' : '-translate-x-2.5'
-                } inline-block h-4 w-4 transform rounded-full bg-white transition shadow-sm`}
+              <Switch
+                checked={settings.twoFactorEnabled}
+                onChange={() => handleToggle('twoFactorEnabled')}
+                onColor="#1e3a5f"
+                offColor="#d1d5db"
+                uncheckedIcon={false}
+                checkedIcon={false}
+                height={24}
+                width={48}
+                handleDiameter={20}
+                activeBoxShadow="0 0 0 2px #12243c"
               />
-            </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between items-center">
-        <p className="text-sm text-gray-500">Settings are saved automatically</p>
+      {/* Footer Actions */}
+      <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl">
+        <div className="text-center sm:text-left">
+          <p className="text-sm text-gray-600 font-normal">Changes are saved automatically</p>
+          <p className="text-xs text-gray-400 mt-0.5">Your preferences are updated in real-time</p>
+        </div>
         <button
           onClick={handleRestoreDefaults}
           disabled={saving}
-          className="px-6 py-3 bg-[#6f2d74] text-white rounded-lg hover:bg-[#5a2460] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-5 py-2.5 bg-white text-[#12243c] border border-[#12243c] rounded-lg hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white hover:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-normal flex items-center gap-2 text-sm"
         >
-          {saving ? 'Restoring...' : 'Restore Defaults'}
+          {saving ? (
+            <>
+              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              Restoring...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Restore Defaults
+            </>
+          )}
         </button>
       </div>
     </div>

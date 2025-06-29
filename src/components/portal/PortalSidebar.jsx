@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import alcorWhiteLogo from '../../assets/images/alcor-white-logo.png';
+
+// Color theme toggle - set to true for new colors, false for original colors
+const USE_NEW_COLORS = true;
 
 const navigationItems = [
     { 
@@ -69,6 +72,36 @@ const PortalSidebar = ({
 }) => {
   const [expandedItems, setExpandedItems] = useState([]);
 
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .portal-sidebar * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .portal-sidebar .font-bold,
+      .portal-sidebar .font-semibold {
+        font-weight: 700 !important;
+      }
+      .portal-sidebar .font-medium {
+        font-weight: 500 !important;
+      }
+      /* Main menu items - more bold */
+      .portal-sidebar nav > div > div > button {
+        font-weight: 500 !important;
+      }
+      /* Sub menu items - stay thin */
+      .portal-sidebar nav > div > div > div > button {
+        font-weight: 300 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const handleNavClick = (tabId) => {
     const navItem = navigationItems.find(item => item.id === tabId);
     
@@ -97,11 +130,11 @@ const PortalSidebar = ({
 
   // Different styles based on layout mode
   const sidebarStyles = layoutMode === 'floating' 
-    ? { background: 'linear-gradient(180deg, #0a1628 0%, #12243c 25%, #6e4376 100%)' }
-    : { backgroundColor: '#1a2744' };
+    ? { background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 25%, #6e4376 100%)' : 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)' }
+    : { backgroundColor: USE_NEW_COLORS ? '#1a2744' : '#1a2744' };
 
   // Same width for both modes, but narrower
-  const sidebarWidth = 'w-[280px] md:w-[320px]';
+  const sidebarWidth = 'w-[240px] md:w-[260px]';
 
   const sidebarClasses = layoutMode === 'floating'
     ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
@@ -113,30 +146,59 @@ const PortalSidebar = ({
        transition-all duration-700 ease-in-out
        fixed md:relative shadow-2xl z-50
        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-       overflow-hidden`;
+       md:rounded-r-3xl overflow-hidden`;
 
   return (
     <>
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
       )}
       
+      {/* Rounded corner masks when elevated (only in floating mode) */}
+      {layoutMode === 'floating' && isElevated && (
+        <>
+          {/* Top right corner mask */}
+          <div 
+            className="absolute top-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            style={{
+              background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 100%)' : 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)'
+            }}
+          >
+            <div 
+              className="absolute inset-0 bg-gray-50 rounded-tl-3xl"
+            />
+          </div>
+          
+          {/* Bottom right corner mask */}
+          <div 
+            className="absolute bottom-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            style={{
+              background: USE_NEW_COLORS ? 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)' : 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
+            }}
+          >
+            <div 
+              className="absolute inset-0 bg-gray-50 rounded-bl-3xl"
+            />
+          </div>
+        </>
+      )}
+      
       {/* Sidebar content without wrapper for traditional mode */}
       {layoutMode === 'traditional' ? (
         <div
-          className={sidebarClasses}
+          className={`portal-sidebar ${sidebarClasses}`}
           aria-label="Sidebar"
           style={sidebarStyles}
         >
             {/* Content layer */}
             <div className="relative z-10 flex flex-col h-full">
-              <div className="p-8 pt-12 pb-10 border-b border-white/20 flex items-center justify-between">
-                <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-20 w-auto" />
+              <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
+                <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
                 <button 
                   className="text-white/60 hover:text-white md:hidden"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -148,13 +210,13 @@ const PortalSidebar = ({
                 </button>
               </div>
 
-              <nav className="flex-1 p-6 pt-8 overflow-y-auto">
-                <div className="space-y-2">
+              <nav className="flex-1 p-4 pt-6 overflow-y-auto">
+                <div className="space-y-1">
                   {navigationItems.map((item) => (
                     <div key={item.id} className="group">
                       <button
                         onClick={() => handleNavClick(item.id)}
-                        className={`w-full flex items-center justify-between px-5 py-4 rounded-lg transition-all font-normal relative group ${
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
                           isItemActive(item.id)
                             ? 'bg-white/10 text-white'
                             : 'text-white/80 hover:text-white hover:bg-white/5'
@@ -224,7 +286,7 @@ const PortalSidebar = ({
         </div>
       ) : (
         <div
-          className={sidebarClasses}
+          className={`portal-sidebar ${sidebarClasses}`}
           aria-label="Sidebar"
           style={sidebarStyles}
         >
