@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import styleConfig from '../styleConfig';
+import { AlertCircle, HelpCircle } from 'lucide-react';
 
 // Display component for showing info in read-only mode
 const InfoDisplay = ({ label, value, className = "" }) => (
@@ -20,6 +21,8 @@ const FamilyInfoSection = ({
   saveFamilyInfo, 
   savingSection 
 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
   // Helper function to check if birthplace info needs updating
   const needsBirthplaceUpdate = () => {
     const fatherBirthplace = familyInfo.fathersBirthplace || '';
@@ -34,8 +37,24 @@ const FamilyInfoSection = ({
     return fatherIncomplete || motherIncomplete;
   };
 
+  // Get specific missing fields for the message
+  const getMissingFields = () => {
+    const missing = [];
+    const fatherBirthplace = familyInfo.fathersBirthplace || '';
+    const motherBirthplace = familyInfo.mothersBirthplace || '';
+    
+    if (!fatherBirthplace || (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10)) {
+      missing.push("father's birthplace");
+    }
+    if (!motherBirthplace || (!motherBirthplace.includes(',') && motherBirthplace.length < 10)) {
+      missing.push("mother's birthplace");
+    }
+    
+    return missing;
+  };
+
   return (
-    <div className={styleConfig.section.wrapperEnhanced}>
+    <div className="bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0">
       <div className={styleConfig.section.innerPadding}>
         {/* Header with icon */}
         <div className={styleConfig.header.wrapper}>
@@ -61,7 +80,7 @@ const FamilyInfoSection = ({
                 value={familyInfo.fathersName} 
               />
               <InfoDisplay 
-                label="Father's Birthplace" 
+                label="Father's Birthplace (City, State/Province, Country)" 
                 value={familyInfo.fathersBirthplace} 
               />
               <InfoDisplay 
@@ -69,7 +88,7 @@ const FamilyInfoSection = ({
                 value={familyInfo.mothersMaidenName} 
               />
               <InfoDisplay 
-                label="Mother's Birthplace" 
+                label="Mother's Birthplace (City, State/Province, Country)" 
                 value={familyInfo.mothersBirthplace} 
               />
               {personalInfo.maritalStatus === 'Married' && (
@@ -137,50 +156,96 @@ const FamilyInfoSection = ({
           </div>
         )}
         
-        <ButtonGroup>
-          {editMode.family ? (
-            <>
-              <Button
-                variant="tertiary"
-                onClick={() => cancelEdit('family')}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={saveFamilyInfo}
-                loading={savingSection === 'family'}
-                disabled={savingSection === 'family'}
-              >
-                Save
-              </Button>
-            </>
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              {/* Update Notice - Left side */}
-              {needsBirthplaceUpdate() && (
-                <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-lg px-3 py-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">Please update birthplace information</span> to include full location details
-                  </p>
-                </div>
-              )}
-              {/* Empty div to push button to right when no notice */}
-              {!needsBirthplaceUpdate() && <div></div>}
+        {/* Button Group and Profile Improvement Notice on same line */}
+        {!editMode.family && needsBirthplaceUpdate() ? (
+          <div className="flex items-center justify-between mt-16">
+            {/* Profile Improvement Notice - Left side */}
+            <div className="flex items-center gap-4">
+              <svg className="w-10 h-10 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
               
-              {/* Edit button - Right side */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900">
+                    Add Required Information
+                  </p>
+                  <div className="relative">
+                    <HelpCircle 
+                      className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" 
+                      strokeWidth={2}
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                    />
+                    {showTooltip && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 w-72">
+                        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                              Why Does Alcor Need This?
+                            </h3>
+                            <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="px-4 py-3">
+                          <p className="text-sm text-gray-700">
+                            Alcor needs complete family birthplace location to better obtain a death certificate
+                          </p>
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                          <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                          <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 font-light">
+                  Add city, state, country to birthplaces
+                </p>
+              </div>
+            </div>
+            
+            {/* Edit button - Right side */}
+            <Button
+              variant="secondary"
+              onClick={() => toggleEditMode('family')}
+            >
+              Edit
+            </Button>
+          </div>
+        ) : (
+          <ButtonGroup>
+            {editMode.family ? (
+              <>
+                <Button
+                  variant="tertiary"
+                  onClick={() => cancelEdit('family')}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={saveFamilyInfo}
+                  loading={savingSection === 'family'}
+                  disabled={savingSection === 'family'}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
               <Button
                 variant="secondary"
                 onClick={() => toggleEditMode('family')}
+                className="ml-auto"
               >
                 Edit
               </Button>
-            </div>
-          )}
-        </ButtonGroup>
+            )}
+          </ButtonGroup>
+        )}
       </div>
     </div>
   );

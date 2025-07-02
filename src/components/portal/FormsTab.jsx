@@ -188,13 +188,13 @@ const FormsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-8 px-8">
-                  <div className="h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+                <div className="py-20 px-8">
+                  <div className="h-px rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
                 </div>
               )}
               <div className={`bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
               {/* Category Header */}
-              <div className="px-6 py-6 bg-gray-50 border-b border-gray-200">
+              <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                     {categoryIndex === 0 && (
@@ -265,13 +265,13 @@ const FormsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-10">
-                  <div className="h-1 mx-8 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+                <div className="py-24">
+                  <div className="h-px mx-8 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
                 </div>
-              )}
+              )}  
               <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] slide-in-delay-${categoryIndex + 1}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               {/* Category Header with Image */}
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-8 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                   {/* Text content - left side */}
                   <div className="flex-1">

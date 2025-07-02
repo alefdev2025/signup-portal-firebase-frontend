@@ -4,7 +4,7 @@ import Switch from 'react-switch';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
 import { settingsApi } from '../../services/settingsApi';
-import alcorStar from '../../assets/images/alcor-star.png';
+import alcorStar from '../../assets/images/alcor-yellow-star.png';
 
 const SettingsTab = () => {
   const { salesforceContactId } = useMemberPortal();
@@ -18,7 +18,7 @@ const SettingsTab = () => {
   const [animatingStars, setAnimatingStars] = useState({});
 
   // GLOBAL STYLE SETTING - Set to false for original style (different widths, square, thin outline)
-  const USE_PILL_STYLE = false;
+  const USE_PILL_STYLE = true;
 
   // Add Helvetica font with lighter weights
   useEffect(() => {
@@ -26,6 +26,10 @@ const SettingsTab = () => {
     style.innerHTML = `
       .settings-tab * {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+      }
+      .settings-tab p,
+      .settings-tab span:not(.section-title-text),
+      .settings-tab div {
         font-weight: 300 !important;
       }
       .settings-tab .font-bold,
@@ -39,6 +43,13 @@ const SettingsTab = () => {
       .settings-tab h3,
       .settings-tab h4 {
         font-weight: 400 !important;
+      }
+      @media (min-width: 640px) {
+        .settings-tab .section-title-text {
+          font-weight: 500 !important;
+          letter-spacing: -0.02em;
+          color: #111827 !important;
+        }
       }
       .settings-tab .fade-in {
         animation: fadeIn 0.6s ease-out;
@@ -113,6 +124,46 @@ const SettingsTab = () => {
       }
       .creamsicle-outline-thin {
         border: 1px solid #FFB08A !important;
+      }
+      .settings-tab .status-badge,
+      .settings-tab .status-badge span {
+        font-weight: 800 !important;
+        letter-spacing: 0.05em !important;
+      }
+      .gradient-border {
+        position: relative;
+        background: linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%);
+        padding: 2px;
+      }
+      .gradient-border-inner {
+        background: white;
+        border-radius: 1.25rem;
+      }
+      @media (min-width: 640px) {
+        .sm\\:gradient-border {
+          position: relative;
+          border-radius: 1.25rem;
+          overflow: hidden;
+        }
+        .sm\\:gradient-border::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 1.25rem;
+          padding: 2px;
+          background: linear-gradient(90deg, #3a2f5a 0%, #5a4276 30%, #6e4376 60%, #8e5396 85%, #a673b6 100%);
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+        }
+        .sm\\:gradient-border > .sm\\:gradient-border-inner {
+          background: white;
+          border-radius: 1.25rem;
+          position: relative;
+        }
+        .sm\\:gradient-border-inner .banner-section {
+          background: transparent !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -285,83 +336,86 @@ const SettingsTab = () => {
       {/* Settings Cards */}
       <div className="space-y-20 mr-auto fade-in">
         {/* Notifications Section */}
-        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-          <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
-              <Sparkles className="w-5 h-5 text-white drop-shadow-sm mr-3" />
-              Email Notifications
-              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
-            </h2>
-          </div>
+        <div className="bg-white shadow-sm border-2 border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in mx-4 sm:mx-0 sm:gradient-border" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+          <div className="sm:gradient-border-inner">
+            <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem] banner-section" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+              <h2 className="text-lg sm:text-2xl font-normal text-white sm:text-gray-900 flex items-center drop-shadow-md sm:drop-shadow-none mt-2 sm:mt-0">
+                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white sm:text-gray-900 drop-shadow-sm sm:drop-shadow-none mr-3 sm:stroke-[2]" />
+                <strong className="sm:hidden">Email Notifications</strong>
+                <span className="hidden sm:inline section-title-text">Email Notifications</span>
+                <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5 sm:hidden" />
+              </h2>
+            </div>
 
-          <div className="divide-y divide-gray-100">
-            {/* Media Notifications */}
-            <div className="p-8 pb-12 sm:pb-8 hover:bg-gray-50/50 transition-colors">
-              <div className="flex items-start gap-5">
-                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        Get notified when new podcasts, newsletters, and other media content is published
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 ml-6">
-                      <CustomSwitch
-                        checked={settings.receiveMediaNotifications}
-                        onChange={() => handleToggle('receiveMediaNotifications')}
-                        settingName="receiveMediaNotifications"
-                      />
-                    </div>
+            <div className="divide-y divide-gray-100">
+              {/* Media Notifications */}
+              <div className="p-6 sm:p-8 pb-8 sm:pb-8 hover:bg-gray-50/50 transition-colors">
+                <div className="flex items-start gap-4 sm:gap-5">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
                   </div>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-100 text-gray-700 ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ${USE_PILL_STYLE ? 'creamsicle-outline' : 'creamsicle-outline-thin'}`}>
-                      Default: Off
-                    </span>
-                    {settings.receiveMediaNotifications && (
-                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ring-2 ring-[#FFCAA6] sm:ring-0`}>
-                        Currently Active
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 pr-4">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">Media Notifications</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Get notified when new podcasts, newsletters, and other media content is published
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <CustomSwitch
+                          checked={settings.receiveMediaNotifications}
+                          onChange={() => handleToggle('receiveMediaNotifications')}
+                          settingName="receiveMediaNotifications"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-4 sm:hidden">
+                      <span className={`text-xs px-4 py-2 bg-white text-gray-700 ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-gray-300 flex items-center justify-center gap-1.5`}>
+                        <span>Default: Off</span>
                       </span>
-                    )}
+                      {settings.receiveMediaNotifications && (
+                        <span className={`text-xs px-4 py-2 bg-white text-[#825f7c] ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-[#825f7c] flex items-center justify-center gap-1.5`}>
+                          <span>Currently Active</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Staff Messages */}
-            <div className="p-8 pb-12 sm:pb-8 hover:bg-gray-50/50 transition-colors">
-              <div className="flex items-start gap-5">
-                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        Receive important updates and messages from Alcor staff members
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 ml-6">
-                      <CustomSwitch
-                        checked={settings.receiveStaffMessages}
-                        onChange={() => handleToggle('receiveStaffMessages')}
-                        settingName="receiveStaffMessages"
-                      />
-                    </div>
+              {/* Staff Messages */}
+              <div className="p-6 sm:p-8 pb-10 sm:pb-12 hover:bg-gray-50/50 transition-colors">
+                <div className="flex items-start gap-4 sm:gap-5">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
                   </div>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-100 text-gray-700 ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ${USE_PILL_STYLE ? 'creamsicle-outline' : 'creamsicle-outline-thin'}`}>
-                      Default: On
-                    </span>
-                    {settings.receiveStaffMessages && (
-                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded-md w-28 text-center'} font-medium ring-2 ring-[#FFCAA6] sm:ring-0`}>
-                        Currently Active
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 pr-4">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">Staff Messages</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Receive important updates and messages from Alcor staff members
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <CustomSwitch
+                          checked={settings.receiveStaffMessages}
+                          onChange={() => handleToggle('receiveStaffMessages')}
+                          settingName="receiveStaffMessages"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-4 sm:hidden">
+                      <span className={`text-xs px-4 py-2 bg-white text-gray-700 ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-gray-300 flex items-center justify-center gap-1.5`}>
+                        <span>Default: On</span>
                       </span>
-                    )}
+                      {settings.receiveStaffMessages && (
+                        <span className={`text-xs px-4 py-2 bg-white text-[#825f7c] ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-[#825f7c] flex items-center justify-center gap-1.5`}>
+                          <span>Currently Active</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -370,53 +424,56 @@ const SettingsTab = () => {
         </div>
 
         {/* Security Section */}
-        <div className="bg-white shadow-sm border border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in-delay-2 mb-8 sm:mb-0 mx-4 sm:mx-0" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-          <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md mt-2 sm:mt-0">
-              <Shield className="w-5 h-5 text-white drop-shadow-sm mr-3" />
-              Security
-              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
-            </h2>
-          </div>
+        <div className="bg-white shadow-sm border-2 border-gray-400 sm:border-gray-200 rounded-[1.5rem] sm:rounded-[1.25rem] overflow-hidden slide-in-delay-2 mb-8 sm:mb-0 mx-4 sm:mx-0 sm:gradient-border" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+          <div className="sm:gradient-border-inner">
+            <div className="px-6 py-8 sm:py-7 rounded-t-[1.5rem] sm:rounded-t-[1.25rem] banner-section" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+              <h2 className="text-lg sm:text-2xl font-normal text-white sm:text-gray-900 flex items-center drop-shadow-md sm:drop-shadow-none mt-2 sm:mt-0">
+                <Shield className="w-5 h-5 sm:w-7 sm:h-7 text-white sm:text-gray-900 drop-shadow-sm sm:drop-shadow-none mr-3 sm:stroke-[2]" />
+                <strong className="sm:hidden">Security</strong>
+                <span className="hidden sm:inline section-title-text">Security</span>
+                <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5 sm:hidden" />
+              </h2>
+            </div>
 
-          <div className="p-8 pb-12 sm:pb-8">
-            <div className="flex items-center justify-between gap-6">
-              <div className="flex items-start gap-5 flex-1">
-                <div className="w-14 h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-7 h-7 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-gray-900 mb-1">Two-Factor Authentication</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    Add an extra layer of security to your account with 2FA verification
-                  </p>
-                  {!settings.twoFactorEnabled && (
-                    <div className="flex items-start gap-2 mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-gray-800 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-gray-800 font-medium">
-                        We strongly recommend enabling two-factor authentication to protect your account
-                      </p>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 mt-4">
-                    {settings.twoFactorEnabled ? (
-                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gradient-to-r from-[#3d5a80] to-[#5a7ea6] text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded w-28 text-center'} font-medium inline-block`}>
-                        Enabled
-                      </span>
-                    ) : (
-                      <span className={`text-xs px-3 py-2.5 sm:py-3.5 bg-gray-700 text-white ${USE_PILL_STYLE ? 'rounded-full w-28 text-center' : 'rounded-full sm:rounded w-28 text-center'} font-medium inline-block`}>
-                        Not Protected
-                      </span>
+            <div className="p-6 sm:p-8 pb-8 sm:pb-8">
+              <div className="flex items-center justify-between gap-4 sm:gap-6">
+                <div className="flex items-start gap-4 sm:gap-5 flex-1">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-[#404060] stroke-[#404060]" fill="none" strokeWidth="2" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">Two-Factor Authentication</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Add an extra layer of security to your account with 2FA verification
+                    </p>
+                    {!settings.twoFactorEnabled && (
+                      <div className="flex items-start gap-2 mt-4 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg">
+                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs sm:text-sm text-gray-800 font-medium">
+                          We strongly recommend enabling two-factor authentication to protect your account
+                        </p>
+                      </div>
                     )}
+                    <div className="flex items-center gap-2 mt-4 sm:hidden">
+                      {settings.twoFactorEnabled ? (
+                        <span className={`text-xs px-4 py-2 bg-white text-[#825f7c] ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-[#825f7c] inline-flex items-center justify-center gap-1.5`}>
+                          <span>Enabled</span>
+                        </span>
+                      ) : (
+                        <span className={`text-xs px-4 py-2 bg-white text-[#13283f] ${USE_PILL_STYLE ? 'rounded-full text-center' : 'rounded-full text-center'} font-bold status-badge border border-[#13283f] inline-flex items-center justify-center gap-1.5`}>
+                          <span>Not Protected</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex-shrink-0 self-start mt-1 sm:mt-0">
-                <CustomSwitch
-                  checked={settings.twoFactorEnabled}
-                  onChange={() => handleToggle('twoFactorEnabled')}
-                  settingName="twoFactorEnabled"
-                />
+                <div className="flex-shrink-0 self-start mt-1 sm:mt-0">
+                  <CustomSwitch
+                    checked={settings.twoFactorEnabled}
+                    onChange={() => handleToggle('twoFactorEnabled')}
+                    settingName="twoFactorEnabled"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 // src/components/portal/services/salesforce/memberInfo.js
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app' || 'http://localhost:8080';
+const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 
 // Helper function for API calls
 const apiCall = async (endpoint, options = {}) => {
@@ -455,6 +455,23 @@ export const downloadMemberVideoTestimony = async (contactId) => {
       success: false,
       error: error.message,
       data: null
+    };
+  }
+};
+
+export const getMemberCategory = async (contactId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/category`, {
+      method: 'GET'
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching member category:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch member category'
     };
   }
 };

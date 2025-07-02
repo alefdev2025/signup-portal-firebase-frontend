@@ -44,6 +44,8 @@ const OverviewTab = ({ setActiveTab }) => {
   const newslettersRef = useRef(null);
   const recentActivityRef = useRef(null);
 
+  const [showWelcome, setShowWelcome] = useState(false);
+
   // Helper function to format notification time
   const formatNotificationTime = (dateString) => {
     if (!dateString) return '';
@@ -82,6 +84,31 @@ const OverviewTab = ({ setActiveTab }) => {
       setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    if (salesforceContactId && !profileLoading && userName && userName !== '0031I00000tRcNZ') {
+      // Delay showing the welcome message
+      const timer = setTimeout(() => {
+        setShowWelcome(true);
+      }, 300); // Adjust delay as needed
+      
+      return () => clearTimeout(timer);
+    }
+  }, [salesforceContactId, profileLoading, userName]);
+  
+  // Then in your JSX (around line 476-490):
+  <h1 
+    className={`font-semibold text-white mb-3 drop-shadow-lg tracking-tight transition-opacity duration-500 ${
+      showWelcome ? 'opacity-100' : 'opacity-0'
+    }`}
+    style={{ 
+      fontSize: '1.75rem',
+      fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important"
+    }}
+  >
+    <span className="text-white/90">Welcome</span>
+    <span className="text-white">, {userName}!</span>
+  </h1>
 
   // Fetch user name - now using profile data as primary source
   useEffect(() => {
@@ -285,7 +312,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
   return (
     //<div className="-mt-4 px-6 md:px-8 lg:px-12">
-    <div className="overview-tab -mt-4 px-6 md:px-8 lg:px-12">
+    <div className="overview-tab -mt-4 pt-6 px-6 md:px-8 lg:px-12">
       {/* Hero Banner */}
       <div 
         className="relative rounded-xl overflow-hidden mb-12 animate-fadeIn"
@@ -327,11 +354,14 @@ const OverviewTab = ({ setActiveTab }) => {
   className="font-semibold text-white mb-3 drop-shadow-lg tracking-tight"
   style={{ 
     fontSize: '1.75rem',
-    fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important"
+    fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
+    opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
+    transition: 'opacity 0.5s ease-in-out',
+    transitionDelay: '0.3s'
   }}
 >
   <span className="text-white/90">Welcome</span>
-  <span className="text-white font-bold">{userName ? `, ${userName}!` : '!'}</span>
+  <span className="text-white">, {userName}!</span>
 </h1>
               <p className="text-base md:text-lg text-white/90 mb-6 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
@@ -346,7 +376,7 @@ const OverviewTab = ({ setActiveTab }) => {
                   }
                 }}
                 variant="outline"
-                size="md"
+                size="sm"  // Changed from "md" to "sm"
                 className="border-white/30 text-white hover:bg-white/10"
               >
                 View Membership Status

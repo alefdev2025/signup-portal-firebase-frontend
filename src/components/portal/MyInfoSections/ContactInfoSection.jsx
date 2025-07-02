@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input, Select, Button, ButtonGroup } from '../FormComponents';
-import styleConfig from '../styleConfig';
+import styleConfig, { isFieldVisibleInEditMode } from '../styleConfig';
 
 // Date of Birth Component
 const DateOfBirthFields = ({ 
@@ -94,7 +94,8 @@ const ContactInfoSection = ({
     toggleEditMode, 
     cancelEdit, 
     saveContactInfo, 
-    savingSection 
+    savingSection,
+    fieldErrors = {}
   }) => {
     // Ensure personalInfo is always an object
     const safePersonalInfo = personalInfo || {};
@@ -147,8 +148,8 @@ const ContactInfoSection = ({
     };
 
   return (
-    <div className={styleConfig.section.wrapperEnhanced}>
-      <div className={styleConfig.section.innerPadding}>
+    <div className="bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0">
+      <div className="px-4 py-6 sm:p-6 md:p-8">
         {/* Header with icon */}
         <div className={styleConfig.header.wrapper}>
             <div className={styleConfig.sectionIcons.contact}>
@@ -170,6 +171,10 @@ const ContactInfoSection = ({
             <InfoDisplay 
               label="First Name" 
               value={safePersonalInfo?.firstName} 
+            />
+            <InfoDisplay 
+              label="Middle Name" 
+              value={safePersonalInfo?.middleName} 
             />
             <InfoDisplay 
               label="Last Name" 
@@ -214,6 +219,15 @@ const ContactInfoSection = ({
               value={safePersonalInfo?.firstName || ''}
               onChange={(e) => setPersonalInfo({...safePersonalInfo, firstName: e.target.value})}
               disabled={!editMode.contact}
+              error={fieldErrors.firstName}
+            />
+            
+            <Input
+              label="Middle Name"
+              type="text"
+              value={safePersonalInfo?.middleName || ''}
+              onChange={(e) => setPersonalInfo({...safePersonalInfo, middleName: e.target.value})}
+              disabled={!editMode.contact}
             />
             
             <Input
@@ -222,16 +236,19 @@ const ContactInfoSection = ({
               value={safePersonalInfo?.lastName || ''}
               onChange={(e) => setPersonalInfo({...safePersonalInfo, lastName: e.target.value})}
               disabled={!editMode.contact}
+              error={fieldErrors.lastName}
             />
             
-            {/* Date of Birth moved here */}
-            <DateOfBirthFields
-              birthMonth={birthMonth}
-              birthDay={birthDay}
-              birthYear={birthYear}
-              onChange={handleDateChange}
-              disabled={!editMode.contact}
-            />
+            {/* Date of Birth - Only show if configured to be visible in edit mode */}
+            {isFieldVisibleInEditMode('contact', 'dateOfBirth') && (
+              <DateOfBirthFields
+                birthMonth={birthMonth}
+                birthDay={birthDay}
+                birthYear={birthYear}
+                onChange={handleDateChange}
+                disabled={!editMode.contact}
+              />
+            )}
             
             <Input
               label="Personal Email *"
@@ -268,6 +285,7 @@ const ContactInfoSection = ({
               onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
               disabled={!editMode.contact}
               placeholder="(555) 123-4567"
+              error={fieldErrors.mobilePhone}
             />
             
             <Input
@@ -277,6 +295,7 @@ const ContactInfoSection = ({
               onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
               disabled={!editMode.contact}
               placeholder="(555) 123-4567"
+              error={fieldErrors.homePhone}
             />
             
             <Input
@@ -286,6 +305,7 @@ const ContactInfoSection = ({
               onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
               disabled={!editMode.contact}
               placeholder="(555) 123-4567"
+              error={fieldErrors.workPhone}
             />
           </div>
         )}
@@ -303,9 +323,20 @@ const ContactInfoSection = ({
                 variant="primary"
                 onClick={saveContactInfo}
                 loading={savingSection === 'contact'}
-                disabled={savingSection === 'contact'}
+                disabled={savingSection === 'contact' || savingSection === 'saved'}
               >
-                Save
+                {savingSection === 'saved' ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Saved
+                  </>
+                ) : savingSection === 'contact' ? (
+                  'Saving...'
+                ) : (
+                  'Save'
+                )}
               </Button>
             </>
           ) : (

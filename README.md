@@ -684,3 +684,79 @@ Some places we have hardcoded like this instead of being env specific
 825f7c
 404060
 13283f
+
+
+Member Category Decision Logic
+1. CryoMember (Fully Completed Cryopreservation Member)
+Conditions:
+
+New_Contract_Complete__c === true AND
+Cryo_Method_Selected__c has a value (not null/empty)
+
+Explanation: This member has completed their contract and selected a preservation method (Whole Body or Neuro). They are a full cryopreservation member.
+Details captured:
+javascript{
+  method: contact.Cryo_Method_Selected__c,
+  contractComplete: true,
+  fundingStatus: contact.Funding_Status__c,
+  active: contact.Active__c
+}
+2. CryoApplicant (In-Progress Cryopreservation Applicant)
+Two possible paths:
+Path A:
+
+Cryo_Method_Selected__c has a value AND
+New_Contract_Complete__c !== true
+
+Explanation: They've selected a preservation method but haven't completed their contract yet.
+Path B:
+
+RecordTypeId === '0128W000001Hmb0QAC' (Cryo Contact Type) AND
+New_Contract_Complete__c !== true
+
+Explanation: They have the cryopreservation record type but haven't completed the process.
+Details captured:
+javascript{
+  selectedMethod: contact.Cryo_Method_Selected__c, // Path A
+  contractComplete: false,
+  fundingStatus: contact.Funding_Status__c,
+  recordType: 'Cryo Contact Type' // Path B
+}
+3. BasicMember (Default/Basic Member)
+Conditions:
+
+Cryo_Method_Selected__c is null/empty
+Doesn't meet criteria for CryoMember or CryoApplicant
+
+Explanation: This is a basic member who hasn't started the cryopreservation process. They could still upgrade.
+Details captured:
+javascript{
+  recordType: contact.RecordTypeId === '0128W000001HmayQAC' ? 'Basic Member Type' : 'Other',
+  cryoEligible: true // They could still upgrade
+}
+Summary for README:
+markdown## Member Categorization Logic
+
+The system categorizes members into three types based on their cryopreservation status:
+
+1. **CryoMember**: 
+   - Has completed contract (`New_Contract_Complete__c = true`)
+   - Has selected preservation method (`Cryo_Method_Selected__c` is populated)
+   - This is a fully enrolled cryopreservation member
+
+2. **CryoApplicant**:
+   - Has selected preservation method BUT contract not complete, OR
+   - Has Cryo record type (`0128W000001Hmb0QAC`) BUT contract not complete
+   - This is someone in the process of becoming a cryopreservation member
+
+3. **BasicMember**:
+   - No preservation method selected
+   - Default category for all other members
+   - Can still upgrade to cryopreservation
+
+### Key Fields Used:
+- `New_Contract_Complete__c`: Boolean indicating if contract is complete
+- `Cryo_Method_Selected__c`: The preservation method (Whole Body/Neuro)
+- `RecordTypeId`: Salesforce record type (specific IDs for Cryo vs Basic)
+- `Funding_Status__c`: Current funding status
+- `Active__c`: Whether member is active

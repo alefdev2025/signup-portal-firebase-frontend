@@ -188,15 +188,21 @@ const StaffDashboard = () => {
         </div>
       </div>
 
-      {/* Main Content - Scrollable */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto bg-gray-100 pt-16 lg:pt-0">
-          <div className="p-4 lg:p-8">
-            {activeTab === 'content' && <StaffContent />}
-            {activeTab === 'messages' && <StaffMessages />}
-            {activeTab === 'notifications' && <StaffNotifications />}
-            {activeTab === 'members' && <StaffMembers />}
+      {/* Main Content - Scrollable with rounded corners */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-100">
+        {/* Content Area with rounded corners */}
+        <div className="flex-1 overflow-y-auto pt-16 lg:pt-0">
+          <div className="h-full lg:p-8 lg:pl-0">
+            <div className="h-full bg-white lg:rounded-l-3xl shadow-xl overflow-hidden">
+              <div className="h-full overflow-y-auto">
+                <div className="p-4 lg:p-8">
+                  {activeTab === 'content' && <StaffContent />}
+                  {activeTab === 'messages' && <StaffMessages />}
+                  {activeTab === 'notifications' && <StaffNotifications />}
+                  {activeTab === 'members' && <StaffMembers />}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

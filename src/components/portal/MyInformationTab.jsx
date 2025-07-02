@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { memberDataService } from './services/memberDataService';
 import { 
@@ -14,8 +15,25 @@ import {
   createMemberInsurance
 } from './services/salesforce/memberInfo';
 
+import { 
+  cleanAddressData, 
+  cleanPersonData,
+  formatPersonName,
+  formatEmail,
+  formatPhone,
+  formatCity,
+  cleanString,
+  formatStreetAddress,
+  formatStateProvince,
+  formatPostalCode,
+  formatCountry,
+  cleanDataBeforeSave,
+} from './utils/dataFormatting';
+
 // Import styled components
-import { Alert, Loading } from './FormComponents';
+import { Alert, Loading, Button } from './FormComponents';
+
+import { getMemberCategory } from './services/salesforce/memberInfo';
 
 // Import all styled section components
 import PersonalInfoSection from './MyInfoSections/PersonalInfoSection';
@@ -29,13 +47,28 @@ import FundingSection from './MyInfoSections/FundingSection';
 import LegalSection from './MyInfoSections/LegalSection';
 import NextOfKinSection from './MyInfoSections/NextOfKinSection';
 
+import { memberCategoryConfig, isFieldRequired, isSectionVisible } from './memberCategoryConfig';
+
+
+// Import style config
+import styleConfig from './styleConfig';
+
 const MyInformationTab = () => {
-  const { salesforceContactId } = useMemberPortal();
+  const { 
+    salesforceContactId, 
+    memberInfoData, 
+    memberInfoLoaded, 
+    refreshMemberInfo 
+  } = useMemberPortal();
   
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [savingSection, setSavingSection] = useState('');
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
+
+  // Categorize member
+  const [memberCategory, setMemberCategory] = useState(null);
+  const [categoryLoading, setCategoryLoading] = useState(true);
   
   // Section loading states
   const [sectionsLoaded, setSectionsLoaded] = useState({
@@ -76,9 +109,26 @@ const MyInformationTab = () => {
   const [funding, setFunding] = useState({});
   const [legal, setLegal] = useState({});
   const [nextOfKin, setNextOfKin] = useState({});
+  
+  // Field errors state
+  const [fieldErrors, setFieldErrors] = useState({});
+  
+  // Address validation modal state
+  const [addressValidationModal, setAddressValidationModal] = useState({
+    isOpen: false,
+    addressType: '',
+    originalAddress: {},
+    suggestedAddress: {},
+    onAccept: null
+  });
 
-  // Define separator style as a constant
-  const sectionSeparator = "h-1 my-16 w-1/5 rounded-full bg-gray-400";
+
+  const [initializedFromCache, setInitializedFromCache] = useState(false);
+
+  // Define separator style using styleConfig
+  const sectionSeparator = () => (
+    <div className={styleConfig.separator.wrapper}></div>
+  );
   
   // Original data states - to track changes
   const [originalData, setOriginalData] = useState({
@@ -94,10 +144,168 @@ const MyInformationTab = () => {
     nextOfKin: {}
   });
   
-  // Load all data on mount
+  useEffect(() => {
+    if (!salesforceContactId) return;
+    
+    const initializeData = async () => {
+      // First, try to use cached data if available
+      if (memberInfoLoaded && memberInfoData && !initializedFromCache) {
+        console.log('📦 [MyInformationTab] Using preloaded member data');
+        
+        // Process and set all the cached data
+        if (memberInfoData.personal?.success && memberInfoData.personal.data) {
+          const personalData = memberInfoData.personal.data.data || memberInfoData.personal.data;
+          const cleanedPersonal = cleanPersonData(personalData);
+          setPersonalInfo(cleanedPersonal);
+          setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
+        }
+        
+        if (memberInfoData.contact?.success && memberInfoData.contact.data) {
+          const contactData = memberInfoData.contact.data.data || memberInfoData.contact.data;
+          const cleanedContact = {
+            ...contactData,
+            personalEmail: formatEmail(contactData.personalEmail),
+            workEmail: formatEmail(contactData.workEmail),
+            email: formatEmail(contactData.email),
+            homePhone: formatPhone(contactData.homePhone),
+            mobilePhone: formatPhone(contactData.mobilePhone),
+            workPhone: formatPhone(contactData.workPhone),
+            preferredPhone: cleanString(contactData.preferredPhone)
+          };
+          setContactInfo(cleanedContact);
+          setOriginalData(prev => ({ ...prev, contact: cleanedContact }));
+        }
+        
+        if (memberInfoData.addresses?.success && memberInfoData.addresses.data) {
+          const addressData = memberInfoData.addresses.data.data || memberInfoData.addresses.data;
+          const transformedAddresses = {
+            homeStreet: addressData.homeAddress?.street || '',
+            homeCity: addressData.homeAddress?.city || '',
+            homeState: addressData.homeAddress?.state || '',
+            homePostalCode: addressData.homeAddress?.postalCode || '',
+            homeCountry: addressData.homeAddress?.country || '',
+            mailingStreet: addressData.mailingAddress?.street || '',
+            mailingCity: addressData.mailingAddress?.city || '',
+            mailingState: addressData.mailingAddress?.state || '',
+            mailingPostalCode: addressData.mailingAddress?.postalCode || '',
+            mailingCountry: addressData.mailingAddress?.country || '',
+            sameAsHome: false
+          };
+          const cleanedAddresses = cleanAddressData(transformedAddresses);
+          setAddresses(cleanedAddresses);
+          setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
+        }
+        
+        if (memberInfoData.family?.success && memberInfoData.family.data) {
+          const familyData = memberInfoData.family.data.data || memberInfoData.family.data;
+          const transformedFamily = {
+            fathersName: formatPersonName(familyData.fatherName),
+            fathersBirthplace: formatCity(familyData.fatherBirthplace),
+            mothersMaidenName: formatPersonName(familyData.motherMaidenName),
+            mothersBirthplace: formatCity(familyData.motherBirthplace),
+            spousesName: formatPersonName(familyData.spouseName)
+          };
+          setFamilyInfo(transformedFamily);
+          setOriginalData(prev => ({ ...prev, family: transformedFamily }));
+        }
+        
+        if (memberInfoData.occupation?.success && memberInfoData.occupation.data) {
+          const occupationData = memberInfoData.occupation.data.data || memberInfoData.occupation.data;
+          const cleanedOccupation = {
+            ...occupationData,
+            occupation: cleanString(occupationData.occupation),
+            occupationalIndustry: cleanString(occupationData.occupationalIndustry),
+            militaryBranch: cleanString(occupationData.militaryBranch)
+          };
+          setOccupation(cleanedOccupation);
+          setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
+        }
+        
+        if (memberInfoData.medical?.success && memberInfoData.medical.data) {
+          const medicalData = memberInfoData.medical.data.data || memberInfoData.medical.data;
+          const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
+          setMedicalInfo(cleanedMedical);
+          setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
+        }
+        
+        if (memberInfoData.cryo?.success && memberInfoData.cryo.data) {
+          const cryoData = memberInfoData.cryo.data.data || memberInfoData.cryo.data;
+          const transformedCryo = {
+            method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
+                    cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
+            cmsWaiver: cryoData.cmsWaiver === 'Yes',
+            remainsHandling: mapRemainsHandling(cryoData.nonCryoRemainArrangements),
+            recipientName: formatPersonName(cryoData.recipientName),
+            recipientPhone: formatPhone(cryoData.recipientPhone),
+            recipientEmail: formatEmail(cryoData.recipientEmail),
+            publicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure || cryoData.publicDisclosure),
+            fundingStatus: cryoData.fundingStatus,
+            contractDate: cryoData.contractDate,
+            memberJoinDate: cryoData.memberJoinDate,
+            contractComplete: cryoData.contractComplete,
+            isPatient: cryoData.isPatient,
+            recipientAddress: cryoData.recipientAddress
+          };
+          setCryoArrangements(transformedCryo);
+          setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+        }
+        
+        if (memberInfoData.emergency?.success && memberInfoData.emergency.data) {
+          const emergencyResponse = memberInfoData.emergency.data;
+          const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
+          
+          if (nextOfKinArray && nextOfKinArray.length > 0) {
+            const primaryContact = nextOfKinArray[0];
+            const transformedNextOfKin = {
+              fullName: formatPersonName(primaryContact.fullName || ''),
+              relationship: cleanString(primaryContact.relationship || ''),
+              phone: formatPhone(primaryContact.mobilePhone || primaryContact.homePhone || ''),
+              email: formatEmail(primaryContact.email || ''),
+              address: primaryContact.address ? 
+                `${formatStreetAddress(primaryContact.address.street || '')}, ${formatCity(primaryContact.address.city || '')}, ${formatStateProvince(primaryContact.address.state || '')} ${formatPostalCode(primaryContact.address.postalCode || '')}`.trim().replace(/^,\s*|,\s*$/g, '') :
+                ''
+            };
+            setNextOfKin(transformedNextOfKin);
+            setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
+          }
+        }
+        
+        if (memberInfoData.insurance?.success && memberInfoData.insurance.data) {
+          const insuranceData = memberInfoData.insurance.data.data || memberInfoData.insurance.data;
+          if (insuranceData.length > 0) {
+            const primaryInsurance = insuranceData[0];
+            const transformedFunding = {
+              fundingType: 'LifeInsurance',
+              companyName: cleanString(primaryInsurance.companyName),
+              policyNumber: cleanString(primaryInsurance.policyNumber),
+              policyType: cleanString(primaryInsurance.policyType),
+              faceAmount: primaryInsurance.faceAmount || ''
+            };
+            setFunding(transformedFunding);
+            setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
+          }
+        }
+        
+        if (memberInfoData.category?.success && memberInfoData.category.data) {
+          setMemberCategory(memberInfoData.category.data.category);
+          setCategoryLoading(false);
+        }
+        
+        setInitializedFromCache(true);
+        setIsLoading(false);
+      } else if (!memberInfoLoaded) {
+        // No cached data available, load fresh
+        console.log('🔄 [MyInformationTab] No cached data, loading fresh...');
+        loadAllData();
+      }
+    };
+    
+    initializeData();
+  }, [salesforceContactId, memberInfoLoaded, memberInfoData, initializedFromCache]);
+
   useEffect(() => {
     if (salesforceContactId) {
-      loadAllData();
+      loadMemberCategory();
     }
   }, [salesforceContactId]);
   
@@ -178,231 +386,272 @@ const MyInformationTab = () => {
       document.head.removeChild(style);
     };
   }, []);
-
-const loadAllData = async () => {
-  setIsLoading(true);
-  try {
-    // Clear cache first to ensure fresh data
-    memberDataService.clearCache(salesforceContactId);
+  
+  // Effect to handle body overflow when modal is open
+  useEffect(() => {
+    if (addressValidationModal.isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
     
-    // Fetch all data in parallel (including cryo arrangements now)
-    const [
-      personalRes,
-      contactRes,
-      addressRes,
-      familyRes,
-      occupationRes,
-      medicalRes,
-      cryoRes,        // Added
-      legalRes,       // Added
-      emergencyRes,   // Added
-      insuranceRes    // Added
-    ] = await Promise.allSettled([
-      memberDataService.getPersonalInfo(salesforceContactId),
-      memberDataService.getContactInfo(salesforceContactId),
-      memberDataService.getAddresses(salesforceContactId),
-      memberDataService.getFamilyInfo(salesforceContactId),
-      memberDataService.getOccupation(salesforceContactId),
-      memberDataService.getMedicalInfo(salesforceContactId),
-      memberDataService.getCryoArrangements(salesforceContactId),    // Added
-      memberDataService.getLegalInfo(salesforceContactId),            // Added
-      memberDataService.getEmergencyContacts(salesforceContactId),    // Added
-      memberDataService.getInsurance(salesforceContactId)             // Added
-    ]);
-    
-    // Process results from Promise.allSettled
-    const results = {
-      personalRes: personalRes.status === 'fulfilled' ? personalRes.value : { success: false },
-      contactRes: contactRes.status === 'fulfilled' ? contactRes.value : { success: false },
-      addressRes: addressRes.status === 'fulfilled' ? addressRes.value : { success: false },
-      familyRes: familyRes.status === 'fulfilled' ? familyRes.value : { success: false },
-      occupationRes: occupationRes.status === 'fulfilled' ? occupationRes.value : { success: false },
-      medicalRes: medicalRes.status === 'fulfilled' ? medicalRes.value : { success: false },
-      cryoRes: cryoRes.status === 'fulfilled' ? cryoRes.value : { success: false },
-      legalRes: legalRes.status === 'fulfilled' ? legalRes.value : { success: false },
-      emergencyRes: emergencyRes.status === 'fulfilled' ? emergencyRes.value : { success: false },
-      insuranceRes: insuranceRes.status === 'fulfilled' ? insuranceRes.value : { success: false }
+    return () => {
+      document.body.style.overflow = '';
     };
-    
-    // Update states with fetched data
-    console.log('API Responses:', results);
-    
-    if (results.personalRes.success && results.personalRes.data) {
-      const personalData = results.personalRes.data.data || results.personalRes.data;
-      console.log('Setting personal info data:', personalData);
-      setPersonalInfo(personalData);
-      setOriginalData(prev => ({ ...prev, personal: personalData }));
-    }
-    
-    if (results.contactRes.success && results.contactRes.data) {
-      const contactData = results.contactRes.data.data || results.contactRes.data;
-      console.log('Setting contact info data:', contactData);
-      setContactInfo(contactData);
-      setOriginalData(prev => ({ ...prev, contact: contactData }));
-    }
-    
-    if (results.addressRes.success && results.addressRes.data) {
-      const addressData = results.addressRes.data.data || results.addressRes.data;
-      console.log('Setting addresses data:', addressData);
-      // Transform address data to match component expectations
-      const transformedAddresses = {
-        homeStreet: addressData.homeAddress?.street || '',
-        homeCity: addressData.homeAddress?.city || '',
-        homeState: addressData.homeAddress?.state || '',
-        homePostalCode: addressData.homeAddress?.postalCode || '',
-        homeCountry: addressData.homeAddress?.country || '',
-        mailingStreet: addressData.mailingAddress?.street || '',
-        mailingCity: addressData.mailingAddress?.city || '',
-        mailingState: addressData.mailingAddress?.state || '',
-        mailingPostalCode: addressData.mailingAddress?.postalCode || '',
-        mailingCountry: addressData.mailingAddress?.country || '',
-        sameAsHome: false // Initialize as false
-      };
-      setAddresses(transformedAddresses);
-      setOriginalData(prev => ({ ...prev, addresses: transformedAddresses }));
-    }
-    
-    if (results.familyRes.success && results.familyRes.data) {
-      const familyData = results.familyRes.data.data || results.familyRes.data;
-      console.log('Setting family info data:', familyData);
-      // Transform family data to match component expectations
-      const transformedFamily = {
-        fathersName: familyData.fatherName || '',
-        fathersBirthplace: familyData.fatherBirthplace || '',
-        mothersMaidenName: familyData.motherMaidenName || '',
-        mothersBirthplace: familyData.motherBirthplace || '',
-        spousesName: familyData.spouseName || ''
-      };
-      setFamilyInfo(transformedFamily);
-      setOriginalData(prev => ({ ...prev, family: transformedFamily }));
-    }
-    
-    if (results.occupationRes.success && results.occupationRes.data) {
-      const occupationData = results.occupationRes.data.data || results.occupationRes.data;
-      console.log('Setting occupation data:', occupationData);
-      setOccupation(occupationData);
-      setOriginalData(prev => ({ ...prev, occupation: occupationData }));
-    }
-    
-    if (results.medicalRes.success && results.medicalRes.data) {
-      const medicalData = results.medicalRes.data.data || results.medicalRes.data;
-      console.log('Setting medical info data:', medicalData);
-      setMedicalInfo(medicalData);
-      setOriginalData(prev => ({ ...prev, medical: medicalData }));
-    }
-    
-    // Process Cryopreservation Arrangements
-    if (results.cryoRes.success && results.cryoRes.data) {
-      const cryoData = results.cryoRes.data.data || results.cryoRes.data;
-      console.log('Setting cryo arrangements data:', cryoData);
+  }, [addressValidationModal.isOpen]);
+
+  const loadAllData = async () => {
+    setIsLoading(true);
+    try {
+      // Clear cache first to ensure fresh data
+      memberDataService.clearCache(salesforceContactId);
       
-      // Transform the backend data to match component expectations
-      const transformedCryo = {
-        // Map methodOfPreservation to method
-        method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
-                cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
-        
-        // Map cmsWaiver from "Yes"/"No" to boolean
-        cmsWaiver: cryoData.cmsWaiver === 'Yes',
-        
-        // Map remains handling based on the agreement field
-        remainsHandling: mapRemainsHandling(cryoData.nonCryoRemainArrangements),
-        
-        // Recipient information
-        recipientName: cryoData.recipientName || '',
-        recipientPhone: cryoData.recipientPhone || '',
-        recipientEmail: cryoData.recipientEmail || '',
-        
-        // Map public disclosure - use memberPublicDisclosure if available, otherwise publicDisclosure
-        publicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure || cryoData.publicDisclosure),
-        
-        // Store additional fields that might be useful
-        fundingStatus: cryoData.fundingStatus,
-        contractDate: cryoData.contractDate,
-        memberJoinDate: cryoData.memberJoinDate,
-        contractComplete: cryoData.contractComplete,
-        isPatient: cryoData.isPatient,
-        recipientAddress: cryoData.recipientAddress
+      // Fetch all data in parallel
+      const [
+        personalRes,
+        contactRes,
+        addressRes,
+        familyRes,
+        occupationRes,
+        medicalRes,
+        cryoRes,
+        legalRes,
+        emergencyRes,
+        insuranceRes
+      ] = await Promise.allSettled([
+        memberDataService.getPersonalInfo(salesforceContactId),
+        memberDataService.getContactInfo(salesforceContactId),
+        memberDataService.getAddresses(salesforceContactId),
+        memberDataService.getFamilyInfo(salesforceContactId),
+        memberDataService.getOccupation(salesforceContactId),
+        memberDataService.getMedicalInfo(salesforceContactId),
+        memberDataService.getCryoArrangements(salesforceContactId),
+        memberDataService.getLegalInfo(salesforceContactId),
+        memberDataService.getEmergencyContacts(salesforceContactId),
+        memberDataService.getInsurance(salesforceContactId)
+      ]);
+      
+      // Process results from Promise.allSettled
+      const results = {
+        personalRes: personalRes.status === 'fulfilled' ? personalRes.value : { success: false },
+        contactRes: contactRes.status === 'fulfilled' ? contactRes.value : { success: false },
+        addressRes: addressRes.status === 'fulfilled' ? addressRes.value : { success: false },
+        familyRes: familyRes.status === 'fulfilled' ? familyRes.value : { success: false },
+        occupationRes: occupationRes.status === 'fulfilled' ? occupationRes.value : { success: false },
+        medicalRes: medicalRes.status === 'fulfilled' ? medicalRes.value : { success: false },
+        cryoRes: cryoRes.status === 'fulfilled' ? cryoRes.value : { success: false },
+        legalRes: legalRes.status === 'fulfilled' ? legalRes.value : { success: false },
+        emergencyRes: emergencyRes.status === 'fulfilled' ? emergencyRes.value : { success: false },
+        insuranceRes: insuranceRes.status === 'fulfilled' ? insuranceRes.value : { success: false }
       };
       
-      setCryoArrangements(transformedCryo);
-      setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
-    } else {
-      console.log('Cryo arrangements request failed or returned no data');
-    }
-    
-    // Process Legal Information
-    if (results.legalRes.success && results.legalRes.data) {
-      const legalData = results.legalRes.data.data || results.legalRes.data;
-      console.log('Setting legal info data:', legalData);
+      // Update states with fetched and cleaned data
+      console.log('API Responses:', results);
       
-      // Transform legal data to match component expectations
-      const transformedLegal = {
-        hasWill: legalData.hasWill ? 'Yes' : 'No',
-        contraryProvisions: legalData.willContraryToCryonics ? 'Yes' : 'No'
-      };
-      
-      setLegal(transformedLegal);
-      setOriginalData(prev => ({ ...prev, legal: transformedLegal }));
-    }
-    
-    // Process Emergency Contacts (Next of Kin)
-    if (results.emergencyRes.success && results.emergencyRes.data) {
-      const emergencyResponse = results.emergencyRes.data;
-      console.log('Emergency contacts response:', emergencyResponse);
-      
-      // Access the data.data.nextOfKin array
-      const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
-      
-      if (nextOfKinArray && nextOfKinArray.length > 0) {
-        const primaryContact = nextOfKinArray[0]; // Use first one
-        console.log('Primary contact data:', primaryContact);
+      // Personal Info - Clean all person data
+      if (results.personalRes.success && results.personalRes.data) {
+        const personalData = results.personalRes.data.data || results.personalRes.data;
+        console.log('Setting personal info data:', personalData);
         
-        const transformedNextOfKin = {
-          fullName: primaryContact.fullName,
-          relationship: primaryContact.relationship,
-          phone: primaryContact.mobilePhone || primaryContact.homePhone || '',
-          email: primaryContact.email || '',
-          address: `${primaryContact.address.street}, ${primaryContact.address.city}, ${primaryContact.address.state} ${primaryContact.address.postalCode}`
+        // Clean the personal data (cleanPersonData already handles middleName in your data formatting utils)
+        const cleanedPersonal = cleanPersonData(personalData);
+        
+        setPersonalInfo(cleanedPersonal);
+        setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
+      }
+      
+      // Contact Info - Clean all contact data
+      if (results.contactRes.success && results.contactRes.data) {
+        const contactData = results.contactRes.data.data || results.contactRes.data;
+        console.log('Setting contact info data:', contactData);
+        
+        // Clean contact data
+        const cleanedContact = {
+          ...contactData,
+          personalEmail: formatEmail(contactData.personalEmail),
+          workEmail: formatEmail(contactData.workEmail),
+          email: formatEmail(contactData.email),
+          homePhone: formatPhone(contactData.homePhone),
+          mobilePhone: formatPhone(contactData.mobilePhone),
+          workPhone: formatPhone(contactData.workPhone),
+          preferredPhone: cleanString(contactData.preferredPhone)
         };
         
-        console.log('Transformed next of kin:', transformedNextOfKin);
-        setNextOfKin(transformedNextOfKin);
-        setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
+        setContactInfo(cleanedContact);
+        setOriginalData(prev => ({ ...prev, contact: cleanedContact }));
+      }
+      
+      // Addresses - Clean all address data
+      if (results.addressRes.success && results.addressRes.data) {
+        const addressData = results.addressRes.data.data || results.addressRes.data;
+        
+        console.log('🔍 === DEBUG Address Loading ===');
+        console.log('📦 Raw addressData from backend:', addressData);
+        
+        // Transform address data to match component expectations
+        const transformedAddresses = {
+          homeStreet: addressData.homeAddress?.street || '',
+          homeCity: addressData.homeAddress?.city || '',
+          homeState: addressData.homeAddress?.state || '',
+          homePostalCode: addressData.homeAddress?.postalCode || '',
+          homeCountry: addressData.homeAddress?.country || '',
+          mailingStreet: addressData.mailingAddress?.street || '',
+          mailingCity: addressData.mailingAddress?.city || '',
+          mailingState: addressData.mailingAddress?.state || '',
+          mailingPostalCode: addressData.mailingAddress?.postalCode || '',
+          mailingCountry: addressData.mailingAddress?.country || '',
+          sameAsHome: false
+        };
+        
+        // Clean the addresses after transformation
+        const cleanedAddresses = cleanAddressData(transformedAddresses);
+        
+        console.log('✨ Cleaned addresses:', cleanedAddresses);
+        console.log('🔍 === END DEBUG ===\n');
+        
+        setAddresses(cleanedAddresses);
+        setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
+      }
+      
+      // Family Info - Clean all family data
+      if (results.familyRes.success && results.familyRes.data) {
+        const familyData = results.familyRes.data.data || results.familyRes.data;
+        console.log('Setting family info data:', familyData);
+        
+        // Transform and clean family data
+        const transformedFamily = {
+          fathersName: formatPersonName(familyData.fatherName),
+          fathersBirthplace: formatCity(familyData.fatherBirthplace),
+          mothersMaidenName: formatPersonName(familyData.motherMaidenName),
+          mothersBirthplace: formatCity(familyData.motherBirthplace),
+          spousesName: formatPersonName(familyData.spouseName)
+        };
+        
+        setFamilyInfo(transformedFamily);
+        setOriginalData(prev => ({ ...prev, family: transformedFamily }));
+      }
+      
+      // Occupation - Clean occupation data
+      if (results.occupationRes.success && results.occupationRes.data) {
+        const occupationData = results.occupationRes.data.data || results.occupationRes.data;
+        console.log('Setting occupation data:', occupationData);
+        
+        const cleanedOccupation = {
+          ...occupationData,
+          occupation: cleanString(occupationData.occupation),
+          occupationalIndustry: cleanString(occupationData.occupationalIndustry),
+          militaryBranch: cleanString(occupationData.militaryBranch)
+        };
+        
+        setOccupation(cleanedOccupation);
+        setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
+      }
+      
+      // Medical Info - Clean medical data
+      if (results.medicalRes.success && results.medicalRes.data) {
+        const medicalData = results.medicalRes.data.data || results.medicalRes.data;
+        console.log('🏥 === MEDICAL INFO FROM BACKEND ===');
+        console.log('📦 Raw medical data:', medicalData);
+        console.log('📏 Height value:', medicalData.height, 'Type:', typeof medicalData.height);
+        console.log('⚖️ Weight value:', medicalData.weight, 'Type:', typeof medicalData.weight);
+        
+        // Use cleanDataBeforeSave to properly clean all fields
+        const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
+        
+        console.log('✨ Cleaned medical data:');
+        console.log('📏 Cleaned height:', cleanedMedical.height, 'Type:', typeof cleanedMedical.height);
+        console.log('⚖️ Cleaned weight:', cleanedMedical.weight, 'Type:', typeof cleanedMedical.weight);
+        console.log('🏥 === END MEDICAL INFO ===\n');
+        
+        setMedicalInfo(cleanedMedical);
+        setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
+      }
+      
+      // Process Cryopreservation Arrangements
+      if (results.cryoRes.success && results.cryoRes.data) {
+        const cryoData = results.cryoRes.data.data || results.cryoRes.data;
+        console.log('Setting cryo arrangements data:', cryoData);
+        
+        // Transform and clean the data
+        const transformedCryo = {
+          method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
+                  cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
+          cmsWaiver: cryoData.cmsWaiver === 'Yes',
+          remainsHandling: mapRemainsHandling(cryoData.nonCryoRemainArrangements),
+          recipientName: formatPersonName(cryoData.recipientName),
+          recipientPhone: formatPhone(cryoData.recipientPhone),
+          recipientEmail: formatEmail(cryoData.recipientEmail),
+          publicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure || cryoData.publicDisclosure),
+          fundingStatus: cryoData.fundingStatus,
+          contractDate: cryoData.contractDate,
+          memberJoinDate: cryoData.memberJoinDate,
+          contractComplete: cryoData.contractComplete,
+          isPatient: cryoData.isPatient,
+          recipientAddress: cryoData.recipientAddress
+        };
+        
+        setCryoArrangements(transformedCryo);
+        setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+      }
+      
+      // Process Emergency Contacts (Next of Kin)
+      if (results.emergencyRes.success && results.emergencyRes.data) {
+        const emergencyResponse = results.emergencyRes.data;
+        console.log('Emergency contacts response:', emergencyResponse);
+        
+        const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
+        
+        if (nextOfKinArray && nextOfKinArray.length > 0) {
+          const primaryContact = nextOfKinArray[0];
+          console.log('Primary contact data:', primaryContact);
+          
+          // Clean all the data when loading from backend
+          const transformedNextOfKin = {
+            fullName: formatPersonName(primaryContact.fullName || ''),
+            relationship: cleanString(primaryContact.relationship || ''),
+            phone: formatPhone(primaryContact.mobilePhone || primaryContact.homePhone || ''),
+            email: formatEmail(primaryContact.email || ''),
+            address: primaryContact.address ? 
+              `${formatStreetAddress(primaryContact.address.street || '')}, ${formatCity(primaryContact.address.city || '')}, ${formatStateProvince(primaryContact.address.state || '')} ${formatPostalCode(primaryContact.address.postalCode || '')}`.trim().replace(/^,\s*|,\s*$/g, '') :
+              ''
+          };
+          
+          console.log('Transformed and cleaned next of kin:', transformedNextOfKin);
+          setNextOfKin(transformedNextOfKin);
+          setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
+        } else {
+          console.log('No next of kin data found in response');
+        }
       } else {
-        console.log('No next of kin data found in response');
+        console.log('Emergency contacts request failed or returned no data');
       }
-    } else {
-      console.log('Emergency contacts request failed or returned no data');
-    }
-    
-    // Process Insurance (Funding)
-    if (results.insuranceRes.success && results.insuranceRes.data) {
-      const insuranceData = results.insuranceRes.data.data || results.insuranceRes.data;
-      console.log('Setting insurance data:', insuranceData);
       
-      // If there's insurance data, use the first one for funding
-      if (insuranceData.length > 0) {
-        const primaryInsurance = insuranceData[0];
-        const transformedFunding = {
-          fundingType: 'LifeInsurance',
-          companyName: primaryInsurance.companyName || '',
-          policyNumber: primaryInsurance.policyNumber || '',
-          policyType: primaryInsurance.policyType || '',
-          faceAmount: primaryInsurance.faceAmount || ''
-        };
-        setFunding(transformedFunding);
-        setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
+      // Process Insurance (Funding)
+      if (results.insuranceRes.success && results.insuranceRes.data) {
+        const insuranceData = results.insuranceRes.data.data || results.insuranceRes.data;
+        console.log('Setting insurance data:', insuranceData);
+        
+        if (insuranceData.length > 0) {
+          const primaryInsurance = insuranceData[0];
+          const transformedFunding = {
+            fundingType: 'LifeInsurance',
+            companyName: cleanString(primaryInsurance.companyName),
+            policyNumber: cleanString(primaryInsurance.policyNumber),
+            policyType: cleanString(primaryInsurance.policyType),
+            faceAmount: primaryInsurance.faceAmount || ''
+          };
+          setFunding(transformedFunding);
+          setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
+        }
       }
+      
+    } catch (error) {
+      console.error('Error loading member data:', error);
+      setSaveMessage({ type: 'error', text: 'Failed to load some information' });
+    } finally {
+      setIsLoading(false);
     }
-    
-  } catch (error) {
-    console.error('Error loading member data:', error);
-    setSaveMessage({ type: 'error', text: 'Failed to load some information' });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
       // Helper functions to map Salesforce values to component values
     function mapRemainsHandling(sfValue) {
@@ -466,8 +715,87 @@ const loadAllData = async () => {
   const toggleEditMode = (section) => {
     setEditMode(prev => ({ ...prev, [section]: !prev[section] }));
   };
+
+  // Add this component definition before the MyInformationTab component
+const MemberStatusBanner = ({ category }) => {
+  const categoryInfo = {
+    BasicMember: {
+      label: 'Basic Member',
+      color: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: '👤',
+      message: 'Complete your profile to apply for cryopreservation'
+    },
+    CryoApplicant: {
+      label: 'Cryopreservation Applicant',
+      color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      icon: '📝',
+      message: 'Complete all required fields to become a full member'
+    },
+    CryoMember: {
+      label: 'Cryopreservation Member',
+      color: 'bg-green-100 text-green-800 border-green-200',
+      icon: '✓',
+      message: 'Your membership is active'
+    }
+  };
   
-  // Cancel edit mode and restore original data
+  const info = categoryInfo[category] || categoryInfo.BasicMember;
+  
+  return (
+    <div className={`rounded-lg p-4 mb-6 border ${info.color}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <span className="text-2xl mr-3">{info.icon}</span>
+          <div>
+            <h3 className="font-semibold text-lg">{info.label}</h3>
+            <p className="text-sm opacity-90">{info.message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const loadMemberCategory = async () => {
+  console.log('🔍 === loadMemberCategory START (Frontend) ===');
+  console.log('📋 Salesforce Contact ID:', salesforceContactId);
+  
+  setCategoryLoading(true);
+  try {
+    console.log('🌐 Calling getMemberCategory API...');
+    const result = await getMemberCategory(salesforceContactId);
+    console.log('📦 API Response:', result);
+    
+    if (result.success) {
+      console.log('✅ Category determined:', result.data.category);
+      console.log('📊 Details:', result.data.details);
+      console.log('🔍 Debug info:', result.data.debug);
+      
+      setMemberCategory(result.data.category);
+      
+      // Log what sections will be visible
+      console.log('\n📋 Section Visibility for', result.data.category + ':');
+      const config = memberCategoryConfig[result.data.category];
+      if (config) {
+        Object.keys(config.sections).forEach(section => {
+          console.log(`  - ${section}: ${config.sections[section].visible ? '✓ Visible' : '✗ Hidden'}`);
+        });
+      }
+    } else {
+      console.error('❌ Failed to load member category:', result.error);
+      console.log('⚠️ Defaulting to BasicMember');
+      setMemberCategory('BasicMember');
+    }
+  } catch (error) {
+    console.error('❌ Error loading member category:', error);
+    console.log('⚠️ Defaulting to BasicMember');
+    setMemberCategory('BasicMember');
+  } finally {
+    setCategoryLoading(false);
+    console.log('🔍 === loadMemberCategory END (Frontend) ===\n');
+  }
+};
+  
   const cancelEdit = (section) => {
     switch (section) {
       case 'personal':
@@ -482,6 +810,7 @@ const loadAllData = async () => {
           lastName: originalData.personal.lastName || '',
           dateOfBirth: originalData.personal.dateOfBirth || ''
         }));
+        setFieldErrors({}); // Clear any field errors
         break;
       case 'addresses':
         setAddresses(originalData.addresses);
@@ -509,94 +838,278 @@ const loadAllData = async () => {
         break;
     }
     setEditMode(prev => ({ ...prev, [section]: false }));
+    // Clear any field errors for all sections
+    setFieldErrors({});
   };
-  
-  // Save individual sections
+
   const savePersonalInfo = async () => {
+    console.log('🔵 === START savePersonalInfo ===');
+    console.log('Member category:', memberCategory);
+    
     setSavingSection('personal');
     setSaveMessage({ type: '', text: '' });
     
     try {
-      // Transform data to match backend expectations
-      const dataToSend = {
-        firstName: personalInfo.firstName,
-        lastName: personalInfo.lastName,
-        dateOfBirth: personalInfo.dateOfBirth,
-        birthName: personalInfo.birthName,
-        ssn: personalInfo.ssn,
-        gender: personalInfo.gender,
-        race: personalInfo.race || [],
-        ethnicity: personalInfo.ethnicity,
-        citizenship: personalInfo.citizenship || [],
-        placeOfBirth: personalInfo.placeOfBirth,
-        maritalStatus: personalInfo.maritalStatus,
-        spouseName: familyInfo.spousesName // This comes from family info
-      };
+      // Get required fields for this category
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.personal?.requiredFields || [];
+      console.log('Required fields for personal section:', requiredFields);
       
-      const result = await updateMemberPersonalInfo(salesforceContactId, dataToSend);
+      // Clean the data before validation and sending
+      const cleanedData = cleanDataBeforeSave(personalInfo, 'personal');
+      
+      // Validate required fields
+      const errors = {};
+      
+      requiredFields.forEach(field => {
+        switch(field) {
+          case 'gender':
+            if (!cleanedData.gender) {
+              errors.gender = 'Gender is required';
+            }
+            break;
+          case 'dateOfBirth':
+            if (!cleanedData.dateOfBirth) {
+              errors.dateOfBirth = 'Date of birth is required';
+            }
+            break;
+          case 'ssn':
+            if (!cleanedData.ssn || cleanedData.ssn.includes('XXX')) {
+              errors.ssn = memberCategory === 'CryoMember' 
+                ? 'SSN is required for Cryopreservation Members' 
+                : 'SSN is recommended';
+            }
+            break;
+        }
+      });
+      
+      // If there are validation errors for required fields, show them
+      if (Object.keys(errors).length > 0) {
+        let errorMessage = 'Please fill in required fields: ';
+        errorMessage += Object.values(errors).join(', ');
+        setSaveMessage({ type: 'error', text: errorMessage });
+        setSavingSection('');
+        return;
+      }
+      
+      console.log('📤 Cleaned data being sent:', JSON.stringify(cleanedData, null, 2));
+      
+      const result = await updateMemberPersonalInfo(salesforceContactId, cleanedData);
+      
       if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
-        setOriginalData(prev => ({ ...prev, personal: personalInfo }));
+        setPersonalInfo(cleanedData);
+        setOriginalData(prev => ({ ...prev, personal: cleanedData }));
         setEditMode(prev => ({ ...prev, personal: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
+        
+        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save personal information' });
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save personal information' });
       }
+      
     } catch (error) {
-      console.error('Error saving personal info:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save personal information' });
+      console.error('❌ Error in savePersonalInfo:', error);
+      setSaveMessage({ type: 'error', text: `Failed to save: ${error.message}` });
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      console.log('🔵 === END savePersonalInfo ===\n');
     }
   };
   
   const saveContactInfo = async () => {
     setSavingSection('contact');
     setSaveMessage({ type: '', text: '' });
+    setFieldErrors({}); // Clear previous errors
     
     try {
+      // Validate salesforceContactId
+      if (!salesforceContactId) {
+        console.error('No salesforceContactId available!');
+        setSaveMessage({ type: 'error', text: 'Contact ID not found. Please refresh the page.' });
+        setSavingSection('');
+        return;
+      }
+      
+      console.log('Starting saveContactInfo with salesforceContactId:', salesforceContactId);
+      console.log('Member category:', memberCategory);
+      
+      // Get required fields for this category
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.contact?.requiredFields || [];
+      console.log('Required fields for contact section:', requiredFields);
+      
+      // Clean the contact data
+      const cleanedContactData = cleanDataBeforeSave(contactInfo, 'contact');
+      
+      // Clean the personal info fields that are in the contact section
+      const cleanedPersonalData = cleanDataBeforeSave(personalInfo, 'personal');
+      
       // Transform data to match backend expectations
       const contactData = {
-        email: contactInfo.personalEmail, // Primary email
-        personalEmail: contactInfo.personalEmail,
-        workEmail: contactInfo.workEmail,
-        homePhone: contactInfo.homePhone,
-        mobilePhone: contactInfo.mobilePhone,
-        workPhone: contactInfo.workPhone,
-        preferredPhone: contactInfo.preferredPhone
+        email: cleanedContactData.personalEmail || '', // Primary email
+        personalEmail: cleanedContactData.personalEmail || '',
+        workEmail: cleanedContactData.workEmail || '',
+        homePhone: cleanedContactData.homePhone || '',
+        mobilePhone: cleanedContactData.mobilePhone || '',
+        workPhone: cleanedContactData.workPhone || '',
+        preferredPhone: cleanedContactData.preferredPhone || ''
       };
       
       // Also save the personal info fields that are now in contact section
       const personalData = {
-        firstName: personalInfo.firstName,
-        lastName: personalInfo.lastName,
-        dateOfBirth: personalInfo.dateOfBirth
+        firstName: cleanedPersonalData.firstName || '',
+        middleName: cleanedPersonalData.middleName || '',
+        lastName: cleanedPersonalData.lastName || ''
+        // dateOfBirth is not editable
       };
       
-      // Save both contact and partial personal info
-      const [contactResult, personalResult] = await Promise.all([
-        updateMemberContactInfo(salesforceContactId, contactData),
-        updateMemberPersonalInfo(salesforceContactId, personalData)
-      ]);
+      // Check if anything has actually changed
+      const contactChanged = JSON.stringify(contactData) !== JSON.stringify({
+        email: originalData.contact.personalEmail || '',
+        personalEmail: originalData.contact.personalEmail || '',
+        workEmail: originalData.contact.workEmail || '',
+        homePhone: originalData.contact.homePhone || '',
+        mobilePhone: originalData.contact.mobilePhone || '',
+        workPhone: originalData.contact.workPhone || '',
+        preferredPhone: originalData.contact.preferredPhone || ''
+      });
       
-      if (contactResult.success && personalResult.success) {
-        setSaveMessage({ type: 'success', text: 'Contact information saved successfully!' });
+      const personalChanged = personalData.firstName !== (originalData.personal.firstName || '') || 
+                             personalData.middleName !== (originalData.personal.middleName || '') ||
+                             personalData.lastName !== (originalData.personal.lastName || '');
+      
+      if (!contactChanged && !personalChanged) {
+        console.log('No changes detected, skipping save');
+        setSavingSection('saved');
+        setEditMode(prev => ({ ...prev, contact: false }));
+        setTimeout(() => setSavingSection(''), 2000);
+        return;
+      }
+      
+      // Validate required fields based on member category
+      const errors = {};
+      
+      requiredFields.forEach(field => {
+        switch(field) {
+          case 'firstName':
+            if (!personalData.firstName) {
+              errors.firstName = 'First name is required';
+            }
+            break;
+          case 'lastName':
+            if (!personalData.lastName) {
+              errors.lastName = 'Last name is required';
+            }
+            break;
+          case 'personalEmail':
+            if (!contactData.personalEmail) {
+              errors.personalEmail = 'Personal email is required';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactData.personalEmail)) {
+              errors.personalEmail = 'Please enter a valid email address';
+            }
+            break;
+          case 'mobilePhone':
+            if (!contactData.mobilePhone) {
+              errors.mobilePhone = memberCategory === 'BasicMember' 
+                ? 'Mobile phone is recommended' 
+                : 'Mobile phone is required';
+            }
+            break;
+        }
+      });
+      
+      // Validate preferred phone selection
+      if (contactData.preferredPhone) {
+        const phoneTypeToField = {
+          'Mobile': 'mobilePhone',
+          'Home': 'homePhone',
+          'Work': 'workPhone'
+        };
+        
+        const requiredPhoneField = phoneTypeToField[contactData.preferredPhone];
+        if (requiredPhoneField && !contactData[requiredPhoneField]) {
+          errors[requiredPhoneField] = `Please provide a ${contactData.preferredPhone.toLowerCase()} phone number since it's selected as your preferred phone type`;
+        }
+      }
+      
+      // For CryoMember, ensure at least one phone is provided
+      if (memberCategory === 'CryoMember' && !contactData.mobilePhone && !contactData.homePhone && !contactData.workPhone) {
+        errors.mobilePhone = 'At least one phone number is required for Cryopreservation Members';
+      }
+      
+      // If there are validation errors, set them and return
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setSavingSection('');
+        return;
+      }
+      
+      // Save both contact and partial personal info
+      console.log('Making API calls...');
+      const calls = [];
+      
+      if (contactChanged) {
+        calls.push(updateMemberContactInfo(salesforceContactId, contactData));
+      }
+      if (personalChanged) {
+        calls.push(updateMemberPersonalInfo(salesforceContactId, personalData));
+      }
+      
+      const results = await Promise.all(calls);
+      console.log('API results:', results);
+      
+      const allSuccessful = results.every(result => result.success);
+      
+      if (allSuccessful) {
+        setSavingSection('saved');
+        setContactInfo(cleanedContactData);
+        setPersonalInfo(prev => ({ ...prev, ...cleanedPersonalData }));
         setOriginalData(prev => ({ 
           ...prev, 
-          contact: contactInfo,
-          personal: { ...prev.personal, ...personalData }
+          contact: cleanedContactData,
+          personal: { ...prev.personal, ...cleanedPersonalData }
         }));
         setEditMode(prev => ({ ...prev, contact: false }));
+        setFieldErrors({});
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
+        
+        setTimeout(() => setSavingSection(''), 2000);
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save contact information' });
+        const errors = results
+          .filter(result => !result.success)
+          .map(result => result.error || 'Unknown error');
+        
+        console.error('Save failed with errors:', errors);
+        setSaveMessage({ 
+          type: 'error', 
+          text: `Failed to save: ${errors.join(', ')}`
+        });
       }
     } catch (error) {
       console.error('Error saving contact info:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save contact information' });
+      setSaveMessage({ 
+        type: 'error', 
+        text: `Failed to save contact information: ${error.message}` 
+      });
     } finally {
-      setSavingSection('');
+      if (savingSection !== 'saved') {
+        setSavingSection('');
+      }
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
     }
   };
@@ -606,40 +1119,108 @@ const loadAllData = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
+      console.log('🚀 === SAVE ADDRESSES START ===');
+      console.log('Member category:', memberCategory);
+      console.log('📤 Current addresses state before save:', addresses);
+      
+      // Get required fields for this category
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.addresses?.requiredFields || [];
+      console.log('Required fields for addresses section:', requiredFields);
+      
+      // Clean the addresses data
+      const cleanedAddresses = cleanDataBeforeSave(addresses, 'addresses');
+      
+      // Validate required fields
+      const errors = {};
+      
+      // Home address validation
+      if (requiredFields.includes('homeStreet') && !cleanedAddresses.homeStreet) {
+        errors.homeStreet = 'Home street address is required';
+      }
+      if (requiredFields.includes('homeCity') && !cleanedAddresses.homeCity) {
+        errors.homeCity = 'Home city is required';
+      }
+      if (requiredFields.includes('homeState') && !cleanedAddresses.homeState) {
+        errors.homeState = 'Home state is required';
+      }
+      if (requiredFields.includes('homePostalCode') && !cleanedAddresses.homePostalCode) {
+        errors.homePostalCode = 'Home postal code is required';
+      }
+      
+      // Mailing address validation (only for CryoMember if not same as home)
+      if (!cleanedAddresses.sameAsHome && memberCategory === 'CryoMember') {
+        if (requiredFields.includes('mailingStreet') && !cleanedAddresses.mailingStreet) {
+          errors.mailingStreet = 'Mailing street address is required';
+        }
+        if (requiredFields.includes('mailingCity') && !cleanedAddresses.mailingCity) {
+          errors.mailingCity = 'Mailing city is required';
+        }
+        if (requiredFields.includes('mailingState') && !cleanedAddresses.mailingState) {
+          errors.mailingState = 'Mailing state is required';
+        }
+        if (requiredFields.includes('mailingPostalCode') && !cleanedAddresses.mailingPostalCode) {
+          errors.mailingPostalCode = 'Mailing postal code is required';
+        }
+      }
+      
+      if (Object.keys(errors).length > 0) {
+        let errorMessage = 'Please complete all required address fields';
+        setSaveMessage({ type: 'error', text: errorMessage });
+        setSavingSection('');
+        return;
+      }
+      
       // Transform data to match backend expectations
       const dataToSend = {
         homeAddress: {
-          street: addresses.homeStreet,
-          city: addresses.homeCity,
-          state: addresses.homeState,
-          postalCode: addresses.homePostalCode,
-          country: addresses.homeCountry
+          street: cleanedAddresses.homeStreet,
+          city: cleanedAddresses.homeCity,
+          state: cleanedAddresses.homeState,
+          postalCode: cleanedAddresses.homePostalCode,
+          country: cleanedAddresses.homeCountry
         },
         mailingAddress: {
-          street: addresses.mailingStreet,
-          city: addresses.mailingCity,
-          state: addresses.mailingState,
-          postalCode: addresses.mailingPostalCode,
-          country: addresses.mailingCountry
+          street: cleanedAddresses.mailingStreet,
+          city: cleanedAddresses.mailingCity,
+          state: cleanedAddresses.mailingState,
+          postalCode: cleanedAddresses.mailingPostalCode,
+          country: cleanedAddresses.mailingCountry
         },
-        sameAsHome: addresses.sameAsHome
+        sameAsHome: cleanedAddresses.sameAsHome
       };
       
+      console.log('📦 Data being sent to backend:', dataToSend);
+      
       const result = await updateMemberAddresses(salesforceContactId, dataToSend);
+      console.log('📨 Save result:', result);
+      
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Addresses saved successfully!' });
-        setOriginalData(prev => ({ ...prev, addresses: addresses }));
+        setAddresses(cleanedAddresses);
+        setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
         setEditMode(prev => ({ ...prev, addresses: false }));
+        
+        // Clear cache
+        console.log('🗑️ Clearing cache...');
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save addresses' });
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save addresses' });
       }
     } catch (error) {
-      console.error('Error saving addresses:', error);
+      console.error('❌ Error saving addresses:', error);
       setSaveMessage({ type: 'error', text: 'Failed to save addresses' });
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      console.log('🚀 === SAVE ADDRESSES END ===\n');
     }
   };
   
@@ -648,20 +1229,75 @@ const loadAllData = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
+      console.log('Saving family info for member category:', memberCategory);
+      
+      // Get required fields for this category
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.family?.requiredFields || [];
+      console.log('Required fields for family section:', requiredFields);
+      
+      // Clean the family data
+      const cleanedFamilyInfo = cleanDataBeforeSave(familyInfo, 'family');
+      
+      // Validate required fields
+      const errors = {};
+      
+      requiredFields.forEach(field => {
+        switch(field) {
+          case 'fathersName':
+            if (!cleanedFamilyInfo.fathersName) {
+              errors.fathersName = "Father's name is required";
+            }
+            break;
+          case 'fathersBirthplace':
+            if (!cleanedFamilyInfo.fathersBirthplace || 
+                (!cleanedFamilyInfo.fathersBirthplace.includes(',') && cleanedFamilyInfo.fathersBirthplace.length < 10)) {
+              errors.fathersBirthplace = "Father's complete birthplace (city, state, country) is required";
+            }
+            break;
+          case 'mothersMaidenName':
+            if (!cleanedFamilyInfo.mothersMaidenName) {
+              errors.mothersMaidenName = "Mother's maiden name is required";
+            }
+            break;
+          case 'mothersBirthplace':
+            if (!cleanedFamilyInfo.mothersBirthplace || 
+                (!cleanedFamilyInfo.mothersBirthplace.includes(',') && cleanedFamilyInfo.mothersBirthplace.length < 10)) {
+              errors.mothersBirthplace = "Mother's complete birthplace (city, state, country) is required";
+            }
+            break;
+        }
+      });
+      
+      if (Object.keys(errors).length > 0) {
+        let errorMessage = Object.values(errors).join('. ');
+        setSaveMessage({ type: 'error', text: errorMessage });
+        setSavingSection('');
+        return;
+      }
+      
       // Transform data to match backend expectations
       const dataToSend = {
-        fatherName: familyInfo.fathersName,
-        fatherBirthplace: familyInfo.fathersBirthplace,
-        motherMaidenName: familyInfo.mothersMaidenName,
-        motherBirthplace: familyInfo.mothersBirthplace
+        fatherName: cleanedFamilyInfo.fathersName,
+        fatherBirthplace: cleanedFamilyInfo.fathersBirthplace,
+        motherMaidenName: cleanedFamilyInfo.mothersMaidenName,
+        motherBirthplace: cleanedFamilyInfo.mothersBirthplace
       };
       
       const result = await updateMemberFamilyInfo(salesforceContactId, dataToSend);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Family information saved successfully!' });
-        setOriginalData(prev => ({ ...prev, family: familyInfo }));
+        setFamilyInfo(cleanedFamilyInfo);
+        setOriginalData(prev => ({ ...prev, family: cleanedFamilyInfo }));
         setEditMode(prev => ({ ...prev, family: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
         setSaveMessage({ type: 'error', text: 'Failed to save family information' });
       }
@@ -679,23 +1315,46 @@ const loadAllData = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
+      // Clean the occupation data
+      const cleanedOccupation = cleanDataBeforeSave(occupation, 'occupation');
+      
+      // Validate occupation is not just "Retired"
+      if (cleanedOccupation.occupation && 
+          cleanedOccupation.occupation.toLowerCase().trim() === 'retired') {
+        setSaveMessage({ 
+          type: 'error', 
+          text: 'Please specify your occupation before retirement (e.g., "Retired Software Engineer")' 
+        });
+        setSavingSection('');
+        return;
+      }
+      
       // Transform data to match backend expectations
       const dataToSend = {
-        occupation: occupation.occupation,
-        industry: occupation.occupationalIndustry,
-        militaryService: occupation.hasMilitaryService ? {
-          branch: occupation.militaryBranch,
-          startYear: occupation.servedFrom,
-          endYear: occupation.servedTo
+        occupation: cleanedOccupation.occupation,
+        industry: cleanedOccupation.occupationalIndustry,
+        militaryService: cleanedOccupation.hasMilitaryService ? {
+          branch: cleanedOccupation.militaryBranch,
+          startYear: cleanedOccupation.servedFrom,
+          endYear: cleanedOccupation.servedTo
         } : null
       };
       
       const result = await updateMemberOccupation(salesforceContactId, dataToSend);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Occupation saved successfully!' });
-        setOriginalData(prev => ({ ...prev, occupation: occupation }));
+        setOccupation(cleanedOccupation);
+        setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
         setEditMode(prev => ({ ...prev, occupation: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
         setSaveMessage({ type: 'error', text: 'Failed to save occupation' });
       }
@@ -713,14 +1372,46 @@ const loadAllData = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      const result = await updateMemberMedicalInfo(salesforceContactId, medicalInfo);
+      console.log('Saving medical info for member category:', memberCategory);
+      
+      // Clean the medical data
+      const cleanedData = cleanDataBeforeSave(medicalInfo, 'medical');
+      
+      // Get required fields for this category (if any)
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.medical?.requiredFields || [];
+      console.log('Required fields for medical section:', requiredFields);
+      
+      // Validate required fields
+      const errors = {};
+      
+      // Add validation for any required fields based on member category
+      // For example, CryoMembers might require emergency contact info
+      
+      if (Object.keys(errors).length > 0) {
+        let errorMessage = Object.values(errors).join('. ');
+        setSaveMessage({ type: 'error', text: errorMessage });
+        setSavingSection('');
+        return;
+      }
+      
+      const result = await updateMemberMedicalInfo(salesforceContactId, cleanedData);
+      
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Medical information saved successfully!' });
-        setOriginalData(prev => ({ ...prev, medical: medicalInfo }));
+        setMedicalInfo(cleanedData);
+        setOriginalData(prev => ({ ...prev, medical: cleanedData }));
         setEditMode(prev => ({ ...prev, medical: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save medical information' });
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save medical information' });
       }
     } catch (error) {
       console.error('Error saving medical info:', error);
@@ -731,28 +1422,39 @@ const loadAllData = async () => {
     }
   };
   
-  // Save functions for new sections
   const saveCryoArrangements = async () => {
     setSavingSection('cryoArrangements');
     setSaveMessage({ type: '', text: '' });
     
     try {
+      // Clean the cryo arrangements data
+      const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
+      
       // Map component values back to Salesforce values
       const dataToSend = {
         // Note: Some fields like method and CMS waiver might be read-only
-        nonCryoRemainArrangements: mapRemainsHandlingToSF(cryoArrangements.remainsHandling),
-        memberPublicDisclosure: mapPublicDisclosureToSF(cryoArrangements.publicDisclosure),
-        recipientName: cryoArrangements.recipientName,
-        recipientPhone: cryoArrangements.recipientPhone,
-        recipientEmail: cryoArrangements.recipientEmail
+        nonCryoRemainArrangements: mapRemainsHandlingToSF(cleanedCryoArrangements.remainsHandling),
+        memberPublicDisclosure: mapPublicDisclosureToSF(cleanedCryoArrangements.publicDisclosure),
+        recipientName: cleanedCryoArrangements.recipientName,
+        recipientPhone: cleanedCryoArrangements.recipientPhone,
+        recipientEmail: cleanedCryoArrangements.recipientEmail
       };
       
       const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Cryopreservation arrangements saved successfully!' });
-        setOriginalData(prev => ({ ...prev, cryoArrangements: cryoArrangements }));
+        setCryoArrangements(cleanedCryoArrangements);
+        setOriginalData(prev => ({ ...prev, cryoArrangements: cleanedCryoArrangements }));
         setEditMode(prev => ({ ...prev, cryoArrangements: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
         setSaveMessage({ type: 'error', text: result.error || 'Failed to save cryopreservation arrangements' });
       }
@@ -764,19 +1466,22 @@ const loadAllData = async () => {
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
     }
   };
-
+  
   const saveFunding = async () => {
     setSavingSection('funding');
     setSaveMessage({ type: '', text: '' });
     
     try {
+      // Clean the funding data
+      const cleanedFunding = cleanDataBeforeSave(funding, 'funding');
+      
       // For insurance, we need to create or update the insurance record
-      if (funding.fundingType === 'LifeInsurance') {
+      if (cleanedFunding.fundingType === 'LifeInsurance') {
         const insuranceData = {
-          companyName: funding.companyName,
-          policyNumber: funding.policyNumber,
-          policyType: funding.policyType,
-          faceAmount: funding.faceAmount,
+          companyName: cleanedFunding.companyName,
+          policyNumber: cleanedFunding.policyNumber,
+          policyType: cleanedFunding.policyType,
+          faceAmount: cleanedFunding.faceAmount,
           // Add other insurance fields as needed
         };
         
@@ -784,8 +1489,18 @@ const loadAllData = async () => {
         const result = await createMemberInsurance(salesforceContactId, insuranceData);
         if (result.success) {
           setSaveMessage({ type: 'success', text: 'Insurance information saved successfully!' });
-          setOriginalData(prev => ({ ...prev, funding: funding }));
+          setFunding(cleanedFunding);
+          setOriginalData(prev => ({ ...prev, funding: cleanedFunding }));
           setEditMode(prev => ({ ...prev, funding: false }));
+          memberDataService.clearCache(salesforceContactId);
+          
+          // Refresh the cache
+          if (refreshMemberInfo) {
+            setTimeout(() => {
+              console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+              refreshMemberInfo();
+            }, 500);
+          }
         } else {
           setSaveMessage({ type: 'error', text: 'Failed to save insurance information' });
         }
@@ -798,23 +1513,35 @@ const loadAllData = async () => {
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
     }
   };
-
+  
   const saveLegal = async () => {
     setSavingSection('legal');
     setSaveMessage({ type: '', text: '' });
     
     try {
+      // Clean the legal data
+      const cleanedLegal = cleanDataBeforeSave(legal, 'legal');
+      
       const dataToSend = {
-        hasWill: legal.hasWill === 'Yes',
-        willContraryToCryonics: legal.contraryProvisions === 'Yes'
+        hasWill: cleanedLegal.hasWill === 'Yes',
+        willContraryToCryonics: cleanedLegal.contraryProvisions === 'Yes'
       };
       
       const result = await updateMemberLegalInfo(salesforceContactId, dataToSend);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Legal information saved successfully!' });
-        setOriginalData(prev => ({ ...prev, legal: legal }));
+        setLegal(cleanedLegal);
+        setOriginalData(prev => ({ ...prev, legal: cleanedLegal }));
         setEditMode(prev => ({ ...prev, legal: false }));
         memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
         setSaveMessage({ type: 'error', text: 'Failed to save legal information' });
       }
@@ -826,20 +1553,65 @@ const loadAllData = async () => {
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
     }
   };
-
+  
   const saveNextOfKin = async () => {
     setSavingSection('nextOfKin');
     setSaveMessage({ type: '', text: '' });
     
     try {
+      console.log('Saving next of kin for member category:', memberCategory);
+      
+      // Get required fields for this category
+      const requiredFields = memberCategoryConfig[memberCategory]?.sections.nextOfKin?.requiredFields || [];
+      console.log('Required fields for next of kin section:', requiredFields);
+      
+      // Clean the next of kin data
+      const cleanedNextOfKin = cleanDataBeforeSave(nextOfKin, 'nextOfKin');
+      
+      // Validate required fields
+      const errors = {};
+      
+      requiredFields.forEach(field => {
+        switch(field) {
+          case 'fullName':
+            if (!cleanedNextOfKin.fullName) {
+              errors.fullName = 'Full name is required';
+            }
+            break;
+          case 'relationship':
+            if (!cleanedNextOfKin.relationship) {
+              errors.relationship = 'Relationship is required';
+            }
+            break;
+          case 'phone':
+            if (!cleanedNextOfKin.phone) {
+              errors.phone = 'Phone number is required';
+            }
+            break;
+          case 'email':
+            if (!cleanedNextOfKin.email && memberCategory === 'CryoMember') {
+              errors.email = 'Email is required for Cryopreservation Members';
+            } else if (cleanedNextOfKin.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedNextOfKin.email)) {
+              errors.email = 'Please enter a valid email address';
+            }
+            break;
+        }
+      });
+      
+      if (Object.keys(errors).length > 0) {
+        let errorMessage = Object.values(errors).join('. ');
+        setSaveMessage({ type: 'error', text: errorMessage });
+        setSavingSection('');
+        return;
+      }
+      
       const nokData = {
-        name: nextOfKin.fullName,
-        relationship: nextOfKin.relationship,
-        phone: nextOfKin.phone,
-        email: nextOfKin.email,
+        name: cleanedNextOfKin.fullName,
+        relationship: cleanedNextOfKin.relationship,
+        phone: cleanedNextOfKin.phone,
+        email: cleanedNextOfKin.email,
         address: {
-          street: nextOfKin.address,
-          // You might want to split address into components
+          street: cleanedNextOfKin.address,
         },
         isPrimary: true
       };
@@ -847,8 +1619,18 @@ const loadAllData = async () => {
       const result = await createMemberEmergencyContact(salesforceContactId, nokData);
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Next of kin saved successfully!' });
-        setOriginalData(prev => ({ ...prev, nextOfKin: nextOfKin }));
+        setNextOfKin(cleanedNextOfKin);
+        setOriginalData(prev => ({ ...prev, nextOfKin: cleanedNextOfKin }));
         setEditMode(prev => ({ ...prev, nextOfKin: false }));
+        memberDataService.clearCache(salesforceContactId);
+        
+        // Refresh the cache
+        if (refreshMemberInfo) {
+          setTimeout(() => {
+            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            refreshMemberInfo();
+          }, 500);
+        }
       } else {
         setSaveMessage({ type: 'error', text: 'Failed to save next of kin' });
       }
@@ -862,7 +1644,7 @@ const loadAllData = async () => {
   };
   
   // Show loading while we wait for salesforceContactId or data is loading
-  if (!salesforceContactId || isLoading) {
+  if (!salesforceContactId || isLoading || categoryLoading) {
     return <Loading text="Loading your information..." />;
   }
   
@@ -884,11 +1666,20 @@ const loadAllData = async () => {
     </div>
   );
   
+  // Close validation modal
+  const closeValidationModal = () => {
+    setAddressValidationModal({
+      isOpen: false,
+      addressType: '',
+      originalAddress: {},
+      suggestedAddress: {},
+      onAccept: null
+    });
+  };
+
+  
   return (
-    //<div className="px-4 sm:px-6 lg:px-8">
-    //<div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-0 min-h-screen overflow-x-hidden max-w-full mx-auto">
-    //<div className="bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
-    <div className="my-information-tab bg-gray-50 -m-8 p-4 sm:p-4 lg:pl-2 pt-8 sm:pt-8 min-h-screen overflow-x-hidden max-w-full mx-auto">
+    <div className="my-information-tab bg-white sm:bg-gray-50 -mx-8 sm:-m-8 px-1 sm:p-6 lg:p-8 pt-0 sm:pt-8 pb-6 sm:pb-8 min-h-screen overflow-visible max-w-full mx-auto">
       {/* Save Message */}
       {saveMessage.text && (
         <Alert 
@@ -899,185 +1690,290 @@ const loadAllData = async () => {
         </Alert>
       )}
       
-      {/* Contact Information - Now First with Name and DOB */}
-      {!sectionsLoaded.contact ? (
-        <SectionSkeleton />
-      ) : (
-        <ContactInfoSection
-          contactInfo={contactInfo || {}}
-          setContactInfo={setContactInfo}
-          personalInfo={personalInfo || {}}
-          setPersonalInfo={setPersonalInfo}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveContactInfo={saveContactInfo}
-          savingSection={savingSection}
-        />
-      )}
+{/* Member Status Banner */}
+<MemberStatusBanner category={memberCategory} />
+
+{/* Contact Information - Always visible for all member types */}
+{isSectionVisible(memberCategory, 'contact') && (
+  <>
+    {!sectionsLoaded.contact ? (
+      <SectionSkeleton />
+    ) : (
+      <ContactInfoSection
+        contactInfo={contactInfo || {}}
+        setContactInfo={setContactInfo}
+        personalInfo={personalInfo || {}}
+        setPersonalInfo={setPersonalInfo}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveContactInfo={saveContactInfo}
+        savingSection={savingSection}
+        fieldErrors={fieldErrors}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Personal Information */}
+{isSectionVisible(memberCategory, 'personal') && (
+  <>
+    {!sectionsLoaded.personal ? (
+      <SectionSkeleton />
+    ) : (
+      <PersonalInfoSection
+        personalInfo={personalInfo || {}}
+        setPersonalInfo={setPersonalInfo}
+        familyInfo={familyInfo || {}}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        savePersonalInfo={savePersonalInfo}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Addresses */}
+{isSectionVisible(memberCategory, 'addresses') && (
+  <>
+    {!sectionsLoaded.addresses ? (
+      <SectionSkeleton />
+    ) : (
+      <AddressesSection
+        addresses={addresses || {}}
+        setAddresses={setAddresses}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveAddresses={saveAddresses}
+        savingSection={savingSection}
+        setAddressValidationModal={setAddressValidationModal}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Family Information - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'family') && (
+  <>
+    {!sectionsLoaded.family ? (
+      <SectionSkeleton />
+    ) : (
+      <FamilyInfoSection
+        familyInfo={familyInfo || {}}
+        setFamilyInfo={setFamilyInfo}
+        personalInfo={personalInfo || {}}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveFamilyInfo={saveFamilyInfo}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Occupation - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'occupation') && (
+  <>
+    {!sectionsLoaded.occupation ? (
+      <SectionSkeleton />
+    ) : (
+      <OccupationSection
+        occupation={occupation || {}}
+        setOccupation={setOccupation}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveOccupation={saveOccupation}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Medical Information - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'medical') && (
+  <>
+    {!sectionsLoaded.medical ? (
+      <SectionSkeleton />
+    ) : (
+      <MedicalInfoSection
+        medicalInfo={medicalInfo || {}}
+        setMedicalInfo={setMedicalInfo}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveMedicalInfo={saveMedicalInfo}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Cryopreservation Arrangements - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'cryoArrangements') && (
+  <>
+    {!sectionsLoaded.cryoArrangements ? (
+      <SectionSkeleton />
+    ) : (
+      <CryoArrangementsSection
+        cryoArrangements={cryoArrangements || {}}
+        setCryoArrangements={setCryoArrangements}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveCryoArrangements={saveCryoArrangements}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Funding/Life Insurance - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'funding') && (
+  <>
+    {!sectionsLoaded.funding ? (
+      <SectionSkeleton />
+    ) : (
+      <FundingSection
+        funding={funding || {}}
+        setFunding={setFunding}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveFunding={saveFunding}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Legal/Will - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'legal') && (
+  <>
+    {!sectionsLoaded.legal ? (
+      <SectionSkeleton />
+    ) : (
+      <LegalSection
+        legal={legal || {}}
+        setLegal={setLegal}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveLegal={saveLegal}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+    {sectionSeparator()}
+  </>
+)}
+
+{/* Next of Kin - Only for Applicants and Members */}
+{isSectionVisible(memberCategory, 'nextOfKin') && (
+  <>
+    {!sectionsLoaded.nextOfKin ? (
+      <SectionSkeleton />
+    ) : (
+      <NextOfKinSection
+        nextOfKin={nextOfKin || {}}
+        setNextOfKin={setNextOfKin}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveNextOfKin={saveNextOfKin}
+        savingSection={savingSection}
+        memberCategory={memberCategory}
+      />
+    )}
+  </>
+)}
       
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-            
-      {/* Personal Information - Now Second */}
-      {!sectionsLoaded.personal ? (
-        <SectionSkeleton />
-      ) : (
-        <PersonalInfoSection
-          personalInfo={personalInfo || {}}
-          setPersonalInfo={setPersonalInfo}
-          familyInfo={familyInfo || {}}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          savePersonalInfo={savePersonalInfo}
-          savingSection={savingSection}
-        />
-      )}
+{/* Address Validation Modal - Rendered via Portal at the MyInformationTab level */}
+{addressValidationModal.isOpen && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={closeValidationModal}></div>
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+              {/* Modal Header */}
+              <div className="border-b border-gray-200 p-6 flex items-start justify-between flex-shrink-0 bg-white">
+                <div>
+                  <h2 className="text-2xl font-medium text-gray-900">
+                    Address Validation Required - {addressValidationModal.addressType} Address
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-2">
+                    We found a validated address that's slightly different from what you entered. Please use the suggested address to ensure accurate delivery.
+                  </p>
+                </div>
+              </div>
 
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
+              {/* Modal Body */}
+              <div className="overflow-y-auto p-6 bg-gray-50">
+                <div className="space-y-4">
+                  {/* Suggested Address */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm border-2 border-green-500 relative">
+                    <div className="absolute -top-3 left-4 bg-white px-2">
+                      <span className="text-green-600 text-sm font-medium">Validated Address (Required)</span>
+                    </div>
+                    <div className="text-gray-900">
+                      <p>{addressValidationModal.suggestedAddress.street}</p>
+                      <p>{addressValidationModal.suggestedAddress.city}, {addressValidationModal.suggestedAddress.state} {addressValidationModal.suggestedAddress.postalCode}</p>
+                      <p>{addressValidationModal.suggestedAddress.country}</p>
+                    </div>
+                  </div>
 
-      {/* Addresses */}
-      {!sectionsLoaded.addresses ? (
-        <SectionSkeleton />
-      ) : (
-        <AddressesSection
-          addresses={addresses || {}}
-          setAddresses={setAddresses}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveAddresses={saveAddresses}
-          savingSection={savingSection}
-        />
-      )}
+                  {/* Original Address */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-300 relative">
+                    <div className="absolute -top-3 left-4 bg-white px-2">
+                      <span className="text-gray-600 text-sm font-medium">Address You Entered</span>
+                    </div>
+                    <div className="text-gray-900">
+                      <p>{addressValidationModal.originalAddress.street}</p>
+                      <p>{addressValidationModal.originalAddress.city}, {addressValidationModal.originalAddress.state} {addressValidationModal.originalAddress.postalCode}</p>
+                      <p>{addressValidationModal.originalAddress.country}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Family Information */}
-      {!sectionsLoaded.family ? (
-        <SectionSkeleton />
-      ) : (
-        <FamilyInfoSection
-          familyInfo={familyInfo || {}}
-          setFamilyInfo={setFamilyInfo}
-          personalInfo={personalInfo || {}}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveFamilyInfo={saveFamilyInfo}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Occupation */}
-      {!sectionsLoaded.occupation ? (
-        <SectionSkeleton />
-      ) : (
-        <OccupationSection
-          occupation={occupation || {}}
-          setOccupation={setOccupation}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveOccupation={saveOccupation}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Medical Information */}
-      {!sectionsLoaded.medical ? (
-        <SectionSkeleton />
-      ) : (
-        <MedicalInfoSection
-          medicalInfo={medicalInfo || {}}
-          setMedicalInfo={setMedicalInfo}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveMedicalInfo={saveMedicalInfo}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Cryopreservation Arrangements */}
-      {!sectionsLoaded.cryoArrangements ? (
-        <SectionSkeleton />
-      ) : (
-        <CryoArrangementsSection
-          cryoArrangements={cryoArrangements || {}}
-          setCryoArrangements={setCryoArrangements}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveCryoArrangements={saveCryoArrangements}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Funding/Life Insurance */}
-      {!sectionsLoaded.funding ? (
-        <SectionSkeleton />
-      ) : (
-        <FundingSection
-          funding={funding || {}}
-          setFunding={setFunding}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveFunding={saveFunding}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Legal/Will */}
-      {!sectionsLoaded.legal ? (
-        <SectionSkeleton />
-      ) : (
-        <LegalSection
-          legal={legal || {}}
-          setLegal={setLegal}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveLegal={saveLegal}
-          savingSection={savingSection}
-        />
-      )}
-
-      {/* Section Separator */}
-      <div className={sectionSeparator} />
-
-      {/* Next of Kin */}
-      {!sectionsLoaded.nextOfKin ? (
-        <SectionSkeleton />
-      ) : (
-        <NextOfKinSection
-          nextOfKin={nextOfKin || {}}
-          setNextOfKin={setNextOfKin}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveNextOfKin={saveNextOfKin}
-          savingSection={savingSection}
-        />
+              {/* Modal Footer */}
+              <div className="border-t border-gray-200 p-6 flex justify-end items-center flex-shrink-0 bg-white">
+                <button
+                  onClick={() => {
+                    if (addressValidationModal.onAccept) {
+                      addressValidationModal.onAccept();
+                    }
+                    closeValidationModal();
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-normal"
+                >
+                  Use Validated Address
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

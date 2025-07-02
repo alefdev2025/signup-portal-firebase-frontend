@@ -330,7 +330,7 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
  // Get the IDs from context
  const { customerId, salesforceContactId } = useMemberPortal();
  
- // Add mobile notification styles
+ // Add mobile notification styles and rainbow gradient styles
  useEffect(() => {
    const style = document.createElement('style');
    style.innerHTML = `
@@ -343,6 +343,43 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
      .mobile-notification-wrapper .absolute span {
        background-color: white !important;
        color: #1a2744 !important;
+     }
+     
+     /* Rainbow gradient background for mobile */
+     @media (max-width: 768px) {
+       .rainbow-gradient-bg {
+         background: linear-gradient(135deg, 
+           #ff6b6b 0%, 
+           #feca57 10%, 
+           #48dbfb 20%, 
+           #ff9ff3 30%, 
+           #54a0ff 40%, 
+           #5f27cd 50%, 
+           #00d2d3 60%, 
+           #ff6b6b 70%, 
+           #feca57 80%, 
+           #48dbfb 90%, 
+           #ff9ff3 100%);
+         background-size: 300% 300%;
+         animation: rainbow-shift 15s ease infinite;
+       }
+       
+       .rainbow-gradient-bg::before {
+         content: '';
+         position: fixed;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+         background: inherit;
+         z-index: -1;
+       }
+       
+       @keyframes rainbow-shift {
+         0% { background-position: 0% 50%; }
+         50% { background-position: 100% 50%; }
+         100% { background-position: 0% 50%; }
+       }
      }
    `;
    document.head.appendChild(style);
@@ -542,10 +579,10 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
        )}
 
        {/* Main content area with rounded corners - always behind */}
-       <div className="absolute inset-0 flex pt-[112px] md:pt-0">
+       <div className={`absolute inset-0 flex pt-[112px] md:pt-0 ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : ''}`}>
          <div className="w-[240px] md:w-[260px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
          <div className="flex-1 flex flex-col">
-           <div className={`flex-1 bg-white md:rounded-l-2xl md:rounded-l-3xl md:rounded-tr-2xl md:rounded-tr-3xl md:rounded-br-2xl md:rounded-br-3xl md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
+           <div className={`flex-1 bg-transparent md:bg-white md:rounded-l-2xl md:rounded-l-3xl md:rounded-tr-2xl md:rounded-tr-3xl md:rounded-br-2xl md:rounded-br-3xl md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
              <PortalHeader 
                setIsMobileMenuOpen={setIsMobileMenuOpen} 
                activeTab={activeTab}
@@ -553,9 +590,9 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
                className="hidden md:block"
              />
              
-             <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8' : 'px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6'} overflow-y-auto ${activeTab === 'overview' ? 'bg-gray-50' : 'bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+             <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8' : activeTab === 'membership-myinfo' ? 'px-0 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6' : 'px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6'} overflow-y-auto bg-transparent ${activeTab === 'overview' ? 'md:bg-gray-50' : 'md:bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                {activeTab !== 'overview' ? (
-                 <div className="bg-white border border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+                 <div className="bg-transparent md:bg-white border-0 md:border md:border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
                    {renderActiveTab()}
                  </div>
                ) : (
@@ -631,15 +668,15 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
      )}
 
      {/* Main content - positioned absolutely to fill screen */}
-     <div className="absolute inset-0 flex flex-col bg-gray-100 md:ml-[260px] pt-[112px] md:pt-0">
+     <div className={`absolute inset-0 flex flex-col ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : 'bg-transparent'} md:bg-gray-100 md:ml-[260px] pt-[112px] md:pt-0`}>
        <PortalHeader 
          setIsMobileMenuOpen={setIsMobileMenuOpen} 
          activeTab={activeTab}
          setActiveTab={handleTabChange}
          className="bg-white hidden md:block"
        />
-       <main className={`flex-1 px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:p-12 lg:pt-6 overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-         <div className="bg-white border border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+       <main className={`flex-1 px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:p-12 lg:pt-6 overflow-y-auto bg-transparent transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+         <div className="bg-transparent md:bg-white border-0 md:border md:border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
            {renderActiveTab()}
          </div>
        </main>

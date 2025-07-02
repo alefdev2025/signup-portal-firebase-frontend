@@ -1,9 +1,131 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import styleConfig from '../styleConfig';
 
+// Multi-select dropdown component
+const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleOption = (option) => {
+    if (disabled) return;
+    
+    const newValue = value.includes(option)
+      ? value.filter(v => v !== option)
+      : [...value, option];
+    
+    onChange(newValue);
+  };
+
+  const displayValue = value.length > 0 
+    ? value.join(', ') 
+    : 'Select...';
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className={styleConfig.form.label}>{label}</label>
+      <div
+        className={`${styleConfig.input.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <span className={`${value.length === 0 ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
+        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+          {options.map((option) => (
+            <label
+              key={option}
+              className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(option)}
+                onChange={() => toggleOption(option)}
+                className="mr-2 w-4 h-4 rounded border-gray-300 text-[#734477] focus:ring-2 focus:ring-[#734477]/20 accent-[#734477]"
+              />
+              <span className="ml-2 text-gray-700 font-medium">{option}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Single-select dropdown component (like multi-select but for single selection)
+const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled = false, placeholder = 'Select...' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    if (disabled) return;
+    onChange({ target: { value: option } });
+    setIsOpen(false);
+  };
+
+  const displayValue = value || placeholder;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className={styleConfig.form.label}>{label}</label>
+      <div
+        className={`${styleConfig.input.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <span className={`${!value ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
+        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className={`px-4 py-2 hover:bg-gray-50 cursor-pointer font-medium ${value === option.value ? 'bg-[#734477]/10 text-[#734477]' : 'text-gray-700'}`}
+              onClick={() => handleSelect(option.value)}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Display component for showing info in read-only mode
-const InfoDisplay = ({ label, value, className = "" }) => (
+const InfoDisplay = ({ label, value, className = "", isPlaceholder = false }) => (
   <div className={className}>
     <dt className={styleConfig.display.item.label}>{label}</dt>
     <dd className={styleConfig.display.item.value}>{value || styleConfig.display.item.empty}</dd>
@@ -20,6 +142,25 @@ const PersonalInfoSection = ({
   savePersonalInfo, 
   savingSection 
 }) => {
+  // Mapping functions for citizenship values
+  const mapCitizenshipFromBackend = (backendValue) => {
+    const mapping = {
+      'United States of America': 'United States',
+      'USA': 'United States',
+      'US': 'United States',
+      // Add more mappings as needed
+    };
+    return mapping[backendValue] || backendValue;
+  };
+
+  const mapCitizenshipToBackend = (frontendValue) => {
+    const mapping = {
+      'United States': 'United States of America',
+      // Add more mappings as needed
+    };
+    return mapping[frontendValue] || frontendValue;
+  };
+
   // Format SSN for display (show only last 4 digits)
   const formatSSN = (ssn) => {
     if (!ssn) return styleConfig.display.item.empty;
@@ -39,9 +180,54 @@ const PersonalInfoSection = ({
     return selections.join(', ');
   };
 
+  // Race options
+  const raceOptions = [
+    "American Indian or Alaska Native",
+    "Asian",
+    "Black or African American",
+    "Native Hawaiian or Other Pacific Islander",
+    "White",
+    "Other"
+  ];
+
+  // Citizenship options
+  const citizenshipOptions = [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Australia",
+    "Germany",
+    "France",
+    "Japan",
+    "China",
+    "India",
+    "Other"
+  ];
+
+  // Ethnicity options
+  const ethnicityOptions = [
+    { value: "", label: "Select..." },
+    { value: "Hispanic or Latino", label: "Hispanic or Latino" },
+    { value: "Not Hispanic or Latino", label: "Not Hispanic or Latino" }
+  ];
+
+  // Marital Status options
+  const maritalStatusOptions = [
+    { value: "", label: "Select..." },
+    { value: "Single", label: "Single" },
+    { value: "Married", label: "Married" },
+    { value: "Divorced", label: "Divorced" },
+    { value: "Widowed", label: "Widowed" }
+  ];
+
+  // Map citizenship values for display
+  const mappedCitizenshipValue = personalInfo.citizenship 
+    ? personalInfo.citizenship.map(mapCitizenshipFromBackend)
+    : [];
+
   return (
-    <div className={styleConfig.section.wrapperEnhanced}>
-      <div className={styleConfig.section.innerPadding}>
+    <div className="bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0">
+      <div className="px-4 py-6 sm:p-6 md:p-8">
         {/* Header with icon */}
         <div className={styleConfig.header.wrapper}>
           <div className={styleConfig.sectionIcons.personal}>
@@ -60,15 +246,14 @@ const PersonalInfoSection = ({
         {/* Display Mode */}
         {!editMode.personal ? (
           <dl className={styleConfig.display.dl.wrapperThree}>
-            {personalInfo.hasDifferentBirthName && (
-              <InfoDisplay 
-                label="Birth Name" 
-                value={personalInfo.birthName}
-                className={styleConfig.display.grid.tripleSpan}
-              />
-            )}
+            <div>
+              <dt className={styleConfig.display.item.label}>Birth Name</dt>
+              <dd className={styleConfig.display.item.value}>
+                {personalInfo.birthName || 'Same as current'}
+              </dd>
+            </div>
             <InfoDisplay 
-              label="Social Security Number" 
+              label="SSN/Government ID Number" 
               value={formatSSN(personalInfo.ssn)} 
             />
             <InfoDisplay 
@@ -98,28 +283,18 @@ const PersonalInfoSection = ({
           </dl>
         ) : (
           /* Edit Mode - Form */
-          <div className={styleConfig.section.grid.twoColumn}>
-            <Checkbox
-              containerClassName="col-span-2"
-              label="Is your birth name different from your current name?"
-              checked={personalInfo.hasDifferentBirthName || false}
-              onChange={(e) => setPersonalInfo({...personalInfo, hasDifferentBirthName: e.target.checked})}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <Input
+              label="Birth Name"
+              type="text"
+              value={personalInfo.birthName || ''}
+              onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
               disabled={!editMode.personal}
+              placeholder="Same as current"
             />
             
-            {personalInfo.hasDifferentBirthName && (
-              <Input
-                containerClassName="col-span-2"
-                label="Birth Name"
-                type="text"
-                value={personalInfo.birthName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
-                disabled={!editMode.personal}
-              />
-            )}
-            
             <Input
-              label="Social Security Number"
+              label="SSN/Government ID Number"
               type="text"
               value={personalInfo.ssn || ''}
               onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
@@ -139,50 +314,33 @@ const PersonalInfoSection = ({
               <option value="Other">Other</option>
             </Select>
             
-            <Select
+            <MultiSelectDropdown
               label="Race"
-              multiple
+              options={raceOptions}
               value={personalInfo.race || []}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                setPersonalInfo({...personalInfo, race: selected});
-              }}
+              onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
               disabled={!editMode.personal}
-            >
-              <option value="American Indian or Alaska Native">American Indian or Alaska Native</option>
-              <option value="Asian">Asian</option>
-              <option value="Black or African American">Black or African American</option>
-              <option value="Native Hawaiian or Other Pacific Islander">Native Hawaiian or Other Pacific Islander</option>
-              <option value="White">White</option>
-              <option value="Other">Other</option>
-            </Select>
+            />
             
-            <Select
+            <SingleSelectDropdown
               label="Ethnicity"
+              options={ethnicityOptions}
               value={personalInfo.ethnicity || ''}
               onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
               disabled={!editMode.personal}
-            >
-              <option value="">Select...</option>
-              <option value="Hispanic or Latino">Hispanic or Latino</option>
-              <option value="Not Hispanic or Latino">Not Hispanic or Latino</option>
-            </Select>
+            />
             
-            <Select
+            <MultiSelectDropdown
               label="Citizenship"
-              multiple
-              value={personalInfo.citizenship || []}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                setPersonalInfo({...personalInfo, citizenship: selected});
+              options={citizenshipOptions}
+              value={mappedCitizenshipValue}
+              onChange={(selected) => {
+                // Map back to backend format when saving
+                const backendValues = selected.map(mapCitizenshipToBackend);
+                setPersonalInfo({...personalInfo, citizenship: backendValues});
               }}
               disabled={!editMode.personal}
-            >
-              <option value="United States">United States</option>
-              <option value="Canada">Canada</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="Other">Other</option>
-            </Select>
+            />
             
             <Input
               label="Place of Birth"
@@ -192,18 +350,13 @@ const PersonalInfoSection = ({
               disabled={!editMode.personal}
             />
             
-            <Select
+            <SingleSelectDropdown
               label="Marital Status"
+              options={maritalStatusOptions}
               value={personalInfo.maritalStatus || ''}
               onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
               disabled={!editMode.personal}
-            >
-              <option value="">Select...</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Divorced">Divorced</option>
-              <option value="Widowed">Widowed</option>
-            </Select>
+            />
           </div>
         )}
         

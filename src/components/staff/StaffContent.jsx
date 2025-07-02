@@ -4,6 +4,7 @@ import { db, storage, auth } from '../../services/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, limit, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ImageUploader from './ImageUploader';
+import podcastImage from '../../assets/images/podcast-image2.png';
 
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 
@@ -284,298 +285,329 @@ const StaffContent = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">Content Management</h2>
-        <div className="flex gap-2">
-          {/* Debug button */}
-          <button
-            onClick={async () => {
-              try {
-                const token = await getAuthToken();
-                console.log('[DEBUG] Calling debug endpoint...');
-                const response = await fetch(`${API_BASE_URL}/api/debug/check-role`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`
+    <div 
+      className="bg-white rounded-2xl shadow-xl p-8"
+      style={{ 
+        borderRadius: '1rem',
+        backgroundColor: 'white',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+      }}
+    >
+      <div style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="flex justify-between items-center mb-12">
+          <h2 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Content Management</h2>
+          <div className="flex gap-2">
+            {/* Debug button */}
+            <button
+              onClick={async () => {
+                try {
+                  const token = await getAuthToken();
+                  console.log('[DEBUG] Calling debug endpoint...');
+                  const response = await fetch(`${API_BASE_URL}/api/debug/check-role`, {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                  const data = await response.json();
+                  console.log('[DEBUG] Role check result:', data);
+                  if (data.debug) {
+                    console.log('[DEBUG] Firestore user data:', data.debug.firestoreUser);
+                    console.log('[DEBUG] User has roles field?', data.debug.firestoreUser?.allFields?.includes('roles'));
+                    console.log('[DEBUG] User has role field?', data.debug.firestoreUser?.allFields?.includes('role'));
                   }
-                });
-                const data = await response.json();
-                console.log('[DEBUG] Role check result:', data);
-                if (data.debug) {
-                  console.log('[DEBUG] Firestore user data:', data.debug.firestoreUser);
-                  console.log('[DEBUG] User has roles field?', data.debug.firestoreUser?.allFields?.includes('roles'));
-                  console.log('[DEBUG] User has role field?', data.debug.firestoreUser?.allFields?.includes('role'));
+                  alert('Check console for role debug info');
+                } catch (error) {
+                  console.error('[DEBUG] Role check error:', error);
                 }
-                alert('Check console for role debug info');
-              } catch (error) {
-                console.error('[DEBUG] Role check error:', error);
-              }
-            }}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center gap-2"
-          >
-            Debug Role
-          </button>
-          <button
-            onClick={() => {
-              setFormData({});
-              setEditingItem(null);
-              setShowForm(true);
-            }}
-            className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add New
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                activeTab === 'announcements'
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center gap-2"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
-              <div className="flex items-center gap-2">
-                <Megaphone className="w-4 h-4" />
-                Announcements
-              </div>
+              Debug Role
             </button>
             <button
-              onClick={() => setActiveTab('media')}
-              className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                activeTab === 'media'
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              onClick={() => {
+                setFormData({});
+                setEditingItem(null);
+                setShowForm(true);
+              }}
+              className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-2"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Media (Podcasts & Newsletters)
-              </div>
+              <Plus className="w-4 h-4" />
+              Add New
             </button>
-          </nav>
+          </div>
         </div>
 
-        {/* Content List */}
-        <div className="p-6">
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No {activeTab} found. Create your first one!
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    {/* Header Row - Title, Badges, and Actions */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="font-semibold text-lg text-gray-900">{item.title}</h3>
-                          
-                          {/* Type/Category Badge */}
-                          {item.type && (
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              item.type === 'podcast' 
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-blue-100 text-blue-700'
-                            }`}>
-                              {item.type === 'podcast' ? (
-                                <div className="flex items-center gap-1">
-                                  <Mic className="w-3 h-3" />
-                                  Podcast
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1">
-                                  <FileText className="w-3 h-3" />
-                                  Newsletter
-                                </div>
-                              )}
-                            </span>
-                          )}
-                          {item.category && (
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              item.category === 'event' 
-                                ? 'bg-green-100 text-green-700'
-                                : item.category === 'conference'
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {item.category}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Subtitle if exists */}
-                        {item.subtitle && (
-                          <p className="text-gray-600 text-sm mt-1">{item.subtitle}</p>
-                        )}
-                      </div>
-                      
-                      {/* Action Buttons - Professional Style */}
-                      <div className="flex items-center gap-1 ml-4">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-all"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+        {/* Tabs */}
+        <div 
+          className="bg-gray-50 rounded-2xl shadow-sm mb-8 overflow-hidden"
+          style={{ 
+            borderRadius: '1rem',
+            overflow: 'hidden',
+            backgroundColor: '#f9fafb'
+          }}
+        >
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab('announcements')}
+                className={`py-3 px-8 border-b-2 font-medium text-sm ${
+                  activeTab === 'announcements'
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                style={{ fontFamily: 'Helvetica, Arial, sans-serif', borderRadius: '0' }}
+              >
+                <div className="flex items-center gap-2">
+                  <Megaphone className="w-4 h-4" />
+                  Announcements
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`py-3 px-8 border-b-2 font-medium text-sm ${
+                  activeTab === 'media'
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                style={{ fontFamily: 'Helvetica, Arial, sans-serif', borderRadius: '0' }}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Media (Podcasts & Newsletters)
+                </div>
+              </button>
+            </nav>
+          </div>
 
-                    {/* Content Row - Image and Description */}
-                    <div className="flex gap-4">
-                      {/* Image */}
-                      {item.imageUrl && (
-                        <div className="flex-shrink-0">
-                          <img 
-                            src={item.imageUrl} 
-                            alt={item.title} 
-                            className="w-24 h-24 object-cover rounded-lg"
-                          />
-                        </div>
-                      )}
-                      
-                      {/* Description and Details */}
-                      <div className="flex-1">
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                          {item.description}
-                        </p>
-                        
-                        {/* Meta Information */}
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                          {/* Created Date */}
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>Created: {formatDate(item.createdAt)}</span>
+          {/* Content List */}
+          <div className="p-8">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="text-center py-12 text-gray-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                No {activeTab} found. Create your first one!
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {items.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="bg-white border border-gray-200 rounded-2xl hover:shadow-md transition-shadow overflow-hidden"
+                    style={{ 
+                      borderRadius: '1rem',
+                      overflow: 'hidden',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <div className="p-8">
+                      {/* Header Row - Title, Badges, and Actions */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="font-semibold text-base text-gray-900" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '600' }}>{item.title}</h3>
+                            
+                            {/* Type/Category Badge */}
+                            {item.type && (
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                item.type === 'podcast' 
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                                {item.type === 'podcast' ? (
+                                  <div className="flex items-center gap-1">
+                                    <Mic className="w-3 h-3" />
+                                    Podcast
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="w-3 h-3" />
+                                    Newsletter
+                                  </div>
+                                )}
+                              </span>
+                            )}
+                            {item.category && (
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                item.category === 'event' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : item.category === 'conference'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                                {item.category}
+                              </span>
+                            )}
                           </div>
                           
-                          {/* Publish Date (for media) */}
-                          {item.publishDate && (
+                          {/* Subtitle if exists */}
+                          {item.subtitle && (
+                            <p className="text-gray-600 text-sm mt-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{item.subtitle}</p>
+                          )}
+                        </div>
+                        
+                        {/* Action Buttons - Professional Style */}
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-all"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content Row - Image and Description */}
+                      <div className="flex gap-6 mt-6">
+                        {/* Image */}
+                        {(item.imageUrl || item.type === 'podcast') && (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={item.type === 'podcast' ? podcastImage : item.imageUrl} 
+                              alt={item.title} 
+                              className={`w-28 h-28 object-cover rounded-xl ${item.type === 'podcast' ? 'border border-gray-300' : ''}`}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Description and Details */}
+                        <div className="flex-1">
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            {item.description}
+                          </p>
+                          
+                          {/* Meta Information */}
+                          <div className="flex flex-wrap items-center gap-5 text-xs text-gray-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            {/* Created Date */}
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              <span>Published: {formatDate(item.publishDate)}</span>
+                              <span>Created: {formatDate(item.createdAt)}</span>
                             </div>
-                          )}
-                          
-                          {/* Event Date (for announcements) */}
-                          {item.eventDate && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>Event: {item.eventDate}</span>
-                            </div>
-                          )}
-                          
-                          {/* Event Time */}
-                          {item.eventTime && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{item.eventTime}</span>
-                            </div>
-                          )}
-                          
-                          {/* Location */}
-                          {item.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              <span>{item.location}</span>
-                            </div>
-                          )}
-                          
-                          {/* Link */}
-                          {item.link && (
-                            <div className="flex items-center gap-1">
-                              <LinkIcon className="w-3 h-3" />
-                              <a 
-                                href={item.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-purple-600 hover:underline"
-                              >
-                                View Link
-                              </a>
-                            </div>
-                          )}
+                            
+                            {/* Publish Date (for media) */}
+                            {item.publishDate && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>Published: {formatDate(item.publishDate)}</span>
+                              </div>
+                            )}
+                            
+                            {/* Event Date (for announcements) */}
+                            {item.eventDate && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>Event: {item.eventDate}</span>
+                              </div>
+                            )}
+                            
+                            {/* Event Time */}
+                            {item.eventTime && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{item.eventTime}</span>
+                              </div>
+                            )}
+                            
+                            {/* Location */}
+                            {item.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span>{item.location}</span>
+                              </div>
+                            )}
+                            
+                            {/* Link */}
+                            {item.link && (
+                              <div className="flex items-center gap-1">
+                                <LinkIcon className="w-3 h-3" />
+                                <a 
+                                  href={item.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-purple-600 hover:underline"
+                                  style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                                >
+                                  View Link
+                                </a>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            {/* Black header with rounded top corners */}
-            <div className="bg-black text-white p-4 text-center font-semibold rounded-t-lg">
-              {editingItem ? 'Edit' : 'Create New'} {activeTab === 'announcements' ? 'Announcement' : 'Media Content'}
-            </div>
-            
-            <div className="max-h-[calc(90vh-3rem)] overflow-y-auto">
-              <div className="p-6 pt-8">
-                {activeTab === 'announcements' ? (
-                  <AnnouncementForm 
-                    formData={formData} 
-                    setFormData={setFormData}
-                  />
-                ) : (
-                  <MediaForm 
-                    formData={formData} 
-                    setFormData={setFormData}
-                  />
-                )}
+                ))}
               </div>
+            )}
+          </div>
+        </div>
 
-              <div className="p-6 border-t bg-white flex justify-end gap-4">
-                <button
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingItem(null);
-                    setFormData({});
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className={`px-4 py-2 text-white rounded-lg ${
-                    submitting 
-                      ? 'bg-gray-500 cursor-not-allowed' 
-                      : 'bg-black hover:bg-gray-800'
-                  }`}
-                >
-                  {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
-                </button>
+        {/* Form Modal */}
+        {showForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              {/* Black header with rounded top corners */}
+              <div className="bg-black text-white p-6 text-center font-semibold rounded-t-2xl" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                {editingItem ? 'Edit' : 'Create New'} {activeTab === 'announcements' ? 'Announcement' : 'Media Content'}
+              </div>
+              
+              <div className="max-h-[calc(90vh-4rem)] overflow-y-auto">
+                <div className="p-8 pt-10">
+                  {activeTab === 'announcements' ? (
+                    <AnnouncementForm 
+                      formData={formData} 
+                      setFormData={setFormData}
+                    />
+                  ) : (
+                    <MediaForm 
+                      formData={formData} 
+                      setFormData={setFormData}
+                    />
+                  )}
+                </div>
+
+                <div className="p-8 border-t bg-white flex justify-end gap-4">
+                  <button
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingItem(null);
+                      setFormData({});
+                    }}
+                    className="px-6 py-3 text-gray-600 hover:text-gray-800"
+                    style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className={`px-6 py-3 text-white rounded-xl ${
+                      submitting 
+                        ? 'bg-gray-500 cursor-not-allowed' 
+                        : 'bg-black hover:bg-gray-800'
+                    }`}
+                    style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                  >
+                    {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -583,15 +615,20 @@ const StaffContent = () => {
 // Announcement Form Component
 const AnnouncementForm = ({ formData, setFormData }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Category
         </label>
         <select
           value={formData.category || 'general'}
           onChange={(e) => setFormData({...formData, category: e.target.value})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-purple-500 focus:border-purple-500"
+          style={{ 
+            fontFamily: 'Helvetica, Arial, sans-serif',
+            height: '52px',
+            lineHeight: 'normal'
+          }}
         >
           <option value="general">General</option>
           <option value="event">Event</option>
@@ -600,48 +637,51 @@ const AnnouncementForm = ({ formData, setFormData }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Title *
         </label>
         <input
           type="text"
           value={formData.title || ''}
           onChange={(e) => setFormData({...formData, title: e.target.value})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Subtitle
         </label>
         <input
           type="text"
           value={formData.subtitle || ''}
           onChange={(e) => setFormData({...formData, subtitle: e.target.value})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Description *
         </label>
         <textarea
           value={formData.description || ''}
           onChange={(e) => setFormData({...formData, description: e.target.value})}
-          rows="4"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          rows="5"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           required
         />
       </div>
 
       {(formData.category === 'event' || formData.category === 'conference') && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
                 Event Date
               </label>
               <input
@@ -649,11 +689,12 @@ const AnnouncementForm = ({ formData, setFormData }) => {
                 value={formData.eventDate || ''}
                 onChange={(e) => setFormData({...formData, eventDate: e.target.value})}
                 placeholder="e.g., September 15, 2025"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
                 Event Time
               </label>
               <input
@@ -661,27 +702,29 @@ const AnnouncementForm = ({ formData, setFormData }) => {
                 value={formData.eventTime || ''}
                 onChange={(e) => setFormData({...formData, eventTime: e.target.value})}
                 placeholder="e.g., 9:00 AM PST"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
               Location
             </label>
             <input
               type="text"
               value={formData.location || ''}
               onChange={(e) => setFormData({...formData, location: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             />
           </div>
         </>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Link
         </label>
         <input
@@ -689,12 +732,13 @@ const AnnouncementForm = ({ formData, setFormData }) => {
           value={formData.link || ''}
           onChange={(e) => setFormData({...formData, link: e.target.value})}
           placeholder="https://..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Image
         </label>
         <ImageUploader 
@@ -710,15 +754,20 @@ const AnnouncementForm = ({ formData, setFormData }) => {
 // Media Form Component
 const MediaForm = ({ formData, setFormData }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Media Type
         </label>
         <select
           value={formData.type || 'newsletter'}
           onChange={(e) => setFormData({...formData, type: e.target.value})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ 
+            fontFamily: 'Helvetica, Arial, sans-serif',
+            height: '52px',
+            lineHeight: 'normal'
+          }}
         >
           <option value="newsletter">Newsletter</option>
           <option value="podcast">Podcast</option>
@@ -726,33 +775,35 @@ const MediaForm = ({ formData, setFormData }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Title *
         </label>
         <input
           type="text"
           value={formData.title || ''}
           onChange={(e) => setFormData({...formData, title: e.target.value})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Description *
         </label>
         <textarea
           value={formData.description || ''}
           onChange={(e) => setFormData({...formData, description: e.target.value})}
-          rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          rows="4"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Link
         </label>
         <input
@@ -760,12 +811,13 @@ const MediaForm = ({ formData, setFormData }) => {
           value={formData.link || ''}
           onChange={(e) => setFormData({...formData, link: e.target.value})}
           placeholder={formData.type === 'podcast' ? 'Podcast URL' : 'PDF URL'}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
           Publish Date
         </label>
         <input
@@ -786,20 +838,23 @@ const MediaForm = ({ formData, setFormData }) => {
             }
           })()}
           onChange={(e) => setFormData({...formData, publishDate: e.target.value ? new Date(e.target.value) : null})}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Image
-        </label>
-        <ImageUploader 
-          currentImageUrl={formData.imageUrl}
-          onImageUploaded={(url) => setFormData({...formData, imageUrl: url})}
-          folder={formData.type || 'media'}
-        />
-      </div>
+      {formData.type !== 'podcast' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>
+            Image
+          </label>
+          <ImageUploader 
+            currentImageUrl={formData.imageUrl}
+            onImageUploaded={(url) => setFormData({...formData, imageUrl: url})}
+            folder={formData.type || 'media'}
+          />
+        </div>
+      )}
     </div>
   );
 };

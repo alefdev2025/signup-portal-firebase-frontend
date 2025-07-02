@@ -201,16 +201,17 @@ const StaffNotifications = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-12">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">All Notifications</h1>
-            <p className="text-sm text-gray-600 mt-1">View all notifications sent to members</p>
+            <h1 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>All Notifications</h1>
+            <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>View all notifications sent to members</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={exportNotifications}
               disabled={notifications.length === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
               <Download className="w-4 h-4" />
               Export
@@ -221,7 +222,8 @@ const StaffNotifications = () => {
                 // fetchStats(); // Comment out for now
               }}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-black rounded-lg hover:bg-gray-800 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-black rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -231,30 +233,30 @@ const StaffNotifications = () => {
 
         {/* Statistics */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600">Total Sent</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.total || 0}</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Total Sent</p>
+              <p className="text-2xl font-semibold text-gray-900" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '600' }}>{stats.total || 0}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600">Last 24 Hours</p>
-              <p className="text-2xl font-semibold text-purple-600">{stats.last24Hours || 0}</p>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Last 24 Hours</p>
+              <p className="text-2xl font-semibold text-purple-600" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '600' }}>{stats.last24Hours || 0}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600">Read Rate</p>
-              <p className="text-2xl font-semibold text-green-600">
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Read Rate</p>
+              <p className="text-2xl font-semibold text-green-600" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '600' }}>
                 {stats.total > 0 && stats.byReadStatus ? Math.round((stats.byReadStatus.read / stats.total) * 100) : 0}%
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-600">Unread</p>
-              <p className="text-2xl font-semibold text-orange-600">{stats.byReadStatus?.unread || 0}</p>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Unread</p>
+              <p className="text-2xl font-semibold text-orange-600" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '600' }}>{stats.byReadStatus?.unread || 0}</p>
             </div>
           </div>
         )}
 
         {/* Debug Info */}
-        <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs font-mono">
+        {/*<div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs font-mono">
           <p><strong>Current Filter:</strong> {filterType}</p>
           <p><strong>Total Unique Notifications:</strong> {notifications.length}</p>
           <p><strong>URL:</strong> {`${API_BASE_URL}/api/staff/notifications/notifications-staff?all=true${filterType && filterType !== 'all' ? `&type=${filterType}` : ''}`}</p>
@@ -269,17 +271,18 @@ const StaffNotifications = () => {
               ))}
             </div>
           </details>
-        </div>
+        </div>*/}
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
+        <div className="flex gap-3 mb-8 overflow-x-auto">
           <button
             onClick={() => setFilterType('all')}
-            className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap ${
+            className={`px-6 py-3 text-sm rounded-lg whitespace-nowrap transition-colors ${
               filterType === 'all' 
                 ? 'bg-black text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
             }`}
+            style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: filterType === 'all' ? '500' : '400' }}
           >
             All Types
           </button>
@@ -287,11 +290,12 @@ const StaffNotifications = () => {
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap ${
+              className={`px-6 py-3 text-sm rounded-lg whitespace-nowrap transition-colors ${
                 filterType === type 
                   ? 'bg-black text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
               }`}
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: filterType === type ? '500' : '400' }}
             >
               {type === 'podcast' ? 'Podcasts' :
                type === 'newsletter' ? 'Newsletters' :
@@ -303,31 +307,39 @@ const StaffNotifications = () => {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <XCircle className="w-5 h-5" />
-            {error}
+          <div className="mb-8 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3">
+            <XCircle className="w-5 h-5 flex-shrink-0" />
+            <span style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{error}</span>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm">
+        <div 
+          className="bg-white rounded-2xl shadow-sm overflow-hidden"
+          style={{ 
+            borderRadius: '1rem',
+            overflow: 'hidden'
+          }}
+        >
           {loading ? (
-            <div className="text-center py-12 text-gray-500">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-              Loading notifications...
+            <div className="text-center py-16 text-gray-500">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto mb-6"></div>
+              <p style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Loading notifications...</p>
             </div>
           ) : notifications.length > 0 ? (
             <div className="divide-y divide-gray-200">
               {notifications.map((notification) => (
-                <div key={notification.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="text-purple-600 mt-1">
+                <div key={notification.id} className="p-8 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-6">
+                    <div className="text-purple-600 mt-1 flex-shrink-0">
                       {getNotificationIcon(notification.type, notification.metadata)}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{notification.title}</h3>
-                          <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                          <h3 className="font-medium text-gray-900 mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                            {notification.title}
+                          </h3>
+                          <span className={`inline-block px-3 py-1 text-xs rounded-full ${
                             notification.type === 'podcast' || (notification.type === 'media' && notification.metadata?.mediaType === 'podcast')
                               ? 'bg-purple-100 text-purple-700'
                               : notification.type === 'newsletter' || (notification.type === 'media' && notification.metadata?.mediaType === 'newsletter')
@@ -339,28 +351,30 @@ const StaffNotifications = () => {
                               : notification.type === 'message'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-gray-100 text-gray-700'
-                          }`}>
+                          }`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                             {getNotificationTypeLabel(notification.type, notification.metadata)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4 ml-4">
                           {notification.read && (
-                            <span className="flex items-center gap-1 text-xs text-green-600">
+                            <span className="flex items-center gap-1 text-xs text-green-600" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                               <CheckCircle className="w-3 h-3" />
                               Read
                             </span>
                           )}
                           <button
                             onClick={() => deleteNotification(notification.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                             title="Delete notification"
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{notification.content}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <p className="text-sm text-gray-600 mb-4 leading-relaxed" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                        {notification.content}
+                      </p>
+                      <div className="flex items-center gap-6 text-xs text-gray-500" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(notification.createdAt)}
@@ -383,10 +397,10 @@ const StaffNotifications = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <Send className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No notifications found.</p>
-              <p className="text-sm mt-2">
+            <div className="text-center py-16 text-gray-500">
+              <Send className="w-12 h-12 mx-auto mb-6 text-gray-300" />
+              <p className="text-base mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: '500' }}>No notifications found.</p>
+              <p className="text-sm" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
                 {filterType !== 'all' 
                   ? `No ${filterType} notifications have been sent.`
                   : 'Notifications will appear here when they are sent to members.'}
@@ -397,18 +411,19 @@ const StaffNotifications = () => {
 
         {/* Pagination */}
         {pagination.total > pagination.limit && (
-          <div className="mt-6 flex justify-center gap-2">
+          <div className="mt-8 flex justify-center gap-3">
             <button
               onClick={() => {
                 setPagination(prev => ({ ...prev, offset: Math.max(0, prev.offset - prev.limit) }));
                 fetchNotifications();
               }}
               disabled={pagination.offset === 0}
-              className="px-4 py-2 text-sm bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-6 py-3 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
               Previous
             </button>
-            <span className="px-4 py-2 text-sm text-gray-600">
+            <span className="px-6 py-3 text-sm text-gray-600 flex items-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
               Showing {pagination.offset + 1}-{Math.min(pagination.offset + notifications.length, pagination.total)} of {pagination.total}
             </span>
             <button
@@ -417,7 +432,8 @@ const StaffNotifications = () => {
                 fetchNotifications();
               }}
               disabled={pagination.offset + notifications.length >= pagination.total}
-              className="px-4 py-2 text-sm bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-6 py-3 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
             >
               Next
             </button>
