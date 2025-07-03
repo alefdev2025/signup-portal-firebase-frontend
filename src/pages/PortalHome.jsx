@@ -6,7 +6,6 @@ import { markNotificationAsRead, markAllNotificationsAsRead } from '../services/
 // Import all the component parts
 import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
-import OverviewTab from '../components/portal/OverviewTab';
 import AccountSettingsTab from '../components/portal/AccountSettingsTab';
 import NotificationsTab from '../components/portal/NotificationsTab';
 import MembershipStatusTab from '../components/portal/MembershipStatusTab';
@@ -22,6 +21,14 @@ import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
+
+// Import all overview tab versions
+import OverviewTab from '../components/portal/OverviewTab';
+import OverviewTabStandard from '../components/portal/OverviewTabStandard';
+import OverviewTabPurpleGradient from '../components/portal/OverviewTabPurpleGradient';
+import OverviewTabDarkBackground from '../components/portal/OverviewTabDarkBackground';
+import OverviewTabCorrnerSideImage from '../components/portal/OverviewTabCorrnerSideImage';
+import OverviewTabPinkPurple from '../components/portal/OverviewTabPinkPurple';
 
 // Placeholder components for main tabs that don't have content yet
 const AccountTab = () => (
@@ -326,6 +333,25 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
    const saved = localStorage.getItem('portalLayoutMode');
    return saved || 'floating'; // Default to floating
  });
+
+ // Overview tab versions configuration
+ const overviewTabVersions = [
+   { name: 'Default', component: OverviewTab },
+   { name: 'Standard', component: OverviewTabStandard },
+   { name: 'Purple Gradient', component: OverviewTabPurpleGradient },
+   { name: 'Dark Background', component: OverviewTabDarkBackground },
+   { name: 'Corner Side Image', component: OverviewTabCorrnerSideImage },
+   { name: 'Pink Purple', component: OverviewTabPinkPurple }
+ ];
+
+ // Add state for overview tab version
+ const [overviewTabVersion, setOverviewTabVersion] = useState(() => {
+   const saved = localStorage.getItem('overviewTabVersion');
+   return saved ? parseInt(saved) : 0; // Default to first version
+ });
+
+ // Add state for showing overview selector
+ const [showOverviewSelector, setShowOverviewSelector] = useState(false);
  
  // Get the IDs from context
  const { customerId, salesforceContactId } = useMemberPortal();
@@ -394,6 +420,11 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
    localStorage.setItem('portalLayoutMode', layoutMode);
  }, [layoutMode]);
 
+ // Save overview tab version preference
+ useEffect(() => {
+   localStorage.setItem('overviewTabVersion', overviewTabVersion.toString());
+ }, [overviewTabVersion]);
+
  // Handle tab changes with history
  const handleTabChange = (newTab) => {
    // Don't push to history if it's the same tab
@@ -444,9 +475,14 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
  };
 
  const renderActiveTab = () => {
+   // Check if we're rendering settings tab with dewars background
+   const isSettingsWithDewars = activeTab === 'account-settings' && 
+     localStorage.getItem('settingsTabStyle') === 'dewars';
+
    switch (activeTab) {
      case 'overview': 
-       return <OverviewTab setActiveTab={handleTabChange} />;
+       const SelectedOverviewTab = overviewTabVersions[overviewTabVersion].component;
+       return <SelectedOverviewTab setActiveTab={handleTabChange} />;
      
      // Account tabs
      case 'account':
@@ -497,7 +533,8 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
        return <SupportTab />;
      
      default: 
-       return <OverviewTab setActiveTab={handleTabChange} />;
+       const DefaultOverviewTab = overviewTabVersions[overviewTabVersion].component;
+       return <DefaultOverviewTab setActiveTab={handleTabChange} />;
    }
  };
 
@@ -505,16 +542,63 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
  const LayoutToggle = () => (
    <button
      onClick={() => setLayoutMode(layoutMode === 'floating' ? 'traditional' : 'floating')}
-     className="fixed bottom-4 right-4 z-50 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+     className="fixed bottom-4 right-4 z-50 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-lg p-2 shadow-lg hover:bg-gray-50 transition-colors"
      title="Toggle layout mode"
    >
      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
      </svg>
-     <span className="text-sm font-medium">
-       {layoutMode === 'floating' ? 'Traditional' : 'Floating'} Layout
-     </span>
    </button>
+ );
+
+ // Overview Tab Selector component
+ const OverviewTabSelector = () => (
+   <div className="fixed bottom-4 right-4 z-50">
+     {/* Toggle button */}
+     <button
+       onClick={() => setShowOverviewSelector(!showOverviewSelector)}
+       className={`bg-white/90 backdrop-blur-sm border border-gray-300 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-50 transition-all flex items-center gap-2 ${
+         activeTab === 'overview' ? '' : 'opacity-50 cursor-not-allowed'
+       }`}
+       disabled={activeTab !== 'overview'}
+       title={activeTab === 'overview' ? "Change overview tab style" : "Only available on overview tab"}
+     >
+       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+       </svg>
+       <span className="text-sm font-medium">
+         Overview: {overviewTabVersions[overviewTabVersion].name}
+       </span>
+     </button>
+
+     {/* Selector dropdown */}
+     {showOverviewSelector && activeTab === 'overview' && (
+       <div className="absolute bottom-full right-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+         <div className="p-2">
+           <h3 className="text-sm font-semibold text-gray-700 px-2 py-1">Overview Tab Styles</h3>
+           {overviewTabVersions.map((version, index) => (
+             <button
+               key={index}
+               onClick={() => {
+                 setOverviewTabVersion(index);
+                 setShowOverviewSelector(false);
+               }}
+               className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors flex items-center justify-between ${
+                 index === overviewTabVersion ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+               }`}
+             >
+               <span>{version.name}</span>
+               {index === overviewTabVersion && (
+                 <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                 </svg>
+               )}
+             </button>
+           ))}
+         </div>
+       </div>
+     )}
+   </div>
  );
 
  // Render floating layout (current design)
@@ -709,7 +793,7 @@ const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
      }}
    >
      {layoutMode === 'floating' ? renderFloatingLayout() : renderTraditionalLayout()}
-     <LayoutToggle />
+     <OverviewTabSelector />
    </div>
  );
 };

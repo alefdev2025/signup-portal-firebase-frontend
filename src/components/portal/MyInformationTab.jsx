@@ -653,64 +653,59 @@ const MyInformationTab = () => {
     }
   };
 
-      // Helper functions to map Salesforce values to component values
-    function mapRemainsHandling(sfValue) {
-      if (!sfValue) return '';
-      
-      // Map based on the Salesforce picklist values
-      if (sfValue.includes('delivery of such cremated materials to a named person')) {
-        return 'Return';
-      } else if (sfValue.includes('research or tissue donation')) {
-        return 'Donate';
-      } else if (sfValue.includes('disposal or retainage')) {
-        return 'Cremate';
-      }
-      
-      return '';
+  function mapPublicDisclosure(sfValue) {
+    if (!sfValue) return '';
+    
+    const valueLower = sfValue.toLowerCase();
+    
+    if (valueLower.includes('freely release')) {
+      return 'freely';  // Simple code
+    } else if (valueLower.includes('reasonable efforts') || valueLower.includes('confidentiality')) {
+      return 'confidential';  // Simple code
     }
-
-    function mapPublicDisclosure(sfValue) {
-      if (!sfValue) return '';
-      
-      // Map based on the Salesforce picklist values
-      if (sfValue.includes('freely release')) {
-        return 'Freely';
-      } else if (sfValue.includes('reasonable efforts to maintain confidentiality')) {
-        return 'BeforeDeath';
-      } else if (sfValue.includes('not authorized')) {
-        return 'Always';
-      }
-      
-      return '';
-    }
-
-    // Helper functions to map back to Salesforce values for saving
-    function mapRemainsHandlingToSF(value) {
-      switch(value) {
-        case 'Return':
-          return "Alcor Cremation and Disposition of Cryopreservation Member's Non-Cryopreserved Human Remains and the delivery of such cremated materials to a named person/entity.";
-        case 'Donate':
-          return "Alcor Cremation and Disposition of Cryopreservation Member's Non-Cryopreserved Human Remains with disposal or retainage thereof in Alcor's sole discretion, with possible use for research or tissue donation.";
-        case 'Cremate':
-          return "Alcor Cremation and Disposition of Cryopreservation Member's Non-Cryopreserved Human Remains with disposal or retainage thereof in Alcor's sole discretion.";
-        default:
-          return null;
-      }
-    }
-
-    function mapPublicDisclosureToSF(value) {
-      switch(value) {
-        case 'Freely':
-          return "Alcor is authorized to freely release Cryopreservation Member information at its discretion.";
-        case 'BeforeDeath':
-          return "Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor's General Terms and Conditions.";
-        case 'Always':
-          return "Alcor is not authorized to release Cryopreservation Member information.";
-        default:
-          return null;
-      }
-    }
+    
+    return '';
+  }
   
+  function mapRemainsHandling(sfValue) {
+    if (!sfValue) return '';
+    
+    const valueLower = sfValue.toLowerCase();
+    
+    if (valueLower.includes('delivery') && valueLower.includes('named person')) {
+      return 'return';  // Simple code
+    } else if (valueLower.includes('research') || valueLower.includes('tissue donation')) {
+      return 'donate';  // Simple code
+    }
+    
+    return '';
+  }
+
+function mapRemainsHandlingToSF(value) {
+  switch(value) {
+    case 'Return':
+      // EXACT value from picklist - WITH period at end
+      return "Alcor Cremation and Disposition of Cryopreservation Member's Non-Cryopreserved Human Remains and the delivery of such cremated materials to a named person/entity.";
+    case 'Donate':
+      // EXACT value from picklist - WITH period at end
+      return "Alcor Cremation and Disposition of Cryopreservation Member's Non-Cryopreserved Human Remains with disposal or retainage thereof in Alcor's sole discretion, with possible use for research or tissue donation.";
+    default:
+      return null;
+  }
+}
+
+function mapPublicDisclosureToSF(value) {
+  switch(value) {
+    case 'Freely':
+      // EXACT value from picklist - NO period at end
+      return "I give Alcor permission to freely release my name and related Alcor membership status at its discretion";
+    case 'BeforeDeath':
+      // EXACT value from picklist - WITH period at end
+      return "Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor's General Terms and Conditions.";
+    default:
+      return null;
+  }
+}
   // Toggle edit mode for a section
   const toggleEditMode = (section) => {
     setEditMode(prev => ({ ...prev, [section]: !prev[section] }));
@@ -1427,22 +1422,47 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
+      console.log('🔵 === START saveCryoArrangements ===');
+      console.log('Current cryo arrangements:', cryoArrangements);
+      
       // Clean the cryo arrangements data
       const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
+      console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
       
-      // Map component values back to Salesforce values
-      const dataToSend = {
-        // Note: Some fields like method and CMS waiver might be read-only
-        nonCryoRemainArrangements: mapRemainsHandlingToSF(cleanedCryoArrangements.remainsHandling),
-        memberPublicDisclosure: mapPublicDisclosureToSF(cleanedCryoArrangements.publicDisclosure),
-        recipientName: cleanedCryoArrangements.recipientName,
-        recipientPhone: cleanedCryoArrangements.recipientPhone,
-        recipientEmail: cleanedCryoArrangements.recipientEmail
-      };
+      // Build the update object - send simple codes to backend
+      const dataToSend = {};
+      
+      // Handle the remains handling - check for lowercase values from the select
+      if (cleanedCryoArrangements.remainsHandling) {
+        dataToSend.nonCryoRemainArrangements = cleanedCryoArrangements.remainsHandling; // This will be 'return' or 'donate' (lowercase)
+      }
+      
+      // Handle the public disclosure
+      if (cleanedCryoArrangements.publicDisclosure) {
+        dataToSend.memberPublicDisclosure = cleanedCryoArrangements.publicDisclosure; // This will be 'freely' or 'confidential' (lowercase)
+      }
+      
+      // Add recipient fields if applicable
+      if (cleanedCryoArrangements.recipientName) {
+        dataToSend.recipientName = cleanedCryoArrangements.recipientName;
+      }
+      if (cleanedCryoArrangements.recipientPhone) {
+        dataToSend.recipientPhone = cleanedCryoArrangements.recipientPhone;
+      }
+      if (cleanedCryoArrangements.recipientEmail) {
+        dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
+      }
+      
+      console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
       
       const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
+      console.log('📨 Save result:', result);
+      
       if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Cryopreservation arrangements saved successfully!' });
+        setSaveMessage({ 
+          type: 'success', 
+          text: result.warning || 'Cryopreservation arrangements saved successfully!' 
+        });
         setCryoArrangements(cleanedCryoArrangements);
         setOriginalData(prev => ({ ...prev, cryoArrangements: cleanedCryoArrangements }));
         setEditMode(prev => ({ ...prev, cryoArrangements: false }));
@@ -1456,14 +1476,22 @@ const loadMemberCategory = async () => {
           }, 500);
         }
       } else {
-        setSaveMessage({ type: 'error', text: result.error || 'Failed to save cryopreservation arrangements' });
+        console.error('❌ Save failed:', result.error);
+        setSaveMessage({ 
+          type: 'error', 
+          text: result.error || 'Failed to save cryopreservation arrangements' 
+        });
       }
     } catch (error) {
-      console.error('Error saving cryo arrangements:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save cryopreservation arrangements' });
+      console.error('❌ Error saving cryo arrangements:', error);
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
+      });
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      console.log('🔵 === END saveCryoArrangements ===\n');
     }
   };
   

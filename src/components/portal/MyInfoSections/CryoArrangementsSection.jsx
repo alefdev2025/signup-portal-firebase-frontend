@@ -1,3 +1,5 @@
+// Frontend: CryoArrangementsSection.jsx - Updated with simple values
+
 import React from 'react';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import styleConfig from '../styleConfig';
@@ -27,21 +29,19 @@ const CryoArrangementsSection = ({
     return method;
   };
 
-  // Format disclosure display
+  // Format disclosure display - using simple codes
   const formatDisclosure = (disclosure) => {
     if (!disclosure) return styleConfig.display.item.empty;
-    if (disclosure === 'Freely') return 'Alcor is authorized to freely release information';
-    if (disclosure === 'BeforeDeath') return 'Maintain confidentiality prior to legal death';
-    if (disclosure === 'Always') return 'Always maintain confidentiality';
+    if (disclosure === 'freely') return 'I give Alcor permission to freely release my name and related Alcor membership status at its discretion';
+    if (disclosure === 'confidential') return 'Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor\'s General Terms and Conditions';
     return disclosure;
   };
 
-  // Format remains handling display
+  // Format remains handling display - using simple codes
   const formatRemainsHandling = (handling) => {
     if (!handling) return styleConfig.display.item.empty;
-    if (handling === 'Return') return 'Return to designated recipient';
-    if (handling === 'Donate') return 'Donate to medical research';
-    if (handling === 'Cremate') return 'Cremate and dispose';
+    if (handling === 'return') return 'Return to designated recipient';
+    if (handling === 'donate') return 'Donate to medical research or dispose at Alcor\'s discretion';
     return handling;
   };
 
@@ -78,7 +78,7 @@ const CryoArrangementsSection = ({
               label="Non-Cryopreserved Remains Handling" 
               value={formatRemainsHandling(cryoArrangements.remainsHandling)} 
             />
-            {cryoArrangements.remainsHandling === 'Return' && (
+            {cryoArrangements.remainsHandling === 'return' && (
               <>
                 <InfoDisplay 
                   label="Recipient Name" 
@@ -104,7 +104,12 @@ const CryoArrangementsSection = ({
           <div className={styleConfig.form.fieldSpacing}>
             {/* Method - Display Only */}
             <div>
-              <label className={styleConfig.form.label}>Method of Cryopreservation</label>
+              <label className={styleConfig.form.label}>
+                Method of Cryopreservation
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  (Contact Alcor staff to make changes)
+                </span>
+              </label>
               <div className={styleConfig.display.readOnly.wrapper}>
                 {formatMethod(cryoArrangements.method)}
               </div>
@@ -112,7 +117,12 @@ const CryoArrangementsSection = ({
 
             {/* CMS Waiver - Display Only */}
             <div>
-              <label className={styleConfig.form.label}>CMS Fee Waiver</label>
+              <label className={styleConfig.form.label}>
+                CMS Fee Waiver
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  (Contact Alcor staff to make changes)
+                </span>
+              </label>
               <div className={styleConfig.display.readOnly.wrapper}>
                 {cryoArrangements.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
               </div>
@@ -125,12 +135,11 @@ const CryoArrangementsSection = ({
               disabled={!editMode.cryoArrangements}
             >
               <option value="">Select...</option>
-              <option value="Return">Return to designated recipient</option>
-              <option value="Donate">Donate to medical research</option>
-              <option value="Cremate">Cremate and dispose</option>
+              <option value="return">Return to designated recipient</option>
+              <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
             </Select>
 
-            {cryoArrangements.remainsHandling === 'Return' && (
+            {cryoArrangements.remainsHandling === 'return' && (
               <div className={`${styleConfig.section.grid.twoColumn} ${styleConfig.form.subSection}`}>
                 <Input
                   label="Recipient Name"
@@ -164,9 +173,8 @@ const CryoArrangementsSection = ({
               disabled={!editMode.cryoArrangements}
             >
               <option value="">Select...</option>
-              <option value="Freely">Alcor is authorized to freely release information</option>
-              <option value="BeforeDeath">Maintain confidentiality prior to legal death</option>
-              <option value="Always">Always maintain confidentiality</option>
+              <option value="freely">I give Alcor permission to freely release my name</option>
+              <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
             </Select>
           </div>
         )}

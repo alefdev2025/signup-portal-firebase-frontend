@@ -52,7 +52,7 @@ const OccupationSection = ({
   };
 
   return (
-    <div className={styleConfig.section.wrapperEnhanced}>
+    <div className="bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0">
       <div className={styleConfig.section.innerPadding}>
         {/* Header with icon */}
         <div className={styleConfig.header.wrapper}>
