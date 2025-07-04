@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+// Global toggle for gradient style
+const USE_RAINBOW_GRADIENT = false; // Set to false for purple-only gradient
+
 // Reusable Mobile Info Card Component
 export const MobileInfoCard = ({
   icon: Icon,
@@ -65,7 +68,9 @@ export const MobileInfoCard = ({
         <div 
           className="px-6 py-8"
           style={isEditMode ? { background: 'white' } : (backgroundColor ? { background: backgroundColor } : {
-            background: 'linear-gradient(135deg, #785683 0%, #162740 30%, #443660 100%)'
+            background: USE_RAINBOW_GRADIENT 
+              ? 'linear-gradient(170deg, #162740 0%, #443660 25%, #74417f 50%, #975d6e 75%, #f1b443 100%)'
+              : 'linear-gradient(135deg, #785683 0%, #162740 30%, #443660 100%)'
           })}
         >
           {children}

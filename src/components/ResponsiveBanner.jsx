@@ -280,7 +280,7 @@ const ResponsiveBanner = ({
       {/* Mobile Banner */}
       <div className="md:hidden">
         <div 
-          className={`text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'py-8' : 'py-8'} relative overflow-hidden`}
+          className={`text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'pt-6 pb-16' : 'pt-6 pb-16'} relative overflow-hidden`}
           style={{
             ...marcellusStyle,
             ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
@@ -289,24 +289,23 @@ const ResponsiveBanner = ({
           {/* Dark overlay for image background */}
           {shouldUseImage && <div style={overlayStyle}></div>}
           
-          {/* Top section with logo and heading */}
-          <div className="flex items-center justify-between mb-4 pt-3" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="flex items-center">
-              <img 
-                src={logo} 
-                alt="Alcor Logo" 
-                className={isWelcomePage && !isLoginPage ? "h-10" : "h-12"}
-              />
-            </div>
-            
-            <div className="flex items-center">
-              <h1 className="flex items-center">
-                <span className="text-xl font-bold">
-                  {displayHeading}
-                </span>
-                {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
-              </h1>
-            </div>
+          {/* Logo positioned absolutely */}
+          <div className="absolute top-6 left-4" style={{ zIndex: 2 }}>
+            <img 
+              src={logo} 
+              alt="Alcor Logo" 
+              className={isWelcomePage && !isLoginPage ? "h-10" : "h-16"}
+            />
+          </div>
+
+          {/* Heading section stays in normal flow */}
+          <div className="flex items-center justify-end pt-8 pr-4" style={{ position: 'relative', zIndex: 2 }}>
+            <h1 className="flex items-center">
+              <span className="text-xl font-bold">
+                {displayHeading}
+              </span>
+              {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
+            </h1>
           </div>
         </div>
       </div>

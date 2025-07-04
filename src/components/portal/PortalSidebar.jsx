@@ -71,6 +71,19 @@ const PortalSidebar = ({
   layoutMode = 'floating' 
 }) => {
   const [expandedItems, setExpandedItems] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Check if mobile on mount and window resize
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -128,10 +141,19 @@ const PortalSidebar = ({
     return activeTab === itemId || activeTab.startsWith(`${itemId}-`);
   };
 
-  // Different styles based on layout mode
-  const sidebarStyles = layoutMode === 'floating' 
-    ? { background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 25%, #6e4376 100%)' : 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)' }
-    : { backgroundColor: USE_NEW_COLORS ? '#1a2744' : '#1a2744' };
+  // Different styles based on layout mode and device
+  const getBackgroundStyle = () => {
+    if (isMobile) {
+      // New mobile gradient using your colors - slightly diagonal
+      return { background: 'linear-gradient(170deg, #1c2644 0%, #3c305b 20%, #74417f 50%, #975d6e 80%, #f1b443 100%)' };
+    } else if (layoutMode === 'floating') {
+      return { background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 25%, #6e4376 100%)' : 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)' };
+    } else {
+      return { backgroundColor: USE_NEW_COLORS ? '#1a2744' : '#1a2744' };
+    }
+  };
+
+  const sidebarStyles = getBackgroundStyle();
 
   // Same width for both modes, but narrower
   const sidebarWidth = 'w-[70vw] md:w-[260px]';
@@ -149,6 +171,23 @@ const PortalSidebar = ({
        right-0 md:left-0 md:right-auto
        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
        md:rounded-r-3xl overflow-hidden`;
+
+  // Get corner mask colors based on device
+  const getCornerMaskColors = () => {
+    if (isMobile) {
+      return {
+        top: 'linear-gradient(180deg, #1c2644 0%, #3c305b 100%)',
+        bottom: 'linear-gradient(180deg, #975d6e 0%, #f1b443 100%)'
+      };
+    } else {
+      return {
+        top: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 100%)' : 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)',
+        bottom: USE_NEW_COLORS ? 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)' : 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
+      };
+    }
+  };
+
+  const cornerMaskColors = getCornerMaskColors();
 
   return (
     <>
@@ -168,7 +207,7 @@ const PortalSidebar = ({
           <div 
             className="absolute top-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
             style={{
-              background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 100%)' : 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)'
+              background: cornerMaskColors.top
             }}
           >
             <div 
@@ -180,7 +219,7 @@ const PortalSidebar = ({
           <div 
             className="absolute bottom-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
             style={{
-              background: USE_NEW_COLORS ? 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)' : 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
+              background: cornerMaskColors.bottom
             }}
           >
             <div 

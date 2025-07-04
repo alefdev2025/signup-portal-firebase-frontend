@@ -1,4 +1,4 @@
-// Simple Fixed LoginPage.jsx - Get backend progress and navigate accordingly
+// LoginPage2.jsx - With intermediate sized form elements
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -221,7 +221,7 @@ const LoginPage = () => {
    <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
      <ResponsiveBanner 
        logo={darkLogo}
-       heading={isContinueSignup ? "Continue Application" : "Member Portal"}
+       heading={isContinueSignup ? "Continue Application" : "Sign In to Member Portal"}
        subText={isContinueSignup ? "Sign in to continue where you left off." : "Access your Alcor membership account."}
        showSteps={false}
        showStar={true}
@@ -245,14 +245,14 @@ const LoginPage = () => {
              )}
              
              <div className="mb-6">
-               <label htmlFor="resetEmail" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
+               <label htmlFor="resetEmail" className="block text-gray-800 text-base font-medium mb-2">Email</label>
                <input 
                  type="email" 
                  id="resetEmail"
                  value={resetEmail}
                  onChange={handleResetEmailChange}
                  placeholder="e.g. john.smith@example.com" 
-                 className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+                 className="w-full px-4 py-3.5 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                  disabled={isSubmittingReset}
                />
              </div>
@@ -262,7 +262,7 @@ const LoginPage = () => {
                  type="submit"
                  disabled={isSubmittingReset}
                  style={{ backgroundColor: "#6f2d74", color: "white" }}
-                 className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                 className="w-full py-3.5 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
                >
                  {isSubmittingReset ? (
                    <>
@@ -281,7 +281,7 @@ const LoginPage = () => {
                  type="button"
                  onClick={handleCancelReset}
                  disabled={isSubmittingReset}
-                 className="w-full bg-white border border-gray-300 text-gray-700 py-4 px-6 rounded-full font-medium text-lg flex items-center justify-center hover:bg-gray-50 disabled:opacity-70"
+                 className="w-full bg-white border border-gray-300 text-gray-700 py-3.5 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-gray-50 disabled:opacity-70"
                >
                  Back to Sign In
                </button>
@@ -290,10 +290,9 @@ const LoginPage = () => {
          ) : (
            // Login Form
            <form onSubmit={handleLogin} className="p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
-              {isContinueSignup ? "Sign in to continue" : "Sign in to your account"}
-            </h2>
-
+             <h2 className="text-2xl font-bold text-gray-800 mb-6">
+               {isContinueSignup ? "Sign in to continue" : "Sign in to your account"}
+             </h2>
              
              {successMessage && (
                <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
@@ -325,7 +324,7 @@ const LoginPage = () => {
              )}
              
              <div className="mb-6">
-               <label htmlFor="email" className="block text-gray-800 text-lg font-medium mb-2">Email</label>
+               <label htmlFor="email" className="block text-gray-800 text-base font-medium mb-2">Email</label>
                <input 
                  type="email" 
                  id="email"
@@ -333,14 +332,14 @@ const LoginPage = () => {
                  value={email}
                  onChange={handleInputChange}
                  placeholder="e.g. john.smith@example.com" 
-                 className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+                 className="w-full px-4 py-3.5 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                  disabled={loading}
                />
              </div>
              
              <div className="mb-8">
                <div className="flex justify-between items-center mb-2">
-                 <label htmlFor="password" className="block text-gray-800 text-lg font-medium">Password</label>
+                 <label htmlFor="password" className="block text-gray-800 text-base font-medium">Password</label>
                  <button 
                    type="button" 
                    onClick={handleShowResetForm}
@@ -356,7 +355,7 @@ const LoginPage = () => {
                  value={password}
                  onChange={handleInputChange}
                  placeholder="Enter your password" 
-                 className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+                 className="w-full px-4 py-3.5 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                  disabled={loading}
                />
              </div>
@@ -366,7 +365,7 @@ const LoginPage = () => {
                  type="submit"
                  disabled={loading}
                  style={{ backgroundColor: "#6f2d74", color: "white" }}
-                 className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                 className="w-full py-3.5 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
                >
                  {loading ? (
                    <>
