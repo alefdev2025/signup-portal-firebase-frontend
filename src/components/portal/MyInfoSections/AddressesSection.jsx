@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
-import styleConfig from '../styleConfig';
+import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
+import styleConfig, { getSectionCheckboxColor } from '../styleConfig2';
 import { cleanAddressData, cleanAddressObject } from '../utils/dataFormatting';
+import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 
 // Melissa API configuration
 const MELISSA_API_KEY = 'AVUaS6bp3WJyyFKHjjwqgj**nSAcwXpxhQ0PC2lXxuDAZ-**';
@@ -32,12 +34,43 @@ const AddressesSection = ({
     mailing: ''
   });
   const [skipValidationFlag, setSkipValidationFlag] = useState(false);
+  
+  // Add state for mobile collapse
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Format address for display
   const formatAddress = (street, city, state, postalCode, country) => {
     const parts = [street, city, state, postalCode, country].filter(Boolean);
     if (parts.length === 0) return styleConfig.display.item.empty;
     return parts.join(', ');
+  };
+  
+  // Mobile preview data
+  const getMobilePreview = () => {
+    const previewParts = [];
+    
+    if (addresses?.homeStreet) {
+      const cityState = [addresses.homeCity, addresses.homeState].filter(Boolean).join(', ');
+      previewParts.push(`Home: ${cityState || 'Address'}`);
+    }
+    
+    if (addresses?.sameAsHome) {
+      previewParts.push('Mailing: Same as home');
+    } else if (addresses?.mailingStreet) {
+      const cityState = [addresses.mailingCity, addresses.mailingState].filter(Boolean).join(', ');
+      previewParts.push(`Mailing: ${cityState || 'Address'}`);
+    }
+    
+    return previewParts.slice(0, 2).join(' • ');
   };
 
   // Validate address with Melissa API
@@ -244,7 +277,7 @@ const AddressesSection = ({
   };
 
   // Clear errors when edit mode changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!editMode.addresses) {
       setValidationErrors({ home: '', mailing: '' });
       setSkipValidationFlag(false);
@@ -414,10 +447,171 @@ const AddressesSection = ({
   };
 
   return (
-    <>
-      <div className="bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0">
-        <div className="px-4 py-6 sm:p-6 md:p-8">
-          {/* Header with icon */}
+    <div className={isMobile ? "" : styleConfig.section.wrapperEnhanced}>
+      {isMobile ? (
+        <MobileInfoCard
+          iconComponent={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          }
+          title="Addresses"
+          preview={getMobilePreview()}
+          subtitle="Your home and mailing addresses. All addresses are validated for accuracy."
+          isEditMode={editMode.addresses}
+        >
+          {/* Display Mode */}
+          {!editMode.addresses ? (
+            <>
+              <div className="space-y-4">
+                <DisplayField 
+                  label="Home Address" 
+                  value={formatAddress(
+                    addresses.homeStreet,
+                    addresses.homeCity,
+                    addresses.homeState,
+                    addresses.homePostalCode,
+                    addresses.homeCountry
+                  )} 
+                />
+                <DisplayField 
+                  label="Mailing Address" 
+                  value={addresses.sameAsHome ? 
+                    'Same as home address' : 
+                    formatAddress(
+                      addresses.mailingStreet,
+                      addresses.mailingCity,
+                      addresses.mailingState,
+                      addresses.mailingPostalCode,
+                      addresses.mailingCountry
+                    )
+                  } 
+                />
+              </div>
+              
+              <ActionButtons 
+                editMode={false}
+                onEdit={() => toggleEditMode && toggleEditMode('addresses')}
+              />
+            </>
+          ) : (
+            /* Edit Mode */
+            <>
+              <div className="space-y-6">
+                {/* Home Address */}
+                <div>
+                  <h4 className="text-white/90 text-sm font-medium mb-3">Home Address</h4>
+                  <div className="space-y-3">
+                    <FormInput
+                      label="Street Address *"
+                      value={addresses.homeStreet || ''}
+                      onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormInput
+                        label="City *"
+                        value={addresses.homeCity || ''}
+                        onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
+                      />
+                      <FormInput
+                        label="State/Province *"
+                        value={addresses.homeState || ''}
+                        onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormInput
+                        label="Zip/Postal Code *"
+                        value={addresses.homePostalCode || ''}
+                        onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
+                      />
+                      <FormInput
+                        label="Country"
+                        value={addresses.homeCountry || 'US'}
+                        onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  {validationErrors.home && (
+                    <p className="mt-2 text-sm text-red-300">{validationErrors.home}</p>
+                  )}
+                </div>
+
+                {/* Mailing Address */}
+                <div>
+                  <label className="flex items-center text-white/90 mb-4">
+                    <input
+                      type="checkbox"
+                      checked={addresses.sameAsHome || false}
+                      onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
+                      className={`w-4 h-4 rounded mr-2 bg-white/10 border border-white/20 checked:bg-${getSectionCheckboxColor('addresses').replace('bg-', '')} checked:border-${getSectionCheckboxColor('addresses').replace('bg-', '')}`}
+                    />
+                    <span className="text-sm">Mailing address is the same as home address</span>
+                  </label>
+                  
+                  {!addresses.sameAsHome && (
+                    <>
+                      <h4 className="text-white/90 text-sm font-medium mb-3">Mailing Address</h4>
+                      <div className="space-y-3">
+                        <FormInput
+                          label="Street Address *"
+                          value={addresses.mailingStreet || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormInput
+                            label="City *"
+                            value={addresses.mailingCity || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
+                          />
+                          <FormInput
+                            label="State/Province *"
+                            value={addresses.mailingState || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormInput
+                            label="Zip/Postal Code *"
+                            value={addresses.mailingPostalCode || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
+                          />
+                          <FormInput
+                            label="Country"
+                            value={addresses.mailingCountry || 'US'}
+                            onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      {validationErrors.mailing && (
+                        <p className="mt-2 text-sm text-red-300">{validationErrors.mailing}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <ActionButtons 
+                editMode={true}
+                onSave={handleSaveAddresses}
+                onCancel={() => cancelEdit && cancelEdit('addresses')}
+                saving={savingSection === 'addresses' || validatingAddress}
+                saveText={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
+                showSaveAnyway={(validationErrors.home || validationErrors.mailing) ? true : false}
+                onSaveAnyway={handleSaveAnyway}
+              />
+            </>
+          )}
+        </MobileInfoCard>
+      ) : (
+        /* Desktop view */
+        <div className={styleConfig.section.innerPadding}>
+          {/* Desktop Header */}
           <div className={styleConfig.header.wrapper}>
             <div className={styleConfig.sectionIcons.addresses}>
               <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -433,6 +627,7 @@ const AddressesSection = ({
             </div>
           </div>
 
+          {/* Desktop Content */}
           {/* Display Mode */}
           {!editMode.addresses ? (
             <dl className={styleConfig.display.dl.wrapperSingle}>
@@ -572,46 +767,42 @@ const AddressesSection = ({
             </>
           )}
           
-          <ButtonGroup>
-            {editMode.addresses ? (
-              <>
-                <Button
-                  variant="tertiary"
-                  onClick={() => cancelEdit('addresses')}
-                  disabled={validatingAddress || savingSection === 'addresses'}
-                >
-                  Cancel
-                </Button>
+          <div className="flex justify-end mt-6">
+            {editMode?.addresses ? (
+              <div className="flex">
+                <WhiteButton
+                  text="Cancel"
+                  onClick={() => cancelEdit && cancelEdit('addresses')}
+                  className="scale-75 -mr-8"
+                  spinStar={false}
+                />
                 {(validationErrors.home || validationErrors.mailing) && (
-                  <Button
-                    variant="secondary"
+                  <WhiteButton
+                    text="Save Anyway"
                     onClick={handleSaveAnyway}
-                    disabled={validatingAddress || savingSection === 'addresses'}
-                  >
-                    Save Anyway
-                  </Button>
+                    className="scale-75 -mr-8"
+                    spinStar={false}
+                  />
                 )}
-                <Button
-                  variant="primary"
+                <PurpleButton
+                  text={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
                   onClick={handleSaveAddresses}
-                  loading={savingSection === 'addresses' || validatingAddress}
-                  disabled={savingSection === 'addresses' || validatingAddress}
-                >
-                  {validatingAddress ? 'Validating...' : 'Save'}
-                </Button>
-              </>
+                  className="scale-75"
+                  spinStar={false}
+                />
+              </div>
             ) : (
-              <Button
-                variant="secondary"
-                onClick={() => toggleEditMode('addresses')}
-              >
-                Edit
-              </Button>
+              <RainbowButton
+                text="Edit"
+                onClick={() => toggleEditMode && toggleEditMode('addresses')}
+                className="scale-75"
+                spinStar={true}
+              />
             )}
-          </ButtonGroup>
+          </div>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

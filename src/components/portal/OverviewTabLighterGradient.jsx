@@ -312,24 +312,28 @@ const OverviewTab = ({ setActiveTab }) => {
           }}
         />
         
-{/* Pink/Purple gradient overlay */}
-<div 
-  className="absolute inset-0"
-  style={{
-    background: `
-      radial-gradient(
-        ellipse at bottom right,
-        rgba(255, 105, 180, 0.6) 0%,    /* Hot pink */
-        rgba(219, 112, 147, 0.5) 15%,   /* Pale violet red */
-        rgba(186, 85, 211, 0.4) 30%,    /* Medium orchid */
-        rgba(138, 43, 226, 0.2) 45%,    /* Blue violet */
-        transparent 60%
-      )
-    `
-  }}
-/>
+        {/* UPDATED: Dark navy overlay in top left, fading to colors and transparency in bottom right */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(
+                135deg,
+                rgba(10, 25, 47, 1.0) 0%,          /* dark navy - completely solid in top left */
+                rgba(10, 25, 47, 1.0) 15%,         /* still dark navy */
+                rgba(15, 30, 55, 0.98) 25%,        /* very slightly lighter */
+                rgba(25, 40, 70, 0.90) 40%,        /* gradually lighter */
+                rgba(100, 80, 150, 0.70) 55%,      /* purple transition */
+                rgba(255, 200, 150, 0.50) 70%,     /* peachy transition */
+                rgba(255, 183, 0, 0.35) 80%,       /* orange - more transparent */
+                rgba(255, 234, 0, 0.20) 90%,       /* golden yellow */
+                transparent 100%                    /* fully transparent in corner */
+              )
+            `
+          }}
+        />
         
-        {/* Original gradient overlay that becomes transparent towards bottom right */}
+        {/* Original gradient overlay - MUCH LIGHTER to let white show through */}
         <div 
           className="absolute inset-0"
           style={{
@@ -337,17 +341,11 @@ const OverviewTab = ({ setActiveTab }) => {
               radial-gradient(
                 ellipse at bottom right,
                 transparent 0%,
-                rgba(10, 22, 40, 0.3) 20%,
-                rgba(10, 22, 40, 0.7) 40%,
-                rgba(10, 22, 40, 0.9) 60%,
-                rgba(10, 22, 40, 0.95) 80%,
-                rgba(10, 22, 40, 1) 100%
-              ),
-              linear-gradient(180deg, 
-                #0a1628 0%, 
-                #12243c 25%, 
-                rgba(110, 67, 118, 0.9) 70%,
-                rgba(110, 67, 118, 0.4) 100%
+                rgba(10, 22, 40, 0.05) 20%,
+                rgba(10, 22, 40, 0.10) 40%,
+                rgba(10, 22, 40, 0.15) 60%,
+                rgba(10, 22, 40, 0.20) 80%,
+                rgba(10, 22, 40, 0.25) 100%
               )
             `,
             mixBlendMode: 'multiply'

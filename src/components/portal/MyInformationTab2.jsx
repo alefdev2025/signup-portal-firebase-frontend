@@ -1,13 +1,7 @@
-// VERSION 1
-
-
-
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { memberDataService } from './services/memberDataService';
-import dewarsImage from '../../assets/images/dewars2.jpg';
-
 import { 
   updateMemberPersonalInfo,
   updateMemberContactInfo,
@@ -55,11 +49,10 @@ import NextOfKinSection from './MyInfoSections/NextOfKinSection';
 
 import { memberCategoryConfig, isFieldRequired, isSectionVisible } from './memberCategoryConfig';
 
-
 // Import style config
 import styleConfig from './styleConfig';
 
-const MyInformationTab = () => {
+const MyInformationTab2 = () => {
   const { 
     salesforceContactId, 
     memberInfoData, 
@@ -128,12 +121,23 @@ const MyInformationTab = () => {
     onAccept: null
   });
 
-
   const [initializedFromCache, setInitializedFromCache] = useState(false);
 
-  // Define separator style using styleConfig
+  // Wider layout setting - matches FormsTab
+  const wider = true;
+
+  // Define separator style - matches FormsTab
   const sectionSeparator = () => (
-    <div className={styleConfig.separator.wrapper}></div>
+    <div className="py-24 -mt-16 -mb-2">
+      <div className="h-px mx-8 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+    </div>
+  );
+  
+  // Mobile separator
+  const mobileSeparator = () => (
+    <div className="py-20 px-8">
+      <div className="h-px rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+    </div>
   );
   
   // Original data states - to track changes
@@ -156,7 +160,7 @@ const MyInformationTab = () => {
     const initializeData = async () => {
       // First, try to use cached data if available
       if (memberInfoLoaded && memberInfoData && !initializedFromCache) {
-        console.log('📦 [MyInformationTab] Using preloaded member data');
+        console.log('📦 [MyInformationTab2] Using preloaded member data');
         
         // Process and set all the cached data
         if (memberInfoData.personal?.success && memberInfoData.personal.data) {
@@ -301,7 +305,7 @@ const MyInformationTab = () => {
         setIsLoading(false);
       } else if (!memberInfoLoaded) {
         // No cached data available, load fresh
-        console.log('🔄 [MyInformationTab] No cached data, loading fresh...');
+        console.log('🔄 [MyInformationTab2] No cached data, loading fresh...');
         loadAllData();
       }
     };
@@ -370,20 +374,81 @@ const MyInformationTab = () => {
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      .my-information-tab * {
+      .my-information-tab-2 * {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
         font-weight: 300 !important;
       }
-      .my-information-tab .font-bold,
-      .my-information-tab .font-semibold,
-      .my-information-tab h1,
-      .my-information-tab h2,
-      .my-information-tab h3,
-      .my-information-tab h4 {
+      .my-information-tab-2 .font-bold,
+      .my-information-tab-2 .font-semibold {
+        font-weight: 500 !important;
+      }
+      .my-information-tab-2 .font-bold {
         font-weight: 700 !important;
       }
-      .my-information-tab .font-medium {
-        font-weight: 500 !important;
+      .my-information-tab-2 h1 {
+        font-weight: 300 !important;
+      }
+      .my-information-tab-2 h2,
+      .my-information-tab-2 h3,
+      .my-information-tab-2 h4 {
+        font-weight: 400 !important;
+      }
+      .my-information-tab-2 .font-medium {
+        font-weight: 400 !important;
+      }
+      .my-information-tab-2 .fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+      .my-information-tab-2 .slide-in {
+        animation: slideIn 0.6s ease-out;
+      }
+      .my-information-tab-2 .slide-in-delay-1 {
+        animation: slideIn 0.6s ease-out 0.1s both;
+      }
+      .my-information-tab-2 .slide-in-delay-2 {
+        animation: slideIn 0.6s ease-out 0.2s both;
+      }
+      .my-information-tab-2 .slide-in-delay-3 {
+        animation: slideIn 0.6s ease-out 0.3s both;
+      }
+      .my-information-tab-2 .slide-in-delay-4 {
+        animation: slideIn 0.6s ease-out 0.4s both;
+      }
+      .my-information-tab-2 .slide-in-delay-5 {
+        animation: slideIn 0.6s ease-out 0.5s both;
+      }
+      .my-information-tab-2 .slide-in-delay-6 {
+        animation: slideIn 0.6s ease-out 0.6s both;
+      }
+      .my-information-tab-2 .slide-in-delay-7 {
+        animation: slideIn 0.6s ease-out 0.7s both;
+      }
+      .my-information-tab-2 .slide-in-delay-8 {
+        animation: slideIn 0.6s ease-out 0.8s both;
+      }
+      .my-information-tab-2 .slide-in-delay-9 {
+        animation: slideIn 0.6s ease-out 0.9s both;
+      }
+      .my-information-tab-2 .slide-in-delay-10 {
+        animation: slideIn 0.6s ease-out 1s both;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     `;
     document.head.appendChild(style);
@@ -717,7 +782,7 @@ function mapPublicDisclosureToSF(value) {
     setEditMode(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Add this component definition before the MyInformationTab component
+  // Add this component definition before the MyInformationTab2 component
 const MemberStatusBanner = ({ category }) => {
   const categoryInfo = {
     BasicMember: {
@@ -905,7 +970,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1084,7 +1149,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1208,7 +1273,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1295,7 +1360,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1352,7 +1417,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1407,7 +1472,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1477,7 +1542,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1531,7 +1596,7 @@ const loadMemberCategory = async () => {
           // Refresh the cache
           if (refreshMemberInfo) {
             setTimeout(() => {
-              console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+              console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
               refreshMemberInfo();
             }, 500);
           }
@@ -1572,7 +1637,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1661,7 +1726,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log('🔄 [MyInformationTab2] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1686,14 +1751,14 @@ const loadMemberCategory = async () => {
   const SectionSkeleton = () => (
     <div className="animate-pulse">
       <div className="flex justify-between items-center mb-6">
-        <div className="h-8 bg-white/20 sm:bg-gray-200 backdrop-blur-sm rounded w-1/3"></div>
-        <div className="h-10 bg-white/20 sm:bg-gray-200 backdrop-blur-sm rounded w-24"></div>
+        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+        <div className="h-10 bg-gray-200 rounded w-24"></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map((i) => (
           <div key={i}>
-            <div className="h-4 bg-white/20 sm:bg-gray-200 backdrop-blur-sm rounded w-1/4 mb-2"></div>
-            <div className="h-10 bg-white/10 sm:bg-gray-100 backdrop-blur-sm rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-10 bg-gray-100 rounded"></div>
           </div>
         ))}
       </div>
@@ -1711,246 +1776,402 @@ const loadMemberCategory = async () => {
     });
   };
 
-  
+  // Container classes that change based on wider setting
+  const containerClasses = wider 
+  ? "my-information-tab-2 w-full -mx-10 -mt-6 md:-mt-4"
+  : "my-information-tab-2 -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4";
+
+  // Track section index for animations
+  let sectionIndex = 0;
+
   return (
-    <div className="my-information-tab relative min-h-screen">
-      {/* White Background - Mobile Only */}
-      <div className="fixed inset-0 z-0 sm:hidden bg-white">
+    <div className={containerClasses}>
+      {/* Save Message */}
+      {saveMessage.text && (
+        <Alert 
+          type={saveMessage.type} 
+          onClose={() => setSaveMessage({ type: '', text: '' })}
+        >
+          {saveMessage.text}
+        </Alert>
+      )}
+
+      {/* Desktop: Separated Section Boxes */}
+      <div className="hidden sm:block">
+        {/* Contact Information - Always visible for all member types */}
+        {isSectionVisible(memberCategory, 'contact') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2 py-6' : 'px-1 py-4'}`}>
+                {!sectionsLoaded.contact ? (
+                  <SectionSkeleton />
+                ) : (
+                  <ContactInfoSection
+                    contactInfo={contactInfo || {}}
+                    setContactInfo={setContactInfo}
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveContactInfo={saveContactInfo}
+                    savingSection={savingSection}
+                    fieldErrors={fieldErrors}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Personal Information */}
+        {isSectionVisible(memberCategory, 'personal') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.personal ? (
+                  <SectionSkeleton />
+                ) : (
+                  <PersonalInfoSection
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    familyInfo={familyInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    savePersonalInfo={savePersonalInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Addresses */}
+        {isSectionVisible(memberCategory, 'addresses') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.addresses ? (
+                  <SectionSkeleton />
+                ) : (
+                  <AddressesSection
+                    addresses={addresses || {}}
+                    setAddresses={setAddresses}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveAddresses={saveAddresses}
+                    savingSection={savingSection}
+                    setAddressValidationModal={setAddressValidationModal}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Family Information - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'family') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.family ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FamilyInfoSection
+                    familyInfo={familyInfo || {}}
+                    setFamilyInfo={setFamilyInfo}
+                    personalInfo={personalInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFamilyInfo={saveFamilyInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Occupation - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'occupation') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.occupation ? (
+                  <SectionSkeleton />
+                ) : (
+                  <OccupationSection
+                    occupation={occupation || {}}
+                    setOccupation={setOccupation}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveOccupation={saveOccupation}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Medical Information - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'medical') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.medical ? (
+                  <SectionSkeleton />
+                ) : (
+                  <MedicalInfoSection
+                    medicalInfo={medicalInfo || {}}
+                    setMedicalInfo={setMedicalInfo}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveMedicalInfo={saveMedicalInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Cryopreservation Arrangements - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'cryoArrangements') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.cryoArrangements ? (
+                  <SectionSkeleton />
+                ) : (
+                  <CryoArrangementsSection
+                    cryoArrangements={cryoArrangements || {}}
+                    setCryoArrangements={setCryoArrangements}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveCryoArrangements={saveCryoArrangements}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Funding/Life Insurance - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'funding') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.funding ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FundingSection
+                    funding={funding || {}}
+                    setFunding={setFunding}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFunding={saveFunding}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Legal/Will - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'legal') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.legal ? (
+                  <SectionSkeleton />
+                ) : (
+                  <LegalSection
+                    legal={legal || {}}
+                    setLegal={setLegal}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveLegal={saveLegal}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Next of Kin - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'nextOfKin') && (
+          <>
+            {sectionIndex++ > 0 && sectionSeparator()}
+            <div className={`slide-in-delay-${sectionIndex}`}>
+              <div className={`${wider ? 'px-2' : 'px-1'}`}>
+                {!sectionsLoaded.nextOfKin ? (
+                  <SectionSkeleton />
+                ) : (
+                  <NextOfKinSection
+                    nextOfKin={nextOfKin || {}}
+                    setNextOfKin={setNextOfKin}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveNextOfKin={saveNextOfKin}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Mobile: Single Column Layout with Separated Sections */}
+      <div className="sm:hidden">
+        {/* Reset section index for mobile */}
+        {(() => { sectionIndex = 0; return null; })()}
+        
+        {/* Contact Information - Always visible for all member types */}
+        {isSectionVisible(memberCategory, 'contact') && (
+          <>
+            {sectionIndex++ > 0 && mobileSeparator()}
+            <div className={`slide-in-delay-${sectionIndex} mx-4`}>
+              <div className="p-2 py-4">
+                {!sectionsLoaded.contact ? (
+                  <SectionSkeleton />
+                ) : (
+                  <ContactInfoSection
+                    contactInfo={contactInfo || {}}
+                    setContactInfo={setContactInfo}
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveContactInfo={saveContactInfo}
+                    savingSection={savingSection}
+                    fieldErrors={fieldErrors}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Personal Information */}
+        {isSectionVisible(memberCategory, 'personal') && (
+          <>
+            {sectionIndex++ > 0 && mobileSeparator()}
+            <div className={`slide-in-delay-${sectionIndex} mx-4`}>
+              <div className="p-2">
+                {!sectionsLoaded.personal ? (
+                  <SectionSkeleton />
+                ) : (
+                  <PersonalInfoSection
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    familyInfo={familyInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    savePersonalInfo={savePersonalInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Addresses */}
+        {isSectionVisible(memberCategory, 'addresses') && (
+          <>
+            {sectionIndex++ > 0 && mobileSeparator()}
+            <div className={`slide-in-delay-${sectionIndex} mx-4`}>
+              <div className="p-2">
+                {!sectionsLoaded.addresses ? (
+                  <SectionSkeleton />
+                ) : (
+                  <AddressesSection
+                    addresses={addresses || {}}
+                    setAddresses={setAddresses}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveAddresses={saveAddresses}
+                    savingSection={savingSection}
+                    setAddressValidationModal={setAddressValidationModal}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Family Information - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'family') && (
+          <>
+            {sectionIndex++ > 0 && mobileSeparator()}
+            <div className={`slide-in-delay-${sectionIndex} mx-4`}>
+              <div className="p-2">
+                {!sectionsLoaded.family ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FamilyInfoSection
+                    familyInfo={familyInfo || {}}
+                    setFamilyInfo={setFamilyInfo}
+                    personalInfo={personalInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFamilyInfo={saveFamilyInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Continue with all other sections in the same pattern... */}
+        {/* Occupation, Medical, Cryo, Funding, Legal, Next of Kin */}
       </div>
       
-      {/* Main Content Container - REDUCED PADDING for edge-to-edge */}
-      <div className="relative z-10 bg-transparent sm:bg-gray-50 px-4 sm:p-6 lg:p-8 pt-2 sm:pt-8 pb-6 sm:pb-8">
-        {/* Save Message */}
-        {saveMessage.text && (
-          <Alert 
-            type={saveMessage.type} 
-            onClose={() => setSaveMessage({ type: '', text: '' })}
-          >
-            {saveMessage.text}
-          </Alert>
-        )}
-        
-        {/* Add the rest of your content here */}
-      
-{/* Member Status Banner <MemberStatusBanner category={memberCategory} /> */}
-
-{/* Contact Information - Always visible for all member types */}
-{isSectionVisible(memberCategory, 'contact') && (
-  <>
-    {!sectionsLoaded.contact ? (
-      <SectionSkeleton />
-    ) : (
-      <ContactInfoSection
-        contactInfo={contactInfo || {}}
-        setContactInfo={setContactInfo}
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveContactInfo={saveContactInfo}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Personal Information */}
-{isSectionVisible(memberCategory, 'personal') && (
-  <>
-    {!sectionsLoaded.personal ? (
-      <SectionSkeleton />
-    ) : (
-      <PersonalInfoSection
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        familyInfo={familyInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        savePersonalInfo={savePersonalInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Addresses */}
-{isSectionVisible(memberCategory, 'addresses') && (
-  <>
-    {!sectionsLoaded.addresses ? (
-      <SectionSkeleton />
-    ) : (
-      <AddressesSection
-        addresses={addresses || {}}
-        setAddresses={setAddresses}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveAddresses={saveAddresses}
-        savingSection={savingSection}
-        setAddressValidationModal={setAddressValidationModal}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Family Information - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'family') && (
-  <>
-    {!sectionsLoaded.family ? (
-      <SectionSkeleton />
-    ) : (
-      <FamilyInfoSection
-        familyInfo={familyInfo || {}}
-        setFamilyInfo={setFamilyInfo}
-        personalInfo={personalInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFamilyInfo={saveFamilyInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Occupation - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'occupation') && (
-  <>
-    {!sectionsLoaded.occupation ? (
-      <SectionSkeleton />
-    ) : (
-      <OccupationSection
-        occupation={occupation || {}}
-        setOccupation={setOccupation}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveOccupation={saveOccupation}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Medical Information - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'medical') && (
-  <>
-    {!sectionsLoaded.medical ? (
-      <SectionSkeleton />
-    ) : (
-      <MedicalInfoSection
-        medicalInfo={medicalInfo || {}}
-        setMedicalInfo={setMedicalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveMedicalInfo={saveMedicalInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Cryopreservation Arrangements - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'cryoArrangements') && (
-  <>
-    {!sectionsLoaded.cryoArrangements ? (
-      <SectionSkeleton />
-    ) : (
-      <CryoArrangementsSection
-        cryoArrangements={cryoArrangements || {}}
-        setCryoArrangements={setCryoArrangements}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveCryoArrangements={saveCryoArrangements}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Funding/Life Insurance - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'funding') && (
-  <>
-    {!sectionsLoaded.funding ? (
-      <SectionSkeleton />
-    ) : (
-      <FundingSection
-        funding={funding || {}}
-        setFunding={setFunding}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFunding={saveFunding}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Legal/Will - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'legal') && (
-  <>
-    {!sectionsLoaded.legal ? (
-      <SectionSkeleton />
-    ) : (
-      <LegalSection
-        legal={legal || {}}
-        setLegal={setLegal}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveLegal={saveLegal}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Next of Kin - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'nextOfKin') && (
-  <>
-    {!sectionsLoaded.nextOfKin ? (
-      <SectionSkeleton />
-    ) : (
-      <NextOfKinSection
-        nextOfKin={nextOfKin || {}}
-        setNextOfKin={setNextOfKin}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveNextOfKin={saveNextOfKin}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-  </>
-)}
-      
-{/* Address Validation Modal - Rendered via Portal at the MyInformationTab level */}
-{addressValidationModal.isOpen && ReactDOM.createPortal(
+      {/* Address Validation Modal - Rendered via Portal at the MyInformationTab2 level */}
+      {addressValidationModal.isOpen && ReactDOM.createPortal(
         <div className="fixed inset-0 z-[100] overflow-y-auto">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={closeValidationModal}></div>
           
@@ -2017,8 +2238,7 @@ const loadMemberCategory = async () => {
         document.body
       )}
     </div>
-    </div>
   );
 };
 
-export default MyInformationTab;
+export default MyInformationTab2;

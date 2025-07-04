@@ -5,10 +5,7 @@ import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
 import formsHeaderImage from '../../assets/images/forms-image.jpg';
 
-const FormsTab = () => {
-  // Hardcoded wider setting - set to true to make desktop content 20% wider
-  const wider = false;
-  
+const FormsTab2 = () => {
   const [downloading, setDownloading] = useState({});
 
   // Add Helvetica font
@@ -163,13 +160,8 @@ const FormsTab = () => {
     }
   ];
 
-  // Container classes that change based on wider setting
-  const containerClasses = wider 
-    ? "forms-tab w-full -mx-10"
-    : "forms-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4";
-
   return (
-    <div className={containerClasses}>
+    <div className="forms-tab w-full -mx-10">
       {/* Mobile: Single Column Layout */}
       <div className="sm:hidden">
         {/* Header */}
@@ -279,7 +271,7 @@ const FormsTab = () => {
               )}  
               <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] slide-in-delay-${categoryIndex + 1}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               {/* Category Header with Image */}
-              <div className={`${wider ? 'p-10' : 'p-8'} border-b border-gray-100`}>
+              <div className="p-10 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                   {/* Text content - left side */}
                   <div className="flex-1">
@@ -303,14 +295,14 @@ const FormsTab = () => {
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
                     </div>
-                    <p className={`text-gray-700 text-sm leading-relaxed font-normal ${wider ? 'max-w-3xl' : 'max-w-xl'}`}>
+                    <p className="text-gray-700 text-sm leading-relaxed font-normal max-w-3xl">
                       {category.description}
                     </p>
                   </div>
                   
                   {/* Category Image - right side (if you have images for each category) */}
                   {categoryIndex === 0 && formsHeaderImage && (
-                    <div className={`relative w-full ${wider ? 'lg:w-96' : 'lg:w-80'} h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0`}>
+                    <div className="relative w-full lg:w-96 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
                       <img 
                         src={formsHeaderImage} 
                         alt="Forms"
@@ -332,7 +324,7 @@ const FormsTab = () => {
               </div>
 
               {/* Forms Grid */}
-              <div className={`${wider ? 'p-8' : 'p-6'}`}>
+              <div className="p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
                   {category.forms.map((form, formIndex) => (
                     <div
@@ -381,4 +373,4 @@ const FormsTab = () => {
   );
 };
 
-export default FormsTab;
+export default FormsTab2;
