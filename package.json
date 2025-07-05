@@ -2,12 +2,14 @@
   "name": "alcor-signup-portal",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -28,17 +30,57 @@
     "recordrtc": "^5.6.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
     "@eslint/js": "^9.25.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
+    "babel-jest": "^30.0.4",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "jest": "^30.0.4",
+    "jest-environment-jsdom": "^30.0.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.1",
     "vite": "^6.3.5"
-  }
+  },
+    "jest": {
+      "testEnvironment": "jsdom",
+      "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+      "moduleNameMapper": {
+        "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+        "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
+      },
+      "transform": {
+        "^.+\\.(js|jsx|mjs)$": "babel-jest"
+      },
+      "transformIgnorePatterns": [
+        "node_modules/(?!(.*\\.mjs$))"
+      ],
+      "collectCoverageFrom": [
+        "src/**/*.{js,jsx}",
+        "!src/index.js",
+        "!src/serviceWorker.js"
+      ],
+      "coverageThreshold": {
+        "global": {
+          "branches": 70,
+          "functions": 70,
+          "lines": 70,
+          "statements": 70
+        }
+      },
+      "testMatch": [
+        "<rootDir>/src/**/__tests__/**/*.{js,jsx}",
+        "<rootDir>/src/**/*.{spec,test}.{js,jsx}"
+      ]
+    }
 }

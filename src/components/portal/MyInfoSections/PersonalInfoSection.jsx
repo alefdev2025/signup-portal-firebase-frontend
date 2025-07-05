@@ -4,7 +4,7 @@ import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle'
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 
-// Multi-select dropdown component
+// Multi-select dropdown component for desktop
 const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -71,22 +71,10 @@ const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = 
   );
 };
 
-// Mobile Multi-select component
+// Mobile Multi-select component - Simple checkbox list
 const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
+  const [showAll, setShowAll] = useState(false);
+  
   const toggleOption = (option) => {
     if (disabled) return;
     
@@ -97,47 +85,49 @@ const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = fa
     onChange(newValue);
   };
 
-  const displayValue = value.length > 0 
-    ? value.join(', ') 
-    : 'Select...';
+  // For Race, show all options. For Citizenship, show limited options unless expanded
+  const isRace = label.includes('Race');
+  const displayOptions = isRace || showAll ? options : options.slice(0, 5);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div>
       <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
-      <div
-        className={`w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-      >
-        <span className={`${value.length === 0 ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
-        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
+      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto">
+        {displayOptions.map((option) => (
+          <label
+            key={option}
+            className="flex items-center py-1.5 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={value.includes(option)}
+              onChange={() => toggleOption(option)}
+              disabled={disabled}
+              className="mr-2.5 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20"
+            />
+            <span className="text-sm text-gray-700">{option}</span>
+          </label>
+        ))}
+        {!isRace && options.length > 5 && !showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="text-sm text-[#162740] mt-2 underline"
+          >
+            Show all {options.length} options
+          </button>
+        )}
       </div>
-      
-      {isOpen && !disabled && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(option)}
-                onChange={() => toggleOption(option)}
-                className="mr-2 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20 accent-[#162740]"
-              />
-              <span className="ml-2 text-gray-700">{option}</span>
-            </label>
-          ))}
-        </div>
+      {value.length > 0 && (
+        <p className="text-xs text-gray-600 mt-1">
+          {value.length} selected
+        </p>
       )}
     </div>
   );
 };
 
-// Single-select dropdown component (like multi-select but for single selection)
+// Single-select dropdown component for desktop
 const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled = false, placeholder = 'Select...' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -208,11 +198,32 @@ const PersonalInfoSection = ({
   toggleEditMode, 
   cancelEdit, 
   savePersonalInfo, 
-  savingSection 
+  savingSection,
+  memberCategory 
 }) => {
-  // Add state for mobile collapse
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  // Add state for mobile
   const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    console.log('🔍 === PersonalInfoSection RENDER ===');
+    console.log('📋 Props received:', {
+      personalInfo: personalInfo,
+      ethnicity: personalInfo?.ethnicity,
+      citizenship: personalInfo?.citizenship,
+      maritalStatus: personalInfo?.maritalStatus,
+      hasAllData: !!(personalInfo?.ethnicity || personalInfo?.citizenship || personalInfo?.maritalStatus)
+    });
+    console.log('🔍 === END PersonalInfoSection ===\n');
+  }, [personalInfo]);
+  
+  // Debug ethnicity specifically in edit mode
+  useEffect(() => {
+    if (editMode.personal && isMobile) {
+      console.log('📱 Mobile Edit Mode - Ethnicity value:', personalInfo?.ethnicity);
+      console.log('📱 Type of ethnicity:', typeof personalInfo?.ethnicity);
+      console.log('📱 Exact value with quotes:', `"${personalInfo?.ethnicity}"`);
+    }
+  }, [editMode.personal, personalInfo?.ethnicity, isMobile]);
   
   // Detect mobile
   useEffect(() => {
@@ -260,44 +271,236 @@ const PersonalInfoSection = ({
     return selections.join(', ');
   };
 
-  // Race options
+  // Race options - Updated to match Salesforce picklist
   const raceOptions = [
     "American Indian or Alaska Native",
     "Asian",
     "Black or African American",
+    "Hispanic or Latino",
     "Native Hawaiian or Other Pacific Islander",
-    "White",
+    "White or Caucasian",
+    "Multiracial",
+    "Middle Eastern",
+    "Prefer Not to Say",
     "Other"
   ];
 
   // Citizenship options
   const citizenshipOptions = [
-    "United States",
-    "Canada",
-    "United Kingdom",
+    "United States of America",
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
     "Australia",
-    "Germany",
-    "France",
-    "Japan",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Côte d'Ivoire",
+    "Cabo Verde",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Central African Republic",
+    "Chad",
+    "Chile",
     "China",
+    "Colombia",
+    "Comoros",
+    "Congo (Congo-Brazzaville)",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czechia (Czech Republic)",
+    "Democratic Republic of the Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini (fmr. \"Swaziland\")",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Holy See",
+    "Honduras",
+    "Hungary",
+    "Iceland",
     "India",
-    "Other"
-  ];
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar (formerly Burma)",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine State",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe"
+  ];  
 
   // Ethnicity options
   const ethnicityOptions = [
-    { value: "", label: "Select..." },
     { value: "Hispanic or Latino", label: "Hispanic or Latino" },
     { value: "Not Hispanic or Latino", label: "Not Hispanic or Latino" }
   ];
 
-  // Marital Status options
+  // Marital Status options - Updated based on Salesforce picklist values
   const maritalStatusOptions = [
     { value: "", label: "Select..." },
     { value: "Single", label: "Single" },
     { value: "Married", label: "Married" },
     { value: "Divorced", label: "Divorced" },
-    { value: "Widowed", label: "Widowed" }
+    { value: "Separated", label: "Separated" },
+    { value: "Widowed", label: "Widowed" },  // This will be mapped to "Widow" in backend
+    { value: "Widower", label: "Widower" },
+    { value: "Domestic Partner", label: "Domestic Partner" },
+    { value: "Significant Other", label: "Significant Other" }
   ];
 
   // Map citizenship values for display
@@ -344,6 +547,7 @@ const PersonalInfoSection = ({
           preview={getMobilePreview()}
           subtitle="Additional personal details for your member file."
           isEditMode={editMode.personal}
+          className="overflow-hidden"
         >
           {/* Display Mode */}
           {!editMode.personal ? (
@@ -376,80 +580,70 @@ const PersonalInfoSection = ({
             </>
           ) : (
             /* Edit Mode */
-            <>
-              <div className="space-y-4">
-                <FormInput
-                  label="Birth Name"
-                  value={personalInfo.birthName || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
-                  placeholder="Same as current"
-                />
-                
-                <FormInput
-                  label="SSN/Government ID Number"
-                  value={personalInfo.ssn || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
-                  placeholder="XXX-XX-XXXX"
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormSelect
-                    label="Gender *"
-                    value={personalInfo.gender || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
-                  >
-                    <option value="">Select...</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </FormSelect>
-                  
-                  <FormSelect
-                    label="Marital Status"
-                    value={personalInfo.maritalStatus || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
-                  >
-                    <option value="">Select...</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Divorced">Divorced</option>
-                    <option value="Widowed">Widowed</option>
-                  </FormSelect>
-                </div>
-                
-                <MobileMultiSelect
-                  label="Race"
-                  options={raceOptions}
-                  value={personalInfo.race || []}
-                  onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
-                />
-                
-                <FormSelect
-                  label="Ethnicity"
-                  value={personalInfo.ethnicity || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
-                >
-                  <option value="">Select...</option>
-                  <option value="Hispanic or Latino">Hispanic or Latino</option>
-                  <option value="Not Hispanic or Latino">Not Hispanic or Latino</option>
-                </FormSelect>
-                
-                <FormInput
-                  label="Place of Birth"
-                  value={personalInfo.placeOfBirth || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
-                />
-                
-                <MobileMultiSelect
-                  label="Citizenship"
-                  options={citizenshipOptions}
-                  value={mappedCitizenshipValue}
-                  onChange={(selected) => {
-                    const backendValues = selected.map(mapCitizenshipToBackend);
-                    setPersonalInfo({...personalInfo, citizenship: backendValues});
-                  }}
-                />
-              </div>
+            <div className="w-full overflow-x-hidden">
+              <FormInput
+                label="Birth Name"
+                value={personalInfo.birthName || ''}
+                onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
+                placeholder="Same as current"
+              />
+              
+              <FormSelect
+                label="Gender *"
+                value={personalInfo.gender || ''}
+                onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </FormSelect>
+              
+              <FormSelect
+                label="Marital Status"
+                value={personalInfo.maritalStatus || ''}
+                onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
+              >
+                <option value="">Select...</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Separated">Separated</option>
+                <option value="Widowed">Widowed</option>
+                <option value="Widower">Widower</option>
+                <option value="Domestic Partner">Domestic Partner</option>
+                <option value="Significant Other">Significant Other</option>
+              </FormSelect>
+              
+              <MobileMultiSelect
+                label="Race"
+                options={raceOptions}
+                value={personalInfo.race || []}
+                onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
+              />
+              
+              <FormInput
+                label="Place of Birth"
+                value={personalInfo.placeOfBirth || ''}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  console.log('Mobile Place of Birth onChange:', newValue);
+                  console.log('Current state before update:', personalInfo);
+                  const updatedInfo = {...personalInfo, placeOfBirth: newValue};
+                  console.log('State after update:', updatedInfo);
+                  setPersonalInfo(updatedInfo);
+                }}
+              />
+              
+              <MobileMultiSelect
+                label="Citizenship"
+                options={citizenshipOptions}
+                value={mappedCitizenshipValue}
+                onChange={(selected) => {
+                  const backendValues = selected.map(mapCitizenshipToBackend);
+                  setPersonalInfo({...personalInfo, citizenship: backendValues});
+                }}
+              />
               
               <ActionButtons 
                 editMode={true}
@@ -457,7 +651,7 @@ const PersonalInfoSection = ({
                 onCancel={() => cancelEdit && cancelEdit('personal')}
                 saving={savingSection === 'personal'}
               />
-            </>
+            </div>
           )}
         </MobileInfoCard>
       ) : (
@@ -527,15 +721,6 @@ const PersonalInfoSection = ({
                 onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
                 disabled={!editMode.personal}
                 placeholder="Same as current"
-              />
-              
-              <Input
-                label="SSN/Government ID Number"
-                type="text"
-                value={personalInfo.ssn || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
-                disabled={!editMode.personal}
-                placeholder="XXX-XX-XXXX"
               />
               
               <Select

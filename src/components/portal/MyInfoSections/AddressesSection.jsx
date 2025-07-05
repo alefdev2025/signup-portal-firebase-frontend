@@ -542,12 +542,12 @@ const AddressesSection = ({
 
                 {/* Mailing Address */}
                 <div>
-                  <label className="flex items-center text-white/90 mb-4">
+                <label className="flex items-center text-gray-700 mb-4">
                     <input
                       type="checkbox"
                       checked={addresses.sameAsHome || false}
                       onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
-                      className={`w-4 h-4 rounded mr-2 bg-white/10 border border-white/20 checked:bg-${getSectionCheckboxColor('addresses').replace('bg-', '')} checked:border-${getSectionCheckboxColor('addresses').replace('bg-', '')}`}
+                      className="w-4 h-4 rounded mr-2 bg-gray-50 border border-gray-300 checked:bg-purple-500 checked:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
                     />
                     <span className="text-sm">Mailing address is the same as home address</span>
                   </label>

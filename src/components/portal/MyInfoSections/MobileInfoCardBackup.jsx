@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 // Global toggle for gradient style
-const USE_RAINBOW_GRADIENT = false; // Set to false for purple-only gradient
-
-// Global toggle for card style
-const USE_EDGE_TO_EDGE = false; // Set to true for edge-to-edge flat cards, false for rounded cards
+const USE_RAINBOW_GRADIENT = true; // Set to false for purple-only gradient
 
 // Reusable Mobile Info Card Component
 export const MobileInfoCard = ({
@@ -22,13 +19,8 @@ export const MobileInfoCard = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  // Card style based on USE_EDGE_TO_EDGE
-  const cardStyle = USE_EDGE_TO_EDGE 
-    ? "overflow-hidden shadow-lg border-t border-b border-gray-300" 
-    : "rounded-3xl overflow-hidden shadow-lg border border-gray-300";
-
   return (
-    <div className={`${cardStyle} ${className}`}>
+    <div className={`rounded-3xl overflow-hidden shadow-lg border border-gray-300 ${className}`}>
       {/* White Header Section - Minimal Content */}
       <div 
         className="bg-white px-6 py-6 cursor-pointer"

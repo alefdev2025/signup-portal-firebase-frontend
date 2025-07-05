@@ -24,6 +24,8 @@ const FamilyInfoSection = ({
   savingSection 
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [attemptedSave, setAttemptedSave] = useState(false);
   
   // Add state for mobile detection
   const [isMobile, setIsMobile] = useState(false);
@@ -35,6 +37,97 @@ const FamilyInfoSection = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Clear errors when canceling edit
+  useEffect(() => {
+    if (!editMode.family) {
+      setErrors({});
+      setAttemptedSave(false);
+    }
+  }, [editMode.family]);
+  
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    
+    console.log('📌 Starting validation with familyInfo:', familyInfo);
+    
+    // Father's name is required
+    if (!familyInfo.fathersName || familyInfo.fathersName.trim() === '') {
+      newErrors.fathersName = "Father's name is required";
+    }
+    
+    // Father's birthplace is required and must have proper format
+    if (!familyInfo.fathersBirthplace || familyInfo.fathersBirthplace.trim() === '') {
+      newErrors.fathersBirthplace = "Father's birthplace is required (enter 'Unknown' if not known)";
+    } else if (!validateBirthplaceFormat(familyInfo.fathersBirthplace)) {
+      newErrors.fathersBirthplace = "Please include city, state/province, and country (or 'Unknown')";
+    }
+    
+    // Mother's full maiden name is required
+    if (!familyInfo.mothersMaidenName || familyInfo.mothersMaidenName.trim() === '') {
+      newErrors.mothersMaidenName = "Mother's full maiden name is required";
+    }
+    
+    // Mother's birthplace is required and must have proper format
+    if (!familyInfo.mothersBirthplace || familyInfo.mothersBirthplace.trim() === '') {
+      newErrors.mothersBirthplace = "Mother's birthplace is required (enter 'Unknown' if not known)";
+    } else if (!validateBirthplaceFormat(familyInfo.mothersBirthplace)) {
+      newErrors.mothersBirthplace = "Please include city, state/province, and country (or 'Unknown')";
+    }
+    
+    // Spouse's name is required if married
+    if (personalInfo.maritalStatus === 'Married' && (!familyInfo.spousesName || familyInfo.spousesName.trim() === '')) {
+      newErrors.spousesName = "Spouse's name is required";
+    }
+    
+    console.log('📌 Validation errors found:', newErrors);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  // Validate birthplace format (should have at least 2 commas or be "Unknown")
+  const validateBirthplaceFormat = (birthplace) => {
+    if (!birthplace) return false;
+    const trimmed = birthplace.trim().toLowerCase();
+    
+    console.log('📌 Validating birthplace:', birthplace, 'Trimmed:', trimmed);
+    
+    // Accept "unknown" in any case
+    if (trimmed === 'unknown') {
+      console.log('📌 Birthplace is "unknown" - valid');
+      return true;
+    }
+    
+    // Check if it has at least 2 commas (for city, state, country)
+    const commaCount = (birthplace.match(/,/g) || []).length;
+    
+    // Also accept if it has at least 2 parts even without perfect comma formatting
+    const parts = birthplace.split(/[,\s]+/).filter(part => part.length > 0);
+    
+    const isValid = commaCount >= 2 || parts.length >= 3;
+    console.log('📌 Birthplace validation:', { commaCount, partsLength: parts.length, isValid });
+    
+    return isValid;
+  };
+  
+  // Modified save handler
+  const handleSave = () => {
+    console.log('📌 handleSave called');
+    console.log('📌 Current familyInfo:', familyInfo);
+    setAttemptedSave(true);
+    
+    const isValid = validateForm();
+    console.log('📌 Validation result:', isValid);
+    console.log('📌 Validation errors:', errors);
+    
+    if (isValid) {
+      console.log('📌 Validation passed, calling saveFamilyInfo');
+      saveFamilyInfo();
+    } else {
+      console.log('📌 Validation failed, showing errors');
+    }
+  };
   
   // Helper function to check if birthplace info needs updating
   const needsBirthplaceUpdate = () => {
@@ -43,9 +136,9 @@ const FamilyInfoSection = ({
     
     // Check if either birthplace is missing or appears incomplete (no commas, very short)
     const fatherIncomplete = !fatherBirthplace || 
-                           (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10);
+                           (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10 && fatherBirthplace.toLowerCase() !== 'unknown');
     const motherIncomplete = !motherBirthplace || 
-                           (!motherBirthplace.includes(',') && motherBirthplace.length < 10);
+                           (!motherBirthplace.includes(',') && motherBirthplace.length < 10 && motherBirthplace.toLowerCase() !== 'unknown');
     
     return fatherIncomplete || motherIncomplete;
   };
@@ -56,10 +149,10 @@ const FamilyInfoSection = ({
     const fatherBirthplace = familyInfo.fathersBirthplace || '';
     const motherBirthplace = familyInfo.mothersBirthplace || '';
     
-    if (!fatherBirthplace || (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10)) {
+    if (!fatherBirthplace || (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10 && fatherBirthplace.toLowerCase() !== 'unknown')) {
       missing.push("father's birthplace");
     }
-    if (!motherBirthplace || (!motherBirthplace.includes(',') && motherBirthplace.length < 10)) {
+    if (!motherBirthplace || (!motherBirthplace.includes(',') && motherBirthplace.length < 10 && motherBirthplace.toLowerCase() !== 'unknown')) {
       missing.push("mother's birthplace");
     }
     
@@ -129,10 +222,20 @@ const FamilyInfoSection = ({
           </div>
         </div>
         <p className={isMobile ? "text-sm text-white/70 font-light" : "text-sm text-gray-600 font-light"}>
-          Add city, state, country to birthplaces
+          Add city, state, country to birthplaces ("Unknown" if unknown)
         </p>
       </div>
     </div>
+  );
+
+  // Error message component
+  const ErrorMessage = ({ error }) => (
+    error ? (
+      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+        <AlertCircle className="w-3 h-3" />
+        {error}
+      </p>
+    ) : null
   );
 
   return (
@@ -162,7 +265,7 @@ const FamilyInfoSection = ({
                   value={familyInfo.fathersBirthplace} 
                 />
                 <DisplayField 
-                  label="Mother's Maiden Name" 
+                  label="Mother's Full Maiden Name" 
                   value={familyInfo.mothersMaidenName} 
                 />
                 <DisplayField 
@@ -181,58 +284,80 @@ const FamilyInfoSection = ({
               
               <ActionButtons 
                 editMode={false}
-                onEdit={() => toggleEditMode && toggleEditMode('family')}
+                onEdit={() => {
+                  console.log('📌 Mobile Edit button clicked');
+                  toggleEditMode && toggleEditMode('family');
+                }}
               />
             </>
           ) : (
             /* Edit Mode */
             <>
               <div className="space-y-4">
-                <FormInput
-                  label="Father's Full Name"
-                  value={familyInfo.fathersName || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
-                />
                 <div>
                   <FormInput
-                    label="Father's Birthplace"
-                    placeholder="City, State/Province, Country"
+                    label="Father's Full Name *"
+                    value={familyInfo.fathersName || ''}
+                    onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
+                    className={errors.fathersName ? 'border-red-500' : ''}
+                  />
+                  {errors.fathersName && <ErrorMessage error={errors.fathersName} />}
+                </div>
+                <div>
+                  <FormInput
+                    label="Father's Birthplace *"
+                    placeholder="City, State/Province, Country (or 'Unknown')"
                     value={familyInfo.fathersBirthplace || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
+                    className={errors.fathersBirthplace ? 'border-red-500' : ''}
                   />
                   <p className="text-xs text-white/60 mt-1 font-light">
-                    Please include city, state/province, and country if available
+                    Please include city, state/province, and country. Enter "Unknown" if not known.
                   </p>
+                  {errors.fathersBirthplace && <ErrorMessage error={errors.fathersBirthplace} />}
                 </div>
-                <FormInput
-                  label="Mother's Maiden Name"
-                  value={familyInfo.mothersMaidenName || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
-                />
                 <div>
                   <FormInput
-                    label="Mother's Birthplace"
-                    placeholder="City, State/Province, Country"
+                    label="Mother's Full Maiden Name *"
+                    value={familyInfo.mothersMaidenName || ''}
+                    onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
+                    className={errors.mothersMaidenName ? 'border-red-500' : ''}
+                  />
+                  {errors.mothersMaidenName && <ErrorMessage error={errors.mothersMaidenName} />}
+                </div>
+                <div>
+                  <FormInput
+                    label="Mother's Birthplace *"
+                    placeholder="City, State/Province, Country (or 'Unknown')"
                     value={familyInfo.mothersBirthplace || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
+                    className={errors.mothersBirthplace ? 'border-red-500' : ''}
                   />
                   <p className="text-xs text-white/60 mt-1 font-light">
-                    Please include city, state/province, and country if available
+                    Please include city, state/province, and country. Enter "Unknown" if not known.
                   </p>
+                  {errors.mothersBirthplace && <ErrorMessage error={errors.mothersBirthplace} />}
                 </div>
                 {personalInfo.maritalStatus === 'Married' && (
-                  <FormInput
-                    label={personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
-                    value={familyInfo.spousesName || ''}
-                    onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
-                  />
+                  <div>
+                    <FormInput
+                      label={`${personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                      value={familyInfo.spousesName || ''}
+                      onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
+                      className={errors.spousesName ? 'border-red-500' : ''}
+                    />
+                    {errors.spousesName && <ErrorMessage error={errors.spousesName} />}
+                  </div>
                 )}
               </div>
               
               <ActionButtons 
                 editMode={true}
-                onSave={saveFamilyInfo}
-                onCancel={() => cancelEdit && cancelEdit('family')}
+                onSave={handleSave}
+                onCancel={() => {
+                  console.log('📌 Mobile Cancel button clicked');
+                  cancelEdit && cancelEdit('family');
+                }}
                 saving={savingSection === 'family'}
               />
             </>
@@ -251,7 +376,7 @@ const FamilyInfoSection = ({
             <div className={styleConfig.header.textContainer}>
               <h2 className={styleConfig.header.title}>Family Information</h2>
               <p className={styleConfig.header.subtitle}>
-                Information about your immediate family members.
+                Information about your immediate family members. All fields are required.
               </p>
             </div>
           </div>
@@ -269,7 +394,7 @@ const FamilyInfoSection = ({
                   value={familyInfo.fathersBirthplace} 
                 />
                 <InfoDisplay 
-                  label="Mother's Maiden Name" 
+                  label="Mother's Full Maiden Name" 
                   value={familyInfo.mothersMaidenName} 
                 />
                 <InfoDisplay 
@@ -288,55 +413,71 @@ const FamilyInfoSection = ({
           ) : (
             /* Desktop Edit Mode - Form */
             <div className={styleConfig.section.grid.twoColumn}>
-              <Input
-                label="Father's Full Name"
-                type="text"
-                value={familyInfo.fathersName || ''}
-                onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
-                disabled={!editMode.family}
-              />
               <div>
                 <Input
-                  label="Father's Birthplace"
+                  label="Father's Full Name *"
                   type="text"
-                  placeholder="City, State/Province, Country"
+                  value={familyInfo.fathersName || ''}
+                  onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
+                  disabled={!editMode.family}
+                  className={errors.fathersName ? 'border-red-500' : ''}
+                />
+                {errors.fathersName && <ErrorMessage error={errors.fathersName} />}
+              </div>
+              <div>
+                <Input
+                  label="Father's Birthplace *"
+                  type="text"
+                  placeholder="City, State/Province, Country (or 'Unknown')"
                   value={familyInfo.fathersBirthplace || ''}
                   onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
                   disabled={!editMode.family}
+                  className={errors.fathersBirthplace ? 'border-red-500' : ''}
                 />
                 <p className="text-xs text-gray-500 mt-1 font-light">
-                  Please include city, state/province, and country if available
+                  Please include city, state/province, and country. Enter "Unknown" if not known.
                 </p>
+                {errors.fathersBirthplace && <ErrorMessage error={errors.fathersBirthplace} />}
               </div>
-              <Input
-                label="Mother's Maiden Name"
-                type="text"
-                value={familyInfo.mothersMaidenName || ''}
-                onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
-                disabled={!editMode.family}
-              />
               <div>
                 <Input
-                  label="Mother's Birthplace"
+                  label="Mother's Full Maiden Name *"
                   type="text"
-                  placeholder="City, State/Province, Country"
+                  value={familyInfo.mothersMaidenName || ''}
+                  onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
+                  disabled={!editMode.family}
+                  className={errors.mothersMaidenName ? 'border-red-500' : ''}
+                />
+                {errors.mothersMaidenName && <ErrorMessage error={errors.mothersMaidenName} />}
+              </div>
+              <div>
+                <Input
+                  label="Mother's Birthplace *"
+                  type="text"
+                  placeholder="City, State/Province, Country (or 'Unknown')"
                   value={familyInfo.mothersBirthplace || ''}
                   onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
                   disabled={!editMode.family}
+                  className={errors.mothersBirthplace ? 'border-red-500' : ''}
                 />
                 <p className="text-xs text-gray-500 mt-1 font-light">
-                  Please include city, state/province, and country if available
+                  Please include city, state/province, and country. Enter "Unknown" if not known.
                 </p>
+                {errors.mothersBirthplace && <ErrorMessage error={errors.mothersBirthplace} />}
               </div>
               {personalInfo.maritalStatus === 'Married' && (
-                <Input
-                  containerClassName="col-span-2"
-                  label={personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
-                  type="text"
-                  value={familyInfo.spousesName || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
-                  disabled={!editMode.family}
-                />
+                <div className="col-span-2">
+                  <Input
+                    containerClassName="col-span-2"
+                    label={`${personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                    type="text"
+                    value={familyInfo.spousesName || ''}
+                    onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
+                    disabled={!editMode.family}
+                    className={errors.spousesName ? 'border-red-500' : ''}
+                  />
+                  {errors.spousesName && <ErrorMessage error={errors.spousesName} />}
+                </div>
               )}
             </div>
           )}
@@ -350,7 +491,10 @@ const FamilyInfoSection = ({
               {/* Edit button - Right side */}
               <RainbowButton
                 text="Edit"
-                onClick={() => toggleEditMode && toggleEditMode('family')}
+                onClick={() => {
+                  console.log('📌 Desktop Edit button clicked (with notice)');
+                  toggleEditMode && toggleEditMode('family');
+                }}
                 className="scale-75"
                 spinStar={true}
               />
@@ -361,13 +505,16 @@ const FamilyInfoSection = ({
                 <div className="flex">
                   <WhiteButton
                     text="Cancel"
-                    onClick={() => cancelEdit && cancelEdit('family')}
+                    onClick={() => {
+                      console.log('📌 Desktop Cancel button clicked');
+                      cancelEdit && cancelEdit('family');
+                    }}
                     className="scale-75 -mr-8"
                     spinStar={false}
                   />
                   <PurpleButton
                     text={savingSection === 'saved' ? 'Saved' : savingSection === 'family' ? 'Saving...' : 'Save'}
-                    onClick={saveFamilyInfo}
+                    onClick={handleSave}
                     className="scale-75"
                     spinStar={false}
                   />
@@ -375,7 +522,10 @@ const FamilyInfoSection = ({
               ) : (
                 <RainbowButton
                   text="Edit"
-                  onClick={() => toggleEditMode && toggleEditMode('family')}
+                  onClick={() => {
+                    console.log('📌 Desktop Edit button clicked');
+                    toggleEditMode && toggleEditMode('family');
+                  }}
                   className="scale-75"
                   spinStar={true}
                 />

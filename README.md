@@ -760,3 +760,8 @@ The system categorizes members into three types based on their cryopreservation 
 - `RecordTypeId`: Salesforce record type (specific IDs for Cryo vs Basic)
 - `Funding_Status__c`: Current funding status
 - `Active__c`: Whether member is active
+
+
+How to run unit tests 
+
+npm test PersonalInfoSection.test.jsx

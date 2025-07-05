@@ -454,13 +454,26 @@ const MyInformationTab = () => {
       // Update states with fetched and cleaned data
       console.log('API Responses:', results);
       
-      // Personal Info - Clean all person data
+      // In the loadAllData function, update the Personal Info section:
       if (results.personalRes.success && results.personalRes.data) {
         const personalData = results.personalRes.data.data || results.personalRes.data;
-        console.log('Setting personal info data:', personalData);
+        console.log('🎯 === PERSONAL INFO DATA RECEIVED ===');
+        console.log('📦 Raw personal data from API:', personalData);
+        console.log('📋 Key fields:', {
+          ethnicity: personalData.ethnicity,
+          citizenship: personalData.citizenship,
+          maritalStatus: personalData.maritalStatus,
+          hasAgreement: personalData.hasAgreement
+        });
         
-        // Clean the personal data (cleanPersonData already handles middleName in your data formatting utils)
         const cleanedPersonal = cleanPersonData(personalData);
+        
+        console.log('✨ After cleanPersonData:', {
+          ethnicity: cleanedPersonal.ethnicity,
+          citizenship: cleanedPersonal.citizenship,
+          maritalStatus: cleanedPersonal.maritalStatus
+        });
+        console.log('🎯 === END PERSONAL INFO ===\n');
         
         setPersonalInfo(cleanedPersonal);
         setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
@@ -847,6 +860,9 @@ const loadMemberCategory = async () => {
     console.log('🔵 === START savePersonalInfo ===');
     console.log('Member category:', memberCategory);
     
+    // Store current state for rollback
+    const previousPersonalInfo = { ...personalInfo };
+    
     setSavingSection('personal');
     setSaveMessage({ type: '', text: '' });
     
@@ -883,12 +899,15 @@ const loadMemberCategory = async () => {
         }
       });
       
-      // If there are validation errors for required fields, show them
+      // If there are validation errors, rollback and show them
       if (Object.keys(errors).length > 0) {
         let errorMessage = 'Please fill in required fields: ';
         errorMessage += Object.values(errors).join(', ');
         setSaveMessage({ type: 'error', text: errorMessage });
         setSavingSection('');
+        
+        // Rollback state
+        setPersonalInfo(previousPersonalInfo);
         return;
       }
       
@@ -896,27 +915,62 @@ const loadMemberCategory = async () => {
       
       const result = await updateMemberPersonalInfo(salesforceContactId, cleanedData);
       
-      if (result.success) {
-        setPersonalInfo(cleanedData);
-        setOriginalData(prev => ({ ...prev, personal: cleanedData }));
-        setEditMode(prev => ({ ...prev, personal: false }));
-        memberDataService.clearCache(salesforceContactId);
-        
-        // Refresh the cache
-        if (refreshMemberInfo) {
-          setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-            refreshMemberInfo();
-          }, 500);
-        }
-        
-        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
-      } else {
+      if (!result.success && !result.partialSuccess) {
+        // Complete failure - rollback
+        setPersonalInfo(previousPersonalInfo);
         setSaveMessage({ type: 'error', text: result.error || 'Failed to save personal information' });
+        setSavingSection('');
+        return;
+      }
+      
+      // Handle partial success
+      if (result.partialSuccess) {
+        console.log('⚠️ Partial success - some fields may not have been updated');
+        const errorDetails = result.errors ? result.errors.join('; ') : '';
+        setSaveMessage({ 
+          type: 'warning', 
+          text: `Some information was saved, but there were errors: ${errorDetails}` 
+        });
+      } else {
+        // Complete success
+        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
+      }
+      
+      // Update state with cleaned data
+      setPersonalInfo(cleanedData);
+      setOriginalData(prev => ({ ...prev, personal: cleanedData }));
+      setEditMode(prev => ({ ...prev, personal: false }));
+      
+      // Clear cache after successful save
+      memberDataService.clearCache(salesforceContactId);
+      
+      // Fetch fresh data to ensure sync
+      try {
+        const freshData = await memberDataService.getPersonalInfo(salesforceContactId);
+        if (freshData.success && freshData.data) {
+          const personalData = freshData.data.data || freshData.data;
+          const cleanedPersonal = cleanPersonData(personalData);
+          setPersonalInfo(cleanedPersonal);
+          setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing personal data:', refreshError);
+        // Non-critical error - data was saved successfully
+      }
+      
+      // Refresh the main cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
       }
       
     } catch (error) {
       console.error('❌ Error in savePersonalInfo:', error);
+      
+      // Rollback on error
+      setPersonalInfo(previousPersonalInfo);
       setSaveMessage({ type: 'error', text: `Failed to save: ${error.message}` });
     } finally {
       setSavingSection('');
@@ -926,9 +980,13 @@ const loadMemberCategory = async () => {
   };
   
   const saveContactInfo = async () => {
+    // Store current state for rollback
+    const previousContactInfo = { ...contactInfo };
+    const previousPersonalInfo = { ...personalInfo };
+    
     setSavingSection('contact');
     setSaveMessage({ type: '', text: '' });
-    setFieldErrors({}); // Clear previous errors
+    setFieldErrors({});
     
     try {
       // Validate salesforceContactId
@@ -946,15 +1004,13 @@ const loadMemberCategory = async () => {
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.contact?.requiredFields || [];
       console.log('Required fields for contact section:', requiredFields);
       
-      // Clean the contact data
+      // Clean the data
       const cleanedContactData = cleanDataBeforeSave(contactInfo, 'contact');
-      
-      // Clean the personal info fields that are in the contact section
       const cleanedPersonalData = cleanDataBeforeSave(personalInfo, 'personal');
       
       // Transform data to match backend expectations
       const contactData = {
-        email: cleanedContactData.personalEmail || '', // Primary email
+        email: cleanedContactData.personalEmail || '',
         personalEmail: cleanedContactData.personalEmail || '',
         workEmail: cleanedContactData.workEmail || '',
         homePhone: cleanedContactData.homePhone || '',
@@ -963,12 +1019,10 @@ const loadMemberCategory = async () => {
         preferredPhone: cleanedContactData.preferredPhone || ''
       };
       
-      // Also save the personal info fields that are now in contact section
       const personalData = {
         firstName: cleanedPersonalData.firstName || '',
         middleName: cleanedPersonalData.middleName || '',
         lastName: cleanedPersonalData.lastName || ''
-        // dateOfBirth is not editable
       };
       
       // Check if anything has actually changed
@@ -994,8 +1048,13 @@ const loadMemberCategory = async () => {
         return;
       }
       
-      // Validate required fields based on member category
+      // Validate required fields
       const errors = {};
+      
+      console.log('Validating emails:', {
+        personalEmail: contactData.personalEmail,
+        workEmail: contactData.workEmail
+      });
       
       requiredFields.forEach(field => {
         switch(field) {
@@ -1012,22 +1071,34 @@ const loadMemberCategory = async () => {
           case 'personalEmail':
             if (!contactData.personalEmail) {
               errors.personalEmail = 'Personal email is required';
-            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactData.personalEmail)) {
-              errors.personalEmail = 'Please enter a valid email address';
-            }
-            break;
-          case 'mobilePhone':
-            if (!contactData.mobilePhone) {
-              errors.mobilePhone = memberCategory === 'BasicMember' 
-                ? 'Mobile phone is recommended' 
-                : 'Mobile phone is required';
             }
             break;
         }
       });
       
-      // Validate preferred phone selection
-      if (contactData.preferredPhone) {
+      // Validate email formats for ALL email fields (not just required ones)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (contactData.personalEmail && contactData.personalEmail.trim() !== '') {
+        if (!emailRegex.test(contactData.personalEmail)) {
+          errors.personalEmail = 'Please enter a valid email address';
+          console.log('Personal email validation failed:', contactData.personalEmail);
+        }
+      }
+      
+      if (contactData.workEmail && contactData.workEmail.trim() !== '') {
+        if (!emailRegex.test(contactData.workEmail)) {
+          errors.workEmail = 'Please enter a valid work email address';
+          console.log('Work email validation failed:', contactData.workEmail);
+        }
+      }
+      
+      console.log('Validation errors:', errors);
+      
+      // Phone validation
+      if (!contactData.preferredPhone) {
+        errors.preferredPhone = 'Please select a preferred phone type';
+      } else {
         const phoneTypeToField = {
           'Mobile': 'mobilePhone',
           'Home': 'homePhone',
@@ -1036,23 +1107,23 @@ const loadMemberCategory = async () => {
         
         const requiredPhoneField = phoneTypeToField[contactData.preferredPhone];
         if (requiredPhoneField && !contactData[requiredPhoneField]) {
-          errors[requiredPhoneField] = `Please provide a ${contactData.preferredPhone.toLowerCase()} phone number since it's selected as your preferred phone type`;
+          errors[requiredPhoneField] = `${contactData.preferredPhone} phone is required when selected as preferred`;
         }
       }
       
-      // For CryoMember, ensure at least one phone is provided
-      if (memberCategory === 'CryoMember' && !contactData.mobilePhone && !contactData.homePhone && !contactData.workPhone) {
-        errors.mobilePhone = 'At least one phone number is required for Cryopreservation Members';
-      }
-      
-      // If there are validation errors, set them and return
+      // If there are validation errors, show them under fields only
       if (Object.keys(errors).length > 0) {
+        console.log('Setting field errors and returning early');
         setFieldErrors(errors);
         setSavingSection('');
+        // Don't show any message at the top - only show field-level errors
+        // Rollback state
+        setContactInfo(previousContactInfo);
+        setPersonalInfo(previousPersonalInfo);
         return;
       }
       
-      // Save both contact and partial personal info
+      // Make API calls
       console.log('Making API calls...');
       const calls = [];
       
@@ -1068,29 +1139,34 @@ const loadMemberCategory = async () => {
       
       const allSuccessful = results.every(result => result.success);
       
-      if (allSuccessful) {
-        setSavingSection('saved');
-        setContactInfo(cleanedContactData);
-        setPersonalInfo(prev => ({ ...prev, ...cleanedPersonalData }));
-        setOriginalData(prev => ({ 
-          ...prev, 
-          contact: cleanedContactData,
-          personal: { ...prev.personal, ...cleanedPersonalData }
-        }));
-        setEditMode(prev => ({ ...prev, contact: false }));
-        setFieldErrors({});
-        memberDataService.clearCache(salesforceContactId);
+      if (!allSuccessful) {
+        // Rollback UI state on failure
+        setContactInfo(previousContactInfo);
+        setPersonalInfo(previousPersonalInfo);
         
-        // Refresh the cache
-        if (refreshMemberInfo) {
-          setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-            refreshMemberInfo();
-          }, 500);
+        // Check if any of the errors are validation errors that should show under fields
+        let hasFieldError = false;
+        const fieldErrorsToSet = {};
+        
+        results.forEach((result, index) => {
+          if (!result.success && result.error) {
+            // Check if it's an email validation error from the API
+            if (result.error.toLowerCase().includes('email') && result.error.toLowerCase().includes('valid')) {
+              fieldErrorsToSet.personalEmail = 'Please enter a valid email address';
+              hasFieldError = true;
+            }
+            // Add other field-specific error checks as needed
+          }
+        });
+        
+        if (hasFieldError) {
+          // Show field-level errors only
+          setFieldErrors(fieldErrorsToSet);
+          setSavingSection('');
+          return;
         }
         
-        setTimeout(() => setSavingSection(''), 2000);
-      } else {
+        // For non-field-specific errors, show at the top
         const errors = results
           .filter(result => !result.success)
           .map(result => result.error || 'Unknown error');
@@ -1100,13 +1176,91 @@ const loadMemberCategory = async () => {
           type: 'error', 
           text: `Failed to save: ${errors.join(', ')}`
         });
+        setSavingSection('');
+        return;
       }
+      
+      // SUCCESS PATH - Update everything
+      setSavingSection('saved');
+      setSaveMessage({ type: 'success', text: 'Contact information saved successfully!' });
+      
+      // Update original data to reflect saved state
+      setOriginalData(prev => ({ 
+        ...prev, 
+        contact: cleanedContactData,
+        personal: { ...prev.personal, ...cleanedPersonalData }
+      }));
+      
+      setEditMode(prev => ({ ...prev, contact: false }));
+      setFieldErrors({});
+      
+      // Clear cache after successful save
+      memberDataService.clearCache(salesforceContactId);
+      
+      // Fetch fresh data to ensure sync
+      try {
+        const [freshContactData, freshPersonalData] = await Promise.all([
+          memberDataService.getContactInfo(salesforceContactId),
+          memberDataService.getPersonalInfo(salesforceContactId)
+        ]);
+        
+        if (freshContactData.success && freshContactData.data) {
+          const contactData = freshContactData.data.data || freshContactData.data;
+          const cleanedContact = {
+            ...contactData,
+            personalEmail: formatEmail(contactData.personalEmail),
+            workEmail: formatEmail(contactData.workEmail),
+            email: formatEmail(contactData.email),
+            homePhone: formatPhone(contactData.homePhone),
+            mobilePhone: formatPhone(contactData.mobilePhone),
+            workPhone: formatPhone(contactData.workPhone),
+            preferredPhone: cleanString(contactData.preferredPhone)
+          };
+          setContactInfo(cleanedContact);
+          setOriginalData(prev => ({ ...prev, contact: cleanedContact }));
+        }
+        
+        if (freshPersonalData.success && freshPersonalData.data) {
+          const personalData = freshPersonalData.data.data || freshPersonalData.data;
+          const cleanedPersonal = cleanPersonData(personalData);
+          setPersonalInfo(cleanedPersonal);
+          setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing data after save:', refreshError);
+        // Non-critical error - data was saved successfully
+      }
+      
+      // Refresh the main cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
+      }
+      
+      setTimeout(() => setSavingSection(''), 2000);
+      
     } catch (error) {
       console.error('Error saving contact info:', error);
+      
+      // Rollback UI state on error
+      setContactInfo(previousContactInfo);
+      setPersonalInfo(previousPersonalInfo);
+      
+      // Check if it's a validation error that should show under a field
+      if (error.message && error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('valid')) {
+        setFieldErrors({ personalEmail: 'Please enter a valid email address' });
+        setSavingSection('');
+        return;
+      }
+      
+      // For other errors, show at the top
       setSaveMessage({ 
         type: 'error', 
         text: `Failed to save contact information: ${error.message}` 
       });
+      setSavingSection('');
     } finally {
       if (savingSection !== 'saved') {
         setSavingSection('');
@@ -1116,6 +1270,9 @@ const loadMemberCategory = async () => {
   };
   
   const saveAddresses = async () => {
+    // Store current state for rollback
+    const previousAddresses = { ...addresses };
+    
     setSavingSection('addresses');
     setSaveMessage({ type: '', text: '' });
     
@@ -1168,6 +1325,9 @@ const loadMemberCategory = async () => {
         let errorMessage = 'Please complete all required address fields';
         setSaveMessage({ type: 'error', text: errorMessage });
         setSavingSection('');
+        
+        // Rollback state
+        setAddresses(previousAddresses);
         return;
       }
       
@@ -1195,28 +1355,64 @@ const loadMemberCategory = async () => {
       const result = await updateMemberAddresses(salesforceContactId, dataToSend);
       console.log('📨 Save result:', result);
       
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Addresses saved successfully!' });
-        setAddresses(cleanedAddresses);
-        setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
-        setEditMode(prev => ({ ...prev, addresses: false }));
-        
-        // Clear cache
-        console.log('🗑️ Clearing cache...');
-        memberDataService.clearCache(salesforceContactId);
-        
-        // Refresh the cache
-        if (refreshMemberInfo) {
-          setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-            refreshMemberInfo();
-          }, 500);
-        }
-      } else {
+      if (!result.success) {
+        // Rollback on failure
+        setAddresses(previousAddresses);
         setSaveMessage({ type: 'error', text: result.error || 'Failed to save addresses' });
+        setSavingSection('');
+        return;
       }
+      
+      // SUCCESS PATH
+      setSaveMessage({ type: 'success', text: 'Addresses saved successfully!' });
+      setAddresses(cleanedAddresses);
+      setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
+      setEditMode(prev => ({ ...prev, addresses: false }));
+      
+      // Clear cache after successful save
+      console.log('🗑️ Clearing cache...');
+      memberDataService.clearCache(salesforceContactId);
+      
+      // Fetch fresh data to ensure sync
+      try {
+        const freshData = await memberDataService.getAddresses(salesforceContactId);
+        if (freshData.success && freshData.data) {
+          const addressData = freshData.data.data || freshData.data;
+          const transformedAddresses = {
+            homeStreet: addressData.homeAddress?.street || '',
+            homeCity: addressData.homeAddress?.city || '',
+            homeState: addressData.homeAddress?.state || '',
+            homePostalCode: addressData.homeAddress?.postalCode || '',
+            homeCountry: addressData.homeAddress?.country || '',
+            mailingStreet: addressData.mailingAddress?.street || '',
+            mailingCity: addressData.mailingAddress?.city || '',
+            mailingState: addressData.mailingAddress?.state || '',
+            mailingPostalCode: addressData.mailingAddress?.postalCode || '',
+            mailingCountry: addressData.mailingAddress?.country || '',
+            sameAsHome: false
+          };
+          const cleanedAddresses = cleanAddressData(transformedAddresses);
+          setAddresses(cleanedAddresses);
+          setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing address data:', refreshError);
+        // Non-critical error - data was saved successfully
+      }
+      
+      // Refresh the main cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
+      }
+      
     } catch (error) {
       console.error('❌ Error saving addresses:', error);
+      
+      // Rollback on error
+      setAddresses(previousAddresses);
       setSaveMessage({ type: 'error', text: 'Failed to save addresses' });
     } finally {
       setSavingSection('');
@@ -1226,88 +1422,309 @@ const loadMemberCategory = async () => {
   };
   
   const saveFamilyInfo = async () => {
+    console.log('🎯 saveFamilyInfo function called!');
+    console.log('Current familyInfo state:', familyInfo);
+    console.log('Current salesforceContactId:', salesforceContactId);
+    
+    // Store current state for rollback
+    const previousFamilyInfo = { ...familyInfo };
+    const previousPersonalInfo = { ...personalInfo };
+    
     setSavingSection('family');
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('Saving family info for member category:', memberCategory);
+      console.log('🚀 === SAVE FAMILY INFO START ===');
+      console.log('Member category:', memberCategory);
+      console.log('📤 Current family state before save:', familyInfo);
+      console.log('📤 Current personal state before save:', personalInfo);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.family?.requiredFields || [];
       console.log('Required fields for family section:', requiredFields);
       
+      // Check if cleanDataBeforeSave exists
+      console.log('🔍 Checking cleanDataBeforeSave function exists:', typeof cleanDataBeforeSave);
+      
       // Clean the family data
-      const cleanedFamilyInfo = cleanDataBeforeSave(familyInfo, 'family');
+      let cleanedFamilyInfo, cleanedPersonalInfo;
+      try {
+        console.log('🧹 About to clean family info...');
+        cleanedFamilyInfo = cleanDataBeforeSave(familyInfo, 'family');
+        console.log('🧹 Cleaned family info successfully:', cleanedFamilyInfo);
+        
+        console.log('🧹 About to clean personal info...');
+        cleanedPersonalInfo = cleanDataBeforeSave(personalInfo, 'personal');
+        console.log('🧹 Cleaned personal info successfully:', cleanedPersonalInfo);
+      } catch (cleanError) {
+        console.error('❌ Error during data cleaning:', cleanError);
+        throw cleanError;
+      }
       
       // Validate required fields
       const errors = {};
       
       requiredFields.forEach(field => {
+        console.log(`📋 Checking required field: ${field}`);
         switch(field) {
           case 'fathersName':
             if (!cleanedFamilyInfo.fathersName) {
               errors.fathersName = "Father's name is required";
+              console.log('❌ Father\'s name is missing');
             }
             break;
           case 'fathersBirthplace':
             if (!cleanedFamilyInfo.fathersBirthplace || 
-                (!cleanedFamilyInfo.fathersBirthplace.includes(',') && cleanedFamilyInfo.fathersBirthplace.length < 10)) {
+                (!cleanedFamilyInfo.fathersBirthplace.includes(',') && 
+                 cleanedFamilyInfo.fathersBirthplace.toLowerCase() !== 'unknown' &&
+                 cleanedFamilyInfo.fathersBirthplace.length < 10)) {
               errors.fathersBirthplace = "Father's complete birthplace (city, state, country) is required";
+              console.log('❌ Father\'s birthplace is invalid');
             }
             break;
           case 'mothersMaidenName':
             if (!cleanedFamilyInfo.mothersMaidenName) {
               errors.mothersMaidenName = "Mother's maiden name is required";
+              console.log('❌ Mother\'s maiden name is missing');
             }
             break;
           case 'mothersBirthplace':
             if (!cleanedFamilyInfo.mothersBirthplace || 
-                (!cleanedFamilyInfo.mothersBirthplace.includes(',') && cleanedFamilyInfo.mothersBirthplace.length < 10)) {
+                (!cleanedFamilyInfo.mothersBirthplace.includes(',') && 
+                 cleanedFamilyInfo.mothersBirthplace.toLowerCase() !== 'unknown' &&
+                 cleanedFamilyInfo.mothersBirthplace.length < 10)) {
               errors.mothersBirthplace = "Mother's complete birthplace (city, state, country) is required";
+              console.log('❌ Mother\'s birthplace is invalid');
             }
             break;
         }
       });
       
+      console.log('❓ Validation errors:', errors);
+      console.log('❓ Number of errors:', Object.keys(errors).length);
+      
       if (Object.keys(errors).length > 0) {
         let errorMessage = Object.values(errors).join('. ');
         setSaveMessage({ type: 'error', text: errorMessage });
         setSavingSection('');
+        
+        // Rollback state
+        setFamilyInfo(previousFamilyInfo);
+        setPersonalInfo(previousPersonalInfo);
+        console.log('🔙 Rolled back due to validation errors');
         return;
       }
+      
+      console.log('✅ Validation passed, preparing data for API call...');
       
       // Transform data to match backend expectations
       const dataToSend = {
         fatherName: cleanedFamilyInfo.fathersName,
         fatherBirthplace: cleanedFamilyInfo.fathersBirthplace,
         motherMaidenName: cleanedFamilyInfo.mothersMaidenName,
-        motherBirthplace: cleanedFamilyInfo.mothersBirthplace
+        motherBirthplace: cleanedFamilyInfo.mothersBirthplace,
+        // Include spouse name if married
+        spouseName: cleanedPersonalInfo.maritalStatus === 'Married' ? cleanedFamilyInfo.spousesName : null
       };
       
-      const result = await updateMemberFamilyInfo(salesforceContactId, dataToSend);
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Family information saved successfully!' });
-        setFamilyInfo(cleanedFamilyInfo);
-        setOriginalData(prev => ({ ...prev, family: cleanedFamilyInfo }));
-        setEditMode(prev => ({ ...prev, family: false }));
-        memberDataService.clearCache(salesforceContactId);
-        
-        // Refresh the cache
-        if (refreshMemberInfo) {
-          setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-            refreshMemberInfo();
-          }, 500);
-        }
-      } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save family information' });
+      console.log('📦 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      console.log('📞 Calling updateMemberFamilyInfo with ID:', salesforceContactId);
+      
+      // Check if updateMemberFamilyInfo exists
+      console.log('🔍 Checking updateMemberFamilyInfo function exists:', typeof updateMemberFamilyInfo);
+      
+      if (typeof updateMemberFamilyInfo !== 'function') {
+        console.error('❌ updateMemberFamilyInfo is not a function!');
+        console.error('❌ Type:', typeof updateMemberFamilyInfo);
+        console.error('❌ Value:', updateMemberFamilyInfo);
+        throw new Error('updateMemberFamilyInfo is not properly imported');
       }
+      
+      let result;
+      try {
+        console.log('📞 === CALLING API NOW ===');
+        console.log(`📞 API URL will be: /api/salesforce/member/${salesforceContactId}/family-info`);
+        
+        result = await updateMemberFamilyInfo(salesforceContactId, dataToSend);
+        
+        console.log('📨 === API CALL COMPLETED ===');
+        console.log('📨 Save result:', result);
+        console.log('📨 Result type:', typeof result);
+        console.log('📨 Result keys:', result ? Object.keys(result) : 'null');
+        console.log('📨 Result success:', result?.success);
+        console.log('📨 Result data:', result?.data);
+        console.log('📨 Result error:', result?.error);
+        console.log('📨 Result partialSuccess:', result?.partialSuccess);
+      } catch (apiError) {
+        console.error('❌ === API CALL FAILED ===');
+        console.error('❌ Error type:', apiError.name);
+        console.error('❌ Error message:', apiError.message);
+        console.error('❌ Error stack:', apiError.stack);
+        console.error('❌ Full error object:', apiError);
+        
+        // Check if it's a network error
+        if (apiError.message.includes('fetch')) {
+          console.error('❌ This appears to be a network/fetch error');
+        }
+        
+        throw apiError;
+      }
+      
+      // Check if result is undefined or null
+      if (!result) {
+        console.error('❌ API returned null or undefined result');
+        throw new Error('API returned no result');
+      }
+      
+      // Check if we have at least partial success (Contact fields updated)
+      const contactUpdateSuccessful = result?.data?.updateResults?.contact?.success;
+      const agreementUpdateSuccessful = result?.data?.updateResults?.agreement?.success;
+      
+      console.log('📊 Update results analysis:');
+      console.log('  - Contact update successful:', contactUpdateSuccessful);
+      console.log('  - Agreement update successful:', agreementUpdateSuccessful);
+      console.log('  - Overall success:', result?.success);
+      console.log('  - Partial success:', result?.partialSuccess);
+      
+      // If neither update was successful, it's a complete failure
+      if (!contactUpdateSuccessful && !agreementUpdateSuccessful && !result?.success) {
+        console.log('❌ Complete save failure - no fields were updated');
+        
+        // Rollback on complete failure
+        setFamilyInfo(previousFamilyInfo);
+        setPersonalInfo(previousPersonalInfo);
+        
+        setSaveMessage({ 
+          type: 'error', 
+          text: result?.error || 'Failed to save family information. Please try again.' 
+        });
+        setSavingSection('');
+        return;
+      }
+      
+      // If we get here, at least something was saved successfully
+      console.log('✅ At least partial save successful');
+      
+      // Determine the appropriate message based on what was saved
+      let successMessage = 'Family information saved successfully!';
+      let messageType = 'success';
+      
+      if (result?.partialSuccess && contactUpdateSuccessful && !agreementUpdateSuccessful) {
+        // Only contact was updated (common case)
+        console.log('⚠️ Partial success - Contact updated but Agreement update failed');
+        // For users, this is still a success - their data is saved
+        successMessage = 'Family information saved successfully!';
+        messageType = 'success';
+      } else if (result?.success) {
+        // Both were updated successfully
+        console.log('✅ Complete success - both Contact and Agreement updated');
+        successMessage = 'Family information saved successfully!';
+        messageType = 'success';
+      }
+      
+      setSaveMessage({ type: messageType, text: successMessage });
+      
+      // Update the saved section state to show visual feedback
+      setSavingSection('saved');
+      
+      // Update state since the save was successful (at least partially)
+      setFamilyInfo(cleanedFamilyInfo);
+      setOriginalData(prev => ({ ...prev, family: cleanedFamilyInfo }));
+      setEditMode(prev => ({ ...prev, family: false }));
+      
+      // Clear cache after successful save
+      console.log('🗑️ Clearing cache...');
+      if (typeof memberDataService !== 'undefined' && memberDataService.clearCache) {
+        memberDataService.clearCache(salesforceContactId);
+        console.log('✅ Cache cleared');
+      } else {
+        console.warn('⚠️ memberDataService not available for cache clearing');
+      }
+      
+      // Fetch fresh data to ensure sync - but DON'T overwrite if it fails
+      try {
+        console.log('🔄 Fetching fresh data...');
+        if (typeof memberDataService !== 'undefined' && memberDataService.getFamilyInfo) {
+          const freshData = await memberDataService.getFamilyInfo(salesforceContactId);
+          console.log('📥 Fresh data received:', freshData);
+          
+          if (freshData.success && freshData.data) {
+            const familyData = freshData.data.data || freshData.data;
+            // Only update if we actually got data back
+            if (familyData.fatherName !== undefined || 
+                familyData.fatherBirthplace !== undefined || 
+                familyData.motherMaidenName !== undefined || 
+                familyData.motherBirthplace !== undefined) {
+              
+              const cleanedFamily = {
+                fathersName: formatPersonName(familyData.fatherName || cleanedFamilyInfo.fathersName),
+                fathersBirthplace: formatCity(familyData.fatherBirthplace || cleanedFamilyInfo.fathersBirthplace),
+                mothersMaidenName: formatPersonName(familyData.motherMaidenName || cleanedFamilyInfo.mothersMaidenName),
+                mothersBirthplace: formatCity(familyData.motherBirthplace || cleanedFamilyInfo.mothersBirthplace),
+                spousesName: formatPersonName(familyData.spouseName || cleanedFamilyInfo.spousesName)
+              };
+              console.log('🔄 Setting refreshed family data:', cleanedFamily);
+              setFamilyInfo(cleanedFamily);
+              setOriginalData(prev => ({ ...prev, family: cleanedFamily }));
+            } else {
+              console.log('⚠️ Fresh data fetch returned empty data, keeping current state');
+            }
+          } else {
+            console.log('⚠️ Fresh data fetch failed, keeping current state');
+          }
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing family data:', refreshError);
+        // Non-critical error - data was saved successfully
+      }
+      
+      // Refresh the main cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
+      } else {
+        console.log('⚠️ refreshMemberInfo function not available');
+      }
+      
     } catch (error) {
-      console.error('Error saving family info:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save family information' });
+      console.error('❌ === ERROR IN saveFamilyInfo ===');
+      console.error('❌ Error name:', error.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Full error:', error);
+      
+      // Rollback on error
+      setFamilyInfo(previousFamilyInfo);
+      setPersonalInfo(previousPersonalInfo);
+      
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Failed to save family information: ' + error.message 
+      });
     } finally {
-      setSavingSection('');
-      setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      console.log('🏁 === FINALLY BLOCK ===');
+      console.log('🏁 Current savingSection:', savingSection);
+      
+      // Keep the 'saved' state for a moment before clearing
+      if (savingSection === 'saved') {
+        console.log('🏁 Keeping saved state for 2 seconds...');
+        setTimeout(() => {
+          console.log('🏁 Clearing saved state');
+          setSavingSection('');
+        }, 2000);
+      } else {
+        console.log('🏁 Clearing saving state immediately');
+        setSavingSection('');
+      }
+      
+      setTimeout(() => {
+        console.log('🏁 Clearing save message after 5 seconds');
+        setSaveMessage({ type: '', text: '' });
+      }, 5000);
+      
+      console.log('🚀 === SAVE FAMILY INFO END ===\n');
     }
   };
   

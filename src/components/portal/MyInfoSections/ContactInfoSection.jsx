@@ -224,11 +224,13 @@ const ContactInfoSection = ({
                     value={safePersonalInfo?.firstName || ''}
                     onChange={(e) => setPersonalInfo({...safePersonalInfo, firstName: e.target.value})}
                     error={fieldErrors.firstName}
+                    disabled={savingSection === 'contact'}
                   />
                   <FormInput
                     label="Middle Name"
                     value={safePersonalInfo?.middleName || ''}
                     onChange={(e) => setPersonalInfo({...safePersonalInfo, middleName: e.target.value})}
+                    disabled={savingSection === 'contact'}
                   />
                 </div>
                 
@@ -238,12 +240,15 @@ const ContactInfoSection = ({
                     value={safePersonalInfo?.lastName || ''}
                     onChange={(e) => setPersonalInfo({...safePersonalInfo, lastName: e.target.value})}
                     error={fieldErrors.lastName}
+                    disabled={savingSection === 'contact'}
                   />
                   <FormInput
                     label="Personal Email *"
                     type="email"
                     value={contactInfo?.personalEmail || ''}
                     onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
+                    error={fieldErrors.personalEmail}
+                    disabled={savingSection === 'contact'}
                   />
                 </div>
                 
@@ -252,6 +257,7 @@ const ContactInfoSection = ({
                   type="email"
                   value={contactInfo?.workEmail || ''}
                   onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
+                  disabled={savingSection === 'contact'}
                 />
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -259,6 +265,8 @@ const ContactInfoSection = ({
                     label="Preferred Phone *"
                     value={contactInfo?.preferredPhone || ''}
                     onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
+                    error={fieldErrors.preferredPhone}
+                    disabled={savingSection === 'contact'}
                   >
                     <option value="">Select...</option>
                     <option value="Mobile">Mobile Phone</option>
@@ -273,6 +281,7 @@ const ContactInfoSection = ({
                     onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
                     placeholder="(555) 123-4567"
                     error={fieldErrors.mobilePhone}
+                    disabled={savingSection === 'contact'}
                   />
                 </div>
                 
@@ -284,6 +293,7 @@ const ContactInfoSection = ({
                     onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
                     placeholder="(555) 123-4567"
                     error={fieldErrors.homePhone}
+                    disabled={savingSection === 'contact'}
                   />
                   <FormInput
                     label="Work Phone"
@@ -292,6 +302,7 @@ const ContactInfoSection = ({
                     onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
                     placeholder="(555) 123-4567"
                     error={fieldErrors.workPhone}
+                    disabled={savingSection === 'contact'}
                   />
                 </div>
               </div>
@@ -376,7 +387,7 @@ const ContactInfoSection = ({
                 type="text"
                 value={safePersonalInfo?.firstName || ''}
                 onChange={(e) => setPersonalInfo({...safePersonalInfo, firstName: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
                 error={fieldErrors.firstName}
               />
               
@@ -385,7 +396,7 @@ const ContactInfoSection = ({
                 type="text"
                 value={safePersonalInfo?.middleName || ''}
                 onChange={(e) => setPersonalInfo({...safePersonalInfo, middleName: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
               />
               
               <Input
@@ -393,7 +404,7 @@ const ContactInfoSection = ({
                 type="text"
                 value={safePersonalInfo?.lastName || ''}
                 onChange={(e) => setPersonalInfo({...safePersonalInfo, lastName: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
                 error={fieldErrors.lastName}
               />
               
@@ -403,7 +414,7 @@ const ContactInfoSection = ({
                   birthDay={birthDay}
                   birthYear={birthYear}
                   onChange={handleDateChange}
-                  disabled={!editMode.contact}
+                  disabled={!editMode.contact || savingSection === 'contact'}
                 />
               )}
               
@@ -412,7 +423,8 @@ const ContactInfoSection = ({
                 type="email"
                 value={contactInfo?.personalEmail || ''}
                 onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
+                error={fieldErrors.personalEmail}
               />
               
               <Input
@@ -420,14 +432,15 @@ const ContactInfoSection = ({
                 type="email"
                 value={contactInfo?.workEmail || ''}
                 onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
               />
               
               <Select
                 label="Preferred Phone *"
                 value={contactInfo?.preferredPhone || ''}
                 onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
+                error={fieldErrors.preferredPhone}
               >
                 <option value="">Select...</option>
                 <option value="Mobile">Mobile Phone</option>
@@ -440,7 +453,7 @@ const ContactInfoSection = ({
                 type="tel"
                 value={contactInfo?.mobilePhone || ''}
                 onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
                 placeholder="(555) 123-4567"
                 error={fieldErrors.mobilePhone}
               />
@@ -450,7 +463,7 @@ const ContactInfoSection = ({
                 type="tel"
                 value={contactInfo?.homePhone || ''}
                 onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
                 placeholder="(555) 123-4567"
                 error={fieldErrors.homePhone}
               />
@@ -460,7 +473,7 @@ const ContactInfoSection = ({
                 type="tel"
                 value={contactInfo?.workPhone || ''}
                 onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
-                disabled={!editMode.contact}
+                disabled={!editMode.contact || savingSection === 'contact'}
                 placeholder="(555) 123-4567"
                 error={fieldErrors.workPhone}
               />
@@ -475,12 +488,14 @@ const ContactInfoSection = ({
                   onClick={() => cancelEdit && cancelEdit('contact')}
                   className="scale-75 -mr-8"
                   spinStar={false}
+                  disabled={savingSection === 'contact'}
                 />
                 <PurpleButton
                   text={savingSection === 'saved' ? 'Saved' : savingSection === 'contact' ? 'Saving...' : 'Save'}
                   onClick={saveContactInfo}
                   className="scale-75"
                   spinStar={false}
+                  disabled={savingSection === 'contact'}
                 />
               </div>
             ) : (
