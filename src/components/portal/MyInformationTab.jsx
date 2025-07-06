@@ -301,6 +301,16 @@ const MyInformationTab = () => {
             setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
           }
         }
+
+        if (memberInfoData.legal?.success && memberInfoData.legal.data) {
+          const legalData = memberInfoData.legal.data.data || memberInfoData.legal.data;
+          const transformedLegal = {
+            hasWill: legalData.hasWill || '',
+            willContraryToCryonics: legalData.willContraryToCryonics || ''
+          };
+          setLegal(transformedLegal);
+          setOriginalData(prev => ({ ...prev, legal: transformedLegal }));
+        }
         
         if (memberInfoData.category?.success && memberInfoData.category.data) {
           setMemberCategory(memberInfoData.category.data.category);
@@ -657,6 +667,20 @@ const MyInformationTab = () => {
         
         setCryoArrangements(transformedCryo);
         setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+      }
+
+      // Process Legal Info
+      if (results.legalRes.success && results.legalRes.data) {
+        const legalData = results.legalRes.data.data || results.legalRes.data;
+        console.log('Setting legal info data:', legalData);
+        
+        const transformedLegal = {
+          hasWill: legalData.hasWill || '',
+          willContraryToCryonics: legalData.willContraryToCryonics || ''
+        };
+        
+        setLegal(transformedLegal);
+        setOriginalData(prev => ({ ...prev, legal: transformedLegal }));
       }
       
       // Process Emergency Contacts (Next of Kin)
@@ -2022,9 +2046,10 @@ const saveCryoArrangements = async () => {
       // Clean the legal data
       const cleanedLegal = cleanDataBeforeSave(legal, 'legal');
       
+      // Send the string values directly - don't convert to boolean
       const dataToSend = {
-        hasWill: cleanedLegal.hasWill === 'Yes',
-        willContraryToCryonics: cleanedLegal.contraryProvisions === 'Yes'
+        hasWill: cleanedLegal.hasWill || null,  // Keep as "Yes", "No", or null
+        willContraryToCryonics: cleanedLegal.willContraryToCryonics || null  // Keep as "Yes", "No", or null
       };
       
       const result = await updateMemberLegalInfo(salesforceContactId, dataToSend);
@@ -2043,11 +2068,11 @@ const saveCryoArrangements = async () => {
           }, 500);
         }
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save legal information' });
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save legal information' });
       }
     } catch (error) {
       console.error('Error saving legal info:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save legal information' });
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to save legal information' });
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
