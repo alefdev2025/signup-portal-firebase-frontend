@@ -433,6 +433,7 @@ const ContactInfoSection = ({
                 value={contactInfo?.workEmail || ''}
                 onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
                 disabled={!editMode.contact || savingSection === 'contact'}
+                error={fieldErrors.workEmail}  // ADD THIS LINE
               />
               
               <Select

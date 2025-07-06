@@ -87,15 +87,15 @@ const MedicalInfoSection = ({
     // Check if important medical fields are missing
     const missingFields = [];
     
-    console.log('=== CHECKING MEDICAL PROFILE ===');
-    console.log('Full medicalInfo object:', medicalInfo);
+    //console.log('=== CHECKING MEDICAL PROFILE ===');
+    //console.log('Full medicalInfo object:', medicalInfo);
     
     // Basic health info
-    console.log('\n--- Basic Health Info ---');
-    console.log('sex:', medicalInfo.sex, '-> missing?', !medicalInfo.sex);
-    console.log('height:', medicalInfo.height, '-> missing?', !medicalInfo.height);
-    console.log('weight:', medicalInfo.weight, '-> missing?', !medicalInfo.weight);
-    console.log('bloodType:', medicalInfo.bloodType, '-> missing?', !medicalInfo.bloodType);
+    //console.log('\n--- Basic Health Info ---');
+    //console.log('sex:', medicalInfo.sex, '-> missing?', !medicalInfo.sex);
+    //console.log('height:', medicalInfo.height, '-> missing?', !medicalInfo.height);
+    //console.log('weight:', medicalInfo.weight, '-> missing?', !medicalInfo.weight);
+    //console.log('bloodType:', medicalInfo.bloodType, '-> missing?', !medicalInfo.bloodType);
     
     if (!medicalInfo.sex) missingFields.push('sex');
     if (!medicalInfo.height) missingFields.push('height');
@@ -103,31 +103,31 @@ const MedicalInfoSection = ({
     if (!medicalInfo.bloodType) missingFields.push('blood type');
     
     // Doctor info
-    console.log('\n--- Doctor Info ---');
-    console.log('primaryPhysician:', medicalInfo.primaryPhysician, '-> missing?', !medicalInfo.primaryPhysician);
-    console.log('physicianCity:', medicalInfo.physicianCity, '-> missing?', !medicalInfo.physicianCity);
-    console.log('physicianState:', medicalInfo.physicianState, '-> missing?', !medicalInfo.physicianState);
-    console.log('doctor location missing?', !medicalInfo.physicianCity || !medicalInfo.physicianState);
+    //console.log('\n--- Doctor Info ---');
+    //console.log('primaryPhysician:', medicalInfo.primaryPhysician, '-> missing?', !medicalInfo.primaryPhysician);
+    //console.log('physicianCity:', medicalInfo.physicianCity, '-> missing?', !medicalInfo.physicianCity);
+    //console.log('physicianState:', medicalInfo.physicianState, '-> missing?', !medicalInfo.physicianState);
+    //console.log('doctor location missing?', !medicalInfo.physicianCity || !medicalInfo.physicianState);
     
     if (!medicalInfo.primaryPhysician) missingFields.push('primary physician');
     if (!medicalInfo.physicianCity || !medicalInfo.physicianState) missingFields.push('doctor location');
     
     // Medical history - NOW CHECKS EACH FIELD INDIVIDUALLY
-    console.log('\n--- Medical History ---');
-    console.log('healthProblems:', medicalInfo.healthProblems, '-> empty?', !medicalInfo.healthProblems);
-    console.log('medications:', medicalInfo.medications, '-> empty?', !medicalInfo.medications);
-    console.log('allergies:', medicalInfo.allergies, '-> empty?', !medicalInfo.allergies);
+    //console.log('\n--- Medical History ---');
+    //console.log('healthProblems:', medicalInfo.healthProblems, '-> empty?', !medicalInfo.healthProblems);
+    //console.log('medications:', medicalInfo.medications, '-> empty?', !medicalInfo.medications);
+    //console.log('allergies:', medicalInfo.allergies, '-> empty?', !medicalInfo.allergies);
     
     // Check each field individually
     if (!medicalInfo.healthProblems) missingFields.push('health problems');
     if (!medicalInfo.medications) missingFields.push('medications');
     if (!medicalInfo.allergies) missingFields.push('allergies');
     
-    console.log('\n--- RESULTS ---');
-    console.log('Missing fields:', missingFields);
-    console.log('Total missing:', missingFields.length);
-    console.log('Needs improvement?', missingFields.length > 0);
-    console.log('=== END CHECK ===\n');
+    //console.log('\n--- RESULTS ---');
+    //console.log('Missing fields:', missingFields);
+    //console.log('Total missing:', missingFields.length);
+    //console.log('Needs improvement?', missingFields.length > 0);
+    //console.log('=== END CHECK ===\n');
     
     return missingFields.length > 0;
   };

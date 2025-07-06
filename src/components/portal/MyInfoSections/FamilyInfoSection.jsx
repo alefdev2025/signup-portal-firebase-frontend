@@ -299,9 +299,8 @@ const FamilyInfoSection = ({
                     label="Father's Full Name *"
                     value={familyInfo.fathersName || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
-                    className={errors.fathersName ? 'border-red-500' : ''}
+                    error={errors.fathersName}
                   />
-                  {errors.fathersName && <ErrorMessage error={errors.fathersName} />}
                 </div>
                 <div>
                   <FormInput
@@ -309,21 +308,19 @@ const FamilyInfoSection = ({
                     placeholder="City, State/Province, Country (or 'Unknown')"
                     value={familyInfo.fathersBirthplace || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
-                    className={errors.fathersBirthplace ? 'border-red-500' : ''}
+                    error={errors.fathersBirthplace}
                   />
-                  <p className="text-xs text-white/60 mt-1 font-light">
+                  <p className="text-xs text-gray-500 mt-1 font-light">
                     Please include city, state/province, and country. Enter "Unknown" if not known.
                   </p>
-                  {errors.fathersBirthplace && <ErrorMessage error={errors.fathersBirthplace} />}
                 </div>
                 <div>
                   <FormInput
                     label="Mother's Full Maiden Name *"
                     value={familyInfo.mothersMaidenName || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
-                    className={errors.mothersMaidenName ? 'border-red-500' : ''}
+                    error={errors.mothersMaidenName}
                   />
-                  {errors.mothersMaidenName && <ErrorMessage error={errors.mothersMaidenName} />}
                 </div>
                 <div>
                   <FormInput
@@ -331,12 +328,11 @@ const FamilyInfoSection = ({
                     placeholder="City, State/Province, Country (or 'Unknown')"
                     value={familyInfo.mothersBirthplace || ''}
                     onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
-                    className={errors.mothersBirthplace ? 'border-red-500' : ''}
+                    error={errors.mothersBirthplace}
                   />
-                  <p className="text-xs text-white/60 mt-1 font-light">
+                  <p className="text-xs text-gray-500 mt-1 font-light">
                     Please include city, state/province, and country. Enter "Unknown" if not known.
                   </p>
-                  {errors.mothersBirthplace && <ErrorMessage error={errors.mothersBirthplace} />}
                 </div>
                 {personalInfo.maritalStatus === 'Married' && (
                   <div>
@@ -344,9 +340,8 @@ const FamilyInfoSection = ({
                       label={`${personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
                       value={familyInfo.spousesName || ''}
                       onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
-                      className={errors.spousesName ? 'border-red-500' : ''}
+                      error={errors.spousesName}
                     />
-                    {errors.spousesName && <ErrorMessage error={errors.spousesName} />}
                   </div>
                 )}
               </div>

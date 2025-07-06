@@ -156,7 +156,7 @@ const MyInformationTab = () => {
     const initializeData = async () => {
       // First, try to use cached data if available
       if (memberInfoLoaded && memberInfoData && !initializedFromCache) {
-        console.log('📦 [MyInformationTab] Using preloaded member data');
+        //console.log('📦 [MyInformationTab] Using preloaded member data');
         
         // Process and set all the cached data
         if (memberInfoData.personal?.success && memberInfoData.personal.data) {
@@ -301,7 +301,7 @@ const MyInformationTab = () => {
         setIsLoading(false);
       } else if (!memberInfoLoaded) {
         // No cached data available, load fresh
-        console.log('🔄 [MyInformationTab] No cached data, loading fresh...');
+        //console.log('🔄 [MyInformationTab] No cached data, loading fresh...');
         loadAllData();
       }
     };
@@ -452,7 +452,7 @@ const MyInformationTab = () => {
       };
       
       // Update states with fetched and cleaned data
-      console.log('API Responses:', results);
+      //console.log('API Responses:', results);
       
       // In the loadAllData function, update the Personal Info section:
       if (results.personalRes.success && results.personalRes.data) {
@@ -504,8 +504,8 @@ const MyInformationTab = () => {
       if (results.addressRes.success && results.addressRes.data) {
         const addressData = results.addressRes.data.data || results.addressRes.data;
         
-        console.log('🔍 === DEBUG Address Loading ===');
-        console.log('📦 Raw addressData from backend:', addressData);
+        //console.log('🔍 === DEBUG Address Loading ===');
+        //console.log('📦 Raw addressData from backend:', addressData);
         
         // Transform address data to match component expectations
         const transformedAddresses = {
@@ -525,8 +525,8 @@ const MyInformationTab = () => {
         // Clean the addresses after transformation
         const cleanedAddresses = cleanAddressData(transformedAddresses);
         
-        console.log('✨ Cleaned addresses:', cleanedAddresses);
-        console.log('🔍 === END DEBUG ===\n');
+        //console.log('✨ Cleaned addresses:', cleanedAddresses);
+        //console.log('🔍 === END DEBUG ===\n');
         
         setAddresses(cleanedAddresses);
         setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
@@ -534,8 +534,20 @@ const MyInformationTab = () => {
       
       // Family Info - Clean all family data
       if (results.familyRes.success && results.familyRes.data) {
+        console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING START ===');
+        console.log('📦 Raw familyRes:', results.familyRes);
+        console.log('📦 familyRes.data:', results.familyRes.data);
+        
         const familyData = results.familyRes.data.data || results.familyRes.data;
-        console.log('Setting family info data:', familyData);
+        console.log('📦 Extracted familyData:', familyData);
+        console.log('📋 Family data type:', typeof familyData);
+        console.log('📋 Family data keys:', Object.keys(familyData || {}));
+        console.log('📋 Individual fields:');
+        console.log('  - fatherName:', familyData.fatherName);
+        console.log('  - fatherBirthplace:', familyData.fatherBirthplace);
+        console.log('  - motherMaidenName:', familyData.motherMaidenName);
+        console.log('  - motherBirthplace:', familyData.motherBirthplace);
+        console.log('  - spouseName:', familyData.spouseName);
         
         // Transform and clean family data
         const transformedFamily = {
@@ -546,20 +558,44 @@ const MyInformationTab = () => {
           spousesName: formatPersonName(familyData.spouseName)
         };
         
+        console.log('✨ Transformed family data:', transformedFamily);
+        console.log('📋 Transformed data keys:', Object.keys(transformedFamily));
+        console.log('📋 Transformed values:');
+        console.log('  - fathersName:', transformedFamily.fathersName);
+        console.log('  - fathersBirthplace:', transformedFamily.fathersBirthplace);
+        console.log('  - mothersMaidenName:', transformedFamily.mothersMaidenName);
+        console.log('  - mothersBirthplace:', transformedFamily.mothersBirthplace);
+        console.log('  - spousesName:', transformedFamily.spousesName);
+        
+        // Check if formatPersonName and formatCity are working
+        console.log('🔍 Testing format functions:');
+        console.log('  - formatPersonName("John Doe"):', formatPersonName("John Doe"));
+        console.log('  - formatCity("New York, NY, USA"):', formatCity("New York, NY, USA"));
+        
         setFamilyInfo(transformedFamily);
         setOriginalData(prev => ({ ...prev, family: transformedFamily }));
+        
+        console.log('✅ familyInfo state should now be set');
+        console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING END ===\n');
+      } else {
+        console.log('❌ === FAMILY INFO FAILED TO LOAD ===');
+        console.log('❌ familyRes success:', results.familyRes.success);
+        console.log('❌ familyRes error:', results.familyRes.error);
+        console.log('❌ Full familyRes:', results.familyRes);
       }
       
-      // Occupation - Clean occupation data
       if (results.occupationRes.success && results.occupationRes.data) {
         const occupationData = results.occupationRes.data.data || results.occupationRes.data;
-        console.log('Setting occupation data:', occupationData);
         
         const cleanedOccupation = {
           ...occupationData,
           occupation: cleanString(occupationData.occupation),
-          occupationalIndustry: cleanString(occupationData.occupationalIndustry),
-          militaryBranch: cleanString(occupationData.militaryBranch)
+          occupationalIndustry: cleanString(occupationData.industry), // Note: backend returns 'industry', not 'occupationalIndustry'
+          // Extract military data from the militaryService object
+          hasMilitaryService: !!(occupationData.militaryService?.branch),
+          militaryBranch: cleanString(occupationData.militaryService?.branch || ''),
+          servedFrom: occupationData.militaryService?.startYear || '',
+          servedTo: occupationData.militaryService?.endYear || ''
         };
         
         setOccupation(cleanedOccupation);
@@ -569,18 +605,18 @@ const MyInformationTab = () => {
       // Medical Info - Clean medical data
       if (results.medicalRes.success && results.medicalRes.data) {
         const medicalData = results.medicalRes.data.data || results.medicalRes.data;
-        console.log('🏥 === MEDICAL INFO FROM BACKEND ===');
-        console.log('📦 Raw medical data:', medicalData);
-        console.log('📏 Height value:', medicalData.height, 'Type:', typeof medicalData.height);
-        console.log('⚖️ Weight value:', medicalData.weight, 'Type:', typeof medicalData.weight);
+        //console.log('🏥 === MEDICAL INFO FROM BACKEND ===');
+        //console.log('📦 Raw medical data:', medicalData);
+        //console.log('📏 Height value:', medicalData.height, 'Type:', typeof medicalData.height);
+        //console.log('⚖️ Weight value:', medicalData.weight, 'Type:', typeof medicalData.weight);
         
         // Use cleanDataBeforeSave to properly clean all fields
         const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
         
-        console.log('✨ Cleaned medical data:');
-        console.log('📏 Cleaned height:', cleanedMedical.height, 'Type:', typeof cleanedMedical.height);
-        console.log('⚖️ Cleaned weight:', cleanedMedical.weight, 'Type:', typeof cleanedMedical.weight);
-        console.log('🏥 === END MEDICAL INFO ===\n');
+        //console.log('✨ Cleaned medical data:');
+        //console.log('📏 Cleaned height:', cleanedMedical.height, 'Type:', typeof cleanedMedical.height);
+        //console.log('⚖️ Cleaned weight:', cleanedMedical.weight, 'Type:', typeof cleanedMedical.weight);
+        //console.log('🏥 === END MEDICAL INFO ===\n');
         
         setMedicalInfo(cleanedMedical);
         setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
@@ -589,7 +625,7 @@ const MyInformationTab = () => {
       // Process Cryopreservation Arrangements
       if (results.cryoRes.success && results.cryoRes.data) {
         const cryoData = results.cryoRes.data.data || results.cryoRes.data;
-        console.log('Setting cryo arrangements data:', cryoData);
+        //console.log('Setting cryo arrangements data:', cryoData);
         
         // Transform and clean the data
         const transformedCryo = {
@@ -616,13 +652,13 @@ const MyInformationTab = () => {
       // Process Emergency Contacts (Next of Kin)
       if (results.emergencyRes.success && results.emergencyRes.data) {
         const emergencyResponse = results.emergencyRes.data;
-        console.log('Emergency contacts response:', emergencyResponse);
+        //console.log('Emergency contacts response:', emergencyResponse);
         
         const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
         
         if (nextOfKinArray && nextOfKinArray.length > 0) {
           const primaryContact = nextOfKinArray[0];
-          console.log('Primary contact data:', primaryContact);
+          //console.log('Primary contact data:', primaryContact);
           
           // Clean all the data when loading from backend
           const transformedNextOfKin = {
@@ -635,20 +671,20 @@ const MyInformationTab = () => {
               ''
           };
           
-          console.log('Transformed and cleaned next of kin:', transformedNextOfKin);
+          //console.log('Transformed and cleaned next of kin:', transformedNextOfKin);
           setNextOfKin(transformedNextOfKin);
           setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
         } else {
-          console.log('No next of kin data found in response');
+          //console.log('No next of kin data found in response');
         }
       } else {
-        console.log('Emergency contacts request failed or returned no data');
+        //console.log('Emergency contacts request failed or returned no data');
       }
       
       // Process Insurance (Funding)
       if (results.insuranceRes.success && results.insuranceRes.data) {
         const insuranceData = results.insuranceRes.data.data || results.insuranceRes.data;
-        console.log('Setting insurance data:', insuranceData);
+        //console.log('Setting insurance data:', insuranceData);
         
         if (insuranceData.length > 0) {
           const primaryInsurance = insuranceData[0];
@@ -771,42 +807,42 @@ const MemberStatusBanner = ({ category }) => {
 };
 
 const loadMemberCategory = async () => {
-  console.log('🔍 === loadMemberCategory START (Frontend) ===');
-  console.log('📋 Salesforce Contact ID:', salesforceContactId);
+  //console.log('🔍 === loadMemberCategory START (Frontend) ===');
+  //console.log('📋 Salesforce Contact ID:', salesforceContactId);
   
   setCategoryLoading(true);
   try {
-    console.log('🌐 Calling getMemberCategory API...');
+    //console.log('🌐 Calling getMemberCategory API...');
     const result = await getMemberCategory(salesforceContactId);
-    console.log('📦 API Response:', result);
+    //console.log('📦 API Response:', result);
     
     if (result.success) {
-      console.log('✅ Category determined:', result.data.category);
-      console.log('📊 Details:', result.data.details);
-      console.log('🔍 Debug info:', result.data.debug);
+      //console.log('✅ Category determined:', result.data.category);
+      //console.log('📊 Details:', result.data.details);
+      //console.log('🔍 Debug info:', result.data.debug);
       
       setMemberCategory(result.data.category);
       
       // Log what sections will be visible
-      console.log('\n📋 Section Visibility for', result.data.category + ':');
+      //console.log('\n📋 Section Visibility for', result.data.category + ':');
       const config = memberCategoryConfig[result.data.category];
       if (config) {
         Object.keys(config.sections).forEach(section => {
-          console.log(`  - ${section}: ${config.sections[section].visible ? '✓ Visible' : '✗ Hidden'}`);
+          //console.log(`  - ${section}: ${config.sections[section].visible ? '✓ Visible' : '✗ Hidden'}`);
         });
       }
     } else {
       console.error('❌ Failed to load member category:', result.error);
-      console.log('⚠️ Defaulting to BasicMember');
+      //console.log('⚠️ Defaulting to BasicMember');
       setMemberCategory('BasicMember');
     }
   } catch (error) {
     console.error('❌ Error loading member category:', error);
-    console.log('⚠️ Defaulting to BasicMember');
+    //console.log('⚠️ Defaulting to BasicMember');
     setMemberCategory('BasicMember');
   } finally {
     setCategoryLoading(false);
-    console.log('🔍 === loadMemberCategory END (Frontend) ===\n');
+    //console.log('🔍 === loadMemberCategory END (Frontend) ===\n');
   }
 };
   
@@ -857,8 +893,8 @@ const loadMemberCategory = async () => {
   };
 
   const savePersonalInfo = async () => {
-    console.log('🔵 === START savePersonalInfo ===');
-    console.log('Member category:', memberCategory);
+    //console.log('🔵 === START savePersonalInfo ===');
+    //console.log('Member category:', memberCategory);
     
     // Store current state for rollback
     const previousPersonalInfo = { ...personalInfo };
@@ -869,7 +905,7 @@ const loadMemberCategory = async () => {
     try {
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.personal?.requiredFields || [];
-      console.log('Required fields for personal section:', requiredFields);
+      //console.log('Required fields for personal section:', requiredFields);
       
       // Clean the data before validation and sending
       const cleanedData = cleanDataBeforeSave(personalInfo, 'personal');
@@ -911,7 +947,7 @@ const loadMemberCategory = async () => {
         return;
       }
       
-      console.log('📤 Cleaned data being sent:', JSON.stringify(cleanedData, null, 2));
+      //console.log('📤 Cleaned data being sent:', JSON.stringify(cleanedData, null, 2));
       
       const result = await updateMemberPersonalInfo(salesforceContactId, cleanedData);
       
@@ -925,7 +961,7 @@ const loadMemberCategory = async () => {
       
       // Handle partial success
       if (result.partialSuccess) {
-        console.log('⚠️ Partial success - some fields may not have been updated');
+        //console.log('⚠️ Partial success - some fields may not have been updated');
         const errorDetails = result.errors ? result.errors.join('; ') : '';
         setSaveMessage({ 
           type: 'warning', 
@@ -961,7 +997,7 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
@@ -975,7 +1011,7 @@ const loadMemberCategory = async () => {
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      console.log('🔵 === END savePersonalInfo ===\n');
+      //console.log('🔵 === END savePersonalInfo ===\n');
     }
   };
   
@@ -997,12 +1033,12 @@ const loadMemberCategory = async () => {
         return;
       }
       
-      console.log('Starting saveContactInfo with salesforceContactId:', salesforceContactId);
-      console.log('Member category:', memberCategory);
+      //console.log('Starting saveContactInfo with salesforceContactId:', salesforceContactId);
+      //console.log('Member category:', memberCategory);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.contact?.requiredFields || [];
-      console.log('Required fields for contact section:', requiredFields);
+      //console.log('Required fields for contact section:', requiredFields);
       
       // Clean the data
       const cleanedContactData = cleanDataBeforeSave(contactInfo, 'contact');
@@ -1041,7 +1077,7 @@ const loadMemberCategory = async () => {
                              personalData.lastName !== (originalData.personal.lastName || '');
       
       if (!contactChanged && !personalChanged) {
-        console.log('No changes detected, skipping save');
+        //console.log('No changes detected, skipping save');
         setSavingSection('saved');
         setEditMode(prev => ({ ...prev, contact: false }));
         setTimeout(() => setSavingSection(''), 2000);
@@ -1051,11 +1087,7 @@ const loadMemberCategory = async () => {
       // Validate required fields
       const errors = {};
       
-      console.log('Validating emails:', {
-        personalEmail: contactData.personalEmail,
-        workEmail: contactData.workEmail
-      });
-      
+      // Check required fields
       requiredFields.forEach(field => {
         switch(field) {
           case 'firstName':
@@ -1076,24 +1108,14 @@ const loadMemberCategory = async () => {
         }
       });
       
-      // Validate email formats for ALL email fields (not just required ones)
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      
-      if (contactData.personalEmail && contactData.personalEmail.trim() !== '') {
-        if (!emailRegex.test(contactData.personalEmail)) {
-          errors.personalEmail = 'Please enter a valid email address';
-          console.log('Personal email validation failed:', contactData.personalEmail);
-        }
+      // Check email formats - simple validation
+      if (contactData.personalEmail && !contactData.personalEmail.includes('@')) {
+        errors.personalEmail = 'Please enter a valid email address';
       }
       
-      if (contactData.workEmail && contactData.workEmail.trim() !== '') {
-        if (!emailRegex.test(contactData.workEmail)) {
-          errors.workEmail = 'Please enter a valid work email address';
-          console.log('Work email validation failed:', contactData.workEmail);
-        }
+      if (contactData.workEmail && !contactData.workEmail.includes('@')) {
+        errors.workEmail = 'Please enter a valid work email address';
       }
-      
-      console.log('Validation errors:', errors);
       
       // Phone validation
       if (!contactData.preferredPhone) {
@@ -1113,18 +1135,13 @@ const loadMemberCategory = async () => {
       
       // If there are validation errors, show them under fields only
       if (Object.keys(errors).length > 0) {
-        console.log('Setting field errors and returning early');
         setFieldErrors(errors);
         setSavingSection('');
-        // Don't show any message at the top - only show field-level errors
-        // Rollback state
-        setContactInfo(previousContactInfo);
-        setPersonalInfo(previousPersonalInfo);
         return;
       }
       
       // Make API calls
-      console.log('Making API calls...');
+      ////console.log('Making API calls...');
       const calls = [];
       
       if (contactChanged) {
@@ -1135,7 +1152,7 @@ const loadMemberCategory = async () => {
       }
       
       const results = await Promise.all(calls);
-      console.log('API results:', results);
+      ////console.log('API results:', results);
       
       const allSuccessful = results.every(result => result.success);
       
@@ -1234,7 +1251,7 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          ////console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
@@ -1277,13 +1294,13 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('🚀 === SAVE ADDRESSES START ===');
-      console.log('Member category:', memberCategory);
-      console.log('📤 Current addresses state before save:', addresses);
+      ////console.log('🚀 === SAVE ADDRESSES START ===');
+      ////console.log('Member category:', memberCategory);
+      ////console.log('📤 Current addresses state before save:', addresses);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.addresses?.requiredFields || [];
-      console.log('Required fields for addresses section:', requiredFields);
+      ////console.log('Required fields for addresses section:', requiredFields);
       
       // Clean the addresses data
       const cleanedAddresses = cleanDataBeforeSave(addresses, 'addresses');
@@ -1350,10 +1367,10 @@ const loadMemberCategory = async () => {
         sameAsHome: cleanedAddresses.sameAsHome
       };
       
-      console.log('📦 Data being sent to backend:', dataToSend);
+      ////console.log('📦 Data being sent to backend:', dataToSend);
       
       const result = await updateMemberAddresses(salesforceContactId, dataToSend);
-      console.log('📨 Save result:', result);
+      ////console.log('📨 Save result:', result);
       
       if (!result.success) {
         // Rollback on failure
@@ -1370,7 +1387,7 @@ const loadMemberCategory = async () => {
       setEditMode(prev => ({ ...prev, addresses: false }));
       
       // Clear cache after successful save
-      console.log('🗑️ Clearing cache...');
+      ////console.log('🗑️ Clearing cache...');
       memberDataService.clearCache(salesforceContactId);
       
       // Fetch fresh data to ensure sync
@@ -1403,7 +1420,7 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          ////console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
@@ -1417,14 +1434,14 @@ const loadMemberCategory = async () => {
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      console.log('🚀 === SAVE ADDRESSES END ===\n');
+      ////console.log('🚀 === SAVE ADDRESSES END ===\n');
     }
   };
   
   const saveFamilyInfo = async () => {
-    console.log('🎯 saveFamilyInfo function called!');
-    console.log('Current familyInfo state:', familyInfo);
-    console.log('Current salesforceContactId:', salesforceContactId);
+    ////console.log('🎯 saveFamilyInfo function called!');
+    ////console.log('Current familyInfo state:', familyInfo);
+    ////console.log('Current salesforceContactId:', salesforceContactId);
     
     // Store current state for rollback
     const previousFamilyInfo = { ...familyInfo };
@@ -1434,28 +1451,28 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('🚀 === SAVE FAMILY INFO START ===');
-      console.log('Member category:', memberCategory);
-      console.log('📤 Current family state before save:', familyInfo);
-      console.log('📤 Current personal state before save:', personalInfo);
+      ////console.log('🚀 === SAVE FAMILY INFO START ===');
+      ////console.log('Member category:', memberCategory);
+      ////console.log('📤 Current family state before save:', familyInfo);
+      //console.log('📤 Current personal state before save:', personalInfo);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.family?.requiredFields || [];
-      console.log('Required fields for family section:', requiredFields);
+      //console.log('Required fields for family section:', requiredFields);
       
       // Check if cleanDataBeforeSave exists
-      console.log('🔍 Checking cleanDataBeforeSave function exists:', typeof cleanDataBeforeSave);
+      //console.log('🔍 Checking cleanDataBeforeSave function exists:', typeof cleanDataBeforeSave);
       
       // Clean the family data
       let cleanedFamilyInfo, cleanedPersonalInfo;
       try {
-        console.log('🧹 About to clean family info...');
+        //console.log('🧹 About to clean family info...');
         cleanedFamilyInfo = cleanDataBeforeSave(familyInfo, 'family');
-        console.log('🧹 Cleaned family info successfully:', cleanedFamilyInfo);
+        //console.log('🧹 Cleaned family info successfully:', cleanedFamilyInfo);
         
-        console.log('🧹 About to clean personal info...');
+        //console.log('🧹 About to clean personal info...');
         cleanedPersonalInfo = cleanDataBeforeSave(personalInfo, 'personal');
-        console.log('🧹 Cleaned personal info successfully:', cleanedPersonalInfo);
+        //console.log('🧹 Cleaned personal info successfully:', cleanedPersonalInfo);
       } catch (cleanError) {
         console.error('❌ Error during data cleaning:', cleanError);
         throw cleanError;
@@ -1465,12 +1482,12 @@ const loadMemberCategory = async () => {
       const errors = {};
       
       requiredFields.forEach(field => {
-        console.log(`📋 Checking required field: ${field}`);
+        //console.log(`📋 Checking required field: ${field}`);
         switch(field) {
           case 'fathersName':
             if (!cleanedFamilyInfo.fathersName) {
               errors.fathersName = "Father's name is required";
-              console.log('❌ Father\'s name is missing');
+              //console.log('❌ Father\'s name is missing');
             }
             break;
           case 'fathersBirthplace':
@@ -1479,13 +1496,13 @@ const loadMemberCategory = async () => {
                  cleanedFamilyInfo.fathersBirthplace.toLowerCase() !== 'unknown' &&
                  cleanedFamilyInfo.fathersBirthplace.length < 10)) {
               errors.fathersBirthplace = "Father's complete birthplace (city, state, country) is required";
-              console.log('❌ Father\'s birthplace is invalid');
+              //console.log('❌ Father\'s birthplace is invalid');
             }
             break;
           case 'mothersMaidenName':
             if (!cleanedFamilyInfo.mothersMaidenName) {
               errors.mothersMaidenName = "Mother's maiden name is required";
-              console.log('❌ Mother\'s maiden name is missing');
+              //console.log('❌ Mother\'s maiden name is missing');
             }
             break;
           case 'mothersBirthplace':
@@ -1494,14 +1511,14 @@ const loadMemberCategory = async () => {
                  cleanedFamilyInfo.mothersBirthplace.toLowerCase() !== 'unknown' &&
                  cleanedFamilyInfo.mothersBirthplace.length < 10)) {
               errors.mothersBirthplace = "Mother's complete birthplace (city, state, country) is required";
-              console.log('❌ Mother\'s birthplace is invalid');
+              //console.log('❌ Mother\'s birthplace is invalid');
             }
             break;
         }
       });
       
-      console.log('❓ Validation errors:', errors);
-      console.log('❓ Number of errors:', Object.keys(errors).length);
+      //console.log('❓ Validation errors:', errors);
+      //console.log('❓ Number of errors:', Object.keys(errors).length);
       
       if (Object.keys(errors).length > 0) {
         let errorMessage = Object.values(errors).join('. ');
@@ -1511,11 +1528,11 @@ const loadMemberCategory = async () => {
         // Rollback state
         setFamilyInfo(previousFamilyInfo);
         setPersonalInfo(previousPersonalInfo);
-        console.log('🔙 Rolled back due to validation errors');
+        //console.log('🔙 Rolled back due to validation errors');
         return;
       }
       
-      console.log('✅ Validation passed, preparing data for API call...');
+      //console.log('✅ Validation passed, preparing data for API call...');
       
       // Transform data to match backend expectations
       const dataToSend = {
@@ -1527,11 +1544,11 @@ const loadMemberCategory = async () => {
         spouseName: cleanedPersonalInfo.maritalStatus === 'Married' ? cleanedFamilyInfo.spousesName : null
       };
       
-      console.log('📦 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
-      console.log('📞 Calling updateMemberFamilyInfo with ID:', salesforceContactId);
+      //console.log('📦 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      //console.log('📞 Calling updateMemberFamilyInfo with ID:', salesforceContactId);
       
       // Check if updateMemberFamilyInfo exists
-      console.log('🔍 Checking updateMemberFamilyInfo function exists:', typeof updateMemberFamilyInfo);
+      //console.log('🔍 Checking updateMemberFamilyInfo function exists:', typeof updateMemberFamilyInfo);
       
       if (typeof updateMemberFamilyInfo !== 'function') {
         console.error('❌ updateMemberFamilyInfo is not a function!');
@@ -1542,19 +1559,19 @@ const loadMemberCategory = async () => {
       
       let result;
       try {
-        console.log('📞 === CALLING API NOW ===');
-        console.log(`📞 API URL will be: /api/salesforce/member/${salesforceContactId}/family-info`);
+        //console.log('📞 === CALLING API NOW ===');
+        //console.log(`📞 API URL will be: /api/salesforce/member/${salesforceContactId}/family-info`);
         
         result = await updateMemberFamilyInfo(salesforceContactId, dataToSend);
         
-        console.log('📨 === API CALL COMPLETED ===');
-        console.log('📨 Save result:', result);
-        console.log('📨 Result type:', typeof result);
-        console.log('📨 Result keys:', result ? Object.keys(result) : 'null');
-        console.log('📨 Result success:', result?.success);
-        console.log('📨 Result data:', result?.data);
-        console.log('📨 Result error:', result?.error);
-        console.log('📨 Result partialSuccess:', result?.partialSuccess);
+        //console.log('📨 === API CALL COMPLETED ===');
+        //console.log('📨 Save result:', result);
+        //console.log('📨 Result type:', typeof result);
+        //console.log('📨 Result keys:', result ? Object.keys(result) : 'null');
+        //console.log('📨 Result success:', result?.success);
+        //console.log('📨 Result data:', result?.data);
+        //console.log('📨 Result error:', result?.error);
+        //console.log('📨 Result partialSuccess:', result?.partialSuccess);
       } catch (apiError) {
         console.error('❌ === API CALL FAILED ===');
         console.error('❌ Error type:', apiError.name);
@@ -1580,15 +1597,15 @@ const loadMemberCategory = async () => {
       const contactUpdateSuccessful = result?.data?.updateResults?.contact?.success;
       const agreementUpdateSuccessful = result?.data?.updateResults?.agreement?.success;
       
-      console.log('📊 Update results analysis:');
-      console.log('  - Contact update successful:', contactUpdateSuccessful);
-      console.log('  - Agreement update successful:', agreementUpdateSuccessful);
-      console.log('  - Overall success:', result?.success);
-      console.log('  - Partial success:', result?.partialSuccess);
+      //console.log('📊 Update results analysis:');
+      //console.log('  - Contact update successful:', contactUpdateSuccessful);
+      //console.log('  - Agreement update successful:', agreementUpdateSuccessful);
+      //console.log('  - Overall success:', result?.success);
+      //console.log('  - Partial success:', result?.partialSuccess);
       
       // If neither update was successful, it's a complete failure
       if (!contactUpdateSuccessful && !agreementUpdateSuccessful && !result?.success) {
-        console.log('❌ Complete save failure - no fields were updated');
+        //console.log('❌ Complete save failure - no fields were updated');
         
         // Rollback on complete failure
         setFamilyInfo(previousFamilyInfo);
@@ -1603,7 +1620,7 @@ const loadMemberCategory = async () => {
       }
       
       // If we get here, at least something was saved successfully
-      console.log('✅ At least partial save successful');
+      //console.log('✅ At least partial save successful');
       
       // Determine the appropriate message based on what was saved
       let successMessage = 'Family information saved successfully!';
@@ -1611,13 +1628,13 @@ const loadMemberCategory = async () => {
       
       if (result?.partialSuccess && contactUpdateSuccessful && !agreementUpdateSuccessful) {
         // Only contact was updated (common case)
-        console.log('⚠️ Partial success - Contact updated but Agreement update failed');
+        //console.log('⚠️ Partial success - Contact updated but Agreement update failed');
         // For users, this is still a success - their data is saved
         successMessage = 'Family information saved successfully!';
         messageType = 'success';
       } else if (result?.success) {
         // Both were updated successfully
-        console.log('✅ Complete success - both Contact and Agreement updated');
+        //console.log('✅ Complete success - both Contact and Agreement updated');
         successMessage = 'Family information saved successfully!';
         messageType = 'success';
       }
@@ -1633,20 +1650,20 @@ const loadMemberCategory = async () => {
       setEditMode(prev => ({ ...prev, family: false }));
       
       // Clear cache after successful save
-      console.log('🗑️ Clearing cache...');
+      //console.log('🗑️ Clearing cache...');
       if (typeof memberDataService !== 'undefined' && memberDataService.clearCache) {
         memberDataService.clearCache(salesforceContactId);
-        console.log('✅ Cache cleared');
+        //console.log('✅ Cache cleared');
       } else {
         console.warn('⚠️ memberDataService not available for cache clearing');
       }
       
       // Fetch fresh data to ensure sync - but DON'T overwrite if it fails
       try {
-        console.log('🔄 Fetching fresh data...');
+        //console.log('🔄 Fetching fresh data...');
         if (typeof memberDataService !== 'undefined' && memberDataService.getFamilyInfo) {
           const freshData = await memberDataService.getFamilyInfo(salesforceContactId);
-          console.log('📥 Fresh data received:', freshData);
+          //console.log('📥 Fresh data received:', freshData);
           
           if (freshData.success && freshData.data) {
             const familyData = freshData.data.data || freshData.data;
@@ -1663,14 +1680,14 @@ const loadMemberCategory = async () => {
                 mothersBirthplace: formatCity(familyData.motherBirthplace || cleanedFamilyInfo.mothersBirthplace),
                 spousesName: formatPersonName(familyData.spouseName || cleanedFamilyInfo.spousesName)
               };
-              console.log('🔄 Setting refreshed family data:', cleanedFamily);
+              //console.log('🔄 Setting refreshed family data:', cleanedFamily);
               setFamilyInfo(cleanedFamily);
               setOriginalData(prev => ({ ...prev, family: cleanedFamily }));
             } else {
-              console.log('⚠️ Fresh data fetch returned empty data, keeping current state');
+              //console.log('⚠️ Fresh data fetch returned empty data, keeping current state');
             }
           } else {
-            console.log('⚠️ Fresh data fetch failed, keeping current state');
+            //console.log('⚠️ Fresh data fetch failed, keeping current state');
           }
         }
       } catch (refreshError) {
@@ -1681,11 +1698,11 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       } else {
-        console.log('⚠️ refreshMemberInfo function not available');
+        //console.log('⚠️ refreshMemberInfo function not available');
       }
       
     } catch (error) {
@@ -1704,27 +1721,27 @@ const loadMemberCategory = async () => {
         text: 'Failed to save family information: ' + error.message 
       });
     } finally {
-      console.log('🏁 === FINALLY BLOCK ===');
-      console.log('🏁 Current savingSection:', savingSection);
+      //console.log('🏁 === FINALLY BLOCK ===');
+      //console.log('🏁 Current savingSection:', savingSection);
       
       // Keep the 'saved' state for a moment before clearing
       if (savingSection === 'saved') {
-        console.log('🏁 Keeping saved state for 2 seconds...');
+        //console.log('🏁 Keeping saved state for 2 seconds...');
         setTimeout(() => {
-          console.log('🏁 Clearing saved state');
+          //console.log('🏁 Clearing saved state');
           setSavingSection('');
         }, 2000);
       } else {
-        console.log('🏁 Clearing saving state immediately');
+        //console.log('🏁 Clearing saving state immediately');
         setSavingSection('');
       }
       
       setTimeout(() => {
-        console.log('🏁 Clearing save message after 5 seconds');
+        //console.log('🏁 Clearing save message after 5 seconds');
         setSaveMessage({ type: '', text: '' });
       }, 5000);
       
-      console.log('🚀 === SAVE FAMILY INFO END ===\n');
+      //console.log('🚀 === SAVE FAMILY INFO END ===\n');
     }
   };
   
@@ -1769,7 +1786,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1790,14 +1807,14 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('Saving medical info for member category:', memberCategory);
+      //console.log('Saving medical info for member category:', memberCategory);
       
       // Clean the medical data
       const cleanedData = cleanDataBeforeSave(medicalInfo, 'medical');
       
       // Get required fields for this category (if any)
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.medical?.requiredFields || [];
-      console.log('Required fields for medical section:', requiredFields);
+      //console.log('Required fields for medical section:', requiredFields);
       
       // Validate required fields
       const errors = {};
@@ -1824,7 +1841,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1845,12 +1862,12 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('🔵 === START saveCryoArrangements ===');
-      console.log('Current cryo arrangements:', cryoArrangements);
+      //console.log('🔵 === START saveCryoArrangements ===');
+      //console.log('Current cryo arrangements:', cryoArrangements);
       
       // Clean the cryo arrangements data
       const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
-      console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
+      //console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
       
       // Build the update object - send simple codes to backend
       const dataToSend = {};
@@ -1876,10 +1893,10 @@ const loadMemberCategory = async () => {
         dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
       }
       
-      console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      //console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
       
       const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
-      console.log('📨 Save result:', result);
+      //console.log('📨 Save result:', result);
       
       if (result.success) {
         setSaveMessage({ 
@@ -1894,7 +1911,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -1914,7 +1931,7 @@ const loadMemberCategory = async () => {
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      console.log('🔵 === END saveCryoArrangements ===\n');
+      //console.log('🔵 === END saveCryoArrangements ===\n');
     }
   };
   
@@ -1948,7 +1965,7 @@ const loadMemberCategory = async () => {
           // Refresh the cache
           if (refreshMemberInfo) {
             setTimeout(() => {
-              console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+              //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
               refreshMemberInfo();
             }, 500);
           }
@@ -1989,7 +2006,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
@@ -2010,11 +2027,11 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      console.log('Saving next of kin for member category:', memberCategory);
+      //console.log('Saving next of kin for member category:', memberCategory);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.nextOfKin?.requiredFields || [];
-      console.log('Required fields for next of kin section:', requiredFields);
+      //console.log('Required fields for next of kin section:', requiredFields);
       
       // Clean the next of kin data
       const cleanedNextOfKin = cleanDataBeforeSave(nextOfKin, 'nextOfKin');
@@ -2078,7 +2095,7 @@ const loadMemberCategory = async () => {
         // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
