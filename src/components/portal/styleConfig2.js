@@ -17,6 +17,25 @@ const styleConfig2 = {
         fullWidth: "col-span-1 md:col-span-2"
       }
     },
+
+    nonEditable: {
+      // Desktop wrapper
+      desktopWrapper: "mt-6 p-6 bg-blue-50 border border-blue-200 rounded-xl shadow-sm",
+      desktopText: "text-base text-blue-900 leading-relaxed",
+      desktopNote: "font-semibold text-blue-800",
+      
+      // Mobile wrapper  
+      mobileWrapper: "mt-6 p-4 bg-blue-900/10 border border-blue-400/30 rounded-lg",
+      mobileText: "text-sm text-blue-300 text-center font-medium",
+      
+      // Inline message (appears instead of edit button)
+      inlineText: "text-sm text-gray-600 font-medium px-4 py-2 bg-gray-100 rounded-lg",
+      
+      // Combined classes for easy use
+      desktopMessage: "mt-6 p-6 bg-blue-50 border border-blue-200 rounded-xl shadow-sm text-base text-blue-900 leading-relaxed",
+      mobileMessage: "mt-6 p-4 bg-blue-900/10 border border-blue-400/30 rounded-lg text-sm text-blue-300 text-center font-medium",
+      inlineMessage: "text-sm text-gray-600 font-medium px-4 py-2 bg-gray-100 rounded-lg inline-block"
+    },
    
     // Header with icon styles - Smaller on mobile but with more spacing
     header: {

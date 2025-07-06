@@ -1,0 +1,374 @@
+# Cryopreservation Application System - Object Model Documentation
+
+## Table of Contents
+1. [System Overview](#system-overview)
+2. [Object Relationship Diagram](#object-relationship-diagram)
+3. [Core Objects](#core-objects)
+4. [Data Flow Process](#data-flow-process)
+5. [Business Rules](#business-rules)
+6. [Implementation Guide](#implementation-guide)
+
+---
+
+## System Overview
+
+The Cryopreservation Application System manages the complete lifecycle of membership applications for cryonic preservation services. The system tracks applicant information, funding arrangements (particularly life insurance), and related documentation through a series of interconnected Salesforce objects.
+
+### Key Features
+- Multi-step application process with save/resume capability
+- Life insurance policy tracking and validation
+- Automated record creation and relationship management
+- Support for multiple funding methods with detailed tracking for life insurance
+
+---
+
+## Object Relationship Diagram
+
+Contact (Member/Applicant)
+                                |
+        +-----------------------+------------------------+
+        |                                               |
+        | Lookup                                        | Master-Detail
+        |                                               |
+  Agreement__c                                  Funds_Wills_Fees__c
+        |                                               |
+        |                                               | Lookup
+        |                                               |
+        +------------------------+----------------------+
+                                |
+                          Insurance__c
+                                |
+                +---------------+---------------+
+                |                               |
+                | Lookup                        | Lookup
+                |                               |
+        Account                         Contact
+    (Insurance Company)              (Insurance Agent)
+
+    ---
+
+## Core Objects
+
+### 1. Contact Object
+**Purpose**: Represents the person applying for cryopreservation membership
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Standard Fields | - | Name, Email, Phone, Address |
+| New_Contract_Complete__c | Boolean | Tracks if application is complete |
+| CMS_Waiver__c | Picklist | Stores CMS waiver decision |
+| Cryo_Method_Selected__c | Picklist | Whole Body or Neuro |
+
+**Record Types**:
+- General Contact
+- Basic Member  
+- Cryo Member
+
+---
+
+### 2. Agreement__c Object
+**Purpose**: Central record storing all application data and form responses
+
+**Relationship**: `Applicant__c` (Lookup to Contact)
+
+**Record Types**:
+- Basic Application (0128W000001HmfVQAS)
+- Cryopreservation (0128W000001HmfUQAS)
+
+#### Insurance Company Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| Life_Insurance_Company__c | Lookup(Account) | Link to insurance company |
+| Life_Insurance_Company_Name__c | Text | Company name |
+| Company_Mailing_Address__c | Text | Street address |
+| Company_Mailing_City__c | Text | City |
+| Company_Mailing_State_Province__c | Text | State/Province |
+| Company_Mailing_Postal_Code__c | Text | Postal code |
+| Company_Country__c | Text | Country |
+| Company_Phone__c | Text | Phone number |
+| Company_Fax__c | Text | Fax number |
+
+#### Insurance Agent Fields
+| Field | Type | Description |
+|-------|------|-------------|
+| Agent__c | Lookup(Contact) | Link to agent contact |
+| Agent_Phone_Number__c | Text | Agent phone |
+| Agent_Email_Address__c | Email | Agent email |
+
+#### Policy Details
+| Field | Type | Description |
+|-------|------|-------------|
+| Type_of_Cryopreservation_Funding__c | Picklist | Life Insurance, Trust, etc. |
+| Policy_Type__c | Picklist | Whole Life, Term, etc. |
+| Policy_Number__c | Text | Policy identifier |
+| Face_Amount__c | Currency | Policy face value |
+| Annual_Premium__c | Currency | Yearly premium |
+| Date_Issued__c | Date | Policy issue date |
+| Term_Length__c | Text | Years (for term policies) |
+
+---
+
+### 3. Funds_Wills_Fees__c Object
+**Purpose**: Tracks funding arrangements and will information
+
+**Relationship**: `Member__c` (Master-Detail to Contact)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Means_Of_Funding__c | Picklist | Funding method |
+| Original_Cryo_Minimum__c | Currency | Base funding requirement |
+| Current_Minimum_Funding | Currency | Current requirement |
+| Total_Funding__c | Currency | Total funding available |
+| Total_for_Alcor__c | Currency | Amount designated for Alcor |
+| Prepayment__c | Picklist | Prepayment status |
+| Multiple_Policies__c | Checkbox | Has multiple policies |
+
+---
+
+### 4. Insurance__c Object
+**Purpose**: Detailed insurance policy information and ongoing tracking
+
+**Relationships**:
+- Funds_Wills_Fees__c (Lookup) - Parent record
+- Life_Insurance_Company__c (Lookup to Account)
+- Life_Insurance_Agent__c (Lookup to Contact)
+
+#### Key Fields
+| Field Category | Fields |
+|----------------|--------|
+| Company Info | Company_Name__c, Address fields, Phone/Fax |
+| Agent Info | Agent name, phone, email |
+| Policy Details | Type, Number, Amounts, Dates |
+| Status Tracking | Is_Premium_Current, Paid_to_Date |
+| Documentation | Is_Policy_On_File, Schedule_A_On_File |
+| Beneficiary Info | Beneficiary_Names, Alcor_Owner |
+
+---
+
+### 5. Account Object (Insurance Company)
+**Purpose**: Represents life insurance companies
+
+- **Record Type**: Life Insurance
+- **Created When**: New insurance company name provided
+- **Standard Fields**: Name, BillingAddress, Phone, Fax
+
+---
+
+### 6. Contact Object (Insurance Agent)
+**Purpose**: Represents life insurance agents
+
+- **Record Type**: General Contact
+- **Linked To**: Insurance Company via npsp__Primary_Affiliation__c
+- **Key Fields**: Name, Work Email, Work Phone
+
+---
+
+## Data Flow Process
+
+### Step 1: Initial Application
+
+## Data Flow Process
+
+### Step 1: Initial Application
+
+User logs in → System retrieves Contact record
+Check for existing Agreement
+
+If exists: Load for editing
+If not: Create new Agreement
+
+
+User completes personal information
+Agreement record created/updated
+
+
+### Step 2: Funding Selection
+
+User selects funding type
+IF "Life Insurance" selected:
+a. Display insurance fields
+b. Collect company information
+c. Collect policy details
+d. Optional: Agent information
+ELSE: Skip to will information
+
+
+### Step 3: Insurance Company Processing
+
+Search for existing Account by name
+If not found:
+
+Create new Account
+Type = "Life Insurance"
+Populate address/contact info
+
+
+Link to Agreement record
+
+
+### Step 4: Insurance Agent Processing
+
+If user has agent:
+
+Search by name + email/phone
+If not found: Create Contact
+Link to Insurance Company
+Link to Agreement
+
+
+
+
+### Step 5: Final Submission
+
+Create Funds_Wills_Fees__c record
+
+Link to Contact (Member)
+Copy funding information
+
+
+If Life Insurance funding:
+
+Create Insurance__c record
+Link to Funds_Wills_Fees
+Link to Company & Agent
+Copy all policy details
+
+
+Update Contact status
+Send confirmation email
+
+
+---
+
+## Business Rules
+
+### Funding Requirements
+
+#### Minimum Amounts
+| Preservation Type | US Members | International |
+|------------------|------------|---------------|
+| Whole Body | $200,000 | $210,000 |
+| Neurocryopreservation | $80,000 | $90,000 |
+
+#### CMS Waiver Option
+- Annual fee: $200
+- Waived if member funds $20,000 over minimum
+
+### Insurance Policy Requirements
+
+1. **Beneficiary Requirements**
+   - Alcor must be named beneficiary
+   - Preferred: Alcor as owner
+   - Alternative: Collateral assignee
+
+2. **Documentation Required**
+   - Complete policy copy
+   - Insurance application
+   - Schedule of beneficiaries
+   - All riders and amendments
+
+3. **Ongoing Maintenance**
+   - No grandfathering of prices
+   - Must maintain current minimums
+   - Regular policy verification
+
+### Validation Rules
+
+| Rule | Condition | Action |
+|------|-----------|--------|
+| Insufficient Funding | Face Amount < Minimum | Display warning |
+| Missing Insurance Fields | Life Insurance selected | Require all fields |
+| Will Conflict | Contrary provisions = Yes | Flag for review |
+| Allocation Total | Sum ≠ 100% | Prevent submission |
+
+---
+
+## Implementation Guide
+
+### Database Considerations
+
+1. **Relationship Types**
+   - Use Master-Detail for critical relationships (Funds→Contact)
+   - Use Lookup for flexible relationships (Agreement→Contact)
+
+2. **Data Integrity**
+   - Implement duplicate checking before creating Companies/Agents
+   - Validate funding amounts against current minimums
+   - Ensure allocation percentages total 100%
+
+3. **Performance Optimization**
+   - Index frequently searched fields (Company Name, Agent Name)
+   - Consider archiving old Insurance records
+   - Implement efficient search for existing records
+
+### Security Considerations
+
+1. **Field-Level Security**
+   - SSN and sensitive data encrypted
+   - PII fields restricted to authorized users
+   - Financial data protected
+
+2. **Record Access**
+   - Members see only their own records
+   - Staff have full access
+   - Agents see related policies only
+
+### Integration Points
+
+1. **DocuSign Integration**
+   - Generate agreements from Agreement record
+   - Update status on signature
+
+2. **Payment Processing**
+   - Link to payment system for dues
+   - Track payment history
+
+3. **Document Management**
+   - Store policy documents
+   - Link to Insurance records
+
+### Best Practices
+
+1. **Data Quality**
+   - Validate email formats
+   - Standardize phone numbers
+   - Consistent address formatting
+
+2. **User Experience**
+   - Progressive disclosure of fields
+   - Clear help text and instructions
+   - Save and resume capability
+
+3. **Maintenance**
+   - Regular review of minimum amounts
+   - Annual policy verification
+   - Automated reminder system
+
+---
+
+## Appendix: Field Mappings
+
+### Agreement to Insurance Field Mapping
+
+| Agreement Field | Insurance Field |
+|-----------------|-----------------|
+| Life_Insurance_Company_Name__c | Company_Name__c |
+| Company_Mailing_Address__c | Address__c |
+| Company_Mailing_City__c | City__c |
+| Policy_Number__c | Policy_Number__c |
+| Face_Amount__c | Face_Amount__c |
+| Annual_Premium__c | Annual_Premium__c |
+
+### Contact to Funds_Wills_Fees Field Mapping
+
+| Contact Field | Funds_Wills_Fees Field |
+|---------------|------------------------|
+| Id | Member__c |
+| CMS_Waiver__c | (Inherited via relationship) |
+| Cryo_Method_Selected__c | (Used for minimum calculation) |
+
+---
+
+*Document Version: 1.0*  
+*Last Updated: [Current Date]*  
+*System: Salesforce CRM - Cryopreservation Application*

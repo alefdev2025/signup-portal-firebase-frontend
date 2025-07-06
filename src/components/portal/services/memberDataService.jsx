@@ -18,7 +18,8 @@ import {
   getMemberVideoTestimony,
   uploadMemberVideoTestimony,
   deleteMemberVideoTestimony,
-  downloadMemberVideoTestimony
+  downloadMemberVideoTestimony,
+  getMemberFundingInfo,
 } from './salesforce/memberInfo';
 
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
@@ -116,6 +117,10 @@ class MemberDataService {
 
   async getMemberProfile(contactId) {
     return this.fetchAndCache(contactId, 'memberProfile', getMemberProfile);
+  }
+
+  async getFundingInfo(contactId) {
+    return this.fetchAndCache(contactId, 'fundingInfo', getMemberFundingInfo);
   }
 
   // DOCUMENTS
@@ -256,7 +261,6 @@ class MemberDataService {
     console.log(`[MemberDataService] Cleared cache for ${dataType}`);
   }
   
-  // Preload all member data in the background
   async preloadInBackground(contactId) {
     if (!contactId) {
       console.log('[MemberDataService] No contact ID provided for preload');
@@ -279,12 +283,12 @@ class MemberDataService {
       this.getOccupation(contactId),
       this.getCryoArrangements(contactId),
       this.getEmergencyContacts(contactId),
-      this.getInsurance(contactId),
+      this.getFundingInfo(contactId),  // Changed from getInsurance to getFundingInfo
       this.getMedicalInfo(contactId),
       this.getLegalInfo(contactId),
       this.getMemberProfile(contactId),
       this.getDocuments(contactId),
-      this.getVideoTestimony(contactId) // Video testimony included!
+      this.getVideoTestimony(contactId)
     ]).then(results => {
       const errors = results.filter(r => r.status === 'rejected');
       if (errors.length > 0) {

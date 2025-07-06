@@ -395,16 +395,6 @@ const CryoArrangementsSection = ({
                 />
               </div>
               
-              {/* Add info message for CryoMembers on mobile */}
-              {memberCategory === 'CryoMember' && (
-                <div className="mt-4 p-3 bg-blue-900/20 border border-blue-400/30 rounded-lg">
-                  <p className="text-xs text-blue-300">
-                    These settings are locked after becoming a Cryopreservation Member. 
-                    Contact Alcor staff if changes are needed.
-                  </p>
-                </div>
-              )}
-              
               <ActionButtons 
                 editMode={false}
                 onEdit={() => canEdit && toggleEditMode && toggleEditMode('cryoArrangements')}
@@ -607,14 +597,6 @@ const CryoArrangementsSection = ({
               </dl>
               
               {/* Add info message for CryoMembers */}
-              {memberCategory === 'CryoMember' && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    These settings are locked after becoming a Cryopreservation Member. 
-                    Contact Alcor staff if changes are needed.
-                  </p>
-                </div>
-              )}
             </>
           ) : (
             /* Desktop Edit Mode - Form */
@@ -782,13 +764,17 @@ const CryoArrangementsSection = ({
               </div>
             ) : (
               // Only show Edit button for CryoApplicants
-              canEdit && (
+              canEdit ? (
                 <RainbowButton
                   text="Edit"
                   onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
                   className="scale-75"
                   spinStar={true}
                 />
+              ) : (
+                <div className={styleConfig.nonEditable.inlineMessage}>
+                  Contact Alcor to update cryopreservation arrangements
+                </div>
               )
             )}
           </div>

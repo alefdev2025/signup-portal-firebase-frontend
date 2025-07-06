@@ -1,0 +1,129 @@
+{
+    "companies": {
+      "State Farm": {
+        "name": "State Farm Insurance",
+        "url": "https://www.statefarm.com/insurance/life",
+        "aliases": ["State Farm Insurance", "State Farm Life", "State Farm Life Insurance"]
+      },
+      "Kansas City Life": {
+        "name": "Kansas City Life Insurance",
+        "url": "https://www.kclife.com/",
+        "aliases": ["Kansas City Life Insurance", "Kansas City Life Insurance Company", "KC Life"]
+      },
+      "New York Life": {
+        "name": "New York Life Insurance",
+        "url": "https://www.newyorklife.com/",
+        "aliases": ["New York Life Insurance", "New York Life Insurance Company", "NY Life"]
+      },
+      "Northwestern Mutual": {
+        "name": "Northwestern Mutual",
+        "url": "https://www.northwesternmutual.com/",
+        "aliases": ["Northwestern Mutual Life", "Northwestern Mutual Life Insurance", "Northwestern Mutual Life Insurance Company"]
+      },
+      "MetLife": {
+        "name": "MetLife",
+        "url": "https://www.metlife.com/",
+        "aliases": ["Metropolitan Life", "Metropolitan Life Insurance", "MetLife Insurance"]
+      },
+      "Prudential": {
+        "name": "Prudential",
+        "url": "https://www.prudential.com/",
+        "aliases": ["Prudential Life", "Prudential Life Insurance", "Prudential Financial"]
+      },
+      "Transamerica": {
+        "name": "Transamerica",
+        "url": "https://www.transamerica.com/",
+        "aliases": ["Transamerica Life", "Transamerica Life Insurance"]
+      },
+      "John Hancock": {
+        "name": "John Hancock",
+        "url": "https://www.johnhancock.com/",
+        "aliases": ["John Hancock Life Insurance", "John Hancock Financial"]
+      },
+      "Lincoln Financial": {
+        "name": "Lincoln Financial",
+        "url": "https://www.lincolnfinancial.com/",
+        "aliases": ["Lincoln Financial Group", "Lincoln National", "Lincoln Life"]
+      },
+      "Pacific Life": {
+        "name": "Pacific Life",
+        "url": "https://www.pacificlife.com/",
+        "aliases": ["Pacific Life Insurance", "Pacific Life Insurance Company"]
+      },
+      "Guardian Life": {
+        "name": "Guardian Life",
+        "url": "https://www.guardianlife.com/",
+        "aliases": ["Guardian Life Insurance", "The Guardian Life Insurance Company of America"]
+      },
+      "MassMutual": {
+        "name": "MassMutual",
+        "url": "https://www.massmutual.com/",
+        "aliases": ["Massachusetts Mutual", "Massachusetts Mutual Life Insurance"]
+      },
+      "Nationwide": {
+        "name": "Nationwide",
+        "url": "https://www.nationwide.com/",
+        "aliases": ["Nationwide Life", "Nationwide Life Insurance"]
+      },
+      "AIG": {
+        "name": "AIG",
+        "url": "https://www.aig.com/",
+        "aliases": ["American International Group", "AIG Life Insurance"]
+      },
+      "Principal": {
+        "name": "Principal",
+        "url": "https://www.principal.com/",
+        "aliases": ["Principal Financial", "Principal Financial Group", "Principal Life"]
+      },
+      "American General": {
+        "name": "American General",
+        "url": "https://www.aig.com/",
+        "aliases": ["American General Life Insurance", "American General Life"]
+      },
+      "Mutual of Omaha": {
+        "name": "Mutual of Omaha",
+        "url": "https://www.mutualofomaha.com/",
+        "aliases": ["Mutual of Omaha Insurance", "United of Omaha"]
+      },
+      "Globe Life": {
+        "name": "Globe Life",
+        "url": "https://www.globelifeinsurance.com/",
+        "aliases": ["Globe Life Insurance", "Globe Life And Accident"]
+      },
+      "Protective Life": {
+        "name": "Protective Life",
+        "url": "https://www.protective.com/",
+        "aliases": ["Protective Life Insurance", "Protective Life Corporation"]
+      },
+      "Brighthouse Financial": {
+        "name": "Brighthouse Financial",
+        "url": "https://www.brighthousefinancial.com/",
+        "aliases": ["Brighthouse Life Insurance", "Brighthouse"]
+      },
+      "Securian Financial": {
+        "name": "Securian Financial",
+        "url": "https://www.securian.com/",
+        "aliases": ["Securian", "Minnesota Life"]
+      },
+      "Penn Mutual": {
+        "name": "Penn Mutual",
+        "url": "https://www.pennmutual.com/",
+        "aliases": ["Penn Mutual Life Insurance", "The Penn Mutual Life Insurance Company"]
+      },
+      "USAA": {
+        "name": "USAA",
+        "url": "https://www.usaa.com/",
+        "aliases": ["USAA Life", "USAA Life Insurance"]
+      },
+      "Banner Life": {
+        "name": "Banner Life",
+        "url": "https://www.lgamerica.com/",
+        "aliases": ["Banner Life Insurance", "Legal & General America"]
+      },
+      "SBLI": {
+        "name": "SBLI",
+        "url": "https://www.sbli.com/",
+        "aliases": ["The Savings Bank Life Insurance Company of Massachusetts", "Savings Bank Life Insurance"]
+      }
+    }
+  }

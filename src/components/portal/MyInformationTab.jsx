@@ -18,7 +18,7 @@ import {
   updateMemberCryoArrangements,
   updateMemberLegalInfo,
   createMemberEmergencyContact,
-  createMemberInsurance
+  updateMemberFundingInfo 
 } from './services/salesforce/memberInfo';
 
 import { 
@@ -112,7 +112,7 @@ const MyInformationTab = () => {
   const [occupation, setOccupation] = useState({});
   const [medicalInfo, setMedicalInfo] = useState({});
   const [cryoArrangements, setCryoArrangements] = useState({});
-  const [funding, setFunding] = useState({});
+
   const [legal, setLegal] = useState({});
   const [nextOfKin, setNextOfKin] = useState({});
   
@@ -128,6 +128,19 @@ const MyInformationTab = () => {
     onAccept: null
   });
 
+  const [funding, setFunding] = useState({
+    fundingType: '',
+    hasMultiplePolicies: false,
+    companyName: '',
+    policyType: '',
+    policyNumber: '',
+    faceAmount: null,
+    annualPremium: null,
+    dateIssued: null,
+    termLength: null,
+    fundsRecordId: null,
+    insuranceRecordId: null
+  });
 
   const [initializedFromCache, setInitializedFromCache] = useState(false);
 
@@ -286,7 +299,8 @@ const MyInformationTab = () => {
           }
         }
         
-        if (memberInfoData.insurance?.success && memberInfoData.insurance.data) {
+        // TODO: probably don't need anymore
+        /*if (memberInfoData.insurance?.success && memberInfoData.insurance.data) {
           const insuranceData = memberInfoData.insurance.data.data || memberInfoData.insurance.data;
           if (insuranceData.length > 0) {
             const primaryInsurance = insuranceData[0];
@@ -300,6 +314,13 @@ const MyInformationTab = () => {
             setFunding(transformedFunding);
             setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
           }
+        }*/
+
+        if (memberInfoData.funding?.success && memberInfoData.funding.data) {
+          const fundingData = memberInfoData.funding.data.data || memberInfoData.funding.data;
+          console.log('🔍 Cached funding data:', fundingData);
+          setFunding(fundingData);
+          setOriginalData(prev => ({ ...prev, funding: fundingData }));
         }
 
         if (memberInfoData.legal?.success && memberInfoData.legal.data) {
@@ -443,7 +464,7 @@ const MyInformationTab = () => {
         cryoRes,
         legalRes,
         emergencyRes,
-        insuranceRes
+        fundingRes
       ] = await Promise.allSettled([
         memberDataService.getPersonalInfo(salesforceContactId),
         memberDataService.getContactInfo(salesforceContactId),
@@ -454,7 +475,7 @@ const MyInformationTab = () => {
         memberDataService.getCryoArrangements(salesforceContactId),
         memberDataService.getLegalInfo(salesforceContactId),
         memberDataService.getEmergencyContacts(salesforceContactId),
-        memberDataService.getInsurance(salesforceContactId)
+        memberDataService.getFundingInfo(salesforceContactId)
       ]);
       
       // Process results from Promise.allSettled
@@ -468,7 +489,7 @@ const MyInformationTab = () => {
         cryoRes: cryoRes.status === 'fulfilled' ? cryoRes.value : { success: false },
         legalRes: legalRes.status === 'fulfilled' ? legalRes.value : { success: false },
         emergencyRes: emergencyRes.status === 'fulfilled' ? emergencyRes.value : { success: false },
-        insuranceRes: insuranceRes.status === 'fulfilled' ? insuranceRes.value : { success: false }
+        fundingRes: fundingRes.status === 'fulfilled' ? fundingRes.value : { success: false } 
       };
       
       // Update states with fetched and cleaned data
@@ -715,8 +736,9 @@ const MyInformationTab = () => {
         //console.log('Emergency contacts request failed or returned no data');
       }
       
+      // TODO: probably don't need
       // Process Insurance (Funding)
-      if (results.insuranceRes.success && results.insuranceRes.data) {
+      /*if (results.insuranceRes.success && results.insuranceRes.data) {
         const insuranceData = results.insuranceRes.data.data || results.insuranceRes.data;
         //console.log('Setting insurance data:', insuranceData);
         
@@ -732,6 +754,13 @@ const MyInformationTab = () => {
           setFunding(transformedFunding);
           setOriginalData(prev => ({ ...prev, funding: transformedFunding }));
         }
+      }*/
+
+      if (results.fundingRes.success && results.fundingRes.data) {
+        const fundingData = results.fundingRes.data.data || results.fundingRes.data;
+        console.log('Setting funding data:', fundingData);
+        setFunding(fundingData);
+        setOriginalData(prev => ({ ...prev, funding: fundingData }));
       }
       
     } catch (error) {
@@ -1991,52 +2020,106 @@ const saveCryoArrangements = async () => {
   }
 };
   
-  const saveFunding = async () => {
-    setSavingSection('funding');
-    setSaveMessage({ type: '', text: '' });
+const saveFunding = async () => {
+  setSavingSection('funding');
+  setSaveMessage({ type: '', text: '' });
+  
+  try {
+    console.log('Saving funding for member category:', memberCategory);
     
-    try {
-      // Clean the funding data
-      const cleanedFunding = cleanDataBeforeSave(funding, 'funding');
-      
-      // For insurance, we need to create or update the insurance record
-      if (cleanedFunding.fundingType === 'LifeInsurance') {
-        const insuranceData = {
-          companyName: cleanedFunding.companyName,
-          policyNumber: cleanedFunding.policyNumber,
-          policyType: cleanedFunding.policyType,
-          faceAmount: cleanedFunding.faceAmount,
-          // Add other insurance fields as needed
-        };
-        
-        // This would need a create or update API
-        const result = await createMemberInsurance(salesforceContactId, insuranceData);
-        if (result.success) {
-          setSaveMessage({ type: 'success', text: 'Insurance information saved successfully!' });
-          setFunding(cleanedFunding);
-          setOriginalData(prev => ({ ...prev, funding: cleanedFunding }));
-          setEditMode(prev => ({ ...prev, funding: false }));
-          memberDataService.clearCache(salesforceContactId);
-          
-          // Refresh the cache
-          if (refreshMemberInfo) {
-            setTimeout(() => {
-              //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-              refreshMemberInfo();
-            }, 500);
+    // Get required fields for this category
+    const requiredFields = memberCategoryConfig[memberCategory]?.sections.funding?.requiredFields || [];
+    console.log('Required fields for funding section:', requiredFields);
+    
+    // Clean the funding data
+    const cleanedFunding = cleanDataBeforeSave(funding, 'funding');
+    
+    // Validate required fields
+    const errors = {};
+    
+    requiredFields.forEach(field => {
+      switch(field) {
+        case 'fundingType':
+          if (!cleanedFunding.fundingType) {
+            errors.fundingType = 'Funding type is required';
           }
-        } else {
-          setSaveMessage({ type: 'error', text: 'Failed to save insurance information' });
-        }
+          break;
+        case 'companyName':
+          if (cleanedFunding.fundingType === 'Life Insurance' && !cleanedFunding.companyName) {
+            errors.companyName = 'Insurance company name is required';
+          }
+          break;
+        case 'policyNumber':
+          if (cleanedFunding.fundingType === 'Life Insurance' && !cleanedFunding.policyNumber) {
+            errors.policyNumber = 'Policy number is required';
+          }
+          break;
+        case 'policyType':
+          if (cleanedFunding.fundingType === 'Life Insurance' && !cleanedFunding.policyType) {
+            errors.policyType = 'Policy type is required';
+          }
+          break;
+        case 'faceAmount':
+          if (cleanedFunding.fundingType === 'Life Insurance' && !cleanedFunding.faceAmount) {
+            errors.faceAmount = 'Face amount is required';
+          }
+          break;
       }
-    } catch (error) {
-      console.error('Error saving funding:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save funding information' });
-    } finally {
+    });
+    
+    if (Object.keys(errors).length > 0) {
+      let errorMessage = Object.values(errors).join('. ');
+      setSaveMessage({ type: 'error', text: errorMessage });
       setSavingSection('');
-      setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      return;
     }
-  };
+    
+    // Call the new updateMemberFundingInfo function
+    const result = await updateMemberFundingInfo(salesforceContactId, cleanedFunding);
+    
+    if (result.success || result.partialSuccess) {
+      if (result.partialSuccess) {
+        setSaveMessage({ 
+          type: 'warning', 
+          text: 'Some funding information was saved, but there were errors: ' + (result.errors || []).join(', ')
+        });
+      } else {
+        setSaveMessage({ type: 'success', text: 'Funding information saved successfully!' });
+      }
+      
+      // Update state with the saved data
+      const updatedFunding = {
+        ...cleanedFunding,
+        fundsRecordId: result.data?.fundsRecordId || funding.fundsRecordId,
+        insuranceRecordId: result.data?.insuranceRecordId || funding.insuranceRecordId
+      };
+      
+      setFunding(updatedFunding);
+      setOriginalData(prev => ({ ...prev, funding: updatedFunding }));
+      setEditMode(prev => ({ ...prev, funding: false }));
+      memberDataService.clearCache(salesforceContactId);
+      
+      // Refresh the cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
+      }
+    } else {
+      setSaveMessage({ 
+        type: 'error', 
+        text: result.error || 'Failed to save funding information' 
+      });
+    }
+  } catch (error) {
+    console.error('Error saving funding:', error);
+    setSaveMessage({ type: 'error', text: 'Failed to save funding information' });
+  } finally {
+    setSavingSection('');
+    setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+  }
+};
   
   const saveLegal = async () => {
     setSavingSection('legal');

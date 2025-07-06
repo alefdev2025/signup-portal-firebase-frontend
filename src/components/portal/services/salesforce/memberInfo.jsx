@@ -475,3 +475,62 @@ export const getMemberCategory = async (contactId) => {
     };
   }
 };
+
+/**
+ * Get member funding information
+ */
+ export async function getMemberFundingInfo(contactId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/funding-info`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch funding information');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching member funding info:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch funding information'
+    };
+  }
+}
+
+/**
+ * Update member funding information
+ */
+export async function updateMemberFundingInfo(contactId, fundingData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/funding-info`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(fundingData)
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update funding information');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating member funding info:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update funding information'
+    };
+  }
+}
