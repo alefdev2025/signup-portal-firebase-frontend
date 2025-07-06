@@ -236,6 +236,8 @@ const MyInformationTab = () => {
         
         if (memberInfoData.cryo?.success && memberInfoData.cryo.data) {
           const cryoData = memberInfoData.cryo.data.data || memberInfoData.cryo.data;
+          console.log('🔍 Cached cryo data:', cryoData);
+          
           const transformedCryo = {
             method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
                     cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
@@ -244,7 +246,14 @@ const MyInformationTab = () => {
             recipientName: formatPersonName(cryoData.recipientName),
             recipientPhone: formatPhone(cryoData.recipientPhone),
             recipientEmail: formatEmail(cryoData.recipientEmail),
-            publicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure || cryoData.publicDisclosure),
+            // NEW: Individual recipient mailing address fields
+            recipientMailingStreet: formatStreetAddress(cryoData.recipientMailingStreet),
+            recipientMailingCity: formatCity(cryoData.recipientMailingCity),
+            recipientMailingState: formatStateProvince(cryoData.recipientMailingState),
+            recipientMailingPostalCode: formatPostalCode(cryoData.recipientMailingPostalCode),
+            recipientMailingCountry: formatCountry(cryoData.recipientMailingCountry),
+            cryopreservationDisclosure: mapPublicDisclosure(cryoData.cryopreservationDisclosure),
+            memberPublicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure),
             fundingStatus: cryoData.fundingStatus,
             contractDate: cryoData.contractDate,
             memberJoinDate: cryoData.memberJoinDate,
@@ -252,6 +261,7 @@ const MyInformationTab = () => {
             isPatient: cryoData.isPatient,
             recipientAddress: cryoData.recipientAddress
           };
+          
           setCryoArrangements(transformedCryo);
           setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
         }
@@ -605,27 +615,17 @@ const MyInformationTab = () => {
       // Medical Info - Clean medical data
       if (results.medicalRes.success && results.medicalRes.data) {
         const medicalData = results.medicalRes.data.data || results.medicalRes.data;
-        //console.log('🏥 === MEDICAL INFO FROM BACKEND ===');
-        //console.log('📦 Raw medical data:', medicalData);
-        //console.log('📏 Height value:', medicalData.height, 'Type:', typeof medicalData.height);
-        //console.log('⚖️ Weight value:', medicalData.weight, 'Type:', typeof medicalData.weight);
         
         // Use cleanDataBeforeSave to properly clean all fields
         const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
-        
-        //console.log('✨ Cleaned medical data:');
-        //console.log('📏 Cleaned height:', cleanedMedical.height, 'Type:', typeof cleanedMedical.height);
-        //console.log('⚖️ Cleaned weight:', cleanedMedical.weight, 'Type:', typeof cleanedMedical.weight);
-        //console.log('🏥 === END MEDICAL INFO ===\n');
         
         setMedicalInfo(cleanedMedical);
         setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
       }
       
-      // Process Cryopreservation Arrangements
       if (results.cryoRes.success && results.cryoRes.data) {
         const cryoData = results.cryoRes.data.data || results.cryoRes.data;
-        //console.log('Setting cryo arrangements data:', cryoData);
+        console.log('🔍 Raw cryo data from API:', cryoData);
         
         // Transform and clean the data
         const transformedCryo = {
@@ -636,14 +636,24 @@ const MyInformationTab = () => {
           recipientName: formatPersonName(cryoData.recipientName),
           recipientPhone: formatPhone(cryoData.recipientPhone),
           recipientEmail: formatEmail(cryoData.recipientEmail),
-          publicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure || cryoData.publicDisclosure),
+          // NEW: Individual recipient mailing address fields
+          recipientMailingStreet: formatStreetAddress(cryoData.recipientMailingStreet),
+          recipientMailingCity: formatCity(cryoData.recipientMailingCity),
+          recipientMailingState: formatStateProvince(cryoData.recipientMailingState),
+          recipientMailingPostalCode: formatPostalCode(cryoData.recipientMailingPostalCode),
+          recipientMailingCountry: formatCountry(cryoData.recipientMailingCountry),
+          cryopreservationDisclosure: mapPublicDisclosure(cryoData.cryopreservationDisclosure),
+          memberPublicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure),
           fundingStatus: cryoData.fundingStatus,
           contractDate: cryoData.contractDate,
           memberJoinDate: cryoData.memberJoinDate,
           contractComplete: cryoData.contractComplete,
           isPatient: cryoData.isPatient,
+          // Keep recipientAddress for backward compatibility
           recipientAddress: cryoData.recipientAddress
         };
+        
+        console.log('🔍 Transformed cryo data:', transformedCryo);
         
         setCryoArrangements(transformedCryo);
         setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
@@ -713,7 +723,7 @@ const MyInformationTab = () => {
     
     const valueLower = sfValue.toLowerCase();
     
-    if (valueLower.includes('freely release')) {
+    if (valueLower.includes('freely release') || valueLower.includes('authorized to freely')) {
       return 'freely';  // Simple code
     } else if (valueLower.includes('reasonable efforts') || valueLower.includes('confidentiality')) {
       return 'confidential';  // Simple code
@@ -727,7 +737,7 @@ const MyInformationTab = () => {
     
     const valueLower = sfValue.toLowerCase();
     
-    if (valueLower.includes('delivery') && valueLower.includes('named person')) {
+    if (valueLower.includes('delivery') || valueLower.includes('named person')) {
       return 'return';  // Simple code
     } else if (valueLower.includes('research') || valueLower.includes('tissue donation')) {
       return 'donate';  // Simple code
@@ -1857,83 +1867,105 @@ const loadMemberCategory = async () => {
     }
   };
   
-  const saveCryoArrangements = async () => {
-    setSavingSection('cryoArrangements');
-    setSaveMessage({ type: '', text: '' });
+// Update the saveCryoArrangements function:
+const saveCryoArrangements = async () => {
+  setSavingSection('cryoArrangements');
+  setSaveMessage({ type: '', text: '' });
+  
+  try {
+    console.log('🔵 === START saveCryoArrangements ===');
+    console.log('Current cryo arrangements:', cryoArrangements);
     
-    try {
-      //console.log('🔵 === START saveCryoArrangements ===');
-      //console.log('Current cryo arrangements:', cryoArrangements);
+    // Clean the cryo arrangements data
+    const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
+    console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
+    
+    // Build the update object
+    const dataToSend = {};
+    
+    // Handle the remains handling
+    if (cleanedCryoArrangements.remainsHandling) {
+      dataToSend.nonCryoRemainArrangements = cleanedCryoArrangements.remainsHandling;
+    }
+    
+    // Handle the disclosures
+    if (cleanedCryoArrangements.cryopreservationDisclosure) {
+      dataToSend.cryopreservationDisclosure = cleanedCryoArrangements.cryopreservationDisclosure;
+    }
+    
+    if (cleanedCryoArrangements.memberPublicDisclosure) {
+      dataToSend.memberPublicDisclosure = cleanedCryoArrangements.memberPublicDisclosure;
+    }
+    
+    // Add recipient fields
+    if (cleanedCryoArrangements.recipientName !== undefined) {
+      dataToSend.recipientName = cleanedCryoArrangements.recipientName;
+    }
+    if (cleanedCryoArrangements.recipientPhone !== undefined) {
+      dataToSend.recipientPhone = cleanedCryoArrangements.recipientPhone;
+    }
+    if (cleanedCryoArrangements.recipientEmail !== undefined) {
+      dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
+    }
+    
+    // NEW: Add recipient mailing address fields
+    if (cleanedCryoArrangements.recipientMailingStreet !== undefined) {
+      dataToSend.recipientMailingStreet = cleanedCryoArrangements.recipientMailingStreet;
+    }
+    if (cleanedCryoArrangements.recipientMailingCity !== undefined) {
+      dataToSend.recipientMailingCity = cleanedCryoArrangements.recipientMailingCity;
+    }
+    if (cleanedCryoArrangements.recipientMailingState !== undefined) {
+      dataToSend.recipientMailingState = cleanedCryoArrangements.recipientMailingState;
+    }
+    if (cleanedCryoArrangements.recipientMailingPostalCode !== undefined) {
+      dataToSend.recipientMailingPostalCode = cleanedCryoArrangements.recipientMailingPostalCode;
+    }
+    if (cleanedCryoArrangements.recipientMailingCountry !== undefined) {
+      dataToSend.recipientMailingCountry = cleanedCryoArrangements.recipientMailingCountry;
+    }
+    
+    console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+    
+    const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
+    console.log('📨 Save result:', result);
+    
+    if (result.success) {
+      setSaveMessage({ 
+        type: 'success', 
+        text: 'Cryopreservation arrangements saved successfully!' 
+      });
+      setCryoArrangements(cleanedCryoArrangements);
+      setOriginalData(prev => ({ ...prev, cryoArrangements: cleanedCryoArrangements }));
+      setEditMode(prev => ({ ...prev, cryoArrangements: false }));
+      memberDataService.clearCache(salesforceContactId);
       
-      // Clean the cryo arrangements data
-      const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
-      //console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
-      
-      // Build the update object - send simple codes to backend
-      const dataToSend = {};
-      
-      // Handle the remains handling - check for lowercase values from the select
-      if (cleanedCryoArrangements.remainsHandling) {
-        dataToSend.nonCryoRemainArrangements = cleanedCryoArrangements.remainsHandling; // This will be 'return' or 'donate' (lowercase)
+      // Refresh the cache
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
       }
-      
-      // Handle the public disclosure
-      if (cleanedCryoArrangements.publicDisclosure) {
-        dataToSend.memberPublicDisclosure = cleanedCryoArrangements.publicDisclosure; // This will be 'freely' or 'confidential' (lowercase)
-      }
-      
-      // Add recipient fields if applicable
-      if (cleanedCryoArrangements.recipientName) {
-        dataToSend.recipientName = cleanedCryoArrangements.recipientName;
-      }
-      if (cleanedCryoArrangements.recipientPhone) {
-        dataToSend.recipientPhone = cleanedCryoArrangements.recipientPhone;
-      }
-      if (cleanedCryoArrangements.recipientEmail) {
-        dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
-      }
-      
-      //console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
-      
-      const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
-      //console.log('📨 Save result:', result);
-      
-      if (result.success) {
-        setSaveMessage({ 
-          type: 'success', 
-          text: result.warning || 'Cryopreservation arrangements saved successfully!' 
-        });
-        setCryoArrangements(cleanedCryoArrangements);
-        setOriginalData(prev => ({ ...prev, cryoArrangements: cleanedCryoArrangements }));
-        setEditMode(prev => ({ ...prev, cryoArrangements: false }));
-        memberDataService.clearCache(salesforceContactId);
-        
-        // Refresh the cache
-        if (refreshMemberInfo) {
-          setTimeout(() => {
-            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
-            refreshMemberInfo();
-          }, 500);
-        }
-      } else {
-        console.error('❌ Save failed:', result.error);
-        setSaveMessage({ 
-          type: 'error', 
-          text: result.error || 'Failed to save cryopreservation arrangements' 
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error saving cryo arrangements:', error);
+    } else {
+      console.error('❌ Save failed:', result.error);
       setSaveMessage({ 
         type: 'error', 
-        text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
+        text: result.error || 'Failed to save cryopreservation arrangements' 
       });
-    } finally {
-      setSavingSection('');
-      setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      //console.log('🔵 === END saveCryoArrangements ===\n');
     }
-  };
+  } catch (error) {
+    console.error('❌ Error saving cryo arrangements:', error);
+    setSaveMessage({ 
+      type: 'error', 
+      text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
+    });
+  } finally {
+    setSavingSection('');
+    setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+    console.log('🔵 === END saveCryoArrangements ===\n');
+  }
+};
   
   const saveFunding = async () => {
     setSavingSection('funding');
@@ -2300,7 +2332,6 @@ const loadMemberCategory = async () => {
   </>
 )}
 
-{/* Cryopreservation Arrangements - Only for Applicants and Members */}
 {isSectionVisible(memberCategory, 'cryoArrangements') && (
   <>
     {!sectionsLoaded.cryoArrangements ? (
@@ -2315,6 +2346,7 @@ const loadMemberCategory = async () => {
         saveCryoArrangements={saveCryoArrangements}
         savingSection={savingSection}
         memberCategory={memberCategory}
+        setAddressValidationModal={setAddressValidationModal}  // ADD THIS
       />
     )}
     {sectionSeparator()}

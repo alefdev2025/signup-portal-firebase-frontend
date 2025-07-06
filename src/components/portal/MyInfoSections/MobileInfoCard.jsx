@@ -156,39 +156,42 @@ export const FormSelect = ({
   </div>
 );
 
-// Action Button Components
-export const ActionButtons = ({ 
-  editMode, 
-  onEdit, 
-  onSave, 
-  onCancel, 
-  saving = false 
-}) => (
-  <div className={`flex justify-end mt-6 pt-4 border-t ${editMode ? 'border-gray-200' : 'border-white/10'}`}>
-    {editMode ? (
-      <div className="flex gap-3">
+export const ActionButtons = ({ editMode, onEdit, onSave, onCancel, saving, hideEditButton }) => {
+  if (!editMode) {
+    // Don't show edit button if hideEditButton is true
+    if (hideEditButton) {
+      return null;
+    }
+    
+    return (
+      <div className="mt-6 flex justify-end">
         <button
-          onClick={onCancel}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+          onClick={onEdit}
+          className="px-4 py-2 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg shadow-lg font-medium text-sm hover:shadow-xl transition-all duration-200"
         >
-          Cancel
-        </button>
-        <button
-          onClick={onSave}
-          disabled={saving}
-          className="px-4 py-2 bg-navy-600 hover:bg-navy-700 text-white rounded-lg transition-all font-medium disabled:opacity-50"
-          style={{ backgroundColor: '#162740', '&:hover': { backgroundColor: '#0f1e33' } }}
-        >
-          {saving ? 'Saving...' : 'Save'}
+          Edit
         </button>
       </div>
-    ) : (
+    );
+  }
+  
+  return (
+    <div className="mt-6 flex justify-between">
       <button
-        onClick={onEdit}
-        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+        onClick={onCancel}
+        className="px-4 py-2 bg-white/10 text-white/90 rounded-lg font-medium text-sm hover:bg-white/20 transition-colors border border-white/20"
       >
-        Edit
+        Cancel
       </button>
-    )}
-  </div>
-);
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className={`px-4 py-2 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg font-medium text-sm transition-all duration-200 ${
+          saving ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+        }`}
+      >
+        {saving ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  );
+};

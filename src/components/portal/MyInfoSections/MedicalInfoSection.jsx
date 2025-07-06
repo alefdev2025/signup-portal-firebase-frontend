@@ -13,6 +13,20 @@ const InfoDisplay = ({ label, value, className = "" }) => (
   </div>
 );
 
+// FormTextarea component for mobile - defined outside to prevent re-creation
+const FormTextarea = ({ label, value, onChange, placeholder, rows = 3 }) => (
+  <div>
+    <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
+    <textarea
+      value={value}
+      onChange={onChange}
+      rows={rows}
+      placeholder={placeholder}
+      className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-purple-500 transition-all resize-none"
+    />
+  </div>
+);
+
 const MedicalInfoSection = ({ 
   medicalInfo, 
   setMedicalInfo, 
@@ -23,6 +37,8 @@ const MedicalInfoSection = ({
   savingSection,
   memberCategory 
 }) => {
+  // Ensure medicalInfo is always an object
+  const safeMedialInfo = medicalInfo || {};
   const [showTooltip, setShowTooltip] = useState(false);
   const [showTooltipBottom, setShowTooltipBottom] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -57,19 +73,24 @@ const MedicalInfoSection = ({
 
   const formatWeight = (weight) => {
     if (!weight) return styleConfig.display.item.empty;
-    // Remove ' lb' if it exists, then add it back
-    const weightNum = weight.toString().replace(' lb', '').replace('lb', '').trim();
+    // Remove ' lb', ' lbs', 'lb', 'lbs' if it exists, then add it back
+    const weightNum = weight.toString()
+      .replace(' lbs', '')
+      .replace(' lb', '')
+      .replace('lbs', '')
+      .replace('lb', '')
+      .trim();
     return `${weightNum} lb`;
   };
 
   // Format doctor's full address for display
   const formatDoctorAddress = () => {
     const parts = [
-      medicalInfo.physicianAddress,
-      medicalInfo.physicianCity,
-      medicalInfo.physicianState,
-      medicalInfo.physicianZip,
-      medicalInfo.physicianCountry
+      safeMedialInfo.physicianAddress,
+      safeMedialInfo.physicianCity,
+      safeMedialInfo.physicianState,
+      safeMedialInfo.physicianZip,
+      safeMedialInfo.physicianCountry
     ].filter(Boolean);
     
     return parts.length > 0 ? parts.join(', ') : styleConfig.display.item.empty;
@@ -78,8 +99,8 @@ const MedicalInfoSection = ({
   // Format doctor's phone numbers for display
   const formatDoctorPhones = () => {
     const phones = [];
-    if (medicalInfo.physicianHomePhone) phones.push(`Home: ${medicalInfo.physicianHomePhone}`);
-    if (medicalInfo.physicianWorkPhone) phones.push(`Work: ${medicalInfo.physicianWorkPhone}`);
+    if (safeMedialInfo.physicianHomePhone) phones.push(`Home: ${safeMedialInfo.physicianHomePhone}`);
+    if (safeMedialInfo.physicianWorkPhone) phones.push(`Work: ${safeMedialInfo.physicianWorkPhone}`);
     return phones.length > 0 ? phones.join(' | ') : styleConfig.display.item.empty;
   };
 
@@ -87,47 +108,21 @@ const MedicalInfoSection = ({
     // Check if important medical fields are missing
     const missingFields = [];
     
-    //console.log('=== CHECKING MEDICAL PROFILE ===');
-    //console.log('Full medicalInfo object:', medicalInfo);
+    if (!safeMedialInfo.sex) missingFields.push('sex');
+    if (!safeMedialInfo.height) missingFields.push('height');
+    if (!safeMedialInfo.weight) missingFields.push('weight');
+    if (!safeMedialInfo.bloodType) missingFields.push('blood type');
     
-    // Basic health info
-    //console.log('\n--- Basic Health Info ---');
-    //console.log('sex:', medicalInfo.sex, '-> missing?', !medicalInfo.sex);
-    //console.log('height:', medicalInfo.height, '-> missing?', !medicalInfo.height);
-    //console.log('weight:', medicalInfo.weight, '-> missing?', !medicalInfo.weight);
-    //console.log('bloodType:', medicalInfo.bloodType, '-> missing?', !medicalInfo.bloodType);
     
-    if (!medicalInfo.sex) missingFields.push('sex');
-    if (!medicalInfo.height) missingFields.push('height');
-    if (!medicalInfo.weight) missingFields.push('weight');
-    if (!medicalInfo.bloodType) missingFields.push('blood type');
+    if (!safeMedialInfo.primaryPhysician) missingFields.push('primary physician');
+    if (!safeMedialInfo.physicianCity || !safeMedialInfo.physicianState) missingFields.push('doctor location');
     
-    // Doctor info
-    //console.log('\n--- Doctor Info ---');
-    //console.log('primaryPhysician:', medicalInfo.primaryPhysician, '-> missing?', !medicalInfo.primaryPhysician);
-    //console.log('physicianCity:', medicalInfo.physicianCity, '-> missing?', !medicalInfo.physicianCity);
-    //console.log('physicianState:', medicalInfo.physicianState, '-> missing?', !medicalInfo.physicianState);
-    //console.log('doctor location missing?', !medicalInfo.physicianCity || !medicalInfo.physicianState);
-    
-    if (!medicalInfo.primaryPhysician) missingFields.push('primary physician');
-    if (!medicalInfo.physicianCity || !medicalInfo.physicianState) missingFields.push('doctor location');
-    
-    // Medical history - NOW CHECKS EACH FIELD INDIVIDUALLY
-    //console.log('\n--- Medical History ---');
-    //console.log('healthProblems:', medicalInfo.healthProblems, '-> empty?', !medicalInfo.healthProblems);
-    //console.log('medications:', medicalInfo.medications, '-> empty?', !medicalInfo.medications);
-    //console.log('allergies:', medicalInfo.allergies, '-> empty?', !medicalInfo.allergies);
     
     // Check each field individually
-    if (!medicalInfo.healthProblems) missingFields.push('health problems');
-    if (!medicalInfo.medications) missingFields.push('medications');
-    if (!medicalInfo.allergies) missingFields.push('allergies');
+    if (!safeMedialInfo.healthProblems) missingFields.push('health problems');
+    if (!safeMedialInfo.medications) missingFields.push('medications');
+    if (!safeMedialInfo.allergies) missingFields.push('allergies');
     
-    //console.log('\n--- RESULTS ---');
-    //console.log('Missing fields:', missingFields);
-    //console.log('Total missing:', missingFields.length);
-    //console.log('Needs improvement?', missingFields.length > 0);
-    //console.log('=== END CHECK ===\n');
     
     return missingFields.length > 0;
   };
@@ -136,13 +131,13 @@ const MedicalInfoSection = ({
   const getMissingFieldsMessage = () => {
     const missing = [];
     
-    if (!medicalInfo.sex || !medicalInfo.height || !medicalInfo.weight || !medicalInfo.bloodType) {
+    if (!safeMedialInfo.sex || !safeMedialInfo.height || !safeMedialInfo.weight || !safeMedialInfo.bloodType) {
       missing.push('basic health information');
     }
-    if (!medicalInfo.primaryPhysician) {
+    if (!safeMedialInfo.primaryPhysician) {
       missing.push('primary physician details');
     }
-    if (!medicalInfo.healthProblems && !medicalInfo.medications && !medicalInfo.allergies) {
+    if (!safeMedialInfo.healthProblems && !safeMedialInfo.medications && !safeMedialInfo.allergies) {
       missing.push('medical history');
     }
     
@@ -156,14 +151,14 @@ const MedicalInfoSection = ({
   const getMobilePreview = () => {
     const previewParts = [];
     
-    if (medicalInfo?.sex && medicalInfo?.height && medicalInfo?.weight) {
-      previewParts.push(`${medicalInfo.sex}, ${formatHeight(medicalInfo.height)}, ${formatWeight(medicalInfo.weight)}`);
+    if (safeMedialInfo?.sex && safeMedialInfo?.height && safeMedialInfo?.weight) {
+      previewParts.push(`${safeMedialInfo.sex}, ${formatHeight(safeMedialInfo.height)}, ${formatWeight(safeMedialInfo.weight)}`);
     }
-    if (medicalInfo?.bloodType) {
-      previewParts.push(`Blood: ${medicalInfo.bloodType}`);
+    if (safeMedialInfo?.bloodType) {
+      previewParts.push(`Blood: ${safeMedialInfo.bloodType}`);
     }
-    if (medicalInfo?.primaryPhysician) {
-      previewParts.push(`Dr. ${medicalInfo.primaryPhysician}`);
+    if (safeMedialInfo?.primaryPhysician) {
+      previewParts.push(`Dr. ${safeMedialInfo.primaryPhysician}`);
     }
     
     return previewParts.slice(0, 2).join(' • ');
@@ -221,21 +216,6 @@ const MedicalInfoSection = ({
     </div>
   );
 
-  // FormTextarea component for mobile
-  const FormTextarea = ({ label, value, onChange, placeholder, rows = 3 }) => (
-    <div>
-      <label className="dark-label block text-sm font-medium mb-1.5">{label}</label>
-      <textarea
-        value={value}
-        onChange={onChange}
-        rows={rows}
-        placeholder={placeholder}
-        className="dark-input w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/20 transition-all resize-none"
-        style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', color: 'white' }}
-      />
-    </div>
-  );
-
   return (
     <div className={isMobile ? "" : "bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-1 sm:mx-0"}>
       {isMobile ? (
@@ -258,10 +238,10 @@ const MedicalInfoSection = ({
                 <div>
                   <h3 className="text-white/90 text-sm font-medium mb-3">Basic Health Information</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <DisplayField label="Sex" value={medicalInfo.sex} />
-                    <DisplayField label="Height" value={formatHeight(medicalInfo.height)} />
-                    <DisplayField label="Weight" value={formatWeight(medicalInfo.weight)} />
-                    <DisplayField label="Blood Type" value={medicalInfo.bloodType} />
+                    <DisplayField label="Sex" value={safeMedialInfo.sex} />
+                    <DisplayField label="Height" value={formatHeight(safeMedialInfo.height)} />
+                    <DisplayField label="Weight" value={formatWeight(safeMedialInfo.weight)} />
+                    <DisplayField label="Blood Type" value={safeMedialInfo.bloodType} />
                   </div>
                 </div>
 
@@ -269,11 +249,11 @@ const MedicalInfoSection = ({
                 <div>
                   <h3 className="text-white/90 text-sm font-medium mb-3">Primary Care Physician</h3>
                   <div className="space-y-4">
-                    <DisplayField label="Doctor Name" value={medicalInfo.primaryPhysician} />
-                    <DisplayField label="Hospital" value={medicalInfo.hospital} />
+                    <DisplayField label="Doctor Name" value={safeMedialInfo.primaryPhysician} />
+                    <DisplayField label="Hospital" value={safeMedialInfo.hospital} />
                     <DisplayField label="Doctor Address" value={formatDoctorAddress()} />
                     <DisplayField label="Phone Numbers" value={formatDoctorPhones()} />
-                    <DisplayField label="Will Cooperate with Alcor?" value={medicalInfo.willDoctorCooperate} />
+                    <DisplayField label="Will Cooperate with Alcor?" value={safeMedialInfo.willDoctorCooperate} />
                   </div>
                 </div>
 
@@ -282,13 +262,13 @@ const MedicalInfoSection = ({
                   <div>
                     <h3 className="text-white/90 text-sm font-medium mb-3">Medical History & Conditions</h3>
                     <div className="space-y-4">
-                      <DisplayField label="Health Problems" value={medicalInfo.healthProblems} />
-                      <DisplayField label="Allergies (including to drugs)" value={medicalInfo.allergies} />
-                      <DisplayField label="Current/Recent Medications" value={medicalInfo.medications} />
-                      <DisplayField label="Identifying Scars or Deformities" value={medicalInfo.identifyingScars} />
-                      <DisplayField label="Artificial Appliances/Implants/Prosthetics" value={medicalInfo.artificialAppliances} />
-                      <DisplayField label="Past Medical History" value={medicalInfo.pastMedicalHistory} />
-                      <DisplayField label="Hereditary Illnesses or Tendencies" value={medicalInfo.hereditaryIllnesses} />
+                      <DisplayField label="Health Problems" value={safeMedialInfo.healthProblems} />
+                      <DisplayField label="Allergies (including to drugs)" value={safeMedialInfo.allergies} />
+                      <DisplayField label="Current/Recent Medications" value={safeMedialInfo.medications} />
+                      <DisplayField label="Identifying Scars or Deformities" value={safeMedialInfo.identifyingScars} />
+                      <DisplayField label="Artificial Appliances/Implants/Prosthetics" value={safeMedialInfo.artificialAppliances} />
+                      <DisplayField label="Past Medical History" value={safeMedialInfo.pastMedicalHistory} />
+                      <DisplayField label="Hereditary Illnesses or Tendencies" value={safeMedialInfo.hereditaryIllnesses} />
                     </div>
                   </div>
                 )}
@@ -327,7 +307,7 @@ const MedicalInfoSection = ({
               <div className="space-y-6">
                 {/* Basic Health Information */}
                 <div>
-                  <h3 className="text-white/90 text-sm font-medium mb-3">Basic Health Information</h3>
+                  <h3 className="text-gray-700 text-sm font-medium mb-3">Basic Health Information</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <FormSelect
                       label="Sex"
@@ -351,7 +331,7 @@ const MedicalInfoSection = ({
                     <FormInput
                       label="Weight (lbs)"
                       type="text"
-                      value={medicalInfo.weight ? medicalInfo.weight.toString().replace(' lb', '').replace('lb', '').trim() : ''}
+                      value={safeMedialInfo.weight ? safeMedialInfo.weight.toString().replace(' lbs', '').replace(' lb', '').replace('lbs', '').replace('lb', '').trim() : ''}
                       onChange={(e) => {
                         const weightValue = e.target.value.trim();
                         setMedicalInfo({
@@ -383,7 +363,7 @@ const MedicalInfoSection = ({
 
                 {/* Doctor Information */}
                 <div>
-                  <h3 className="text-white/90 text-sm font-medium mb-3">Primary Care Physician</h3>
+                  <h3 className="text-gray-700 text-sm font-medium mb-3">Primary Care Physician</h3>
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <FormInput
@@ -466,7 +446,7 @@ const MedicalInfoSection = ({
 
                 {/* Medical History */}
                 <div>
-                  <h3 className="text-white/90 text-sm font-medium mb-3">Medical History & Conditions</h3>
+                  <h3 className="text-gray-700 text-sm font-medium mb-3">Medical History & Conditions</h3>
                   <div className="space-y-3">
                     <FormTextarea
                       label="Health Problems"
@@ -529,7 +509,7 @@ const MedicalInfoSection = ({
               <ActionButtons 
                 editMode={true}
                 onSave={() => {
-                  if (!medicalInfo.sex || medicalInfo.sex === '') {
+                  if (!safeMedialInfo.sex || safeMedialInfo.sex === '') {
                     alert('Please select a sex before saving.');
                     return;
                   }
@@ -566,10 +546,10 @@ const MedicalInfoSection = ({
               <div>
                 <h3 className={styleConfig.text.heading.h3}>Basic Health Information</h3>
                 <dl className={styleConfig.display.dl.wrapperFour}>
-                  <InfoDisplay label="Sex" value={medicalInfo.sex} />
-                  <InfoDisplay label="Height" value={formatHeight(medicalInfo.height)} />
-                  <InfoDisplay label="Weight" value={formatWeight(medicalInfo.weight)} />
-                  <InfoDisplay label="Blood Type" value={medicalInfo.bloodType} />
+                  <InfoDisplay label="Sex" value={safeMedialInfo.sex} />
+                  <InfoDisplay label="Height" value={formatHeight(safeMedialInfo.height)} />
+                  <InfoDisplay label="Weight" value={formatWeight(safeMedialInfo.weight)} />
+                  <InfoDisplay label="Blood Type" value={safeMedialInfo.bloodType} />
                 </dl>
               </div>
 
@@ -577,8 +557,8 @@ const MedicalInfoSection = ({
               <div className="mt-6">
                 <h3 className={styleConfig.text.heading.h3}>Primary Care Physician</h3>
                 <dl className={styleConfig.display.dl.wrapperTwo}>
-                  <InfoDisplay label="Doctor Name" value={medicalInfo.primaryPhysician} />
-                  <InfoDisplay label="Hospital" value={medicalInfo.hospital} />
+                  <InfoDisplay label="Doctor Name" value={safeMedialInfo.primaryPhysician} />
+                  <InfoDisplay label="Hospital" value={safeMedialInfo.hospital} />
                   <InfoDisplay 
                     label="Doctor Address" 
                     value={formatDoctorAddress()}
@@ -591,7 +571,7 @@ const MedicalInfoSection = ({
                   />
                   <InfoDisplay 
                     label="Will Cooperate with Alcor?" 
-                    value={medicalInfo.willDoctorCooperate}
+                    value={safeMedialInfo.willDoctorCooperate}
                     className={styleConfig.display.grid.fullSpan}
                   />
                 </dl>
@@ -628,7 +608,7 @@ const MedicalInfoSection = ({
                 <Input
                   label="Weight (lbs)"
                   type="text"
-                  value={medicalInfo.weight ? medicalInfo.weight.toString().replace(' lb', '').replace('lb', '').trim() : ''}
+                  value={safeMedialInfo.weight ? safeMedialInfo.weight.toString().replace(' lbs', '').replace(' lb', '').replace('lbs', '').replace('lb', '').trim() : ''}
                   onChange={(e) => {
                     // Add ' lb' back when saving to state
                     const weightValue = e.target.value.trim();
@@ -885,7 +865,7 @@ const MedicalInfoSection = ({
                     <PurpleButton
                       text={savingSection === 'saved' ? 'Saved' : savingSection === 'medical' ? 'Saving...' : 'Save'}
                       onClick={() => {
-                        if (!medicalInfo.sex || medicalInfo.sex === '') {
+                        if (!safeMedialInfo.sex || safeMedialInfo.sex === '') {
                           alert('Please select a sex before saving.');
                           return;
                         }
@@ -908,37 +888,37 @@ const MedicalInfoSection = ({
               <dl className={styleConfig.display.dl.wrapper + " mt-4"}>
                 <InfoDisplay 
                   label="Health Problems" 
-                  value={medicalInfo.healthProblems}
+                  value={safeMedialInfo.healthProblems}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Allergies (including to drugs)" 
-                  value={medicalInfo.allergies}
+                  value={safeMedialInfo.allergies}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Current/Recent Medications" 
-                  value={medicalInfo.medications}
+                  value={safeMedialInfo.medications}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Identifying Scars or Deformities" 
-                  value={medicalInfo.identifyingScars}
+                  value={safeMedialInfo.identifyingScars}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Artificial Appliances/Implants/Prosthetics" 
-                  value={medicalInfo.artificialAppliances}
+                  value={safeMedialInfo.artificialAppliances}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Past Medical History" 
-                  value={medicalInfo.pastMedicalHistory}
+                  value={safeMedialInfo.pastMedicalHistory}
                   className={styleConfig.display.grid.fullSpan}
                 />
                 <InfoDisplay 
                   label="Hereditary Illnesses or Tendencies" 
-                  value={medicalInfo.hereditaryIllnesses}
+                  value={safeMedialInfo.hereditaryIllnesses}
                   className={styleConfig.display.grid.fullSpan}
                 />
               </dl>
