@@ -534,3 +534,8 @@ export async function updateMemberFundingInfo(contactId, fundingData) {
     };
   }
 }
+
+export const getMemberNextOfKin = getMemberEmergencyContacts;
+export const createMemberNextOfKin = createMemberEmergencyContact;
+export const updateMemberNextOfKin = updateMemberEmergencyContact;
+export const deleteMemberNextOfKin = deleteMemberEmergencyContact;

@@ -25,7 +25,6 @@ export const memberCategoryConfig = {
       occupation: { 
         visible: false, 
         editable: false,
-        requiredFields: [] 
       },
       medical: { 
         visible: false, 
@@ -105,7 +104,7 @@ export const memberCategoryConfig = {
       nextOfKin: { 
         visible: true, 
         editable: true,
-        requiredFields: ['fullName', 'relationship', 'phone'] 
+        requiredFields: ['firstName', 'lastName', 'relationship', 'mobilePhone'] // Changed from fullName and phone
       }
     }
   },
@@ -160,7 +159,7 @@ export const memberCategoryConfig = {
       nextOfKin: { 
         visible: true, 
         editable: true,
-        requiredFields: ['fullName', 'relationship', 'phone', 'email'] 
+        requiredFields: ['firstName', 'lastName', 'relationship', 'mobilePhone', 'email'] // Changed from fullName and phone
       }
     }
   }

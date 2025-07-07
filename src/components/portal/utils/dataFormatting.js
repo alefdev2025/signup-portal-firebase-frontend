@@ -831,6 +831,81 @@ const cleanAddressData = (addresses) => {
   };
 };
 
+export const formatRelationship = (relationship) => {
+  if (!relationship) return '';
+  
+  const cleaned = cleanString(relationship).toLowerCase().trim();
+  
+  // Only map husband/wife to Spouse
+  const relationshipMap = {
+    'husband': 'Spouse',
+    'wife': 'Spouse'
+  };
+  
+  // Check if we have a mapping for this relationship
+  if (relationshipMap[cleaned]) {
+    return relationshipMap[cleaned];
+  }
+  
+  // If no mapping found, return properly formatted original
+  // Title case the first letter of each word
+  return relationship
+    .trim()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+export const cleanComments = (text) => {
+  if (!text) return '';
+  
+  const trimmed = text.trim();
+  
+  // Check if the text is all caps
+  if (trimmed === trimmed.toUpperCase() && trimmed.length > 3) {
+    // Convert to sentence case
+    return trimmed
+      .toLowerCase()
+      .split('. ')
+      .map(sentence => {
+        if (!sentence) return '';
+        
+        // Capitalize first letter of each sentence
+        const trimmedSentence = sentence.trim();
+        if (!trimmedSentence) return '';
+        
+        // Handle special cases like "I" and common acronyms
+        return trimmedSentence
+          .split(' ')
+          .map((word, index) => {
+            // Always capitalize first word of sentence
+            if (index === 0) {
+              return word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            
+            // Capitalize "I"
+            if (word === 'i') return 'I';
+            
+            // Preserve common acronyms
+            const upperWord = word.toUpperCase();
+            if (['USA', 'UK', 'EU', 'CEO', 'PhD', 'MD', 'RN', 'EMT'].includes(upperWord)) {
+              return upperWord;
+            }
+            
+            // Keep other words lowercase
+            return word;
+          })
+          .join(' ');
+      })
+      .join('. ')
+      // Add period at end if missing
+      .replace(/([^.!?])$/, '$1.');
+  }
+  
+  return trimmed;
+};
+
+
 // Clean medical data with all the new fields
 const cleanMedicalData = (medical) => {
 if (!medical) return {};

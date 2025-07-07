@@ -17,8 +17,11 @@ import {
   updateMemberMedicalInfo,
   updateMemberCryoArrangements,
   updateMemberLegalInfo,
-  createMemberEmergencyContact,
-  updateMemberFundingInfo 
+  updateMemberFundingInfo,
+  getMemberNextOfKin as getMemberEmergencyContacts,
+  createMemberNextOfKin as createMemberEmergencyContact,
+  updateMemberNextOfKin as updateMemberEmergencyContact,
+  deleteMemberNextOfKin as deleteMemberEmergencyContact
 } from './services/salesforce/memberInfo';
 
 import { 
@@ -34,6 +37,8 @@ import {
   formatPostalCode,
   formatCountry,
   cleanDataBeforeSave,
+  cleanComments,
+  formatRelationship
 } from './utils/dataFormatting';
 
 // Import styled components
@@ -114,7 +119,7 @@ const MyInformationTab = () => {
   const [cryoArrangements, setCryoArrangements] = useState({});
 
   const [legal, setLegal] = useState({});
-  const [nextOfKin, setNextOfKin] = useState({});
+  const [nextOfKinList, setNextOfKinList] = useState([]);
   
   // Field errors state
   const [fieldErrors, setFieldErrors] = useState({});
@@ -281,23 +286,65 @@ const MyInformationTab = () => {
         
         if (memberInfoData.emergency?.success && memberInfoData.emergency.data) {
           const emergencyResponse = memberInfoData.emergency.data;
-          const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
+          console.log('🔍 DEBUG: Cached emergency response:', emergencyResponse);
+          console.log('🔍 DEBUG: Type of emergencyResponse:', typeof emergencyResponse);
+          console.log('🔍 DEBUG: Keys in emergencyResponse:', Object.keys(emergencyResponse));
           
-          if (nextOfKinArray && nextOfKinArray.length > 0) {
-            const primaryContact = nextOfKinArray[0];
-            const transformedNextOfKin = {
-              fullName: formatPersonName(primaryContact.fullName || ''),
-              relationship: cleanString(primaryContact.relationship || ''),
-              phone: formatPhone(primaryContact.mobilePhone || primaryContact.homePhone || ''),
-              email: formatEmail(primaryContact.email || ''),
-              address: primaryContact.address ? 
-                `${formatStreetAddress(primaryContact.address.street || '')}, ${formatCity(primaryContact.address.city || '')}, ${formatStateProvince(primaryContact.address.state || '')} ${formatPostalCode(primaryContact.address.postalCode || '')}`.trim().replace(/^,\s*|,\s*$/g, '') :
-                ''
-            };
-            setNextOfKin(transformedNextOfKin);
-            setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
+          // Check different possible data structures
+          const nextOfKinArray = emergencyResponse.data?.nextOfKin || 
+                                 emergencyResponse.nextOfKin || 
+                                 emergencyResponse || // In case the response IS the array
+                                 [];
+          
+          console.log('🔍 DEBUG: nextOfKinArray:', nextOfKinArray);
+          console.log('🔍 DEBUG: Is array?', Array.isArray(nextOfKinArray));
+          console.log('🔍 DEBUG: Array length:', nextOfKinArray.length);
+          
+          if (Array.isArray(nextOfKinArray) && nextOfKinArray.length > 0) {
+            console.log('🔍 DEBUG: Processing', nextOfKinArray.length, 'NOK records');
+            console.log('🔍 DEBUG: First NOK record:', nextOfKinArray[0]);
+            
+            const transformedList = nextOfKinArray.map(nok => ({
+              id: nok.id,
+              firstName: formatPersonName(nok.firstName || ''),  // ADD formatting
+              middleName: formatPersonName(nok.middleName || ''),  // ADD formatting
+              lastName: formatPersonName(nok.lastName || ''),  // ADD formatting
+              relationship: formatRelationship(nok.relationship || ''), 
+              dateOfBirth: nok.dateOfBirth || '',
+              homePhone: formatPhone(nok.homePhone || ''),
+              mobilePhone: formatPhone(nok.mobilePhone || ''),
+              email: formatEmail(nok.email || ''),
+              address: {
+                street1: formatStreetAddress(nok.address?.street1 || ''),  // ADD formatting
+                street2: formatStreetAddress(nok.address?.street2 || ''),  // ADD formatting
+                city: formatCity(nok.address?.city || ''),  // ADD formatting
+                state: formatStateProvince(nok.address?.state || ''),  // ADD formatting
+                postalCode: formatPostalCode(nok.address?.postalCode || ''),  // ADD formatting
+                country: formatCountry(nok.address?.country || '')  // ADD formatting
+              },
+              willingToSignAffidavit: cleanString(nok.willingToSignAffidavit || ''),  // ADD formatting
+              comments: cleanComments(nok.longComments || nok.comments || '')
+            }));
+            
+            // Compute derived fields
+            transformedList.forEach(nok => {
+              nok.fullName = `${nok.firstName} ${nok.lastName}`.trim();
+              nok.phone = nok.mobilePhone || nok.homePhone || '';
+            });
+            
+            console.log('🔍 DEBUG: Transformed list:', transformedList);
+            setNextOfKinList(transformedList);
+            setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
+          } else {
+            console.log('🔍 DEBUG: No NOK records found or not an array');
+            setNextOfKinList([]);
           }
+        } else {
+          console.log('🔍 DEBUG: No cached emergency data available');
         }
+        
+
+        // Remove the misplaced try-catch block that was here
         
         // TODO: probably don't need anymore
         /*if (memberInfoData.insurance?.success && memberInfoData.insurance.data) {
@@ -704,36 +751,71 @@ const MyInformationTab = () => {
         setOriginalData(prev => ({ ...prev, legal: transformedLegal }));
       }
       
-      // Process Emergency Contacts (Next of Kin)
+      console.log('🔍 DEBUG: emergencyRes from Promise.allSettled:', emergencyRes);
       if (results.emergencyRes.success && results.emergencyRes.data) {
         const emergencyResponse = results.emergencyRes.data;
-        //console.log('Emergency contacts response:', emergencyResponse);
+        console.log('🔍 DEBUG: Emergency response structure:', emergencyResponse);
+        console.log('🔍 DEBUG: Type:', typeof emergencyResponse);
+        console.log('🔍 DEBUG: Keys:', Object.keys(emergencyResponse));
         
-        const nextOfKinArray = emergencyResponse.data?.nextOfKin || emergencyResponse.nextOfKin;
+        // Try different data structures
+        let nextOfKinArray = [];
         
-        if (nextOfKinArray && nextOfKinArray.length > 0) {
-          const primaryContact = nextOfKinArray[0];
-          //console.log('Primary contact data:', primaryContact);
+        // Check if the response has a success flag and nested data
+        if (emergencyResponse.success && emergencyResponse.data) {
+          console.log('🔍 DEBUG: Found nested data structure');
+          nextOfKinArray = emergencyResponse.data.nextOfKin || emergencyResponse.data || [];
+        } else if (emergencyResponse.nextOfKin) {
+          console.log('🔍 DEBUG: Found direct nextOfKin property');
+          nextOfKinArray = emergencyResponse.nextOfKin;
+        } else if (Array.isArray(emergencyResponse)) {
+          console.log('🔍 DEBUG: Response is already an array');
+          nextOfKinArray = emergencyResponse;
+        }
+        
+        console.log('🔍 DEBUG: Final nextOfKinArray:', nextOfKinArray);
+        console.log('🔍 DEBUG: Is array?', Array.isArray(nextOfKinArray));
+        console.log('🔍 DEBUG: Length:', nextOfKinArray.length);
+        
+        if (Array.isArray(nextOfKinArray) && nextOfKinArray.length > 0) {
+          console.log('🔍 DEBUG: First NOK:', nextOfKinArray[0]);
           
-          // Clean all the data when loading from backend
-          const transformedNextOfKin = {
-            fullName: formatPersonName(primaryContact.fullName || ''),
-            relationship: cleanString(primaryContact.relationship || ''),
-            phone: formatPhone(primaryContact.mobilePhone || primaryContact.homePhone || ''),
-            email: formatEmail(primaryContact.email || ''),
-            address: primaryContact.address ? 
-              `${formatStreetAddress(primaryContact.address.street || '')}, ${formatCity(primaryContact.address.city || '')}, ${formatStateProvince(primaryContact.address.state || '')} ${formatPostalCode(primaryContact.address.postalCode || '')}`.trim().replace(/^,\s*|,\s*$/g, '') :
-              ''
-          };
+          const transformedList = nextOfKinArray.map(nok => ({
+            id: nok.id,
+            firstName: formatPersonName(nok.firstName || ''),
+            middleName: formatPersonName(nok.middleName || ''),
+            lastName: formatPersonName(nok.lastName || ''),
+            relationship: formatRelationship(nok.relationship || ''), 
+            dateOfBirth: nok.dateOfBirth || '',
+            homePhone: formatPhone(nok.homePhone || ''),
+            mobilePhone: formatPhone(nok.mobilePhone || ''),
+            email: formatEmail(nok.email || ''),
+            address: {
+              street1: formatStreetAddress(nok.address?.street1 || ''),
+              street2: formatStreetAddress(nok.address?.street2 || ''),
+              city: formatCity(nok.address?.city || ''),
+              state: formatStateProvince(nok.address?.state || ''),
+              postalCode: formatPostalCode(nok.address?.postalCode || ''),
+              country: formatCountry(nok.address?.country || '')
+            },
+            willingToSignAffidavit: cleanString(nok.willingToSignAffidavit || ''),
+            comments: cleanComments(nok.longComments || nok.comments || '')
+          }));
           
-          //console.log('Transformed and cleaned next of kin:', transformedNextOfKin);
-          setNextOfKin(transformedNextOfKin);
-          setOriginalData(prev => ({ ...prev, nextOfKin: transformedNextOfKin }));
+          console.log('🔍 DEBUG: Setting transformed list:', transformedList);
+          setNextOfKinList(transformedList);
+          setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
         } else {
-          //console.log('No next of kin data found in response');
+          console.log('🔍 DEBUG: No next of kin records found');
+          setNextOfKinList([]);
+          setOriginalData(prev => ({ ...prev, nextOfKin: [] }));
         }
       } else {
-        //console.log('Emergency contacts request failed or returned no data');
+        console.log('🔍 DEBUG: Failed to load emergency contacts');
+        console.log('🔍 DEBUG: Success:', results.emergencyRes?.success);
+        console.log('🔍 DEBUG: Error:', results.emergencyRes?.error);
+        setNextOfKinList([]);
+        setOriginalData(prev => ({ ...prev, nextOfKin: [] }));
       }
       
       // TODO: probably don't need
@@ -947,7 +1029,8 @@ const loadMemberCategory = async () => {
         setLegal(originalData.legal);
         break;
       case 'nextOfKin':
-        setNextOfKin(originalData.nextOfKin);
+        setNextOfKinList(originalData.nextOfKin || []); // Make sure to use array
+        setFieldErrors({}); // Clear field errors when canceling
         break;
     }
     setEditMode(prev => ({ ...prev, [section]: false }));
@@ -2163,88 +2246,353 @@ const saveFunding = async () => {
   };
   
   const saveNextOfKin = async () => {
+    // Add a timestamp to track multiple calls
+    const callId = Date.now();
+    console.log(`🟦 === saveNextOfKin START [${callId}] ===`);
+    console.log(`[${callId}] Called from:`, new Error().stack.split('\n')[2]);
+    
     setSavingSection('nextOfKin');
     setSaveMessage({ type: '', text: '' });
+    setFieldErrors({}); // Clear any existing field errors
     
     try {
-      //console.log('Saving next of kin for member category:', memberCategory);
+      console.log(`[${callId}] 1. memberCategory:`, memberCategory);
+      console.log(`[${callId}] 2. memberCategoryConfig exists?`, !!memberCategoryConfig);
+      console.log(`[${callId}] 3. salesforceContactId:`, salesforceContactId);
+      console.log(`[${callId}] 4. nextOfKinList:`, nextOfKinList);
+      console.log(`[${callId}] 5. nextOfKinList details:`, JSON.stringify(nextOfKinList, null, 2));
       
-      // Get required fields for this category
-      const requiredFields = memberCategoryConfig[memberCategory]?.sections.nextOfKin?.requiredFields || [];
-      //console.log('Required fields for next of kin section:', requiredFields);
-      
-      // Clean the next of kin data
-      const cleanedNextOfKin = cleanDataBeforeSave(nextOfKin, 'nextOfKin');
-      
-      // Validate required fields
-      const errors = {};
-      
-      requiredFields.forEach(field => {
-        switch(field) {
-          case 'fullName':
-            if (!cleanedNextOfKin.fullName) {
-              errors.fullName = 'Full name is required';
-            }
-            break;
-          case 'relationship':
-            if (!cleanedNextOfKin.relationship) {
-              errors.relationship = 'Relationship is required';
-            }
-            break;
-          case 'phone':
-            if (!cleanedNextOfKin.phone) {
-              errors.phone = 'Phone number is required';
-            }
-            break;
-          case 'email':
-            if (!cleanedNextOfKin.email && memberCategory === 'CryoMember') {
-              errors.email = 'Email is required for Cryopreservation Members';
-            } else if (cleanedNextOfKin.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedNextOfKin.email)) {
-              errors.email = 'Please enter a valid email address';
-            }
-            break;
-        }
-      });
-      
-      if (Object.keys(errors).length > 0) {
-        let errorMessage = Object.values(errors).join('. ');
-        setSaveMessage({ type: 'error', text: errorMessage });
+      // Guard against missing memberCategory
+      if (!memberCategory) {
+        console.error(`[${callId}] ❌ memberCategory is not set!`);
+        setSaveMessage({ type: 'error', text: 'Unable to determine member category. Please refresh the page.' });
         setSavingSection('');
         return;
       }
       
-      const nokData = {
-        name: cleanedNextOfKin.fullName,
-        relationship: cleanedNextOfKin.relationship,
-        phone: cleanedNextOfKin.phone,
-        email: cleanedNextOfKin.email,
-        address: {
-          street: cleanedNextOfKin.address,
-        },
-        isPrimary: true
-      };
+      // Get required fields for this category
+      let requiredFields = [];
+      try {
+        requiredFields = memberCategoryConfig[memberCategory]?.sections?.nextOfKin?.requiredFields || [];
+        console.log(`[${callId}] 6. Required fields successfully retrieved:`, requiredFields);
+      } catch (configError) {
+        console.error(`[${callId}] ❌ Error accessing config:`, configError);
+        requiredFields = [];
+      }
       
-      const result = await createMemberEmergencyContact(salesforceContactId, nokData);
-      if (result.success) {
-        setSaveMessage({ type: 'success', text: 'Next of kin saved successfully!' });
-        setNextOfKin(cleanedNextOfKin);
-        setOriginalData(prev => ({ ...prev, nextOfKin: cleanedNextOfKin }));
+      // Validate all Next of Kin entries
+      const errors = [];
+      const fieldErrorsToSet = {};
+      
+      console.log(`[${callId}] 7. Starting validation for ${nextOfKinList.length} entries`);
+      
+      nextOfKinList.forEach((nok, index) => {
+        console.log(`[${callId}] 8. Validating NOK ${index + 1}:`, {
+          firstName: nok.firstName,
+          lastName: nok.lastName,
+          relationship: nok.relationship,
+          mobilePhone: nok.mobilePhone,
+          homePhone: nok.homePhone,
+          email: nok.email
+        });
+        
+        const nokErrors = [];
+        
+        // Validate required fields
+        requiredFields.forEach(field => {
+          console.log(`[${callId}] 9. Checking field '${field}' for NOK ${index + 1}`);
+          
+          switch(field) {
+            case 'firstName':
+              if (!nok.firstName || nok.firstName.trim() === '') {
+                console.log(`[${callId}] ❌ First name missing for NOK ${index + 1}`);
+                nokErrors.push('First name is required');
+                fieldErrorsToSet[`nok_${index}_firstName`] = 'First name is required';
+              } else {
+                console.log(`[${callId}] ✅ First name OK: ${nok.firstName}`);
+              }
+              break;
+            case 'lastName':
+              if (!nok.lastName || nok.lastName.trim() === '') {
+                console.log(`[${callId}] ❌ Last name missing for NOK ${index + 1}`);
+                nokErrors.push('Last name is required');
+                fieldErrorsToSet[`nok_${index}_lastName`] = 'Last name is required';
+              } else {
+                console.log(`[${callId}] ✅ Last name OK: ${nok.lastName}`);
+              }
+              break;
+            case 'relationship':
+              if (!nok.relationship || nok.relationship.trim() === '') {
+                console.log(`[${callId}] ❌ Relationship missing for NOK ${index + 1}`);
+                nokErrors.push('Relationship is required');
+                fieldErrorsToSet[`nok_${index}_relationship`] = 'Relationship is required';
+              } else {
+                console.log(`[${callId}] ✅ Relationship OK: ${nok.relationship}`);
+              }
+              break;
+            case 'mobilePhone':
+              // At least one phone number required
+              if (!nok.mobilePhone && !nok.homePhone) {
+                console.log(`[${callId}] ❌ No phone numbers for NOK ${index + 1}`);
+                nokErrors.push('At least one phone number is required');
+                fieldErrorsToSet[`nok_${index}_mobilePhone`] = 'At least one phone number is required';
+              } else {
+                console.log(`[${callId}] ✅ Phone OK - Mobile: ${nok.mobilePhone}, Home: ${nok.homePhone}`);
+              }
+              break;
+            case 'email':
+              if (!nok.email || nok.email.trim() === '') {
+                console.log(`[${callId}] ❌ Email missing for NOK ${index + 1}`);
+                nokErrors.push('Email is required');
+                fieldErrorsToSet[`nok_${index}_email`] = 'Email is required';
+              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nok.email)) {
+                console.log(`[${callId}] ❌ Invalid email format for NOK ${index + 1}: ${nok.email}`);
+                nokErrors.push('Please enter a valid email address');
+                fieldErrorsToSet[`nok_${index}_email`] = 'Please enter a valid email address';
+              } else {
+                console.log(`[${callId}] ✅ Email OK: ${nok.email}`);
+              }
+              break;
+            default:
+              console.warn(`[${callId}] ⚠️ Unknown required field: ${field}`);
+              break;
+          }
+        });
+        
+        console.log(`[${callId}] 10. NOK ${index + 1} errors:`, nokErrors);
+        
+        if (nokErrors.length > 0) {
+          errors.push(`Next of Kin ${index + 1}: ${nokErrors.join(', ')}`);
+        }
+      });
+      
+      console.log(`[${callId}] 11. Total validation errors:`, errors);
+      console.log(`[${callId}] 11a. Field errors to set:`, fieldErrorsToSet);
+      
+      if (errors.length > 0) {
+        console.log(`[${callId}] ❌ Validation failed, showing errors`);
+        
+        // Set field-specific errors
+        setFieldErrors(fieldErrorsToSet);
+        
+        // Also show a general message at the top
+        setSaveMessage({ 
+          type: 'error', 
+          text: 'Please fill in all required fields' 
+        });
+        setSavingSection('');
+        console.log(`[${callId}] 🟥 === saveNextOfKin END (VALIDATION FAILED) ===`);
+        return;
+      }
+      
+      // Find NOKs that need to be deleted
+      const currentNokIds = nextOfKinList
+        .filter(nok => nok.id && !nok.id.startsWith('temp-'))
+        .map(nok => nok.id);
+      
+      const originalNokIds = (originalData.nextOfKin || [])
+        .filter(nok => nok.id && !nok.id.startsWith('temp-'))
+        .map(nok => nok.id);
+      
+      const noksToDelete = originalNokIds.filter(id => !currentNokIds.includes(id));
+      
+      console.log(`[${callId}] 12. NOKs to delete:`, noksToDelete);
+      console.log(`[${callId}]     Original NOK IDs:`, originalNokIds);
+      console.log(`[${callId}]     Current NOK IDs:`, currentNokIds);
+      console.log(`[${callId}]     Will delete ${noksToDelete.length} NOK(s)`);
+      
+      // If no Next of Kin and nothing to delete, just close edit mode
+      if (nextOfKinList.length === 0 && noksToDelete.length === 0) {
+        console.log(`[${callId}] No NOK entries and nothing to delete, closing edit mode`);
         setEditMode(prev => ({ ...prev, nextOfKin: false }));
+        setSavingSection('');
+        setFieldErrors({}); // Clear any field errors
+        console.log(`[${callId}] 🟥 === saveNextOfKin END (NO ENTRIES) ===`);
+        return;
+      }
+      
+      console.log(`[${callId}] 13. Preparing to save ${nextOfKinList.length} entries and delete ${noksToDelete.length} entries`);
+      
+      // Process all operations - deletions, updates, and creates
+      const promises = [];
+      
+      // Add deletion promises first
+      noksToDelete.forEach(nokId => {
+        console.log(`[${callId}] 14. Adding delete operation for NOK ID: ${nokId}`);
+        promises.push(
+          deleteMemberEmergencyContact(salesforceContactId, nokId)
+            .then(result => {
+              console.log(`[${callId}] ✅ Deleted NOK ${nokId}`);
+              return result;
+            })
+            .catch(error => {
+              console.error(`[${callId}] ❌ Failed to delete NOK ${nokId}:`, error);
+              return { success: false, error: error.message };
+            })
+        );
+      });
+      
+      // Then add create/update promises
+      nextOfKinList.forEach((nok, idx) => {
+        console.log(`[${callId}] 15. Preparing NOK ${idx + 1} for API`);
+        
+        // Ensure we have the computed fields for backend compatibility
+        const fullName = `${nok.firstName || ''} ${nok.lastName || ''}`.trim();
+        const phone = nok.mobilePhone || nok.homePhone || '';
+        
+        const nokData = {
+          firstName: nok.firstName,
+          middleName: nok.middleName || '',
+          lastName: nok.lastName,
+          fullName: fullName, // Add computed fullName for backend
+          relationship: formatRelationship(nok.relationship || ''), 
+          dateOfBirth: nok.dateOfBirth || null,
+          homePhone: formatPhone(nok.homePhone || ''),  // Format the phone
+          mobilePhone: formatPhone(nok.mobilePhone || ''),  // Format the phone
+          phone: formatPhone(phone) || '', // Format the computed phone field for backend
+          email: nok.email || '',
+          address: {
+            street1: nok.address?.street1 || '',
+            street2: nok.address?.street2 || '',
+            city: nok.address?.city || '',
+            state: nok.address?.state || '',
+            postalCode: nok.address?.postalCode || '',
+            country: nok.address?.country || ''
+          },
+          willingToSignAffidavit: nok.willingToSignAffidavit || '',
+          comments: cleanComments(nok.longComments || nok.comments || '')
+        };
+        
+        console.log(`[${callId}] 16. NOK ${idx + 1} data prepared:`, nokData);
+        
+        if (nok.id && !nok.id.startsWith('temp-')) {
+          console.log(`[${callId}] 17. Updating existing NOK ${idx + 1} with ID: ${nok.id}`);
+          promises.push(updateMemberEmergencyContact(salesforceContactId, nok.id, nokData));
+        } else {
+          console.log(`[${callId}] 17. Creating new NOK ${idx + 1}`);
+          promises.push(createMemberEmergencyContact(salesforceContactId, nokData));
+        }
+      });
+      
+      console.log(`[${callId}] 18. Executing ${promises.length} API calls (${noksToDelete.length} deletes, ${nextOfKinList.length} creates/updates)...`);
+      const results = await Promise.all(promises);
+      
+      console.log(`[${callId}] 19. API results:`, results);
+      const allSuccessful = results.every(r => r.success);
+      console.log(`[${callId}] 20. All successful?`, allSuccessful);
+      
+      if (allSuccessful) {
+        console.log(`[${callId}] ✅ All saves and deletes successful!`);
+        setSaveMessage({ type: 'success', text: 'Next of kin saved successfully!' });
+        setEditMode(prev => ({ ...prev, nextOfKin: false }));
+        
+        // Clear any field errors on successful save
+        setFieldErrors({});
+        
+        // Clear cache after successful save
         memberDataService.clearCache(salesforceContactId);
         
-        // Refresh the cache
+        // Update originalData to match current state
+        console.log(`[${callId}] 21. Updating originalData to match current state`);
+        console.log(`[${callId}] 22. Current nextOfKinList has ${nextOfKinList.length} entries`);
+        
+        // The current nextOfKinList already has the correct data
+        setOriginalData(prev => ({ ...prev, nextOfKin: [...nextOfKinList] }));
+        
+        // Try to fetch fresh data after a delay, but don't clear the list if it fails
+        setTimeout(async () => {
+          try {
+            console.log(`[${callId}] 23. Attempting to fetch fresh data (delayed)...`);
+            const freshData = await memberDataService.getEmergencyContacts(salesforceContactId);
+            
+            if (freshData.success && freshData.data) {
+              // Check different possible data structures
+              const nextOfKinArray = freshData.data?.data?.nextOfKin || 
+                                     freshData.data?.nextOfKin || 
+                                     freshData.data || 
+                                     [];
+              
+              console.log(`[${callId}] 24. Fresh data received with ${Array.isArray(nextOfKinArray) ? nextOfKinArray.length : 'invalid'} NOKs`);
+              
+              if (Array.isArray(nextOfKinArray) && nextOfKinArray.length >= 0) {
+                const transformedList = nextOfKinArray.map(nok => ({
+                  id: nok.id,
+                  firstName: formatPersonName(nok.firstName || ''),
+                  middleName: formatPersonName(nok.middleName || ''),
+                  lastName: formatPersonName(nok.lastName || ''),
+                  fullName: `${formatPersonName(nok.firstName || '')} ${formatPersonName(nok.lastName || '')}`.trim(),
+                  relationship: cleanString(nok.relationship || ''),
+                  dateOfBirth: nok.dateOfBirth || '',
+                  homePhone: formatPhone(nok.homePhone || ''),
+                  mobilePhone: formatPhone(nok.mobilePhone || ''),
+                  phone: nok.mobilePhone || nok.homePhone || '',
+                  email: formatEmail(nok.email || ''),
+                  address: {
+                    street1: formatStreetAddress(nok.address?.street1 || ''),
+                    street2: formatStreetAddress(nok.address?.street2 || ''),
+                    city: formatCity(nok.address?.city || ''),
+                    state: formatStateProvince(nok.address?.state || ''),
+                    postalCode: formatPostalCode(nok.address?.postalCode || ''),
+                    country: formatCountry(nok.address?.country || '')
+                  },
+                  willingToSignAffidavit: cleanString(nok.willingToSignAffidavit || ''),
+                  comments: cleanComments(nok.longComments || nok.comments || '')
+                }));
+                
+                console.log(`[${callId}] 25. Updating with fresh data - ${transformedList.length} NOKs`);
+                setNextOfKinList(transformedList);
+                setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
+              }
+            } else {
+              console.log(`[${callId}] 26. Could not fetch fresh data, keeping current state`);
+            }
+          } catch (error) {
+            console.log(`[${callId}] 27. Error fetching fresh data (non-critical):`, error.message);
+            // This is fine - we already have the correct data in state
+          }
+        }, 1000); // Delay by 1 second to let the backend settle
+        
+        // Refresh the main member info cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+            console.log(`[${callId}] 🔄 Refreshing main cache...`);
             refreshMemberInfo();
-          }, 500);
+          }, 2000); // Delay this even more
         }
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save next of kin' });
+        console.log(`[${callId}] ❌ Some saves/deletes failed`);
+        // Handle partial failures
+        const errorMessages = results
+          .map((r, i) => {
+            if (!r.success) {
+              // Determine if this was a delete or create/update
+              if (i < noksToDelete.length) {
+                return `Failed to delete Next of Kin: ${r.error || 'Unknown error'}`;
+              } else {
+                const nokIndex = i - noksToDelete.length;
+                const nok = nextOfKinList[nokIndex];
+                return `${nok.firstName} ${nok.lastName}: ${r.error || 'Unknown error'}`;
+              }
+            }
+            return null;
+          })
+          .filter(Boolean);
+        
+        setSaveMessage({ 
+          type: 'error', 
+          text: 'Failed to save some next of kin: ' + errorMessages.join(', ') 
+        });
+        setSavingSection('');
+        // Don't clear field errors on failure
       }
+      
+      console.log(`[${callId}] 🟦 === saveNextOfKin END (SUCCESS) ===`);
     } catch (error) {
-      console.error('Error saving next of kin:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save next of kin' });
+      console.error(`[${callId}] ❌ Exception in saveNextOfKin:`, error);
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Failed to save next of kin: ' + error.message 
+      });
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
@@ -2510,14 +2858,16 @@ const saveFunding = async () => {
       <SectionSkeleton />
     ) : (
       <NextOfKinSection
-        nextOfKin={nextOfKin || {}}
-        setNextOfKin={setNextOfKin}
+        nextOfKinList={nextOfKinList}
+        setNextOfKinList={setNextOfKinList}
         editMode={editMode}
         toggleEditMode={toggleEditMode}
         cancelEdit={cancelEdit}
         saveNextOfKin={saveNextOfKin}
         savingSection={savingSection}
         memberCategory={memberCategory}
+        salesforceContactId={salesforceContactId}
+        fieldErrors={fieldErrors}  // IMPORTANT: Pass fieldErrors prop
       />
     )}
   </>
