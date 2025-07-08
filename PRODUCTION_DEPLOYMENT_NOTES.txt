@@ -1,0 +1,34 @@
+## Salesforce Record Type Verification
+
+**IMPORTANT**: Record Type DeveloperNames may differ between sandbox and production!
+
+### 1. Test Record Types Immediately After Deployment
+
+GET https://[PRODUCTION_URL]/api/test/test-record-types
+
+### 2. Verify These DeveloperNames Match Sandbox:
+- **Contact Record Types:**
+ - Basic Member: BasicMember
+ - Cryo Member: Cryopreservation_Member
+ 
+- **Agreement Record Types:**
+ - Basic: Alcor_Membership
+ - Cryo: Alcor_Cryopreservation_Membership
+
+### 3. If Different, Update These Files:
+- [ ] src/salesforce/services/memberSignup.service.js
+ - Line ~45: Contact record type names
+ - Line ~115: Agreement record type names
+- [ ] Any other files using hardcoded record type names
+
+### 4. Alternative: Switch to Name-Based Lookup
+If record types differ, consider implementing the name-based lookup approach instead of DeveloperNames:
+// Search by display name instead of DeveloperName
+const recordTypeId = await getRecordTypeIdByName('Contact', 'Basic Member');
+
+### 5. Remove Test Endpoint
+- [ ] Remove /api/test/test-record-types endpoint after verification
+- [ ] Remove testRoutes.js file
+- [ ] Remove test route from main app file
+
+**Note**: Keep test endpoint code in a separate branch in case you need to check other sandboxes later.

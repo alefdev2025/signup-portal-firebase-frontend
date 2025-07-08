@@ -33,7 +33,7 @@ import ContractsTab from '../components/portal/ContractsTab';
 import FormsTab from '../components/portal/FormsTab2';
 import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
 import PaymentMethodsTab from '../components/portal/PaymentMethodsTab';
-import InvoicesTab from '../components/portal/InvoicesTab';
+import InvoicesTab from '../components/portal/InvoicesTabReal';
 import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';

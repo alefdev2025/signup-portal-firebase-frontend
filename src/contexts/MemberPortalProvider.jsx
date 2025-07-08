@@ -13,10 +13,10 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 // ============================================
 const DEMO_MODE = true;  // <-- TOGGLE THIS ON/OFF
 const DEMO_CONFIG = {
-  netsuiteCustomerId: '4414',
-  salesforceContactId: '0031I00000tRcNZ', // <-- PUT YOUR DEMO CONTACT ID HERE
-  customerName: '0031I00000tRcNZ',
-  customerEmail: 'asnapier@gmail.com'
+  netsuiteCustomerId: '4666', //'4414',
+  salesforceContactId: '0038W00001ShAjyQAF', // <-- PUT YOUR DEMO CONTACT ID HERE  // Nikki 038W00001ShAjyQAF // Anthony 0031I00000tRcNZ
+  customerName: 'Nicole Olson',
+  customerEmail: 'nh4olson@gmail.com' //'asnapier@gmail.com'
 };
 // ============================================
 
