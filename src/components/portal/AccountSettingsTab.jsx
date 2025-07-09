@@ -85,6 +85,11 @@ const SettingsTab = () => {
         font-weight: 400 !important;
         letter-spacing: -0.01em !important;
       }
+      @media (max-width: 640px) {
+        .settings-tab .card-title {
+          font-weight: 600 !important;
+        }
+      }
       .settings-tab .section-subtitle {
         font-weight: 300 !important;
         letter-spacing: 0.05em !important;
@@ -191,13 +196,28 @@ const SettingsTab = () => {
         background: #ffffff;
         border-radius: 1rem;
       }
+      @media (max-width: 767px) {
+        .professional-card {
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+        }
+      }
       .professional-card:hover {
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
         transform: translateY(-2px);
       }
+      @media (max-width: 767px) {
+        .professional-card:hover {
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
       .luxury-divider {
         height: 1px;
-        background: linear-gradient(to right, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
+        background: linear-gradient(to right, transparent, #d1d5db 20%, #d1d5db 80%, transparent);
+      }
+      @media (max-width: 640px) {
+        .luxury-divider {
+          background: linear-gradient(to right, transparent 5%, #d1d5db 15%, #d1d5db 85%, transparent 95%);
+        }
       }
       .icon-luxury {
         position: relative;
@@ -247,6 +267,7 @@ const SettingsTab = () => {
   }, []);
 
   useEffect(() => {
+    // Remove the scroll to top functionality that might be interfering
     fetchUserSettings();
     
     // Report viewing settings
@@ -437,13 +458,13 @@ const SettingsTab = () => {
   return (
     <div className="settings-tab -mx-6 -mt-6 md:mx-0 md:mt-0">
       {/* Header */}
-      <div className="mb-12 px-6 pt-6 md:px-0 md:pt-0">
+      <div className="mb-12 px-6 pt-6 md:px-0 md:pt-0 hidden sm:block">
         <h1 className="text-[1.5rem] md:text-[1.75rem] font-medium text-gray-900 mb-2 leading-tight">Account Settings</h1>
         <p className="text-gray-400 text-xs md:text-sm tracking-wide uppercase section-subtitle">Manage your preferences and security</p>
       </div>
 
       {/* Settings Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 md:px-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 md:px-0 pt-10 sm:pt-0">
         {/* Notifications Card */}
         <div className="professional-card bg-white shadow-lg border border-gray-100 rounded-2xl overflow-hidden">
           <div className="px-8 py-6">
@@ -451,7 +472,7 @@ const SettingsTab = () => {
               <IconWrapper className="icon-luxury" size="large">
                 <BellIcon className={iconStyle.iconSizeLarge} />
               </IconWrapper>
-              <h2 className="text-lg font-normal text-gray-800">Notifications</h2>
+              <h2 className="text-lg font-normal text-gray-800 card-title">Notifications</h2>
             </div>
 
             <div className="space-y-6">
@@ -465,9 +486,12 @@ const SettingsTab = () => {
                     </p>
                     {settings.receiveMediaNotifications && (
                       <div className="mt-3 inline-flex items-center">
-                        <span className="text-[0.6875rem] tracking-widest text-emerald-600 font-medium status-badge">
-                          ACTIVE
-                        </span>
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                          <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                          <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                            ACTIVE
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -489,9 +513,12 @@ const SettingsTab = () => {
                     </p>
                     {settings.receiveStaffMessages && (
                       <div className="mt-3 inline-flex items-center">
-                        <span className="text-[0.6875rem] tracking-widest text-emerald-600 font-medium status-badge">
-                          ACTIVE
-                        </span>
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                          <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                          <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                            ACTIVE
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -513,7 +540,7 @@ const SettingsTab = () => {
               <IconWrapper className="icon-luxury" size="large">
                 <ShieldIcon className={iconStyle.iconSizeLarge} />
               </IconWrapper>
-              <h2 className="text-lg font-normal text-gray-800">Security</h2>
+              <h2 className="text-lg font-normal text-gray-800 card-title">Security</h2>
             </div>
 
             <div className="settings-list-item p-5 bg-white border border-gray-100/50 rounded-xl" style={{boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.15), -0.5px -0.5px 1px rgba(0, 0, 0, 0.04)'}}>
@@ -559,18 +586,18 @@ const SettingsTab = () => {
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-16 px-6 md:px-0 pb-8">
+      <div className="mt-16 px-6 md:px-0 pb-2 sm:pb-8">
         <div className="luxury-divider mb-8"></div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-4 sm:px-0">
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></div>
-            <p className="text-xs text-gray-500 tracking-wider uppercase font-light">Changes save automatically</p>
+            <p className="text-xs text-gray-500 sm:text-gray-500 text-gray-600 tracking-wider uppercase font-light">Changes save automatically</p>
           </div>
           
           <button
             onClick={handleRestoreDefaults}
             disabled={saving}
-            className="text-xs tracking-wider uppercase text-gray-500 hover:text-gray-700 font-normal transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-b border-transparent hover:border-gray-400"
+            className="text-xs tracking-wider uppercase text-gray-600 sm:text-gray-500 hover:text-gray-700 font-normal transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-b border-transparent hover:border-gray-400"
           >
             {saving ? (
               <span className="flex items-center gap-2">
