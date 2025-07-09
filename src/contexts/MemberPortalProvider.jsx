@@ -12,13 +12,26 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 // DEMO CONFIGURATION - TOGGLE HERE
 // ============================================
 const DEMO_MODE = true;  // <-- TOGGLE THIS ON/OFF
-const DEMO_CONFIG = {
-  netsuiteCustomerId: '4666', //'4414',
-  salesforceContactId: '0038W00001ShAjyQAF', // <-- PUT YOUR DEMO CONTACT ID HERE  // Nikki 038W00001ShAjyQAF // Anthony 0031I00000tRcNZ
-  customerName: 'Nicole Olson',
-  customerEmail: 'nh4olson@gmail.com' //'asnapier@gmail.com'
+
+// Set this to 'nicole' or 'anthony'
+const DEMO_PERSON = 'anthony'; // 'nicole' or 'anthony'
+
+const DEMO_CONFIGS = {
+  nicole: {
+    netsuiteCustomerId: '4666',
+    salesforceContactId: '0038W00001ShAjyQAF',
+    customerName: 'Nicole Olson',
+    customerEmail: 'nh4olson@gmail.com',
+  },
+  anthony: {
+    netsuiteCustomerId: '4414',
+    salesforceContactId: '0031I00000tRcNZ',  // Fixed: removed 'QAF' suffix
+    customerName: 'Anthony [Lastname]',
+    customerEmail: 'asnapier@gmail.com',
+  },
 };
-// ============================================
+
+const DEMO_CONFIG = DEMO_CONFIGS[DEMO_PERSON];
 
 // Cache configuration
 const CACHE_KEYS = {

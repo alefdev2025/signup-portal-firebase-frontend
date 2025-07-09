@@ -14,7 +14,7 @@ import ContractsTab from '../components/portal/ContractsTab';
 import FormsTab from '../components/portal/FormsTab';
 import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
 import PaymentMethodsTab from '../components/portal/PaymentMethodsTab';
-import InvoicesTab from '../components/portal/InvoicesTabReal';
+import InvoicesTab from '../components/portal/InvoicesTab';
 import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';
@@ -234,7 +234,7 @@ const PortalHome = () => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 bg-white text-[#1a2744] text-xs rounded-full flex items-center justify-center font-bold pointer-events-none">
+            <span className="absolute -top-1 -right-1 h-5 w-5 bg-white text-[#1a2744] text-xs flex items-center justify-center font-bold pointer-events-none">
               {unreadCount}
             </span>
           )}
@@ -251,7 +251,7 @@ const PortalHome = () => {
         {/* Dropdown */}
         {isOpen && (
           <div 
-            className="fixed right-2 top-[85px] w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-[100]"
+            className="fixed right-2 top-[85px] w-72 bg-white shadow-xl border border-gray-200 z-[100]"
           >
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Notifications</h3>
@@ -293,7 +293,7 @@ const PortalHome = () => {
                             {notification.title}
                           </p>
                           {!notification.read && (
-                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
+                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] mt-1.5"></span>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>
@@ -542,7 +542,7 @@ const PortalHome = () => {
   const LayoutToggle = () => (
     <button
       onClick={() => setLayoutMode(layoutMode === 'floating' ? 'traditional' : 'floating')}
-      className="fixed bottom-4 right-4 z-50 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-lg p-2 shadow-lg hover:bg-gray-50 transition-colors"
+      className="fixed bottom-4 right-4 z-50 bg-white/90 backdrop-blur-sm border border-gray-300 p-2 shadow-lg hover:bg-gray-50 transition-colors"
       title="Toggle layout mode"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,13 +585,13 @@ const PortalHome = () => {
         </div>
       );
     } else {
-      // Rounded style
+      // Rounded style - NOW WITH NO ROUNDED CORNERS
       return (
         <div className="md:hidden fixed top-0 left-0 right-0 h-[112px] z-50 px-2 pt-2">
           {includeWhiteBg && <div className="absolute inset-0 bg-white" />}
           
           <div 
-            className="relative h-[96px] rounded-2xl flex items-center justify-between px-4 shadow-lg"
+            className="relative h-[96px] flex items-center justify-between px-4 shadow-lg"
             style={{
               background: 'linear-gradient(135deg, #0f1a2b 0%, #1a2744 20%, #2a3a5a 50%, #3d3960 75%, #4a3d6b 90%, #5a4076 100%)'
             }}
@@ -652,10 +652,10 @@ const PortalHome = () => {
         )}
 
         {/* Main content area with rounded corners - always behind */}
-        <div className={`absolute inset-0 flex ${getBannerPaddingTop()} md:pt-0 ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : ''}`}>
-          <div className="w-[240px] md:w-[260px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
+        <div className={`absolute inset-0 flex ${getBannerPaddingTop()} md:pt-0 bg-[#f3f4f6]`}>
+          <div className="w-[240px] md:w-[280px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
           <div className="flex-1 flex flex-col">
-            <div className={`flex-1 bg-transparent md:bg-white md:rounded-l-2xl md:rounded-l-3xl md:rounded-tr-2xl md:rounded-tr-3xl md:rounded-br-2xl md:rounded-br-3xl md:mr-0.5 md:mr-1 md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
+            <div className={`flex-1 bg-[#f3f4f6] md:bg-[#f3f4f6] md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
               <PortalHeader 
                 setIsMobileMenuOpen={setIsMobileMenuOpen} 
                 activeTab={activeTab}
@@ -663,14 +663,8 @@ const PortalHome = () => {
                 className="hidden md:block"
               />
               
-              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8' : activeTab === 'membership-myinfo' ? 'px-0 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6' : 'px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:px-6 lg:py-6'} overflow-y-auto bg-transparent ${activeTab === 'overview' ? 'md:bg-gray-50' : 'md:bg-gray-100'} transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-                {activeTab !== 'overview' ? (
-                  <div className={`bg-transparent md:bg-white border-0 md:border md:border-gray-50 rounded-2xl ${activeTab === 'membership-myinfo' ? 'p-0' : 'p-6'} sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full`}>
-                    {renderActiveTab()}
-                  </div>
-                ) : (
-                  renderActiveTab()
-                )}
+              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8 bg-[#f3f4f6] md:bg-[#f3f4f6]' : 'p-6 sm:p-8 md:p-10 lg:p-12 bg-[#f3f4f6] md:bg-[#f3f4f6]'} overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+                {renderActiveTab()}
               </main>
             </div>
           </div>
@@ -700,7 +694,7 @@ const PortalHome = () => {
 
   // Render traditional layout
   const renderTraditionalLayout = () => (
-    <div className="h-screen flex bg-gray-50 relative">
+    <div className="h-screen flex bg-[#f3f4f6] relative">
       {/* Mobile gradient header - highest z-index */}
       {renderMobileBanner(true)}
 
@@ -714,15 +708,15 @@ const PortalHome = () => {
       )}
 
       {/* Main content - positioned absolutely to fill screen */}
-      <div className={`absolute inset-0 flex flex-col ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : 'bg-transparent'} md:bg-gray-100 md:ml-[260px] ${getBannerPaddingTop()} md:pt-0`}>
+      <div className={`absolute inset-0 flex flex-col ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : 'bg-transparent'} md:bg-[#f3f4f6] md:ml-[280px] ${getBannerPaddingTop()} md:pt-0`}>
         <PortalHeader 
           setIsMobileMenuOpen={setIsMobileMenuOpen} 
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           className="bg-white hidden md:block"
         />
-        <main className={`flex-1 px-2 py-6 sm:p-6 md:p-8 md:pt-4 lg:p-12 lg:pt-6 overflow-y-auto bg-transparent transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="bg-transparent md:bg-white border-0 md:border md:border-gray-50 rounded-2xl p-6 sm:rounded-xl sm:p-8 md:p-10 lg:p-12 max-w-6xl mx-auto min-h-full">
+        <main className={`flex-1 p-0 overflow-y-auto bg-transparent transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="bg-[#f3f4f6] min-h-full p-6 sm:p-8 md:p-10 lg:p-12">
             {renderActiveTab()}
           </div>
         </main>

@@ -510,17 +510,35 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
 // Main component wrapper with Stripe Elements
 export default function PortalPaymentPage({ invoice, onBack }) {
-  if (!invoice) {
+    // Scroll to top when component mounts
+    useEffect(() => {
+      // Force scroll to top with a slight delay to ensure DOM is ready
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+      
+      // Immediate scroll
+      scrollToTop();
+      
+      // Delayed scroll as fallback
+      const timer = setTimeout(scrollToTop, 0);
+      
+      return () => clearTimeout(timer);
+    }, []);
+  
+    if (!invoice) {
+      return (
+        <div className="text-center py-16">
+          <p className="text-gray-600">No invoice selected for payment</p>
+        </div>
+      );
+    }
+  
     return (
-      <div className="text-center py-16">
-        <p className="text-gray-600">No invoice selected for payment</p>
-      </div>
+      <Elements stripe={stripePromise}>
+        <InvoicePaymentForm invoice={invoice} onBack={onBack} />
+      </Elements>
     );
   }
-
-  return (
-    <Elements stripe={stripePromise}>
-      <InvoicePaymentForm invoice={invoice} onBack={onBack} />
-    </Elements>
-  );
-}

@@ -101,6 +101,30 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     
     setInvoiceForPayment(invoiceWithDetails);
     setShowPaymentPage(true);
+    
+    // Force scroll to top after state update
+    setTimeout(() => {
+      // Try multiple approaches to find the scroll container
+      const scrollableElements = [
+        document.documentElement,
+        document.body,
+        document.querySelector('.bg-gray-50'),
+        document.querySelector('[class*="overflow"]'),
+        document.querySelector('[class*="scroll"]'),
+        document.querySelector('main'),
+        document.querySelector('#root')
+      ].filter(Boolean);
+      
+      scrollableElements.forEach(el => {
+        if (el) {
+          el.scrollTop = 0;
+          el.scrollTo && el.scrollTo(0, 0);
+        }
+      });
+      
+      // Also try window scroll
+      window.scrollTo(0, 0);
+    }, 0);
   };
 
   // Handle back from payment page

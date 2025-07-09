@@ -257,7 +257,7 @@ const PortalHeader = ({
         font-weight: 500 !important;
       }
       .portal-header .breadcrumb-title {
-        font-weight: 900 !important;
+        font-weight: 100 !important;
       }
     `;
     document.head.appendChild(style);
@@ -328,17 +328,10 @@ const PortalHeader = ({
           {activeTab !== 'overview' && (
   <div className="hidden md:flex items-center gap-2 pl-3">
     <h1 
-      className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} font-thin tracking-wide bg-clip-text text-transparent`}
+      className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} font-thin tracking-wide text-black`}
       style={{
         fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
         fontWeight: '100',
-        backgroundImage: 'linear-gradient(15deg, #1a2238 0%, #2a2545 15%, #3a2a4a 25%, #5a3d5c 40%, #6e4376 55%, #8b5a7c 70%, #b8768a 80%, #d4956a 88%, #f4c245 100%)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-        lineHeight: '1',
-        marginTop: '-2px',
-        marginBottom: '-20px',
       }}
     >
       {getBreadcrumb()}
@@ -365,7 +358,7 @@ const PortalHeader = ({
               <svg className={`${isGlassmorphic ? 'w-4 h-4 md:w-5 md:h-5' : (variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5')}`} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              <span className="hidden sm:inline">Emergency Number</span>
+              <span className="hidden sm:inline">Emergency</span>
               <span className="sm:hidden">Emergency</span>
             </button>
           )}

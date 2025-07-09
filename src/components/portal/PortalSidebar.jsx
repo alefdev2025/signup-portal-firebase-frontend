@@ -88,8 +88,10 @@ const PortalSidebar = ({
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
       .portal-sidebar * {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
         font-weight: 300 !important;
       }
       .portal-sidebar .font-bold,
@@ -156,7 +158,7 @@ const PortalSidebar = ({
   const sidebarStyles = getBackgroundStyle();
 
   // Same width for both modes, but narrower
-  const sidebarWidth = 'w-[70vw] md:w-[260px]';
+  const sidebarWidth = 'w-[70vw] md:w-[280px]';
 
   const sidebarClasses = layoutMode === 'floating'
     ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
@@ -170,7 +172,7 @@ const PortalSidebar = ({
        fixed md:relative shadow-2xl z-50
        right-0 md:left-0 md:right-auto
        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
-       md:rounded-r-3xl overflow-hidden`;
+       overflow-hidden`;
 
   // Get corner mask colors based on device
   const getCornerMaskColors = () => {
@@ -211,7 +213,7 @@ const PortalSidebar = ({
             }}
           >
             <div 
-              className="absolute inset-0 bg-gray-50 rounded-tl-3xl"
+              className="absolute inset-0 bg-gray-50"
             />
           </div>
           
@@ -223,7 +225,7 @@ const PortalSidebar = ({
             }}
           >
             <div 
-              className="absolute inset-0 bg-gray-50 rounded-bl-3xl"
+              className="absolute inset-0 bg-gray-50"
             />
           </div>
         </>
