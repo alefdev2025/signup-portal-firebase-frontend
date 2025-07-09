@@ -7,7 +7,7 @@ import { markNotificationAsRead, markAllNotificationsAsRead } from '../services/
 import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
 import AccountSettingsTab from '../components/portal/AccountSettingsTab';
-import NotificationsTab from '../components/portal/NotificationsTab3';
+import NotificationsTab from '../components/portal/NotificationsTab';
 import MembershipStatusTab from '../components/portal/MembershipStatusTab2';
 import MyInformationTab from '../components/portal/MyInformationTab';
 import ContractsTab from '../components/portal/ContractsTab';
