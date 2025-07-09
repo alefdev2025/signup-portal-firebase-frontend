@@ -358,8 +358,8 @@ const PortalHeader = ({
               <svg className={`${isGlassmorphic ? 'w-4 h-4 md:w-5 md:h-5' : (variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5')}`} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-              <span className="hidden sm:inline">Emergency</span>
-              <span className="sm:hidden">Emergency</span>
+<span className="hidden md:inline">Emergency</span>
+<span className="md:hidden">Emergency</span>
             </button>
           )}
           

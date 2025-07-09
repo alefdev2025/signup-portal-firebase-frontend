@@ -663,7 +663,7 @@ const PortalHome = () => {
                 className="hidden md:block"
               />
               
-              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 sm:p-8 bg-[#f3f4f6] md:bg-[#f3f4f6]' : 'p-6 sm:p-8 md:p-10 lg:p-12 bg-[#f3f4f6] md:bg-[#f3f4f6]'} overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 md:p-8 bg-[#f3f4f6] md:bg-[#f3f4f6]' : 'p-6 md:p-8 md:p-10 lg:p-12 bg-[#f3f4f6] md:bg-[#f3f4f6]'} overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                 {renderActiveTab()}
               </main>
             </div>
@@ -716,7 +716,7 @@ const PortalHome = () => {
           className="bg-white hidden md:block"
         />
         <main className={`flex-1 p-0 overflow-y-auto bg-transparent transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="bg-[#f3f4f6] min-h-full p-6 sm:p-8 md:p-10 lg:p-12">
+          <div className="bg-[#f3f4f6] min-h-full p-6 md:p-8 md:p-10 lg:p-12">
             {renderActiveTab()}
           </div>
         </main>
