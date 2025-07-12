@@ -5,12 +5,24 @@ import styleConfig from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import { memberCategoryConfig, isSectionEditable } from '../memberCategoryConfig';
 import { findInsuranceCompany } from '../utils/lifeInsuranceCompanyMatcher';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Display component for showing info in read-only mode
 const InfoDisplay = ({ label, value, className = "" }) => (
   <div className={className}>
     <dt className={styleConfig.display.item.label}>{label}</dt>
-    <dd className={styleConfig.display.item.value}>{value || styleConfig.display.item.empty}</dd>
+    <dd 
+      className="text-gray-900" 
+      style={{ 
+        WebkitTextStroke: '0.6px #1f2937',
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        fontSize: '15px'
+      }}
+    >
+      {value || styleConfig.display.item.empty}
+    </dd>
   </div>
 );
 
@@ -22,7 +34,9 @@ const FundingSection = ({
   cancelEdit, 
   saveFunding, 
   savingSection,
-  memberCategory 
+  memberCategory,
+  sectionImage,  // Add this prop
+  sectionLabel   // Add this prop
 }) => {
   // Add state for mobile detection
   const [isMobile, setIsMobile] = useState(false);
@@ -163,7 +177,8 @@ const FundingSection = ({
             </svg>
           }
           title="Funding/Life Insurance"
-          preview={getMobilePreview()}
+          backgroundImage={formsHeaderImage}
+          overlayText="Funding Details"
           subtitle="Your cryopreservation funding arrangements."
           isEditMode={effectiveEditMode}
         >
@@ -495,346 +510,383 @@ const FundingSection = ({
       ) : (
         /* Desktop view */
         <div className={styleConfig.section.innerPadding}>
-          {/* Desktop Header */}
-          <div className={styleConfig.header.wrapper}>
-            <div className={styleConfig.sectionIcons.funding}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className={styleConfig.header.textContainer}>
-              <h2 className={styleConfig.header.title}>Funding/Life Insurance</h2>
-              <p className={styleConfig.header.subtitle}>
-                Your cryopreservation funding arrangements.
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Display Mode */}
-          {!effectiveEditMode ? (
-            <div>
-              <dl className={styleConfig.display.dl.wrapperOne}>
-                <InfoDisplay 
-                  label="Funding Type" 
-                  value={formatFundingType(funding.fundingType)}
-                  className={styleConfig.display.grid.fullSpan}
-                />
-              </dl>
-              
-              {funding.fundingType === 'Life Insurance' && (
-                <>
-                  {/* Company Information */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Insurance Company</h3>
-                    <dl className={styleConfig.display.dl.wrapperTwo}>
-                      <InfoDisplay label="Company Name" value={renderCompanyName()} />
-                      <InfoDisplay label="Company Phone" value={formatPhone(funding.companyPhone)} />
-                      <InfoDisplay label="Company Fax" value={formatPhone(funding.companyFax)} />
-                      <InfoDisplay 
-                        label="Company Address" 
-                        value={[
-                          funding.companyStreet,
-                          funding.companyCity && funding.companyState ? 
-                            `${funding.companyCity}, ${funding.companyState} ${funding.companyPostalCode}` : '',
-                          funding.companyCountry
-                        ].filter(Boolean).join(', ')}
-                        className={styleConfig.display.grid.fullSpan}
-                      />
-                    </dl>
+          {/* Desktop Header Section */}
+          <div className="relative pb-6 mb-6 border-b border-gray-200">
+            {/* Header content */}
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <div className={styleConfig.header.wrapper}>
+                  <div className={styleConfig.sectionIcons.funding}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-
-                  {/* Policy Information */}
-                  <div className="mt-6">
-                    <dl className={styleConfig.display.dl.wrapperTwo}>
-                      <InfoDisplay label="Policy Number" value={funding.policyNumber} />
-                      <InfoDisplay label="Policy Type" value={formatPolicyType(funding.policyType)} />
-                      <InfoDisplay label="Face Amount" value={formatFaceAmount(funding.faceAmount)} />
-                      <InfoDisplay label="Annual Premium" value={formatFaceAmount(funding.annualPremium)} />
-                      <InfoDisplay label="Date Issued" value={formatDate(funding.dateIssued)} />
-                      {funding.termLength && (
-                        <InfoDisplay label="Term Length" value={`${funding.termLength} years`} />
-                      )}
-                    </dl>
+                  <div className={styleConfig.header.textContainer}>
+                    <h2 className={styleConfig.header.title}>Funding/Life Insurance</h2>
+                    <p className="text-gray-600 text-base mt-1">
+                      Your cryopreservation funding arrangements.
+                    </p>
                   </div>
-
-                  {/* Agent Information - Show if agent data exists */}
-                  {(funding.agentName || funding.agentEmail || funding.agentPhone) && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">Agent Information</h3>
-                      <dl className={styleConfig.display.dl.wrapperTwo}>
-                        <InfoDisplay label="Agent Name" value={funding.agentName} />
-                        <InfoDisplay label="Agent Email" value={funding.agentEmail} />
-                        <InfoDisplay label="Agent Phone" value={formatPhone(funding.agentPhone)} />
-                      </dl>
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {/* Show simple info for other funding types */}
-              {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    {funding.fundingType === 'Trust' && 
-                      "Funding via trust. Please ensure Alcor Life Extension Foundation is properly named as beneficiary in your trust documents."}
-                    {funding.fundingType === 'Prepaid' && 
-                      "Prepaid funding arrangement on file."}
-                    {funding.fundingType === 'Other' && 
-                      "Alternative funding arrangement on file."}
-                  </p>
                 </div>
-              )}
+              </div>
               
-            </div>
-          ) : (
-            /* Desktop Edit Mode - Form */
-            <div className={styleConfig.form.fieldSpacing}>
-              <Select
-                label="Funding Type"
-                value={funding.fundingType || ''}
-                onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
-                disabled={!effectiveEditMode}
-                required={isFieldRequired('fundingType')}
-              >
-                <option value="">Select...</option>
-                <option value="Life Insurance">Life Insurance</option>
-                <option value="Trust">Trust</option>
-                <option value="Prepaid">Prepaid</option>
-                <option value="Other">Other</option>
-              </Select>
-
-              {funding.fundingType === 'Life Insurance' && (
-                <>
-                  {/* Company Information */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Insurance Company</h3>
-                    <div className={styleConfig.section.grid.twoColumn}>
-                      <Input
-                        label="Company Name"
-                        type="text"
-                        value={funding.companyName || ''}
-                        onChange={(e) => setFunding({...funding, companyName: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyName')}
-                        placeholder="e.g., MetLife, Prudential"
-                      />
-                      <Input
-                        label="Company Phone"
-                        type="tel"
-                        value={funding.companyPhone || ''}
-                        onChange={(e) => setFunding({...funding, companyPhone: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyPhone')}
-                        placeholder="(555) 123-4567"
-                      />
-                      <Input
-                        label="Company Fax"
-                        type="tel"
-                        value={funding.companyFax || ''}
-                        onChange={(e) => setFunding({...funding, companyFax: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        placeholder="(555) 123-4568"
-                      />
-                      <Input
-                        label="Company Street Address"
-                        type="text"
-                        value={funding.companyStreet || ''}
-                        onChange={(e) => setFunding({...funding, companyStreet: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyStreet')}
-                        placeholder="123 Main Street"
-                      />
-                      <Input
-                        label="City"
-                        type="text"
-                        value={funding.companyCity || ''}
-                        onChange={(e) => setFunding({...funding, companyCity: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyCity')}
-                        placeholder="New York"
-                      />
-                      <Input
-                        label="State/Province"
-                        type="text"
-                        value={funding.companyState || ''}
-                        onChange={(e) => setFunding({...funding, companyState: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyState')}
-                        placeholder="NY"
-                      />
-                      <Input
-                        label="Postal Code"
-                        type="text"
-                        value={funding.companyPostalCode || ''}
-                        onChange={(e) => setFunding({...funding, companyPostalCode: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyPostalCode')}
-                        placeholder="10001"
-                      />
-                      <Input
-                        label="Country"
-                        type="text"
-                        value={funding.companyCountry || ''}
-                        onChange={(e) => setFunding({...funding, companyCountry: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('companyCountry')}
-                        placeholder="USA"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Policy Information */}
-                  <div className="mt-6">
-                    <div className={styleConfig.section.grid.twoColumn}>
-                      <Input
-                        label="Policy Number"
-                        type="text"
-                        value={funding.policyNumber || ''}
-                        onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('policyNumber')}
-                        placeholder="Enter policy number"
-                      />
-                      <Select
-                        label="Policy Type"
-                        value={funding.policyType || ''}
-                        onChange={(e) => setFunding({...funding, policyType: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('policyType')}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Term">Term</option>
-                        <option value="Whole Life">Whole Life</option>
-                        <option value="Universal">Universal</option>
-                      </Select>
-                      <Input
-                        label="Face Amount"
-                        type="number"
-                        value={funding.faceAmount || ''}
-                        onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        required={isFieldRequired('faceAmount')}
-                        placeholder="e.g., 200000"
-                      />
-                      <Input
-                        label="Annual Premium"
-                        type="number"
-                        value={funding.annualPremium || ''}
-                        onChange={(e) => setFunding({...funding, annualPremium: e.target.value})}
-                        disabled={!effectiveEditMode}
-                        placeholder="e.g., 2400"
-                      />
-                      <Input
-                        label="Date Issued"
-                        type="date"
-                        value={funding.dateIssued || ''}
-                        onChange={(e) => setFunding({...funding, dateIssued: e.target.value})}
-                        disabled={!effectiveEditMode}
-                      />
-                      {funding.policyType === 'Term' && (
-                        <Input
-                          label="Term Length (years)"
-                          type="number"
-                          value={funding.termLength || ''}
-                          onChange={(e) => setFunding({...funding, termLength: e.target.value})}
-                          disabled={!effectiveEditMode}
-                          placeholder="e.g., 20"
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Agent Information */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Agent Information</h3>
-                    <div className="mb-4">
-                      <Checkbox
-                        label="I have a life insurance agent"
-                        checked={funding.hasAgent || false}
-                        onChange={(e) => setFunding({...funding, hasAgent: e.target.checked})}
-                        disabled={!effectiveEditMode}
-                      />
-                    </div>
-                    {/* Show agent fields if checkbox is checked OR if agent data exists */}
-                    {(funding.hasAgent || funding.agentName || funding.agentEmail || funding.agentPhone) && (
-                      <div className={styleConfig.section.grid.twoColumn}>
-                        <Input
-                          label="Agent Name"
-                          type="text"
-                          value={funding.agentName || ''}
-                          onChange={(e) => setFunding({...funding, agentName: e.target.value})}
-                          disabled={!effectiveEditMode}
-                          placeholder="John Smith"
-                        />
-                        <Input
-                          label="Agent Email"
-                          type="email"
-                          value={funding.agentEmail || ''}
-                          onChange={(e) => setFunding({...funding, agentEmail: e.target.value})}
-                          disabled={!effectiveEditMode}
-                          placeholder="agent@example.com"
-                        />
-                        <Input
-                          label="Agent Phone"
-                          type="tel"
-                          value={funding.agentPhone || ''}
-                          onChange={(e) => setFunding({...funding, agentPhone: e.target.value})}
-                          disabled={!effectiveEditMode}
-                          placeholder="(555) 123-4567"
-                        />
+              {/* Image on right side */}
+              {sectionImage && (
+                <div className="flex-shrink-0 ml-8">
+                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={sectionImage} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    {sectionLabel && (
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
+                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
+                            {sectionLabel}
+                            <img src={alcorStar} alt="" className="w-3 h-3" />
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
-                </>
-              )}
-              
-              {/* Show helper text for other funding types */}
-              {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    {funding.fundingType === 'Trust' && 
-                      "Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary for your cryopreservation funding."}
-                    {funding.fundingType === 'Prepaid' && 
-                      "Thank you for choosing to prepay. An Alcor representative will contact you to complete the funding arrangement."}
-                    {funding.fundingType === 'Other' && 
-                      "An Alcor representative will contact you to discuss your funding arrangement."}
-                  </p>
                 </div>
               )}
             </div>
-          )}
-          
-          <div className="flex justify-end mt-6">
-            {effectiveEditMode ? (
-              <div className="flex">
-                <WhiteButton
-                  text="Cancel"
-                  onClick={() => cancelEdit && cancelEdit('funding')}
-                  className="scale-75 -mr-8"
-                  spinStar={false}
-                />
-                <PurpleButton
-                  text={savingSection === 'saved' ? 'Saved' : savingSection === 'funding' ? 'Saving...' : 'Save'}
-                  onClick={saveFunding}
-                  className="scale-75"
-                  spinStar={false}
-                  disabled={savingSection === 'funding'}
-                />
+          </div>
+
+          {/* Desktop Content - Fields Section */}
+          <div className="bg-white">
+            {/* Desktop Display Mode */}
+            {!effectiveEditMode ? (
+              <div className="max-w-2xl">
+                <dl className={styleConfig.display.dl.wrapperOne}>
+                  <InfoDisplay 
+                    label="Funding Type" 
+                    value={formatFundingType(funding.fundingType)}
+                    className={styleConfig.display.grid.fullSpan}
+                  />
+                </dl>
+                
+                {funding.fundingType === 'Life Insurance' && (
+                  <>
+                    {/* Company Information */}
+                    <div className="mt-6">
+                      <h3 className="text-[#2a2346] mb-4 font-medium">Insurance Company</h3>
+                      <dl className={styleConfig.display.dl.wrapperTwo}>
+                        <InfoDisplay label="Company Name" value={renderCompanyName()} />
+                        <InfoDisplay label="Company Phone" value={formatPhone(funding.companyPhone)} />
+                        <InfoDisplay label="Company Fax" value={formatPhone(funding.companyFax)} />
+                        <InfoDisplay 
+                          label="Company Address" 
+                          value={[
+                            funding.companyStreet,
+                            funding.companyCity && funding.companyState ? 
+                              `${funding.companyCity}, ${funding.companyState} ${funding.companyPostalCode}` : '',
+                            funding.companyCountry
+                          ].filter(Boolean).join(', ')}
+                          className={styleConfig.display.grid.fullSpan}
+                        />
+                      </dl>
+                    </div>
+
+                    {/* Policy Information */}
+                    <div className="mt-6">
+                      <dl className={styleConfig.display.dl.wrapperTwo}>
+                        <InfoDisplay label="Policy Number" value={funding.policyNumber} />
+                        <InfoDisplay label="Policy Type" value={formatPolicyType(funding.policyType)} />
+                        <InfoDisplay label="Face Amount" value={formatFaceAmount(funding.faceAmount)} />
+                        <InfoDisplay label="Annual Premium" value={formatFaceAmount(funding.annualPremium)} />
+                        <InfoDisplay label="Date Issued" value={formatDate(funding.dateIssued)} />
+                        {funding.termLength && (
+                          <InfoDisplay label="Term Length" value={`${funding.termLength} years`} />
+                        )}
+                      </dl>
+                    </div>
+
+                    {/* Agent Information - Show if agent data exists */}
+                    {(funding.agentName || funding.agentEmail || funding.agentPhone) && (
+                      <div className="mt-6">
+                        <h3 className="text-[#2a2346] mb-4 font-medium">Agent Information</h3>
+                        <dl className={styleConfig.display.dl.wrapperTwo}>
+                          <InfoDisplay label="Agent Name" value={funding.agentName} />
+                          <InfoDisplay label="Agent Email" value={funding.agentEmail} />
+                          <InfoDisplay label="Agent Phone" value={formatPhone(funding.agentPhone)} />
+                        </dl>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Show simple info for other funding types */}
+                {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      {funding.fundingType === 'Trust' && 
+                        "Funding via trust. Please ensure Alcor Life Extension Foundation is properly named as beneficiary in your trust documents."}
+                      {funding.fundingType === 'Prepaid' && 
+                        "Prepaid funding arrangement on file."}
+                      {funding.fundingType === 'Other' && 
+                        "Alternative funding arrangement on file."}
+                    </p>
+                  </div>
+                )}
+                
               </div>
             ) : (
-              canEditSection ? (
-                <RainbowButton
-                  text="Edit"
-                  onClick={() => toggleEditMode && toggleEditMode('funding')}
-                  className="scale-75"
-                  spinStar={true}
-                />
-              ) : (
-                <div className={styleConfig.nonEditable.inlineMessage}>
-                  Contact Alcor to update funding information
+              /* Desktop Edit Mode - Form */
+              <div className="max-w-2xl">
+                <div className={styleConfig.form.fieldSpacing}>
+                  <Select
+                    label="Funding Type"
+                    value={funding.fundingType || ''}
+                    onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
+                    disabled={!effectiveEditMode}
+                    required={isFieldRequired('fundingType')}
+                  >
+                    <option value="">Select...</option>
+                    <option value="Life Insurance">Life Insurance</option>
+                    <option value="Trust">Trust</option>
+                    <option value="Prepaid">Prepaid</option>
+                    <option value="Other">Other</option>
+                  </Select>
+
+                  {funding.fundingType === 'Life Insurance' && (
+                    <>
+                      {/* Company Information */}
+                      <div className="mt-6">
+                        <h3 className="text-[#2a2346] mb-4 font-medium">Insurance Company</h3>
+                        <div className={styleConfig.section.grid.twoColumn}>
+                          <Input
+                            label="Company Name"
+                            type="text"
+                            value={funding.companyName || ''}
+                            onChange={(e) => setFunding({...funding, companyName: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyName')}
+                            placeholder="e.g., MetLife, Prudential"
+                          />
+                          <Input
+                            label="Company Phone"
+                            type="tel"
+                            value={funding.companyPhone || ''}
+                            onChange={(e) => setFunding({...funding, companyPhone: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyPhone')}
+                            placeholder="(555) 123-4567"
+                          />
+                          <Input
+                            label="Company Fax"
+                            type="tel"
+                            value={funding.companyFax || ''}
+                            onChange={(e) => setFunding({...funding, companyFax: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            placeholder="(555) 123-4568"
+                          />
+                          <Input
+                            label="Company Street Address"
+                            type="text"
+                            value={funding.companyStreet || ''}
+                            onChange={(e) => setFunding({...funding, companyStreet: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyStreet')}
+                            placeholder="123 Main Street"
+                          />
+                          <Input
+                            label="City"
+                            type="text"
+                            value={funding.companyCity || ''}
+                            onChange={(e) => setFunding({...funding, companyCity: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyCity')}
+                            placeholder="New York"
+                          />
+                          <Input
+                            label="State/Province"
+                            type="text"
+                            value={funding.companyState || ''}
+                            onChange={(e) => setFunding({...funding, companyState: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyState')}
+                            placeholder="NY"
+                          />
+                          <Input
+                            label="Postal Code"
+                            type="text"
+                            value={funding.companyPostalCode || ''}
+                            onChange={(e) => setFunding({...funding, companyPostalCode: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyPostalCode')}
+                            placeholder="10001"
+                          />
+                          <Input
+                            label="Country"
+                            type="text"
+                            value={funding.companyCountry || ''}
+                            onChange={(e) => setFunding({...funding, companyCountry: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('companyCountry')}
+                            placeholder="USA"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Policy Information */}
+                      <div className="mt-6">
+                        <div className={styleConfig.section.grid.twoColumn}>
+                          <Input
+                            label="Policy Number"
+                            type="text"
+                            value={funding.policyNumber || ''}
+                            onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('policyNumber')}
+                            placeholder="Enter policy number"
+                          />
+                          <Select
+                            label="Policy Type"
+                            value={funding.policyType || ''}
+                            onChange={(e) => setFunding({...funding, policyType: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('policyType')}
+                          >
+                            <option value="">Select...</option>
+                            <option value="Term">Term</option>
+                            <option value="Whole Life">Whole Life</option>
+                            <option value="Universal">Universal</option>
+                          </Select>
+                          <Input
+                            label="Face Amount"
+                            type="number"
+                            value={funding.faceAmount || ''}
+                            onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            required={isFieldRequired('faceAmount')}
+                            placeholder="e.g., 200000"
+                          />
+                          <Input
+                            label="Annual Premium"
+                            type="number"
+                            value={funding.annualPremium || ''}
+                            onChange={(e) => setFunding({...funding, annualPremium: e.target.value})}
+                            disabled={!effectiveEditMode}
+                            placeholder="e.g., 2400"
+                          />
+                          <Input
+                            label="Date Issued"
+                            type="date"
+                            value={funding.dateIssued || ''}
+                            onChange={(e) => setFunding({...funding, dateIssued: e.target.value})}
+                            disabled={!effectiveEditMode}
+                          />
+                          {funding.policyType === 'Term' && (
+                            <Input
+                              label="Term Length (years)"
+                              type="number"
+                              value={funding.termLength || ''}
+                              onChange={(e) => setFunding({...funding, termLength: e.target.value})}
+                              disabled={!effectiveEditMode}
+                              placeholder="e.g., 20"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Agent Information */}
+                      <div className="mt-6">
+                        <h3 className="text-[#2a2346] mb-4 font-medium">Agent Information</h3>
+                        <div className="mb-4">
+                          <Checkbox
+                            label="I have a life insurance agent"
+                            checked={funding.hasAgent || false}
+                            onChange={(e) => setFunding({...funding, hasAgent: e.target.checked})}
+                            disabled={!effectiveEditMode}
+                          />
+                        </div>
+                        {/* Show agent fields if checkbox is checked OR if agent data exists */}
+                        {(funding.hasAgent || funding.agentName || funding.agentEmail || funding.agentPhone) && (
+                          <div className={styleConfig.section.grid.twoColumn}>
+                            <Input
+                              label="Agent Name"
+                              type="text"
+                              value={funding.agentName || ''}
+                              onChange={(e) => setFunding({...funding, agentName: e.target.value})}
+                              disabled={!effectiveEditMode}
+                              placeholder="John Smith"
+                            />
+                            <Input
+                              label="Agent Email"
+                              type="email"
+                              value={funding.agentEmail || ''}
+                              onChange={(e) => setFunding({...funding, agentEmail: e.target.value})}
+                              disabled={!effectiveEditMode}
+                              placeholder="agent@example.com"
+                            />
+                            <Input
+                              label="Agent Phone"
+                              type="tel"
+                              value={funding.agentPhone || ''}
+                              onChange={(e) => setFunding({...funding, agentPhone: e.target.value})}
+                              disabled={!effectiveEditMode}
+                              placeholder="(555) 123-4567"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Show helper text for other funding types */}
+                  {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        {funding.fundingType === 'Trust' && 
+                          "Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary for your cryopreservation funding."}
+                        {funding.fundingType === 'Prepaid' && 
+                          "Thank you for choosing to prepay. An Alcor representative will contact you to complete the funding arrangement."}
+                        {funding.fundingType === 'Other' && 
+                          "An Alcor representative will contact you to discuss your funding arrangement."}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )
+              </div>
             )}
+            
+            <div className="flex justify-end mt-6">
+              {effectiveEditMode ? (
+                <div className="flex -mr-8">
+                  <WhiteButton
+                    text="Cancel"
+                    onClick={() => cancelEdit && cancelEdit('funding')}
+                    className="scale-75 -mr-8"
+                    spinStar={false}
+                  />
+                  <PurpleButton
+                    text={savingSection === 'saved' ? 'Saved' : savingSection === 'funding' ? 'Saving...' : 'Save'}
+                    onClick={saveFunding}
+                    className="scale-75"
+                    spinStar={false}
+                    disabled={savingSection === 'funding'}
+                  />
+                </div>
+              ) : (
+                canEditSection ? (
+                  <div className="-mr-8">
+                    <RainbowButton
+                      text="Edit"
+                      onClick={() => toggleEditMode && toggleEditMode('funding')}
+                      className="scale-75"
+                      spinStar={true}
+                    />
+                  </div>
+                ) : (
+                  <div className={styleConfig.nonEditable.inlineMessage}>
+                    Contact Alcor to update funding information
+                  </div>
+                )
+              )}
+            </div>
           </div>
         </div>
       )}

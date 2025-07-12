@@ -8,7 +8,7 @@ import PortalSidebar from '../components/portal/PortalSidebar';
 import PortalHeader from '../components/portal/PortalHeader';
 import AccountSettingsTab from '../components/portal/AccountSettingsTab';
 import NotificationsTab from '../components/portal/NotificationsTab';
-import MembershipStatusTab from '../components/portal/MembershipStatusTab2';
+import MembershipStatusTab from '../components/portal/MembershipStatusTab';
 import MyInformationTab from '../components/portal/MyInformationTab';
 import ContractsTab from '../components/portal/ContractsTab';
 import FormsTab from '../components/portal/FormsTab';
@@ -29,6 +29,8 @@ import OverviewTabPurpleGradient from '../components/portal/OverviewTabPurpleGra
 import OverviewTabDarkBackground from '../components/portal/OverviewTabDarkBackground';
 import OverviewTabCorrnerSideImage from '../components/portal/OverviewTabCorrnerSideImage';
 import OverviewTabPinkPurple from '../components/portal/OverviewTabPinkPurple';
+
+import ProcedureTab from '../components/portal/ProcedureTab';
 
 // GLOBAL CONFIGURATION FOR BANNER STYLE
 const BANNER_STYLE = 'flat'; // Options: 'rounded' or 'flat'
@@ -372,7 +374,7 @@ const PortalHome = () => {
       }
       
       /* Rainbow gradient background for mobile */
-      @media (max-width: 768px) {
+      @media (max-width: 1279px) {
         .rainbow-gradient-bg {
           background: linear-gradient(135deg, 
             #ff6b6b 0%, 
@@ -509,6 +511,8 @@ const PortalHome = () => {
         return <FormsTab />;
       case 'documents-forms':
         return <FormsTab />;
+      case 'documents-procedure':
+        return <ProcedureTab contactId={salesforceContactId} />;
       case 'documents-information':
         return <InformationDocumentsTab />;
       
@@ -559,7 +563,7 @@ const PortalHome = () => {
   const renderMobileBanner = (includeWhiteBg = false) => {
     if (BANNER_STYLE === 'flat') {
       return (
-        <div className="md:hidden fixed top-0 left-0 right-0 h-[110px] z-50">
+        <div className="xl:hidden fixed top-0 left-0 right-0 h-[110px] z-50">
           <div 
             className="relative h-full flex items-center justify-between px-4"
             style={{
@@ -587,7 +591,7 @@ const PortalHome = () => {
     } else {
       // Rounded style - NOW WITH NO ROUNDED CORNERS
       return (
-        <div className="md:hidden fixed top-0 left-0 right-0 h-[112px] z-50 px-2 pt-2">
+        <div className="xl:hidden fixed top-0 left-0 right-0 h-[112px] z-50 px-2 pt-2">
           {includeWhiteBg && <div className="absolute inset-0 bg-white" />}
           
           <div 
@@ -622,7 +626,7 @@ const PortalHome = () => {
     <>
       {/* Full screen gradient background */}
       <div 
-        className="absolute inset-0 hidden md:block"
+        className="absolute inset-0 hidden xl:block"
         style={{
           background: 'linear-gradient(to bottom right, #12243c 0%, #3a2e51 35%, #533966 65%, #6e4376 100%)'
         }}
@@ -633,7 +637,7 @@ const PortalHome = () => {
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div 
-            className="fixed inset-0 bg-black/10 z-[60] md:hidden"
+            className="fixed inset-0 bg-black/10 z-[60] xl:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
@@ -645,25 +649,25 @@ const PortalHome = () => {
         {/* Mobile menu overlay */}
         {isMobileMenuOpen && (
           <div 
-            className="fixed inset-0 bg-black/10 z-[60] md:hidden"
+            className="fixed inset-0 bg-black/10 z-[60] xl:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
         )}
 
         {/* Main content area with rounded corners - always behind */}
-        <div className={`absolute inset-0 flex ${getBannerPaddingTop()} md:pt-0 bg-[#f3f4f6]`}>
-          <div className="w-[240px] md:w-[280px] flex-shrink-0 hidden md:block" /> {/* Spacer for sidebar - hidden on mobile */}
+        <div className={`absolute inset-0 flex ${getBannerPaddingTop()} xl:pt-0 bg-[#f3f4f6]`}>
+          <div className="w-[240px] xl:w-[280px] flex-shrink-0 hidden xl:block" /> {/* Spacer for sidebar - hidden on mobile */}
           <div className="flex-1 flex flex-col">
-            <div className={`flex-1 bg-[#f3f4f6] md:bg-[#f3f4f6] md:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
+            <div className={`flex-1 bg-[#f3f4f6] xl:bg-[#f3f4f6] xl:shadow-2xl overflow-hidden transition-all duration-700 ease-in-out`}>
               <PortalHeader 
                 setIsMobileMenuOpen={setIsMobileMenuOpen} 
                 activeTab={activeTab}
                 setActiveTab={handleTabChange}
-                className="hidden md:block"
+                className="hidden xl:block"
               />
               
-              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 md:p-8 bg-[#f3f4f6] md:bg-[#f3f4f6]' : 'p-6 md:p-8 md:p-10 lg:p-12 bg-[#f3f4f6] md:bg-[#f3f4f6]'} overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+              <main className={`h-[calc(100%-4rem)] ${activeTab === 'overview' ? 'px-2 py-4 xl:p-8 bg-[#f3f4f6] xl:bg-[#f3f4f6]' : 'p-6 xl:p-8 xl:p-10 lg:p-12 bg-[#f3f4f6] xl:bg-[#f3f4f6]'} overflow-y-auto transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                 {renderActiveTab()}
               </main>
             </div>
@@ -701,22 +705,22 @@ const PortalHome = () => {
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/10 z-30 md:hidden"
+          className="fixed inset-0 bg-black/10 z-30 xl:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
       )}
 
       {/* Main content - positioned absolutely to fill screen */}
-      <div className={`absolute inset-0 flex flex-col ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : 'bg-transparent'} md:bg-[#f3f4f6] md:ml-[280px] ${getBannerPaddingTop()} md:pt-0`}>
+      <div className={`absolute inset-0 flex flex-col ${activeTab !== 'overview' ? 'rainbow-gradient-bg' : 'bg-transparent'} xl:bg-[#f3f4f6] xl:ml-[280px] ${getBannerPaddingTop()} xl:pt-0`}>
         <PortalHeader 
           setIsMobileMenuOpen={setIsMobileMenuOpen} 
           activeTab={activeTab}
           setActiveTab={handleTabChange}
-          className="bg-white hidden md:block"
+          className="bg-white hidden xl:block"
         />
         <main className={`flex-1 p-0 overflow-y-auto bg-transparent transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="bg-[#f3f4f6] min-h-full p-6 md:p-8 md:p-10 lg:p-12">
+          <div className="bg-[#f3f4f6] min-h-full p-6 xl:p-8 xl:p-10 lg:p-12">
             {renderActiveTab()}
           </div>
         </main>

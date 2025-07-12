@@ -10,8 +10,9 @@ import educationImage from '../../assets/images/education-image.jpg';
 
 const InformationDocumentsTab = () => {
   const [downloading, setDownloading] = useState({});
+  const [visibleSections, setVisibleSections] = useState(new Set());
 
-  // Add Helvetica font
+  // Add Helvetica font and scroll animations
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -65,6 +66,43 @@ const InformationDocumentsTab = () => {
       .info-docs-tab .stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
       .info-docs-tab .stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
       .info-docs-tab .stagger-in > *:nth-child(6) { animation-delay: 0.3s; }
+      
+      /* Scroll-triggered animations */
+      .info-docs-tab .scroll-fade-in {
+        opacity: 0;
+        transition: opacity 1s ease-out;
+      }
+      .info-docs-tab .scroll-fade-in.visible {
+        opacity: 1;
+      }
+      .info-docs-tab .scroll-slide-up {
+        opacity: 0;
+        transform: translateY(15px);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .info-docs-tab .scroll-slide-up.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .info-docs-tab .scroll-slide-left {
+        opacity: 0;
+        transform: translateX(15px);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .info-docs-tab .scroll-slide-left.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .info-docs-tab .scroll-scale {
+        opacity: 0;
+        transform: scale(0.98);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .info-docs-tab .scroll-scale.visible {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -88,6 +126,32 @@ const InformationDocumentsTab = () => {
     
     return () => {
       document.head.removeChild(style);
+    };
+  }, []);
+
+  // Set up intersection observer for scroll animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => new Set([...prev, entry.target.id]));
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    // Observe all elements with scroll animation classes
+    const elements = document.querySelectorAll('.scroll-fade-in, .scroll-slide-up, .scroll-slide-left, .scroll-scale');
+    elements.forEach(el => {
+      if (el.id) observer.observe(el);
+    });
+
+    return () => {
+      elements.forEach(el => {
+        if (el.id) observer.unobserve(el);
+      });
     };
   }, []);
 
@@ -228,12 +292,24 @@ const InformationDocumentsTab = () => {
   );
 
   return (
-    <div className="info-docs-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4">
+    <div className="info-docs-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
+      {/* Small top padding */}
+      <div className="h-8"></div>
+      
       {/* Mobile: Single Column Layout */}
       <div className="sm:hidden">
         {/* Header */}
-        <div className="bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-          <div className="px-6 py-6 rounded-t-[1.5rem]" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          {/* Header Image */}
+          <div className="relative h-48 overflow-hidden">
+            <img 
+              src={informationDocuments[0].image} 
+              alt="Information & Resources"
+              className="w-full h-full object-cover grayscale"
+            />
+          </div>
+          
+          <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
             <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
               <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
               Information & Resources
@@ -259,7 +335,7 @@ const InformationDocumentsTab = () => {
                   <div className="h-px rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
                 </div>
               )}
-              <div className={`bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+              <div className={`bg-white shadow-sm rounded-xl overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
                 {/* Category Header */}
                 <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center gap-3">
@@ -337,13 +413,15 @@ const InformationDocumentsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-24">
-                  <div className="h-px mx-8 rounded-full" style={{ background: 'linear-gradient(90deg, #4a5f7a 0%, #5a4f7a 40%, #7a5f8a 70%, #9e7398 100%)' }}></div>
+                <div className="py-16">
+                  <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
+                    background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
+                  }}></div>
                 </div>
               )}
-              <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] slide-in-delay-${categoryIndex + 1}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] scroll-slide-up ${visibleSections.has(`info-category-${categoryIndex}`) ? 'visible' : ''}`} id={`info-category-${categoryIndex}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
                 {/* Category Header with Image */}
-                <div className="p-8 border-b border-gray-100">
+                <div className="p-10 border-b border-gray-100">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     {/* Text content - left side */}
                     <div className="flex-1">
@@ -378,7 +456,7 @@ const InformationDocumentsTab = () => {
                     </div>
                     
                     {/* Category Image - right side */}
-                    <div className="relative w-full lg:w-80 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                    <div className={`relative w-full lg:w-80 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 scroll-slide-up ${visibleSections.has(`info-image-${categoryIndex}`) ? 'visible' : ''}`} id={`info-image-${categoryIndex}`} style={{ transitionDelay: '0.2s' }}>
                       <img 
                         src={category.image} 
                         alt={category.imageLabel}
@@ -399,12 +477,12 @@ const InformationDocumentsTab = () => {
                 </div>
 
                 {/* Documents Grid */}
-                <div className="p-6">
+                <div className={`p-8 scroll-fade-in ${visibleSections.has(`info-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`info-grid-${categoryIndex}`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
                     {category.documents.map((doc, docIndex) => (
                       <div
                         key={docIndex}
-                        className="p-5 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all"
+                        className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
@@ -444,6 +522,9 @@ const InformationDocumentsTab = () => {
           );
         })}
       </div>
+      
+      {/* Add padding at the end */}
+      <div className="h-32"></div>
     </div>
   );
 };

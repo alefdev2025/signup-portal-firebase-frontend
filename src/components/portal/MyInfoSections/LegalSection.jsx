@@ -4,12 +4,24 @@ import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle'
 import styleConfig from '../styleConfig2';
 import { HelpCircle } from 'lucide-react';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Display component for showing info in read-only mode
 const InfoDisplay = ({ label, value, className = "" }) => (
   <div className={className}>
     <dt className={styleConfig.display.item.label}>{label}</dt>
-    <dd className={styleConfig.display.item.value}>{value || styleConfig.display.item.empty}</dd>
+    <dd 
+      className="text-gray-900" 
+      style={{ 
+        WebkitTextStroke: '0.6px #1f2937',
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        fontSize: '15px'
+      }}
+    >
+      {value || styleConfig.display.item.empty}
+    </dd>
   </div>
 );
 
@@ -21,7 +33,9 @@ const LegalSection = ({
   cancelEdit, 
   saveLegal, 
   savingSection,
-  memberCategory 
+  memberCategory,
+  sectionImage,  // Add this prop
+  sectionLabel   // Add this prop
 }) => {
   // Add state for mobile detection
   const [isMobile, setIsMobile] = useState(false);
@@ -91,7 +105,7 @@ const LegalSection = ({
   // Info notice component (used in both mobile and desktop)
   const LegalInfoNotice = () => (
     <div className={isMobile ? "mt-4 mb-4" : "flex items-center gap-4"}>
-      <svg className={isMobile ? "w-8 h-8 text-blue-500 flex-shrink-0 mb-2" : "w-10 h-10 text-blue-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className={isMobile ? "w-8 h-8 text-blue-500 flex-shrink-0 mb-2" : "w-10 h-10 text-blue-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       
@@ -170,7 +184,8 @@ const LegalSection = ({
             </svg>
           }
           title="Legal/Will Information"
-          preview={getMobilePreview()}
+          backgroundImage={formsHeaderImage}
+          overlayText="Legal Details"
           subtitle="Information about your will and cryonics-related provisions."
           isEditMode={editMode.legal}
         >
@@ -254,57 +269,78 @@ const LegalSection = ({
       ) : (
         /* Desktop view */
         <div className={styleConfig.section.innerPadding}>
-          {/* Desktop Header */}
-          <div className={styleConfig.header.wrapper}>
-            <div className={styleConfig.sectionIcons.legal}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-              </svg>
-            </div>
-            <div className={styleConfig.header.textContainer}>
-              <h2 className={styleConfig.header.title}>Legal/Will Information</h2>
-              <p className={styleConfig.header.subtitle}>
-                Information about your will and cryonics-related provisions.
-                {isRequired && <span className="text-red-500 ml-1">*</span>}
-              </p>
+          {/* Desktop Header Section */}
+          <div className="relative pb-6 mb-6 border-b border-gray-200">
+            {/* Header content */}
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <div className={styleConfig.header.wrapper}>
+                  <div className={styleConfig.sectionIcons.legal}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                    </svg>
+                  </div>
+                  <div className={styleConfig.header.textContainer}>
+                    <h2 className={styleConfig.header.title}>Legal/Will Information</h2>
+                    <p className="text-gray-600 text-base mt-1">
+                      Information about your will and cryonics-related provisions.
+                      {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image on right side */}
+              {sectionImage && (
+                <div className="flex-shrink-0 ml-8">
+                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={sectionImage} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    {sectionLabel && (
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
+                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
+                            {sectionLabel}
+                            <img src={alcorStar} alt="" className="w-3 h-3" />
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Desktop Display Mode */}
-          {!editMode.legal ? (
-            <dl className={styleConfig.display.dl.wrapperSingle}>
-              <InfoDisplay 
-                label="Do you have a will?" 
-                value={legal.hasWill || 'Not specified'} 
-              />
-              {hasWillYes() && (
-                <InfoDisplay 
-                  label="Does your will contain any provisions contrary to cryonics?" 
-                  value={legal.willContraryToCryonics || 'Not specified'} 
-                />
-              )}
-            </dl>
-          ) : (
-            /* Desktop Edit Mode - Form */
-            <div className={styleConfig.form.fieldSpacing}>
-              <Select
-                label="Do you have a will?"
-                value={legal.hasWill || ''}
-                onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
-                disabled={!editMode.legal}
-                required={isRequired}
-              >
-                <option value="">Select...</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </Select>
-              
-              {legal.hasWill === 'Yes' && (
-                <>
+          {/* Desktop Content - Fields Section */}
+          <div className="bg-white">
+            {/* Desktop Display Mode */}
+            {!editMode.legal ? (
+              <div className="max-w-2xl">
+                <dl className={styleConfig.display.dl.wrapperSingle}>
+                  <InfoDisplay 
+                    label="Do you have a will?" 
+                    value={legal.hasWill || 'Not specified'} 
+                  />
+                  {hasWillYes() && (
+                    <InfoDisplay 
+                      label="Does your will contain any provisions contrary to cryonics?" 
+                      value={legal.willContraryToCryonics || 'Not specified'} 
+                    />
+                  )}
+                </dl>
+              </div>
+            ) : (
+              /* Desktop Edit Mode - Form */
+              <div className="max-w-2xl">
+                <div className={styleConfig.form.fieldSpacing}>
                   <Select
-                    label="Does your will contain any provisions contrary to cryonics?"
-                    value={legal.willContraryToCryonics || ''}
-                    onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
+                    label="Do you have a will?"
+                    value={legal.hasWill || ''}
+                    onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
                     disabled={!editMode.legal}
                     required={isRequired}
                   >
@@ -313,53 +349,71 @@ const LegalSection = ({
                     <option value="No">No</option>
                   </Select>
                   
-                  {/* Add helpful text for desktop users */}
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Important Information:</h4>
-                    <p className="text-sm text-gray-700 mb-2">
-                      Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <strong>these provisions may invalidate your Cryopreservation Agreement.</strong>
-                    </p>
-                    {legal.willContraryToCryonics === 'Yes' && (
-                      <p className="text-sm text-red-700 font-medium mt-2 p-2 bg-red-50 rounded">
-                        <strong>Action Required:</strong> If you have a will with contrary provisions, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          
-          {/* Desktop Bottom section - matching medical section style */}
-          <div className="flex items-center justify-between mt-16">
-            {/* Left side - Info Notice (always visible) */}
-            <LegalInfoNotice />
-            
-            {/* Right side - buttons */}
-            {editMode?.legal ? (
-              <div className="flex">
-                <WhiteButton
-                  text="Cancel"
-                  onClick={() => cancelEdit && cancelEdit('legal')}
-                  className="scale-75 -mr-8"
-                  spinStar={false}
-                />
-                <PurpleButton
-                  text={savingSection === 'saved' ? 'Saved' : savingSection === 'legal' ? 'Saving...' : 'Save'}
-                  onClick={saveLegal}
-                  className="scale-75"
-                  spinStar={false}
-                  disabled={savingSection === 'legal'}
-                />
+                  {legal.hasWill === 'Yes' && (
+                    <>
+                      <Select
+                        label="Does your will contain any provisions contrary to cryonics?"
+                        value={legal.willContraryToCryonics || ''}
+                        onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
+                        disabled={!editMode.legal}
+                        required={isRequired}
+                      >
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </Select>
+                      
+                      {/* Add helpful text for desktop users */}
+                      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Important Information:</h4>
+                        <p className="text-sm text-gray-700 mb-2">
+                          Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <strong>these provisions may invalidate your Cryopreservation Agreement.</strong>
+                        </p>
+                        {legal.willContraryToCryonics === 'Yes' && (
+                          <p className="text-sm text-red-700 font-medium mt-2 p-2 bg-red-50 rounded">
+                            <strong>Action Required:</strong> If you have a will with contrary provisions, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-            ) : (
-              <RainbowButton
-                text="Edit"
-                onClick={() => toggleEditMode && toggleEditMode('legal')}
-                className="scale-75"
-                spinStar={true}
-              />
             )}
+            
+            {/* Desktop Button Group and Info Notice */}
+            <div className="flex items-center justify-between mt-16">
+              {/* Left side - Info Notice (always visible) */}
+              <LegalInfoNotice />
+              
+              {/* Right side - buttons */}
+              <div className="flex justify-end -mr-8">
+                {editMode?.legal ? (
+                  <div className="flex">
+                    <WhiteButton
+                      text="Cancel"
+                      onClick={() => cancelEdit && cancelEdit('legal')}
+                      className="scale-75 -mr-8"
+                      spinStar={false}
+                    />
+                    <PurpleButton
+                      text={savingSection === 'saved' ? 'Saved' : savingSection === 'legal' ? 'Saving...' : 'Save'}
+                      onClick={saveLegal}
+                      className="scale-75"
+                      spinStar={false}
+                      disabled={savingSection === 'legal'}
+                    />
+                  </div>
+                ) : (
+                  <RainbowButton
+                    text="Edit"
+                    onClick={() => toggleEditMode && toggleEditMode('legal')}
+                    className="scale-75"
+                    spinStar={true}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -15,15 +15,15 @@ export const iconStyle = {
   solidWarmRose: '#aa6c61',
   
   // Icon stroke properties
-  strokeWidth: 0.75,
+  strokeWidth: 1.5, // Updated from 0.75 to match Forms tab
   
   // Icon size classes
-  iconSize: 'w-6 h-6', // Default icon size (reduced from w-10 h-10)
-  iconSizeLarge: 'w-8 h-8', // Large icon size (reduced from w-12 h-12)
-  iconSizeSmall: 'w-5 h-5', // Small icon size (reduced from w-8 h-8)
+  iconSize: 'w-6 h-6', // Default icon size
+  iconSizeLarge: 'w-7 h-7', // Updated from w-8 h-8 to match Forms tab
+  iconSizeSmall: 'w-5 h-5', // Small icon size
   
   // Container styling
-  containerClasses: 'p-2.5 rounded-lg transform transition duration-300',
+  containerClasses: 'p-3.5 rounded-lg transform transition duration-300', // Updated from p-2.5 to p-3.5
   containerClassesSmall: 'p-2 rounded-lg transform transition duration-300',
   
   // Icon color

@@ -196,7 +196,7 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         cryo: cryoRes.status === 'fulfilled' ? cryoRes.value : null,
         legal: legalRes.status === 'fulfilled' ? legalRes.value : null,
         emergency: emergencyRes.status === 'fulfilled' ? emergencyRes.value : null,
-        insurance: insuranceRes.status === 'fulfilled' ? insuranceRes.value : null,
+        funding: insuranceRes.status === 'fulfilled' ? insuranceRes.value : null,
         category: categoryRes.status === 'fulfilled' ? categoryRes.value : null
       };
 

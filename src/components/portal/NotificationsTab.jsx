@@ -10,7 +10,6 @@ import alcorStar from '../../assets/images/alcor-star.png';
 import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
 
 // Import the icon components from settings
-
 import { IconWrapper, BellIcon, iconStyle } from '../portal/iconStyle';
 
 const NotificationsTab = () => {
@@ -24,9 +23,10 @@ const NotificationsTab = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [messageContentCache, setMessageContentCache] = useState({});
   const notificationsRef = React.useRef(null);
+  const [showHelpPopup, setShowHelpPopup] = useState(false);
   
-  // Define pagination constant
-  const ITEMS_PER_PAGE = 2;
+  // Define pagination constant - Changed from 2 to 3
+  const ITEMS_PER_PAGE = 3;
   
   // Modal width configuration
   const MODAL_WIDTH_CONFIG = {
@@ -71,12 +71,12 @@ const NotificationsTab = () => {
         letter-spacing: 0.05em !important;
         color: #6b7280 !important;
       }
-      @media (min-width: 768px) {
+      @media (min-width: 1024px) {
         .notifications-tab .card-title {
-          font-weight: 400 !important;
+          font-weight: 600 !important;
         }
       }
-      @media (max-width: 767px) {
+      @media (max-width: 1023px) {
         .notifications-tab .card-title {
           font-weight: 600 !important;
         }
@@ -96,7 +96,7 @@ const NotificationsTab = () => {
       .notifications-tab .stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
       .notifications-tab .stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
       .notifications-tab .stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
-      @media (max-width: 767px) {
+      @media (max-width: 1023px) {
         .notifications-tab pre,
         .notifications-tab code {
           line-height: 2 !important;
@@ -126,7 +126,7 @@ const NotificationsTab = () => {
         background: #ffffff;
         border-radius: 1rem;
       }
-      @media (max-width: 767px) {
+      @media (max-width: 1023px) {
         .professional-card {
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
@@ -135,7 +135,7 @@ const NotificationsTab = () => {
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         transform: translateY(-2px);
       }
-      @media (max-width: 767px) {
+      @media (max-width: 1023px) {
         .professional-card:hover {
           box-shadow: 0 6px 10px rgba(0, 0, 0, 0.18);
         }
@@ -164,7 +164,7 @@ const NotificationsTab = () => {
         line-height: 1.6 !important;
         color: #9ca3af !important;
       }
-      @media (min-width: 768px) {
+      @media (min-width: 1024px) {
         .notification-description {
           color: #b8bcc8 !important;
         }
@@ -208,7 +208,7 @@ const NotificationsTab = () => {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-      @media (min-width: 768px) {
+      @media (min-width: 1024px) {
         .next-button:hover .star-icon {
           animation: spin 0.5s ease-in-out;
         }
@@ -390,7 +390,7 @@ const NotificationsTab = () => {
       };
       
       const gradient = gradients[type] || gradients.default;
-      const iconClass = "w-5 h-5 md:w-6 md:h-6 text-white transition-transform duration-200";
+      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
       const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
       
       return (
@@ -416,7 +416,7 @@ const NotificationsTab = () => {
       };
       
       const style = colors[type] || colors.default;
-      const iconClass = `w-5 h-5 md:w-6 md:h-6 ${style.icon} transition-transform duration-200`;
+      const iconClass = `w-5 h-5 lg:w-6 lg:h-6 ${style.icon} transition-transform duration-200`;
       const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
       
       return (
@@ -431,7 +431,7 @@ const NotificationsTab = () => {
       );
     } else if (ICON_STYLE === 3) {
       // Style 3: Dark navy gradient background matching the theme
-      const iconClass = "w-5 h-5 md:w-6 md:h-6 text-white transition-transform duration-200";
+      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
       const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
       
       return (
@@ -457,7 +457,7 @@ const NotificationsTab = () => {
       };
       
       const style = colors[type] || colors.default;
-      const iconClass = `w-5 h-5 md:w-6 md:h-6 ${style.split(' ')[1]} transition-transform duration-200`;
+      const iconClass = `w-5 h-5 lg:w-6 lg:h-6 ${style.split(' ')[1]} transition-transform duration-200`;
       const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
       
       return (
@@ -472,7 +472,7 @@ const NotificationsTab = () => {
       );
     } else {
       // Style 5: Original dark gray with light border
-      const iconClass = "w-5 h-5 md:w-6 md:h-6 text-white transition-transform duration-200";
+      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
       const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
       
       return (
@@ -520,12 +520,8 @@ const NotificationsTab = () => {
   // Loading state
   if (!notificationsLoaded) {
     return (
-      <div className="-mx-6 -mt-6 md:mx-0 md:mt-0">
+      <div className="-mx-6 -mt-6 lg:mx-0 lg:mt-0">
         <div className="animate-pulse">
-          <div className="mb-12">
-            <div className="h-10 bg-gray-100 w-48 mb-3"></div>
-            <div className="h-4 bg-gray-50 w-72"></div>
-          </div>
           <div className="bg-white border border-gray-100 p-8 rounded-2xl">
             <div className="space-y-6">
               <div className="h-4 bg-gray-100 w-32 mb-2 rounded"></div>
@@ -538,25 +534,20 @@ const NotificationsTab = () => {
   }
 
   return (
-    <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:mt-0" ref={notificationsRef}>
-      {/* Header */}
-      <div className="mb-12 px-6 pt-6 md:px-0 md:pt-0 hidden md:block max-w-5xl">
-        <h1 className="text-[1.5rem] md:text-[1.75rem] font-medium text-gray-900 mb-2 leading-tight">Notifications</h1>
-        <p className="text-gray-400 text-xs md:text-sm tracking-wide uppercase section-subtitle">Stay updated with your messages and alerts</p>
-      </div>
-
+    <div className="notifications-tab -mx-6 -mt-6 lg:mx-0 lg:mt-0" ref={notificationsRef}>
       {/* Main Card */}
-      <div className="px-6 md:px-0 pt-10 md:pt-0">
+      <div className="px-2 sm:px-6 lg:px-0 pt-10 lg:pt-0">
         <div className="max-w-5xl">
+        <div className="mx-auto w-[95%] sm:w-full">
           <div className="professional-card bg-white shadow-lg border border-gray-200 rounded-2xl overflow-hidden gradient-border-top">
             {/* Card Header */}
-            <div className="px-6 md:px-8 py-5 md:py-5 pb-8 md:pb-5 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-6 md:mb-6 pb-4 md:pb-0 pt-2">
+            <div className="px-6 lg:px-8 py-5 lg:py-6 pb-8 lg:pb-10 border-b border-gray-200 fade-in">
+              <div className="flex items-center justify-between mb-6 lg:mb-8 pb-4 lg:pb-2 pt-2 slide-in">
                 <div className="flex items-center gap-4">
-                  <IconWrapper className="icon-luxury" size="large">
-                    <BellIcon className={iconStyle.iconSizeLarge} />
+                  <IconWrapper className="icon-luxury" size="large" color="gradient">
+                    <Bell className={`${iconStyle.iconSizeLarge} ${iconStyle.iconColor}`} strokeWidth={iconStyle.strokeWidth} />
                   </IconWrapper>
-                  <h2 className="text-lg font-normal text-gray-800 card-title flex items-center">
+                  <h2 className="text-xl font-bold text-gray-800 card-title flex items-center">
                     Notifications
                     <img src={alcorStar} alt="" className="w-5 h-5 ml-1" />
                   </h2>
@@ -565,7 +556,7 @@ const NotificationsTab = () => {
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="text-xs tracking-wider uppercase text-gray-600 md:text-gray-500 hover:text-gray-700 font-normal transition-all duration-300 border-b border-transparent hover:border-gray-400"
+                    className="text-xs tracking-wider uppercase text-gray-600 lg:text-gray-500 hover:text-gray-700 font-normal transition-all duration-300 border-b border-transparent hover:border-gray-400"
                   >
                     Mark all as read
                   </button>
@@ -573,37 +564,40 @@ const NotificationsTab = () => {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-6 md:mt-0">
-                <div className="flex bg-gray-100 rounded-lg p-0.5 w-fit h-12 md:h-auto">
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-6 lg:mt-8">
+                <div className="flex bg-gray-300 rounded-lg p-0.5 w-fit h-12 lg:h-auto lg:w-[400px]">
                   <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 md:px-6 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full ${
+                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
                       filter === 'all' 
-                        ? 'bg-white text-gray-900 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
+                        : 'text-[#6e4376] hover:text-[#8a4191]'
                     }`}
+                    style={{ fontWeight: filter === 'all' ? 700 : 400 }}
                   >
                     All
                     {filter === 'all' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
                   </button>
                   <button
                     onClick={() => setFilter('unread')}
-                    className={`px-4 md:px-6 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full ${
+                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
                       filter === 'unread' 
-                        ? 'bg-white text-gray-900 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
+                        : 'text-[#6e4376] hover:text-[#8a4191]'
                     }`}
+                    style={{ fontWeight: filter === 'unread' ? 700 : 400 }}
                   >
                     Unread ({unreadCount})
                     {filter === 'unread' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
                   </button>
                   <button
                     onClick={() => setFilter('read')}
-                    className={`px-4 md:px-6 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full ${
+                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
                       filter === 'read' 
-                        ? 'bg-white text-gray-900 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
+                        : 'text-[#6e4376] hover:text-[#8a4191]'
                     }`}
+                    style={{ fontWeight: filter === 'read' ? 700 : 400 }}
                   >
                     Read
                     {filter === 'read' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
@@ -613,7 +607,7 @@ const NotificationsTab = () => {
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-4 md:px-3 pr-10 md:pr-8 py-2.5 md:py-2.5 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#6e4376] focus:border-[#6e4376] transition-all md:w-auto h-12 md:h-auto"
+                  className="px-4 lg:px-3 pr-10 lg:pr-8 py-2.5 lg:py-2.5 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#6e4376] focus:border-[#6e4376] transition-all lg:w-auto h-12 lg:h-auto"
                   style={{ '--tw-ring-width': '1px' }}
                 >
                   <option value="all">All Types</option>
@@ -627,7 +621,7 @@ const NotificationsTab = () => {
             </div>
 
             {/* Notifications List */}
-            <div className="bg-white pt-4 md:pt-0">
+            <div className="bg-white pt-4 lg:pt-2">
               {filteredNotifications.length === 0 ? (
                 <div className="px-6 py-16 text-center">
                   <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex items-center justify-center mx-auto mb-4">
@@ -644,18 +638,18 @@ const NotificationsTab = () => {
                     <div key={notification.id}>
                       <div
                         onClick={() => handleNotificationClick(notification)}
-                        className={`px-6 md:px-8 py-5 transition-all duration-200 cursor-pointer hover:bg-gray-50 ${
+                        className={`px-6 lg:px-8 py-5 lg:py-6 transition-all duration-200 cursor-pointer hover:bg-gray-50 ${
                           !notification.read ? 'bg-purple-50/30' : ''
                         }`}
                       >
                         <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 mt-0 md:mt-0.5">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 mt-0 lg:mt-0.5">
                             {getIcon(notification.type, notification.read)}
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-4 mb-1 md:mb-0.5">
-                              <h3 className={`text-base md:text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'font-normal text-gray-800'}`}>
+                            <div className="flex items-center justify-between gap-4 mb-1 lg:mb-1">
+                              <h3 className={`text-base lg:text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'font-normal text-gray-800'}`}>
                                 {notification.title}
                                 {!notification.read && <img src={alcorYellowStar} alt="" className="w-4 h-4 inline-block ml-1 align-text-bottom" />}
                               </h3>
@@ -720,19 +714,19 @@ const NotificationsTab = () => {
                               </div>
                             </div>
                             
-                            <p className="text-sm md:text-xs notification-description line-clamp-2 text-gray-500 md:text-gray-400" style={{ minHeight: '2.5rem' }}>
+                            <p className="text-sm lg:text-xs notification-description line-clamp-2 text-gray-500 lg:text-gray-400 mt-1 lg:mt-1.5" style={{ minHeight: '2.5rem' }}>
                               {notification.type === 'message' && notification.metadata?.messageId && messageContentCache[notification.metadata.messageId]
                                 ? messageContentCache[notification.metadata.messageId]
                                 : notification.content}
                             </p>
-                            <p className="text-xs text-gray-400 md:text-gray-500 mt-2">
+                            <p className="text-xs text-gray-400 lg:text-gray-500 mt-2 lg:mt-2.5">
                               {formatDate(notification.createdAt)}
                             </p>
                           </div>
                         </div>
                       </div>
                       {index < paginatedNotifications.length - 1 && (
-                        <div className="px-6 md:px-12">
+                        <div className="px-6 lg:px-12">
                           <div className="h-px bg-gray-100"></div>
                         </div>
                       )}
@@ -743,12 +737,12 @@ const NotificationsTab = () => {
               
               {/* Pagination */}
               {filteredNotifications.length > ITEMS_PER_PAGE && (
-                <div className="px-6 md:px-8 py-4 border-t border-gray-200 flex items-center justify-between">
-                  <p className="text-sm text-gray-600 hidden md:block">
+                <div className="px-6 lg:px-8 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <p className="text-sm text-gray-600 hidden lg:block">
                     Showing {startIndex + 1}-{Math.min(endIndex, filteredNotifications.length)} of {filteredNotifications.length}
                   </p>
                   
-                  <div className="flex items-center gap-2 md:gap-6 w-full md:w-auto justify-between md:justify-end">
+                  <div className="flex items-center gap-2 lg:gap-6 w-full lg:w-auto justify-between lg:justify-end">
                     <button
                       onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                       disabled={currentPage === 1}
@@ -761,7 +755,7 @@ const NotificationsTab = () => {
                       Previous
                     </button>
                     
-                    <span className="text-sm text-gray-600 px-2 md:px-4">
+                    <span className="text-sm text-gray-600 px-2 lg:px-4">
                       Page {currentPage} of {totalPages}
                     </span>
                     
@@ -775,23 +769,24 @@ const NotificationsTab = () => {
                       }`}
                     >
                       Next
-                      {currentPage !== totalPages && <img src={alcorStar} alt="" className="star-icon w-4 h-4 md:w-5 md:h-5 brightness-0 invert" />}
+                      {currentPage !== totalPages && <img src={alcorStar} alt="" className="star-icon w-4 h-4 lg:w-5 lg:h-5 brightness-0 invert" />}
                     </button>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-16 px-6 md:px-0 pb-2 md:pb-8 max-w-5xl">
+      <div className="mt-16 px-6 lg:px-0 pb-2 lg:pb-8 max-w-5xl">
         <div className="luxury-divider mb-8"></div>
-        <div className="flex items-center justify-between px-4 md:px-0">
+        <div className="flex items-center justify-between px-4 lg:px-0">
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></div>
-            <p className="text-xs text-gray-600 md:text-gray-500 tracking-wider uppercase font-light">Updates in real-time</p>
+            <p className="text-xs text-gray-600 lg:text-gray-500 tracking-wider uppercase font-light">Updates in real-time</p>
           </div>
         </div>
       </div>
@@ -874,6 +869,92 @@ const NotificationsTab = () => {
         </div>,
         document.body
       )}
+      {/* Help Button - Desktop Only */}
+<div className="hidden lg:block fixed bottom-8 right-8 z-50">
+  <button
+    className="w-14 h-14 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
+    onClick={() => setShowHelpPopup(!showHelpPopup)}
+  >
+    <svg 
+      className="w-7 h-7 text-white" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="1.8" 
+      viewBox="0 0 24 24"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+      />
+    </svg>
+  </button>
+
+  {/* Help Popup */}
+  {showHelpPopup && (
+    <div className="fixed bottom-28 right-8 w-80 bg-white rounded-lg shadow-2xl overflow-hidden z-50 animate-slideIn">
+      <div className="bg-[#9f5fa6] text-white px-4 py-3 flex items-center justify-between">
+        <h3 className="text-base" style={{ fontWeight: 500 }}>Help & Information</h3>
+        <button
+          onClick={() => setShowHelpPopup(false)}
+          className="text-white hover:bg-white/20 rounded p-1 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
+        <div className="pb-4 border-b border-gray-100">
+          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notifications Overview</h4>
+          <p className="text-sm text-gray-600">View and manage all your notifications including messages, announcements, and updates from Alcor.</p>
+        </div>
+        
+        <div className="pb-4 border-b border-gray-100">
+          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Filter Options</h4>
+          <p className="text-sm text-gray-600">Use filters to view all notifications, only unread ones, or previously read messages. Filter by type to see specific categories.</p>
+        </div>
+        
+        <div className="pb-4 border-b border-gray-100">
+          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notification Types</h4>
+          <p className="text-sm text-gray-600">Messages from staff, travel updates, announcements, podcasts, and newsletters. Click any notification to view details.</p>
+        </div>
+        
+        <div className="pb-4 border-b border-gray-100">
+          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Managing Notifications</h4>
+          <p className="text-sm text-gray-600">Mark notifications as read/unread or delete them using the menu icon. Use "Mark all as read" to clear all unread notifications.</p>
+        </div>
+        
+        <div>
+          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
+          <p className="text-sm text-gray-600">
+            Contact support at{' '}
+            <a href="mailto:support@alcor.org" className="text-[#9f5fa6] hover:underline">
+              support@alcor.org
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+<style>{`
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+`}</style>
     </div>
   );
 };

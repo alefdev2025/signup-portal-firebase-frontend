@@ -93,8 +93,8 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
     }
   };
 
-  const bellIconSize = isGlassmorphic ? 'w-6 h-6 md:w-7 md:h-7' : (variant === 'compact' ? 'w-5 h-5 md:w-6 md:h-6' : 'w-7 h-7 md:w-8 md:h-8');
-  const buttonPadding = variant === 'compact' ? 'p-1 md:p-1.5' : 'p-1.5 md:p-2';
+  const bellIconSize = isGlassmorphic ? 'w-6 h-6 xl:w-7 xl:h-7' : (variant === 'compact' ? 'w-5 h-5 xl:w-6 xl:h-6' : 'w-7 h-7 xl:w-8 xl:h-8');
+  const buttonPadding = variant === 'compact' ? 'p-1 xl:p-1.5' : 'p-1.5 xl:p-2';
   
   const buttonClasses = isGlassmorphic 
     ? `relative text-white/90 hover:text-white ${buttonPadding} rounded-lg hover:bg-white/10 transition-all`
@@ -120,7 +120,7 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
 
       {/* Dropdown */}
       {isOpen && (
-        <div className={`absolute right-0 mt-2 w-72 md:w-80 ${isGlassmorphic ? 'bg-white' : 'bg-white'} rounded-lg shadow-xl border ${isGlassmorphic ? 'border-gray-200' : 'border-gray-200'} z-[9999]`}>
+        <div className={`absolute right-0 mt-2 w-72 xl:w-80 ${isGlassmorphic ? 'bg-white' : 'bg-white'} rounded-lg shadow-xl border ${isGlassmorphic ? 'border-gray-200' : 'border-gray-200'} z-[9999]`}>
           <div className={`px-4 py-3 border-b ${isGlassmorphic ? 'border-gray-200' : 'border-gray-200'} flex items-center justify-between`}>
             <h3 className={`font-semibold ${isGlassmorphic ? 'text-gray-900' : 'text-gray-900'}`}>Notifications</h3>
             {unreadCount > 0 && (
@@ -269,8 +269,8 @@ const PortalHeader = ({
 
   // Adjust padding based on variant
   const paddingClasses = variant === 'compact' 
-    ? 'px-4 py-2 md:px-6 md:py-2.5' 
-    : 'px-6 py-3 md:py-4';
+    ? 'px-4 py-2 xl:px-6 xl:py-2.5' 
+    : 'px-6 py-3 xl:py-4';
 
   const headerClasses = isGlassmorphic 
     ? `portal-header bg-transparent ${paddingClasses} ${activeTab !== 'overview' ? 'border border-white/20' : ''} rounded-2xl ${className}`
@@ -286,27 +286,27 @@ const PortalHeader = ({
 
   // Adjust button sizes based on variant
   const emergencyButtonPadding = variant === 'compact' 
-    ? 'px-2.5 md:px-4 py-1 md:py-1.5' 
-    : 'px-3 md:px-5 py-1.5 md:py-2';
+    ? 'px-2.5 xl:px-4 py-1 xl:py-1.5' 
+    : 'px-3 xl:px-5 py-1.5 xl:py-2';
     
   const emergencyButtonText = variant === 'compact' 
-    ? 'text-[11px] md:text-xs' 
-    : 'text-xs md:text-sm';
+    ? 'text-[11px] xl:text-xs' 
+    : 'text-xs xl:text-sm';
 
   const emergencyButtonClasses = isGlassmorphic
-    ? `bg-red-500/20 backdrop-blur-sm text-red-300 md:text-red-300 ${emergencyButtonPadding} rounded-full font-semibold ${emergencyButtonText} flex items-center gap-1 md:gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-red-300/50 md:border-red-300/50 md:hover:bg-red-500/30 md:hover:text-white`
-    : `bg-white text-black md:text-[#DC143C] ${emergencyButtonPadding} rounded-full font-semibold ${emergencyButtonText} flex items-center gap-1 md:gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-black md:border-[#DC143C] md:hover:bg-[#DC143C] md:hover:text-white`;
+    ? `bg-red-500/20 backdrop-blur-sm text-red-300 xl:text-red-300 ${emergencyButtonPadding} rounded-full font-semibold ${emergencyButtonText} flex items-center gap-1 xl:gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-red-300/50 xl:border-red-300/50 xl:hover:bg-red-500/30 xl:hover:text-white`
+    : `bg-white text-black xl:text-[#DC143C] ${emergencyButtonPadding} rounded-full font-semibold ${emergencyButtonText} flex items-center gap-1 xl:gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-black xl:border-[#DC143C] xl:hover:bg-[#DC143C] xl:hover:text-white`;
 
-  const settingsIconSize = isGlassmorphic ? 'w-6 h-6 md:w-7 md:h-7' : (variant === 'compact' ? 'w-5 h-5 md:w-6 md:h-6' : 'w-7 h-7 md:w-8 md:h-8');
-  const settingsButtonPadding = variant === 'compact' ? 'p-1 md:p-1.5' : 'p-1.5 md:p-2';
+  const settingsIconSize = isGlassmorphic ? 'w-6 h-6 xl:w-7 xl:h-7' : (variant === 'compact' ? 'w-5 h-5 xl:w-6 xl:h-6' : 'w-7 h-7 xl:w-8 xl:h-8');
+  const settingsButtonPadding = variant === 'compact' ? 'p-1 xl:p-1.5' : 'p-1.5 xl:p-2';
   
   const settingsButtonClasses = isGlassmorphic
     ? `text-white/90 hover:text-white ${settingsButtonPadding} rounded-lg hover:bg-white/10 transition-all`
     : `text-gray-700 hover:text-gray-900 ${settingsButtonPadding} rounded-lg hover:bg-gray-100 transition-all`;
 
   const mobileMenuButtonClasses = isGlassmorphic
-    ? "md:hidden text-white/90 hover:text-white"
-    : "md:hidden text-gray-500 hover:text-gray-900";
+    ? "xl:hidden text-white/90 hover:text-white"
+    : "xl:hidden text-gray-500 hover:text-gray-900";
 
   const searchIconColor = isGlassmorphic ? "text-white/40" : "text-gray-400";
   const searchIconSize = variant === 'compact' ? 'w-4 h-4' : 'w-5 h-5';
@@ -326,7 +326,7 @@ const PortalHeader = ({
           </button>
           
           {activeTab !== 'overview' && (
-  <div className="hidden md:flex items-center gap-2 pl-3">
+  <div className="hidden xl:flex items-center gap-2 pl-3">
     <h1 
       className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} font-thin tracking-wide text-black`}
       style={{
@@ -338,7 +338,7 @@ const PortalHeader = ({
     </h1>
   </div>
 )}
-          <div className="hidden md:block relative ml-auto mr-8">
+          <div className="hidden xl:block relative ml-auto mr-8">
             <input 
               type="text" 
               placeholder="Search..." 
@@ -351,15 +351,15 @@ const PortalHeader = ({
         </div>
         
         {/* Right side - Action buttons */}
-        <div className={`flex items-center ${variant === 'compact' ? 'gap-1.5 md:gap-3' : 'gap-2 md:gap-4'}`}>
+        <div className={`flex items-center ${variant === 'compact' ? 'gap-1.5 xl:gap-3' : 'gap-2 xl:gap-4'}`}>
           {/* Emergency Button - Hidden on overview page */}
           {activeTab !== 'overview' && (
             <button className={emergencyButtonClasses}>
-              <svg className={`${isGlassmorphic ? 'w-4 h-4 md:w-5 md:h-5' : (variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5')}`} fill="currentColor" viewBox="0 0 20 20">
+              <svg className={`${isGlassmorphic ? 'w-4 h-4 xl:w-5 xl:h-5' : (variant === 'compact' ? 'w-3.5 h-3.5 xl:w-4 xl:h-4' : 'w-4 h-4 xl:w-5 xl:h-5')}`} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
-<span className="hidden md:inline">Emergency</span>
-<span className="md:hidden">Emergency</span>
+<span className="hidden xl:inline">Emergency</span>
+<span className="xl:hidden">Emergency</span>
             </button>
           )}
           

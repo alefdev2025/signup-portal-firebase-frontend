@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Global toggle for gradient style
 const USE_RAINBOW_GRADIENT = false; // Set to false for purple-only gradient
@@ -12,8 +13,9 @@ export const MobileInfoCard = ({
   icon: Icon,
   iconComponent, // For custom SVG icons
   title,
-  preview, // Short preview text when collapsed
   subtitle, // Description text
+  backgroundImage, // New prop for background image
+  overlayText, // New prop for text overlay on image
   backgroundColor, // Gradient or solid color for content area
   children, // Main content
   defaultExpanded = false,
@@ -24,50 +26,81 @@ export const MobileInfoCard = ({
 
   // Card style based on USE_EDGE_TO_EDGE
   const cardStyle = USE_EDGE_TO_EDGE 
-    ? "overflow-hidden shadow-lg border-t border-b border-gray-300" 
-    : "rounded-3xl overflow-hidden shadow-lg border border-gray-300";
+    ? "overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border-t border-b border-gray-200" 
+    : "rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200";
 
   return (
-    <div className={`${cardStyle} ${className}`}>
-      {/* White Header Section - Minimal Content */}
+    <div className={`${cardStyle} ${className} w-full`}>
+      {/* White Header Section - Fixed height when collapsed */}
       <div 
-        className="bg-white px-6 py-6 cursor-pointer"
+        className={`bg-white px-6 cursor-pointer transition-all duration-200 ${
+          !isExpanded ? 'py-6 min-h-[360px]' : 'py-6'
+        }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4 flex-1">
-            <div className="p-3 rounded-lg flex-shrink-0" style={{
-              background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)'
-            }}>
-              {Icon ? (
-                <Icon className="w-6 h-6 text-white" />
-              ) : iconComponent ? (
-                <div className="w-6 h-6 text-white">{iconComponent}</div>
-              ) : null}
-            </div>
-            <div className="flex-1">
+        <div className={`flex flex-col gap-4 ${!isExpanded ? 'h-full w-full' : 'w-full'}`}>
+          {/* Top row - Icon, Title and Chevron */}
+          <div className="flex items-center">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="p-3.5 rounded-lg flex-shrink-0" style={{
+                background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)'
+              }}>
+                {Icon ? (
+                  <Icon className="w-7 h-7 text-white" />
+                ) : iconComponent ? (
+                  <div className="w-7 h-7 text-white">{iconComponent}</div>
+                ) : null}
+              </div>
               <h3 className="text-xl font-light text-gray-900">{title}</h3>
-              {subtitle && (
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                  {subtitle}
-                </p>
-              )}
-              {preview && (
-                <div className="mt-3 space-y-1 text-sm text-gray-600">
-                  {preview.split(' • ').map((item, index) => (
-                    <div key={index} className="truncate">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+            <ChevronDown 
+              className={`w-7 h-7 text-gray-700 transition-transform duration-200 ml-4 ${
+                isExpanded ? 'rotate-180' : ''
+              }`}
+            />
           </div>
-          <ChevronDown 
-            className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 mt-1 ${
-              isExpanded ? 'rotate-180' : ''
-            }`}
-          />
+          
+          {/* Bottom row - Image with subtitle overlay */}
+          <div className="w-full flex-1 flex flex-col">
+            <div className="border-t border-gray-200 mb-4"></div>
+            
+            {/* Image with overlay if provided */}
+            {backgroundImage && !isExpanded && (
+              <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-md mb-4">
+                <img 
+                  src={backgroundImage} 
+                  alt=""
+                  className="w-full h-full object-cover grayscale"
+                />
+                
+                {overlayText && (
+                  <div className="absolute bottom-0 right-0">
+                    <div className="px-4 py-2" style={{
+                      background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
+                    }}>
+                      <p className="text-white font-medium text-sm tracking-wider flex items-center gap-1">
+                        {overlayText}
+                        <img src={alcorStar} alt="" className="w-4 h-4" />
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Subtitle text below image or by itself */}
+            {subtitle && !isExpanded && (
+              <div className="space-y-3 pb-2 pt-2">
+                {typeof subtitle === 'string' ? (
+                  <p className="text-base text-gray-700 leading-relaxed">
+                    {subtitle}
+                  </p>
+                ) : (
+                  subtitle
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -156,42 +189,39 @@ export const FormSelect = ({
   </div>
 );
 
-export const ActionButtons = ({ editMode, onEdit, onSave, onCancel, saving, hideEditButton }) => {
-  if (!editMode) {
-    // Don't show edit button if hideEditButton is true
-    if (hideEditButton) {
-      return null;
-    }
-    
-    return (
-      <div className="mt-6 flex justify-end">
+// Action Button Components
+export const ActionButtons = ({ 
+  editMode, 
+  onEdit, 
+  onSave, 
+  onCancel, 
+  saving = false 
+}) => (
+  <div className={`flex justify-end mt-6 pt-4 border-t ${editMode ? 'border-gray-200' : 'border-white/10'}`}>
+    {editMode ? (
+      <div className="flex gap-3">
         <button
-          onClick={onEdit}
-          className="px-4 py-2 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg shadow-lg font-medium text-sm hover:shadow-xl transition-all duration-200"
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
         >
-          Edit
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="px-4 py-2 bg-navy-600 hover:bg-navy-700 text-white rounded-lg transition-all font-medium disabled:opacity-50"
+          style={{ backgroundColor: '#162740', '&:hover': { backgroundColor: '#0f1e33' } }}
+        >
+          {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
-    );
-  }
-  
-  return (
-    <div className="mt-6 flex justify-between">
+    ) : (
       <button
-        onClick={onCancel}
-        className="px-4 py-2 bg-white/10 text-white/90 rounded-lg font-medium text-sm hover:bg-white/20 transition-colors border border-white/20"
+        onClick={onEdit}
+        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
       >
-        Cancel
+        Edit
       </button>
-      <button
-        onClick={onSave}
-        disabled={saving}
-        className={`px-4 py-2 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg font-medium text-sm transition-all duration-200 ${
-          saving ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
-        }`}
-      >
-        {saving ? 'Saving...' : 'Save'}
-      </button>
-    </div>
-  );
-};
+    )}
+  </div>
+);

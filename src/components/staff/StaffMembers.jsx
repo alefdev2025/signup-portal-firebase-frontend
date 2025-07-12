@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Mail, Phone, Calendar, Shield } from 'lucide-react';
+import { Search, Mail, Phone, Calendar, Shield, Eye, FileText } from 'lucide-react';
 import { db } from '../../services/firebase';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import StaffMemberViewer from './StaffMemberViewer';
 
 const StaffMembers = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState('');
+  const [manualSearchId, setManualSearchId] = useState('');
 
   useEffect(() => {
     fetchMembers();
@@ -41,12 +45,55 @@ const StaffMembers = () => {
     member.alcorId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleViewMember = (salesforceContactId) => {
+    if (salesforceContactId) {
+      setSelectedContactId(salesforceContactId);
+      setViewerOpen(true);
+    } else {
+      alert('This member does not have a Salesforce Contact ID linked.');
+    }
+  };
+
+  const handleManualSearch = () => {
+    if (manualSearchId.trim()) {
+      setSelectedContactId(manualSearchId.trim());
+      setViewerOpen(true);
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-900 mb-8">Member Management</h2>
+      <h2 className="text-3xl font-bold text-gray-900 mb-8">Member Lookup</h2>
 
-      {/* Search Bar */}
+      {/* Manual Salesforce ID Search */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Search by Salesforce ID</h3>
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Enter Salesforce Contact ID (e.g., 003...)"
+              value={manualSearchId}
+              onChange={(e) => setManualSearchId(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+            />
+          </div>
+          <button
+            onClick={handleManualSearch}
+            disabled={!manualSearchId.trim()}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            View Member Info
+          </button>
+        </div>
+      </div>
+
+      {/* Existing Search Bar */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Members</h3>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -75,6 +122,9 @@ const StaffMembers = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Member ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Salesforce ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -113,6 +163,14 @@ const StaffMembers = () => {
                       <span className="text-sm text-gray-900">{member.alcorId || 'Pending'}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-600 font-mono">
+                        {member.salesforceContactId ? 
+                          member.salesforceContactId.substring(0, 10) + '...' : 
+                          'Not linked'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         member.membershipStatus === 'active' 
                           ? 'bg-green-100 text-green-800'
@@ -127,9 +185,11 @@ const StaffMembers = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
                         <button
-                          className="text-purple-600 hover:text-purple-900"
-                          title="View Details"
+                          onClick={() => handleViewMember(member.salesforceContactId)}
+                          className="text-purple-600 hover:text-purple-900 flex items-center gap-1"
+                          title="View Member Info"
                         >
+                          <Eye className="w-4 h-4" />
                           View
                         </button>
                         <button
@@ -147,6 +207,17 @@ const StaffMembers = () => {
           </div>
         )}
       </div>
+
+      {/* Member Viewer Modal */}
+      <StaffMemberViewer 
+        isOpen={viewerOpen}
+        onClose={() => {
+          setViewerOpen(false);
+          setSelectedContactId('');
+          setManualSearchId('');
+        }}
+        initialContactId={selectedContactId}
+      />
     </div>
   );
 };

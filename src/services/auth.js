@@ -1919,6 +1919,54 @@ export async function checkEmailExists(email) {
   }
 }
 
+export const sendProcedureNotificationEmail = async (data) => {
+  try {
+    console.log('📧 Calling authCore to send procedure notification');
+    
+    // Validate required fields
+    const { memberName, memberNumber, pdfData, fileName } = data;
+    
+    if (!memberName || !memberNumber || !pdfData || !fileName) {
+      throw new Error('Missing required fields for procedure notification');
+    }
+    
+    // Get the authCore function
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    // Call the function with the sendProcedureEmail action
+    const result = await authCoreFn({
+      action: 'sendProcedureEmail',
+      memberName,
+      memberNumber,
+      pdfData,
+      fileName
+    });
+    
+    // Check the result
+    if (result.data?.success) {
+      console.log('✅ Procedure notification sent successfully');
+      return {
+        success: true,
+        messageId: result.data.messageId,
+        recipientEmail: result.data.recipientEmail
+      };
+    } else {
+      console.error('❌ authCore returned failure:', result.data);
+      throw new Error(result.data?.error || 'Failed to send procedure notification');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error sending procedure notification:', error);
+    
+    // Don't throw the error, just return failure
+    // This way the form submission can still succeed even if email fails
+    return {
+      success: false,
+      error: error.message || 'Failed to send email notification'
+    };
+  }
+};
+
 export { 
   EmailAuthProvider,
   GoogleAuthProvider,

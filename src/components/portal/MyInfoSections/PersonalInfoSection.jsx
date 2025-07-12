@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
+import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Multi-select dropdown component for desktop
 const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
@@ -39,7 +41,7 @@ const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = 
     <div className="relative" ref={dropdownRef}>
       <label className={styleConfig2.form.label}>{label}</label>
       <div
-        className={`${styleConfig2.input.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <span className={`${value.length === 0 ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
@@ -156,7 +158,7 @@ const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled =
     <div className="relative" ref={dropdownRef}>
       <label className={styleConfig2.form.label}>{label}</label>
       <div
-        className={`${styleConfig2.input.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <span className={`${!value ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
@@ -182,11 +184,38 @@ const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled =
   );
 };
 
+// Custom Select component that uses styleConfig2
+const StyledSelect = ({ label, value, onChange, disabled, children, error }) => {
+  return (
+    <div>
+      <label className={styleConfig2.form.label}>{label}</label>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`${styleConfig2.select.default} ${error ? styleConfig2.input.error : ''}`}
+      >
+        {children}
+      </select>
+    </div>
+  );
+};
+
 // Display component for showing info in read-only mode
 const InfoDisplay = ({ label, value, className = "", isPlaceholder = false }) => (
   <div className={className}>
     <dt className={styleConfig2.display.item.label}>{label}</dt>
-    <dd className={styleConfig2.display.item.value}>{value || styleConfig2.display.item.empty}</dd>
+    <dd 
+      className="text-gray-900" 
+      style={{ 
+        WebkitTextStroke: '0.6px #1f2937',
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        fontSize: '15px'
+      }}
+    >
+      {value || styleConfig2.display.item.empty}
+    </dd>
   </div>
 );
 
@@ -199,10 +228,15 @@ const PersonalInfoSection = ({
   cancelEdit, 
   savePersonalInfo, 
   savingSection,
-  memberCategory 
+  memberCategory,
+  sectionImage,  // Add this prop
+  sectionLabel   // Add this prop
 }) => {
   // Add state for mobile
   const [isMobile, setIsMobile] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
 
   useEffect(() => {
     console.log('🔍 === PersonalInfoSection RENDER ===');
@@ -232,6 +266,84 @@ const PersonalInfoSection = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Add loading animation styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .personal-section-fade-in {
+        animation: personalFadeIn 0.8s ease-out forwards;
+      }
+      .personal-section-slide-in {
+        animation: personalSlideIn 0.8s ease-out forwards;
+      }
+      .personal-section-stagger-in > * {
+        opacity: 0;
+        animation: personalSlideIn 0.5s ease-out forwards;
+      }
+      .personal-section-stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
+      .personal-section-stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
+      .personal-section-stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
+      .personal-section-stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+      .personal-section-stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
+      .personal-section-stagger-in > *:nth-child(6) { animation-delay: 0.3s; }
+      .personal-section-stagger-in > *:nth-child(7) { animation-delay: 0.35s; }
+      .personal-section-stagger-in > *:nth-child(8) { animation-delay: 0.4s; }
+      .personal-section-stagger-in > *:nth-child(9) { animation-delay: 0.45s; }
+      .personal-section-stagger-in > *:nth-child(10) { animation-delay: 0.5s; }
+      .personal-section-stagger-in > *:nth-child(11) { animation-delay: 0.55s; }
+      .personal-section-stagger-in > *:nth-child(12) { animation-delay: 0.6s; }
+      .personal-section-stagger-in > *:nth-child(13) { animation-delay: 0.65s; }
+      .personal-section-stagger-in > *:nth-child(14) { animation-delay: 0.7s; }
+      .personal-section-stagger-in > *:nth-child(15) { animation-delay: 0.75s; }
+      .personal-section-stagger-in > *:nth-child(16) { animation-delay: 0.8s; }
+      @keyframes personalFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes personalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Intersection Observer for scroll-triggered animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          setTimeout(() => setHasLoaded(true), 100);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
 
   // Mapping functions for citizenship values
   const mapCitizenshipFromBackend = (backendValue) => {
@@ -535,7 +647,7 @@ const PersonalInfoSection = ({
   };
 
   return (
-    <div className={isMobile ? "" : styleConfig2.section.wrapperEnhanced}>
+    <div ref={sectionRef} className={`${isMobile ? "" : styleConfig2.section.wrapperEnhanced} ${hasLoaded && isVisible ? 'personal-section-fade-in' : 'opacity-0'}`}>
       {isMobile ? (
         <MobileInfoCard
           iconComponent={
@@ -544,15 +656,15 @@ const PersonalInfoSection = ({
             </svg>
           }
           title="Personal Information"
-          preview={getMobilePreview()}
+          backgroundImage={formsHeaderImage}
+          overlayText="Personal Details"
           subtitle="Additional personal details for your member file."
           isEditMode={editMode.personal}
-          className="overflow-hidden"
         >
           {/* Display Mode */}
           {!editMode.personal ? (
             <>
-              <div className="space-y-4">
+              <div className={`space-y-4 ${hasLoaded && isVisible ? 'personal-section-stagger-in' : ''}`}>
                 <div className="grid grid-cols-2 gap-4">
                   <DisplayField label="Birth Name" value={personalInfo.birthName || 'Same as current'} />
                   <DisplayField label="SSN/Gov ID" value={formatSSN(personalInfo.ssn)} />
@@ -657,154 +769,189 @@ const PersonalInfoSection = ({
       ) : (
         /* Desktop view */
         <div className={styleConfig2.section.innerPadding}>
-          {/* Desktop Header */}
-          <div className={styleConfig2.header.wrapper}>
-            <div className={styleConfig2.sectionIcons.personal}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className={styleConfig2.header.textContainer}>
-              <h2 className={styleConfig2.header.title}>Personal Information</h2>
-              <p className={styleConfig2.header.subtitle}>
-                Additional personal details for your member file.
-              </p>
+          {/* Desktop Header Section */}
+          <div className={`relative pb-6 mb-6 border-b border-gray-200 ${hasLoaded && isVisible ? 'personal-section-slide-in' : ''}`}>
+            {/* Header content */}
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <div className={styleConfig2.header.wrapper}>
+                  <div className={styleConfig2.sectionIcons.personal}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div className={styleConfig2.header.textContainer}>
+                    <h2 className={styleConfig2.header.title}>Personal Information</h2>
+                    <p className="text-gray-600 text-base mt-1">
+                      Additional personal details for your member file.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image on right side */}
+              {sectionImage && (
+                <div className="flex-shrink-0 ml-8">
+                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={sectionImage} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    {sectionLabel && (
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
+                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
+                            {sectionLabel}
+                            <img src={alcorStar} alt="" className="w-3 h-3" />
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Desktop Content */}
-          {/* Display Mode */}
-          {!editMode.personal ? (
-            <dl className={styleConfig2.display.dl.wrapperThree}>
-              <div>
-                <dt className={styleConfig2.display.item.label}>Birth Name</dt>
-                <dd className={styleConfig2.display.item.value}>
-                  {personalInfo.birthName || 'Same as current'}
-                </dd>
-              </div>
-              <InfoDisplay 
-                label="SSN/Government ID Number" 
-                value={formatSSN(personalInfo.ssn)} 
-              />
-              <InfoDisplay 
-                label="Gender" 
-                value={personalInfo.gender} 
-              />
-              <InfoDisplay 
-                label="Race" 
-                value={formatMultipleSelections(personalInfo.race)} 
-              />
-              <InfoDisplay 
-                label="Ethnicity" 
-                value={personalInfo.ethnicity} 
-              />
-              <InfoDisplay 
-                label="Citizenship" 
-                value={formatMultipleSelections(personalInfo.citizenship)} 
-              />
-              <InfoDisplay 
-                label="Place of Birth" 
-                value={personalInfo.placeOfBirth} 
-              />
-              <InfoDisplay 
-                label="Marital Status" 
-                value={personalInfo.maritalStatus} 
-              />
-            </dl>
-          ) : (
-            /* Edit Mode - Form */
-            <div className={styleConfig2.section.grid.twoColumn}>
-              <Input
-                label="Birth Name"
-                type="text"
-                value={personalInfo.birthName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
-                disabled={!editMode.personal}
-                placeholder="Same as current"
-              />
-              
-              <Select
-                label="Gender *"
-                value={personalInfo.gender || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
-                disabled={!editMode.personal}
-              >
-                <option value="">Select...</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </Select>
-              
-              <MultiSelectDropdown
-                label="Race"
-                options={raceOptions}
-                value={personalInfo.race || []}
-                onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
-                disabled={!editMode.personal}
-              />
-              
-              <SingleSelectDropdown
-                label="Ethnicity"
-                options={ethnicityOptions}
-                value={personalInfo.ethnicity || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
-                disabled={!editMode.personal}
-              />
-              
-              <MultiSelectDropdown
-                label="Citizenship"
-                options={citizenshipOptions}
-                value={mappedCitizenshipValue}
-                onChange={(selected) => {
-                  // Map back to backend format when saving
-                  const backendValues = selected.map(mapCitizenshipToBackend);
-                  setPersonalInfo({...personalInfo, citizenship: backendValues});
-                }}
-                disabled={!editMode.personal}
-              />
-              
-              <Input
-                label="Place of Birth"
-                type="text"
-                value={personalInfo.placeOfBirth || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
-                disabled={!editMode.personal}
-              />
-              
-              <SingleSelectDropdown
-                label="Marital Status"
-                options={maritalStatusOptions}
-                value={personalInfo.maritalStatus || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
-                disabled={!editMode.personal}
-              />
-            </div>
-          )}
-          
-          <div className="flex justify-end mt-6">
-            {editMode?.personal ? (
-              <div className="flex">
-                <WhiteButton
-                  text="Cancel"
-                  onClick={() => cancelEdit && cancelEdit('personal')}
-                  className="scale-75 -mr-8"
-                  spinStar={false}
-                />
-                <PurpleButton
-                  text={savingSection === 'saved' ? 'Saved' : savingSection === 'personal' ? 'Saving...' : 'Save'}
-                  onClick={savePersonalInfo}
-                  className="scale-75"
-                  spinStar={false}
-                />
+          {/* Desktop Content - Fields Section */}
+          <div className="bg-white">
+            {/* Display Mode */}
+            {!editMode.personal ? (
+              <div className={`max-w-2xl ${hasLoaded && isVisible ? 'personal-section-stagger-in' : ''}`}>
+                <dl className={styleConfig2.display.dl.wrapperThree}>
+                  <InfoDisplay 
+                    label="Birth Name" 
+                    value={personalInfo.birthName || 'Same as current'} 
+                  />
+                  <InfoDisplay 
+                    label="SSN/Government ID Number" 
+                    value={formatSSN(personalInfo.ssn)} 
+                  />
+                  <InfoDisplay 
+                    label="Gender" 
+                    value={personalInfo.gender} 
+                  />
+                  <InfoDisplay 
+                    label="Race" 
+                    value={formatMultipleSelections(personalInfo.race)} 
+                  />
+                  <InfoDisplay 
+                    label="Ethnicity" 
+                    value={personalInfo.ethnicity} 
+                  />
+                  <InfoDisplay 
+                    label="Citizenship" 
+                    value={formatMultipleSelections(personalInfo.citizenship)} 
+                  />
+                  <InfoDisplay 
+                    label="Place of Birth" 
+                    value={personalInfo.placeOfBirth} 
+                  />
+                  <InfoDisplay 
+                    label="Marital Status" 
+                    value={personalInfo.maritalStatus} 
+                  />
+                </dl>
               </div>
             ) : (
-              <RainbowButton
-                text="Edit"
-                onClick={() => toggleEditMode && toggleEditMode('personal')}
-                className="scale-75"
-                spinStar={true}
-              />
+              /* Edit Mode - Form */
+              <div className="max-w-2xl">
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Birth Name"
+                    type="text"
+                    value={personalInfo.birthName || ''}
+                    onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
+                    disabled={!editMode.personal}
+                    placeholder="Same as current"
+                  />
+                  
+                  <StyledSelect
+                    label="Gender *"
+                    value={personalInfo.gender || ''}
+                    onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                    disabled={!editMode.personal}
+                  >
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </StyledSelect>
+                  
+                  <MultiSelectDropdown
+                    label="Race"
+                    options={raceOptions}
+                    value={personalInfo.race || []}
+                    onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
+                    disabled={!editMode.personal}
+                  />
+                  
+                  <SingleSelectDropdown
+                    label="Ethnicity"
+                    options={ethnicityOptions}
+                    value={personalInfo.ethnicity || ''}
+                    onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
+                    disabled={!editMode.personal}
+                  />
+                  
+                  <MultiSelectDropdown
+                    label="Citizenship"
+                    options={citizenshipOptions}
+                    value={mappedCitizenshipValue}
+                    onChange={(selected) => {
+                      // Map back to backend format when saving
+                      const backendValues = selected.map(mapCitizenshipToBackend);
+                      setPersonalInfo({...personalInfo, citizenship: backendValues});
+                    }}
+                    disabled={!editMode.personal}
+                  />
+                  
+                  <Input
+                    label="Place of Birth"
+                    type="text"
+                    value={personalInfo.placeOfBirth || ''}
+                    onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
+                    disabled={!editMode.personal}
+                  />
+                  
+                  <SingleSelectDropdown
+                    label="Marital Status"
+                    options={maritalStatusOptions}
+                    value={personalInfo.maritalStatus || ''}
+                    onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
+                    disabled={!editMode.personal}
+                  />
+                </div>
+              </div>
             )}
+            
+            {/* Action buttons */}
+            <div className="flex justify-end mt-6 -mr-8">
+              {editMode?.personal ? (
+                <div className="flex">
+                  <WhiteButton
+                    text="Cancel"
+                    onClick={() => cancelEdit && cancelEdit('personal')}
+                    className="scale-75 -mr-8"
+                    spinStar={false}
+                  />
+                  <PurpleButton
+                    text={savingSection === 'saved' ? 'Saved' : savingSection === 'personal' ? 'Saving...' : 'Save'}
+                    onClick={savePersonalInfo}
+                    className="scale-75"
+                    spinStar={false}
+                  />
+                </div>
+              ) : (
+                <RainbowButton
+                  text="Edit"
+                  onClick={() => toggleEditMode && toggleEditMode('personal')}
+                  className="scale-75"
+                  spinStar={true}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

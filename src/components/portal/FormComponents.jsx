@@ -1,7 +1,7 @@
 // FormComponents.jsx - Reusable form components with consistent styling
 
 import React from 'react';
-import styleConfig, { combineClasses } from './styleConfig';
+import styleConfig2, { combineClasses } from './styleConfig2';
 
 // Input Component
 export const Input = ({ 
@@ -13,15 +13,15 @@ export const Input = ({
   ...props 
 }) => {
   const inputClasses = combineClasses(
-    styleConfig.input.default,
-    error && styleConfig.input.error,
+    styleConfig2.input.default,
+    error && styleConfig2.input.error,
     className
   );
 
   return (
     <div className={containerClassName}>
       {label && (
-        <label className={combineClasses(styleConfig.form.label, labelClassName)}>
+        <label className={combineClasses(styleConfig2.form.label, labelClassName)}>
           {label}
         </label>
       )}
@@ -43,15 +43,15 @@ export const Textarea = ({
   ...props 
 }) => {
   const textareaClasses = combineClasses(
-    styleConfig.input.textarea,
-    error && styleConfig.input.error,
+    styleConfig2.input.textarea,
+    error && styleConfig2.input.error,
     className
   );
 
   return (
     <div className={containerClassName}>
       {label && (
-        <label className={combineClasses(styleConfig.form.label, labelClassName)}>
+        <label className={combineClasses(styleConfig2.form.label, labelClassName)}>
           {label}
         </label>
       )}
@@ -75,15 +75,15 @@ export const Select = ({
   ...props 
 }) => {
   const selectClasses = combineClasses(
-    multiple ? styleConfig.select.multiple : styleConfig.select.default,
-    error && styleConfig.input.error,
+    multiple ? styleConfig2.select.multiple : styleConfig2.select.default,
+    error && styleConfig2.input.error,
     className
   );
 
   return (
     <div className={containerClassName}>
       {label && (
-        <label className={combineClasses(styleConfig.form.label, labelClassName)}>
+        <label className={combineClasses(styleConfig2.form.label, labelClassName)}>
           {label}
         </label>
       )}
@@ -107,10 +107,10 @@ export const Checkbox = ({
 }) => {
   return (
     <div className={containerClassName}>
-      <label className={combineClasses(styleConfig.form.labelCheckbox, labelClassName)}>
+      <label className={combineClasses(styleConfig2.form.labelCheckbox, labelClassName)}>
         <input 
           type="checkbox" 
-          className={combineClasses(styleConfig.input.checkbox, className)}
+          className={combineClasses(styleConfig2.input.checkbox, className)}
           {...props} 
         />
         {label}
@@ -128,7 +128,7 @@ export const Button = ({
   ...props 
 }) => {
   const buttonClasses = combineClasses(
-    styleConfig.button[`${variant}Button`],
+    styleConfig2.button[`${variant}Button`],
     className
   );
 
@@ -159,9 +159,9 @@ export const Section = ({
   titleClassName = '' 
 }) => {
   return (
-    <div className={combineClasses(styleConfig.section.wrapper, className)}>
+    <div className={combineClasses(styleConfig2.section.wrapper, className)}>
       {title && (
-        <h2 className={combineClasses(styleConfig.section.title, titleClassName)}>
+        <h2 className={combineClasses(styleConfig2.section.title, titleClassName)}>
           {title}
         </h2>
       )}
@@ -177,10 +177,10 @@ export const ButtonGroup = ({
   children 
 }) => {
   const alignmentClass = {
-    start: styleConfig.buttonGroup.wrapperLeft,
-    center: styleConfig.buttonGroup.wrapperCenter,
-    end: styleConfig.buttonGroup.wrapper
-  }[align] || styleConfig.buttonGroup.wrapper;
+    start: styleConfig2.buttonGroup.wrapperLeft,
+    center: styleConfig2.buttonGroup.wrapperCenter,
+    end: styleConfig2.buttonGroup.wrapper
+  }[align] || styleConfig2.buttonGroup.wrapper;
 
   return (
     <div className={combineClasses(alignmentClass, className)}>
@@ -197,8 +197,8 @@ export const Alert = ({
   onClose 
 }) => {
   const alertClasses = combineClasses(
-    styleConfig.alert.base,
-    styleConfig.alert[type],
+    styleConfig2.alert.base,
+    styleConfig2.alert[type],
     className
   );
 
@@ -224,10 +224,10 @@ export const Alert = ({
 // Loading Component
 export const Loading = ({ text = "Loading..." }) => {
   return (
-    <div className={styleConfig.loading.wrapper}>
+    <div className={styleConfig2.loading.wrapper}>
       <div className="text-center">
-        <div className={styleConfig.loading.spinner}></div>
-        <p className={styleConfig.loading.text}>{text}</p>
+        <div className={styleConfig2.loading.spinner}></div>
+        <p className={styleConfig2.loading.text}>{text}</p>
       </div>
     </div>
   );
@@ -240,7 +240,7 @@ export const Card = ({
   children 
 }) => {
   const cardClasses = combineClasses(
-    styleConfig.card[variant],
+    styleConfig2.card[variant],
     className
   );
 

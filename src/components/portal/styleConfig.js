@@ -5,13 +5,14 @@ const styleConfig = {
   section: {
     wrapper: "bg-white rounded-lg shadow-sm p-8 mb-6",
     // Mobile: no margins for full width, darker border, more rounded corners, stronger shadow. Desktop: rounded with shadow
-    wrapperEnhanced: "bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 mx-0 sm:mx-0",
+    // styleConfig.js
+    wrapperEnhanced: "bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-[5%] sm:mx-0",
     // Updated to match FormsTab shadow and border
     wrapperConsistent: "bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden",
     // Box shadow to match FormsTab
-    boxShadow: { boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)' },
+    boxShadow: { boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' },
     innerPadding: "px-4 py-6 sm:p-6 md:p-8",
-    title: "text-xl font-semibold text-gray-800 mb-6", // Changed from font-medium to font-semibold, changed color
+    title: "text-xl font-bold text-gray-800 mb-6", // Changed to font-bold
     grid: {
       twoColumn: "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6",
       fourColumn: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",
@@ -19,15 +20,15 @@ const styleConfig = {
     }
   },
  
-  // Header with icon styles - Updated to match FormsTab
+  // Header with icon styles - Updated to match Membership Status
   header: {
     wrapper: "mb-8 md:mb-9 flex items-start",
-    iconContainer: "p-3 rounded-lg transform transition duration-300", // Matches FormsTab
-    icon: "h-6 w-6 text-white stroke-[1.5]", // Matches FormsTab icon size with thin stroke
-    iconStrokeWidth: "1.5", // Matches FormsTab stroke width
+    iconContainer: "p-3.5 rounded-lg transform transition duration-300", // Changed to p-3.5 like Membership Status
+    icon: "w-7 h-7 text-white stroke-[1.5]", // Changed to w-7 h-7 to match
+    iconStrokeWidth: "1.5",
     textContainer: "ml-4 pt-0.5",
-    title: "text-xl font-semibold text-gray-800", // Changed from text-2xl font-light to text-xl font-semibold
-    subtitle: "text-sm text-gray-600 font-normal mt-0.5" // Changed from text-gray-500 font-light to text-gray-600 font-normal
+    title: "text-xl font-bold text-gray-800", // Changed to font-bold
+    subtitle: "text-xs text-gray-500 mt-0.5" // Changed to text-xs and text-gray-500
   },
  
   // Section separator - Shows on both mobile and desktop
@@ -38,16 +39,16 @@ const styleConfig = {
  
   // Section-specific icon styles with gradient progression
   sectionIcons: {
-    contact: "bg-[#0e0e2f] p-3 rounded-lg transform transition duration-300",      // Start of gradient
-    personal: "bg-[#1b163a] p-3 rounded-lg transform transition duration-300",     // ~10% through
-    addresses: "bg-[#2a1b3d] p-3 rounded-lg transform transition duration-300",    // ~20% through
-    family: "bg-[#3f2541] p-3 rounded-lg transform transition duration-300",       // ~30% through
-    occupation: "bg-[#5b2f4b] p-3 rounded-lg transform transition duration-300",   // ~40% through
-    medical: "bg-[#74384d] p-3 rounded-lg transform transition duration-300",      // ~50% through
-    cryo: "bg-[#914451] p-3 rounded-lg transform transition duration-300",         // ~60% through
-    funding: "bg-[#a04c56] p-3 rounded-lg transform transition duration-300",      // ~70% through
-    legal: "bg-[#b66e5d] p-3 rounded-lg transform transition duration-300",        // ~80% through
-    nextOfKin: "bg-[#cb8863] p-3 rounded-lg transform transition duration-300"     // ~90% through
+    contact: "bg-[#0e0e2f] p-3.5 rounded-lg transform transition duration-300",
+    personal: "bg-[#1b163a] p-3.5 rounded-lg transform transition duration-300",
+    addresses: "bg-[#2a1b3d] p-3.5 rounded-lg transform transition duration-300",
+    family: "bg-[#3f2541] p-3.5 rounded-lg transform transition duration-300",
+    occupation: "bg-[#5b2f4b] p-3.5 rounded-lg transform transition duration-300",
+    medical: "bg-[#74384d] p-3.5 rounded-lg transform transition duration-300",
+    cryo: "bg-[#914451] p-3.5 rounded-lg transform transition duration-300",
+    funding: "bg-[#a04c56] p-3.5 rounded-lg transform transition duration-300",
+    legal: "bg-[#b66e5d] p-3.5 rounded-lg transform transition duration-300",
+    nextOfKin: "bg-[#cb8863] p-3.5 rounded-lg transform transition duration-300"
   },
  
   // Editable configuration for sections and fields
@@ -244,7 +245,7 @@ const styleConfig = {
     }
   },
  
-  // Display mode styles
+  // Display mode styles - Updated to match Membership Status tab
   display: {
     // Grid layouts for display mode
     grid: {
@@ -261,12 +262,12 @@ const styleConfig = {
       wrapperTwo: "grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2 md:gap-x-6",
       wrapperThree: "grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2 lg:grid-cols-3 md:gap-x-6"
     },
-    // Individual display item styles
+    // Individual display item styles - Updated to match Membership Status
     item: {
-      wrapper: "", // Can add default wrapper styles if needed
-      label: "text-sm text-gray-600 font-normal", // Changed from text-gray-500 font-light to text-gray-600 font-normal
-      value: "mt-1 text-base font-medium text-gray-800", // Changed from text-gray-900 to text-gray-800, added font-medium
-      valueWithWrap: "mt-1 text-base font-medium text-gray-800 whitespace-pre-wrap",
+      wrapper: "",
+      label: "text-xs lg:text-sm text-gray-400 mb-1 lg:mb-2", // Changed to match Membership Status
+      value: "text-base lg:text-lg font-normal text-gray-800", // Changed to match Membership Status
+      valueWithWrap: "text-base lg:text-lg font-normal text-gray-800 whitespace-pre-wrap",
       empty: "—"
     },
     // Non-editable field in edit mode
@@ -277,28 +278,28 @@ const styleConfig = {
  
   // Form elements
   form: {
-    label: "block text-gray-700 text-sm font-semibold mb-2", // Changed from font-medium to font-semibold
+    label: "block text-gray-700 text-sm font-semibold mb-2",
     labelCheckbox: "flex items-center text-gray-700 text-sm font-normal cursor-pointer",
     fieldSpacing: "space-y-6",
     subSection: "pl-4 border-l-2 border-gray-200"
   },
  
-  // Input styles - Already reduced padding
+  // Input styles
   input: {
-    base: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 text-gray-900 font-normal", // Back to border-gray-300
+    base: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 text-gray-900 font-normal",
     disabled: "disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500",
     error: "border-red-500 focus:border-red-500 focus:ring-red-500/20",
-    // Combined classes - text size already reduced
-    default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 text-base text-gray-900 font-normal", // Back to border-gray-300
+    // Combined classes
+    default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 text-base text-gray-900 font-normal",
     // Specific input types
     checkbox: "mr-2 w-4 h-4 rounded border-gray-300 text-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/20",
-    textarea: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 resize-none hover:border-gray-400 text-base text-gray-900 font-normal" // Back to border-gray-300
+    textarea: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 resize-none hover:border-gray-400 text-base text-gray-900 font-normal"
   },
  
   // Select/Dropdown styles
   select: {
-    default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 bg-white text-base text-gray-900 font-normal appearance-none", // Back to border-gray-300
-    multiple: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 min-h-[120px] bg-white text-base text-gray-900 font-normal" // Back to border-gray-300
+    default: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 bg-white text-base text-gray-900 font-normal appearance-none",
+    multiple: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] focus:ring-2 focus:ring-[#0a1629]/10 transition-all duration-200 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 hover:border-gray-400 min-h-[120px] bg-white text-base text-gray-900 font-normal"
   },
  
   // Button styles
@@ -357,7 +358,7 @@ const styleConfig = {
   loading: {
     wrapper: "flex items-center justify-center h-64",
     spinner: "animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4",
-    text: "text-gray-600 font-light" // Added font-light
+    text: "text-gray-600 font-normal"
   },
  
   // Card styles for subsections
@@ -366,17 +367,17 @@ const styleConfig = {
     highlighted: "mb-6 p-4 border border-[#0a1629] rounded-lg bg-gray-50"
   },
  
-  // Typography
+  // Typography - Updated to match Membership Status
   text: {
     heading: {
-      h1: "text-2xl font-semibold text-gray-800 mb-8", // Changed from text-3xl font-light
-      h2: "text-xl font-semibold text-gray-800 mb-6", // Changed from font-medium
-      h3: "text-lg font-semibold text-gray-800 mb-4" // Changed from font-medium
+      h1: "text-2xl font-bold text-gray-800 mb-8",
+      h2: "text-xl font-bold text-gray-800 mb-6",
+      h3: "text-lg font-semibold text-gray-900 mb-1" // Changed to match Membership Status
     },
     body: {
       default: "text-gray-700",
-      small: "text-sm text-gray-600 font-light", // Added font-light
-      muted: "text-gray-500 font-light" // Added font-light
+      small: "text-sm text-gray-500", // Changed to match Membership Status
+      muted: "text-gray-500"
     }
   }
  };

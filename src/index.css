@@ -1,9 +1,11 @@
-/* Aggressive size fix - force exact pixel values */
+/* Import Tailwind FIRST */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Basic resets */
 html {
   font-size: 16px !important;
-  zoom: 1 !important;
-  transform: none !important;
-  -webkit-transform: none !important;
   -webkit-text-size-adjust: 100% !important;
   -moz-text-size-adjust: 100% !important;
   -ms-text-size-adjust: 100% !important;
@@ -13,63 +15,31 @@ html {
 body {
   font-size: 16px !important;
   line-height: 1.5 !important;
-  zoom: 1 !important;
-  transform: none !important;
-  -webkit-transform: none !important;
+  font-family: 'Roboto', sans-serif;
 }
 
-/* Force specific Tailwind classes to exact pixel values */
-.text-4xl {
-  font-size: 36px !important;
-  line-height: 40px !important;
+/* FORCE MOBILE VIEW FOR TOUCH DEVICES AND SCREENS UNDER 1280px */
+@media (pointer: coarse), (max-width: 1279px) {
+  /* Hide ALL desktop elements */
+  .md\:block { display: none !important; }
+  .md\:flex { display: none !important; }
+  .md\:inline-block { display: none !important; }
+  .md\:inline-flex { display: none !important; }
+  .md\:grid { display: none !important; }
+  .lg\:block { display: none !important; }
+  .lg\:flex { display: none !important; }
+  .lg\:inline-block { display: none !important; }
+  .lg\:inline-flex { display: none !important; }
+  .lg\:grid { display: none !important; }
+  
+  /* Show ALL mobile elements */
+  .md\:hidden { display: block !important; }
+  .lg\:hidden { display: block !important; }
 }
 
-.text-2xl {
-  font-size: 24px !important;
-  line-height: 32px !important;
-}
-
-.text-xl {
-  font-size: 20px !important;
-  line-height: 28px !important;
-}
-
-.text-lg {
-  font-size: 18px !important;
-  line-height: 26px !important;
-}
-
-.text-base {
-  font-size: 16px !important;
-  line-height: 24px !important;
-}
-
-/* Force padding/margins to exact values */
-.p-8 {
-  padding: 32px !important;
-}
-
-.p-10 {
-  padding: 40px !important;
-}
-
-.py-4 {
-  padding-top: 16px !important;
-  padding-bottom: 16px !important;
-}
-
-.px-8 {
-  padding-left: 32px !important;
-  padding-right: 32px !important;
-}
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/* Base styles */
 @layer base {
   html, body {
-    font-size: 16px;
     width: 100%;
     max-width: 100%;
     height: 100%;
@@ -100,26 +70,25 @@ body {
   }
 }
 
+/* Logo styles */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {

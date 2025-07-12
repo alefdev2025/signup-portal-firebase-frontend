@@ -3,6 +3,8 @@ import { Input, Select, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2, { isFieldVisibleInEditMode, getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
 import { 
   formatPersonName, 
   formatEmail, 
@@ -19,7 +21,17 @@ import {
 const InfoDisplay = ({ label, value, className = "" }) => (
   <div className={className}>
     <dt className={styleConfig2.display.item.label}>{label}</dt>
-    <dd className={styleConfig2.display.item.value}>{value || styleConfig2.display.item.empty}</dd>
+    <dd 
+      className="text-gray-900" 
+      style={{ 
+        WebkitTextStroke: '0.6px #1f2937',
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        fontSize: '15px'
+      }}
+    >
+      {value || styleConfig2.display.item.empty}
+    </dd>
   </div>
 );
 
@@ -32,7 +44,9 @@ const NextOfKinSection = ({
   saveNextOfKin, 
   savingSection,
   memberCategory,
-  fieldErrors = {}
+  fieldErrors = {},
+  sectionImage,  // Add this prop
+  sectionLabel   // Add this prop
 }) => {
   
   // Add state for mobile collapse
@@ -255,7 +269,8 @@ const NextOfKinSection = ({
             </svg>
           }
           title="Emergency Contacts"
-          preview={getMobilePreview()}
+          backgroundImage={formsHeaderImage}
+          overlayText="Emergency Info"
           subtitle="Emergency contacts and family members who can be contacted on your behalf."
           isEditMode={editMode.nextOfKin}
         >
@@ -494,273 +509,307 @@ const NextOfKinSection = ({
       ) : (
         /* Desktop view */
         <div className={styleConfig2.section.innerPadding}>
-          {/* Desktop Header */}
-          <div className={styleConfig2.header.wrapper}>
-            <div className={styleConfig2.sectionIcons.nextOfKin || styleConfig2.sectionIcons.default}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-              </svg>
-            </div>
-            <div className={styleConfig2.header.textContainer}>
-              <h2 className={styleConfig2.header.title}>Emergency Contacts</h2>
-              <p className={styleConfig2.header.subtitle}>
-                Emergency contacts and family members who can be contacted on your behalf.
-              </p>
+          {/* Desktop Header Section */}
+          <div className="relative pb-6 mb-6 border-b border-gray-200">
+            {/* Header content */}
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <div className={styleConfig2.header.wrapper}>
+                  <div className={styleConfig2.sectionIcons.nextOfKin || styleConfig2.sectionIcons.default}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                    </svg>
+                  </div>
+                  <div className={styleConfig2.header.textContainer}>
+                    <h2 className={styleConfig2.header.title}>Emergency Contacts</h2>
+                    <p className="text-gray-600 text-base mt-1">
+                      Emergency contacts and family members who can be contacted on your behalf.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image on right side */}
+              {sectionImage && (
+                <div className="flex-shrink-0 ml-8">
+                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={sectionImage} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    {sectionLabel && (
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
+                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
+                            {sectionLabel}
+                            <img src={alcorStar} alt="" className="w-3 h-3" />
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Desktop Content */}
-          {!editMode.nextOfKin ? (
-            nextOfKinList.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No next of kin information on file</p>
+          {/* Desktop Content - Fields Section */}
+          <div className="bg-white">
+            {/* Desktop Display Mode */}
+            {!editMode.nextOfKin ? (
+              nextOfKinList.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No next of kin information on file</p>
+              ) : (
+                <div className="space-y-8 max-w-4xl">
+                  {nextOfKinList.map((nok, index) => (
+                    <div key={nok.id || index} className="border-b border-gray-200 pb-6 last:border-0">
+                      <h3 className="text-lg font-medium text-[#2a2346] mb-4">
+                        {`${nok.firstName} ${nok.lastName}`.trim() || `Next of Kin ${index + 1}`}
+                      </h3>
+                      <dl className={styleConfig2.display.dl.wrapperThree}>
+                        <InfoDisplay label="First Name" value={nok.firstName} />
+                        <InfoDisplay label="Middle Name" value={nok.middleName} />
+                        <InfoDisplay label="Last Name" value={nok.lastName} />
+                        <InfoDisplay label="Relationship" value={nok.relationship} />
+                        <InfoDisplay label="Date of Birth" value={formatDateForDisplay(nok.dateOfBirth)} />
+                        <InfoDisplay label="Email" value={nok.email} />
+                        <InfoDisplay label="Mobile Phone" value={formatPhoneDisplay(nok.mobilePhone)} />
+                        <InfoDisplay label="Home Phone" value={formatPhoneDisplay(nok.homePhone)} />
+                        <InfoDisplay label="Address" value={formatAddress(nok.address)} className="col-span-3" />
+                        <InfoDisplay label="Willing to Sign Affidavit" value={nok.willingToSignAffidavit} />
+                        {nok.comments && (
+                          <InfoDisplay label="Comments" value={nok.comments} className="col-span-3" />
+                        )}
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="space-y-8">
+              /* Desktop Edit Mode - Form */
+              <div className="space-y-6 max-w-4xl">
                 {nextOfKinList.map((nok, index) => (
-                  <div key={nok.id || index} className="border-b border-gray-200 pb-6 last:border-0">
-                    <h3 className="text-lg font-medium text-[#2a2346] mb-4">
-                      {`${nok.firstName} ${nok.lastName}`.trim() || `Next of Kin ${index + 1}`}
-                    </h3>
-                    <dl className={styleConfig2.display.dl.wrapperThree}>
-                      <InfoDisplay label="First Name" value={nok.firstName} />
-                      <InfoDisplay label="Middle Name" value={nok.middleName} />
-                      <InfoDisplay label="Last Name" value={nok.lastName} />
-                      <InfoDisplay label="Relationship" value={nok.relationship} />
-                      <InfoDisplay label="Date of Birth" value={formatDateForDisplay(nok.dateOfBirth)} />
-                      <InfoDisplay label="Email" value={nok.email} />
-                      <InfoDisplay label="Mobile Phone" value={formatPhoneDisplay(nok.mobilePhone)} />
-                      <InfoDisplay label="Home Phone" value={formatPhoneDisplay(nok.homePhone)} />
-                      <InfoDisplay label="Address" value={formatAddress(nok.address)} className="col-span-3" />
-                      <InfoDisplay label="Willing to Sign Affidavit" value={nok.willingToSignAffidavit} />
-                      {nok.comments && (
-                        <InfoDisplay label="Comments" value={nok.comments} className="col-span-3" />
+                  <div key={nok.id || index} className="border border-gray-200 rounded-lg p-6">
+                    <div className="flex justify-between items-start mb-6">
+                      <h3 className="text-lg font-medium text-[#2a2346]">Next of Kin {index + 1}</h3>
+                      {nextOfKinList.length > 0 && (
+                        <button
+                          onClick={() => removeNextOfKin(index)}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          disabled={savingSection === 'nextOfKin'}
+                        >
+                          Remove
+                        </button>
                       )}
-                    </dl>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            /* Edit Mode - Form */
-            <div className="space-y-6">
-              {nextOfKinList.map((nok, index) => (
-                <div key={nok.id || index} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-lg font-medium text-[#2a2346]">Next of Kin {index + 1}</h3>
-                    {nextOfKinList.length > 0 && (
-                      <button
-                        onClick={() => removeNextOfKin(index)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    </div>
+
+                    <div className={styleConfig2.section.grid.twoColumn}>
+                      <Input
+                        label="First Name *"
+                        type="text"
+                        value={nok.firstName || ''}
+                        onChange={(e) => updateNextOfKin(index, 'firstName', e.target.value)}
                         disabled={savingSection === 'nextOfKin'}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+                        error={getFieldError(index, 'firstName')}
+                      />
 
-                  <div className={styleConfig2.section.grid.twoColumn}>
-                    <Input
-                      label="First Name *"
-                      type="text"
-                      value={nok.firstName || ''}
-                      onChange={(e) => updateNextOfKin(index, 'firstName', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                      error={getFieldError(index, 'firstName')}
-                    />
+                      <Input
+                        label="Middle Name"
+                        type="text"
+                        value={nok.middleName || ''}
+                        onChange={(e) => updateNextOfKin(index, 'middleName', e.target.value)}
+                        disabled={savingSection === 'nextOfKin'}
+                      />
 
-                    <Input
-                      label="Middle Name"
-                      type="text"
-                      value={nok.middleName || ''}
-                      onChange={(e) => updateNextOfKin(index, 'middleName', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                    />
+                      <Input
+                        label="Last Name *"
+                        type="text"
+                        value={nok.lastName || ''}
+                        onChange={(e) => updateNextOfKin(index, 'lastName', e.target.value)}
+                        disabled={savingSection === 'nextOfKin'}
+                        error={getFieldError(index, 'lastName')}
+                      />
 
-                    <Input
-                      label="Last Name *"
-                      type="text"
-                      value={nok.lastName || ''}
-                      onChange={(e) => updateNextOfKin(index, 'lastName', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                      error={getFieldError(index, 'lastName')}
-                    />
+                      <Input
+                        label="Relationship *"
+                        type="text"
+                        value={nok.relationship || ''}
+                        onChange={(e) => updateNextOfKin(index, 'relationship', e.target.value)}
+                        placeholder="e.g., Spouse, Child, Parent"
+                        disabled={savingSection === 'nextOfKin'}
+                        error={getFieldError(index, 'relationship')}
+                      />
 
-                    <Input
-                      label="Relationship *"
-                      type="text"
-                      value={nok.relationship || ''}
-                      onChange={(e) => updateNextOfKin(index, 'relationship', e.target.value)}
-                      placeholder="e.g., Spouse, Child, Parent"
-                      disabled={savingSection === 'nextOfKin'}
-                      error={getFieldError(index, 'relationship')}
-                    />
+                      <Input
+                        label="Date of Birth"
+                        type="date"
+                        value={nok.dateOfBirth || ''}
+                        onChange={(e) => updateNextOfKin(index, 'dateOfBirth', e.target.value)}
+                        disabled={savingSection === 'nextOfKin'}
+                      />
 
-                    <Input
-                      label="Date of Birth"
-                      type="date"
-                      value={nok.dateOfBirth || ''}
-                      onChange={(e) => updateNextOfKin(index, 'dateOfBirth', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                    />
+                      <Input
+                        label="Email *"
+                        type="email"
+                        value={nok.email || ''}
+                        onChange={(e) => updateNextOfKin(index, 'email', e.target.value)}
+                        disabled={savingSection === 'nextOfKin'}
+                        error={getFieldError(index, 'email') || 
+                               (!validateEmail(nok.email) && nok.email ? 'Invalid email format' : '')}
+                      />
 
-                    <Input
-                      label="Email *"
-                      type="email"
-                      value={nok.email || ''}
-                      onChange={(e) => updateNextOfKin(index, 'email', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                      error={getFieldError(index, 'email') || 
-                             (!validateEmail(nok.email) && nok.email ? 'Invalid email format' : '')}
-                    />
+                      <Input
+                        label="Mobile Phone *"
+                        type="tel"
+                        value={nok.mobilePhone || ''}
+                        onChange={(e) => updateNextOfKin(index, 'mobilePhone', e.target.value)}
+                        placeholder="(555) 123-4567"
+                        disabled={savingSection === 'nextOfKin'}
+                        error={getFieldError(index, 'mobilePhone')}
+                      />
 
-                    <Input
-                      label="Mobile Phone *"
-                      type="tel"
-                      value={nok.mobilePhone || ''}
-                      onChange={(e) => updateNextOfKin(index, 'mobilePhone', e.target.value)}
-                      placeholder="(555) 123-4567"
-                      disabled={savingSection === 'nextOfKin'}
-                      error={getFieldError(index, 'mobilePhone')}
-                    />
+                      <Input
+                        label="Home Phone"
+                        type="tel"
+                        value={nok.homePhone || ''}
+                        onChange={(e) => updateNextOfKin(index, 'homePhone', e.target.value)}
+                        placeholder="(555) 123-4567"
+                        disabled={savingSection === 'nextOfKin'}
+                      />
 
-                    <Input
-                      label="Home Phone"
-                      type="tel"
-                      value={nok.homePhone || ''}
-                      onChange={(e) => updateNextOfKin(index, 'homePhone', e.target.value)}
-                      placeholder="(555) 123-4567"
-                      disabled={savingSection === 'nextOfKin'}
-                    />
-
-                    <div className="col-span-2">
-                      <h4 className="text-sm font-medium text-[#4a3d6b] mb-4">Address</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Input
-                            type="text"
-                            value={nok.address?.street1 || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.street1', e.target.value)}
-                            placeholder="Street Address Line 1"
-                            disabled={savingSection === 'nextOfKin'}
-                          />
-                        </div>
-                        
-                        <div className="md:col-span-2">
-                          <Input
-                            type="text"
-                            value={nok.address?.street2 || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.street2', e.target.value)}
-                            placeholder="Street Address Line 2"
-                            disabled={savingSection === 'nextOfKin'}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                          <Input
-                            type="text"
-                            value={nok.address?.city || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.city', e.target.value)}
-                            disabled={savingSection === 'nextOfKin'}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
-                          <Input
-                            type="text"
-                            value={nok.address?.state || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.state', e.target.value)}
-                            disabled={savingSection === 'nextOfKin'}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Zip/Postal Code</label>
-                          <Input
-                            type="text"
-                            value={nok.address?.postalCode || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.postalCode', e.target.value)}
-                            disabled={savingSection === 'nextOfKin'}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                          <Input
-                            type="text"
-                            value={nok.address?.country || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.country', e.target.value)}
-                            disabled={savingSection === 'nextOfKin'}
-                          />
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-medium text-[#4a3d6b] mb-4">Address</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="md:col-span-2">
+                            <Input
+                              type="text"
+                              value={nok.address?.street1 || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.street1', e.target.value)}
+                              placeholder="Street Address Line 1"
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
+                          
+                          <div className="md:col-span-2">
+                            <Input
+                              type="text"
+                              value={nok.address?.street2 || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.street2', e.target.value)}
+                              placeholder="Street Address Line 2"
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                            <Input
+                              type="text"
+                              value={nok.address?.city || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.city', e.target.value)}
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                            <Input
+                              type="text"
+                              value={nok.address?.state || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.state', e.target.value)}
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Zip/Postal Code</label>
+                            <Input
+                              type="text"
+                              value={nok.address?.postalCode || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.postalCode', e.target.value)}
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                            <Input
+                              type="text"
+                              value={nok.address?.country || ''}
+                              onChange={(e) => updateNextOfKin(index, 'address.country', e.target.value)}
+                              disabled={savingSection === 'nextOfKin'}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <Select
-                      label="Willing to Sign Affidavit?"
-                      value={nok.willingToSignAffidavit || ''}
-                      onChange={(e) => updateNextOfKin(index, 'willingToSignAffidavit', e.target.value)}
-                      disabled={savingSection === 'nextOfKin'}
-                      containerClassName="col-span-2"
-                    >
-                      <option value="">Select...</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                      <option value="Unknown">Unknown</option>
-                    </Select>
-
-                    <div className="col-span-2">
-                      <label className={styleConfig2.form.label}>
-                        Comments about attitude toward cryonics
-                      </label>
-                      <textarea
-                        value={nok.comments || ''}
-                        onChange={(e) => updateNextOfKin(index, 'comments', e.target.value)}
+                      <Select
+                        label="Willing to Sign Affidavit?"
+                        value={nok.willingToSignAffidavit || ''}
+                        onChange={(e) => updateNextOfKin(index, 'willingToSignAffidavit', e.target.value)}
                         disabled={savingSection === 'nextOfKin'}
-                        rows={3}
-                        className={styleConfig2.form.textarea || "w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] disabled:bg-gray-100"}
-                      />
+                        containerClassName="col-span-2"
+                      >
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="Unknown">Unknown</option>
+                      </Select>
+
+                      <div className="col-span-2">
+                        <label className={styleConfig2.form.label}>
+                          Comments about attitude toward cryonics
+                        </label>
+                        <textarea
+                          value={nok.comments || ''}
+                          onChange={(e) => updateNextOfKin(index, 'comments', e.target.value)}
+                          disabled={savingSection === 'nextOfKin'}
+                          rows={3}
+                          className={styleConfig2.form.textarea || "w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0a1629] disabled:bg-gray-100"}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              <button
-                onClick={addNextOfKin}
-                className="w-full px-4 py-2 text-[#0a1629] border border-[#0a1629] rounded-lg hover:bg-gray-50 font-medium"
-                disabled={savingSection === 'nextOfKin'}
-              >
-                {nextOfKinList.length > 0 ? 'Add Another Next of Kin' : 'Add Next of Kin'}
-              </button>
-            </div>
-          )}
-          
-          <div className="flex justify-end mt-6">
-            {editMode?.nextOfKin ? (
-              <div className="flex">
-                <WhiteButton
-                  text="Cancel"
-                  onClick={() => cancelEdit && cancelEdit('nextOfKin')}
-                  className="scale-75 -mr-8"
-                  spinStar={false}
+                <button
+                  onClick={addNextOfKin}
+                  className="w-full px-4 py-2 text-[#0a1629] border border-[#0a1629] rounded-lg hover:bg-gray-50 font-medium"
                   disabled={savingSection === 'nextOfKin'}
-                />
-                <PurpleButton
-                  text={savingSection === 'saved' ? 'Saved' : savingSection === 'nextOfKin' ? 'Saving...' : 'Save'}
-                  onClick={handleSaveNextOfKin}
-                  className="scale-75"
-                  spinStar={false}
-                  disabled={savingSection === 'nextOfKin'}
-                />
+                >
+                  {nextOfKinList.length > 0 ? 'Add Another Next of Kin' : 'Add Next of Kin'}
+                </button>
               </div>
-            ) : (
-              <RainbowButton
-                text="Edit"
-                onClick={() => toggleEditMode && toggleEditMode('nextOfKin')}
-                className="scale-75"
-                spinStar={true}
-              />
             )}
+            
+            {/* Desktop Button Group */}
+            <div className="flex justify-end mt-6 -mr-8">
+              {editMode?.nextOfKin ? (
+                <div className="flex">
+                  <WhiteButton
+                    text="Cancel"
+                    onClick={() => cancelEdit && cancelEdit('nextOfKin')}
+                    className="scale-75 -mr-8"
+                    spinStar={false}
+                    disabled={savingSection === 'nextOfKin'}
+                  />
+                  <PurpleButton
+                    text={savingSection === 'saved' ? 'Saved' : savingSection === 'nextOfKin' ? 'Saving...' : 'Save'}
+                    onClick={handleSaveNextOfKin}
+                    className="scale-75"
+                    spinStar={false}
+                    disabled={savingSection === 'nextOfKin'}
+                  />
+                </div>
+              ) : (
+                <RainbowButton
+                  text="Edit"
+                  onClick={() => toggleEditMode && toggleEditMode('nextOfKin')}
+                  className="scale-75"
+                  spinStar={true}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

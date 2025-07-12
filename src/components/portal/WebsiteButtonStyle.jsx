@@ -6,7 +6,7 @@ export const RainbowButton = ({ text = "Stay Informed", onClick, className = "",
   return (
     <button 
       onClick={onClick}
-      className={`relative w-48 py-3.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-2xl ${className}`}
+      className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-2xl ${className}`}
     >
       {/* Gradient background - purple to orange/yellow */}
       <div 
@@ -24,7 +24,7 @@ export const RainbowButton = ({ text = "Stay Informed", onClick, className = "",
         <img 
           src={alcorStar} 
           alt="" 
-          className={`w-12 h-12 brightness-0 invert transition-transform duration-500 ${spinStar ? 'group-hover:rotate-180' : ''} absolute -right-1`}
+          className={`w-8 h-8 brightness-0 invert transition-transform duration-500 ${spinStar ? 'group-hover:rotate-180' : ''} absolute -right-1`}
         />
       </div>
     </button>
@@ -36,7 +36,7 @@ export const WhiteButton = ({ text = "Cancel", onClick, className = "", spinStar
     return (
       <button 
         onClick={onClick}
-        className={`relative w-48 py-3.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-lg border-2 ${className}`}
+        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-lg border-1 ${className}`}
         style={{
           backgroundColor: '#ebe3ed',
           borderColor: '#794384'
@@ -65,7 +65,7 @@ export const WhiteButton = ({ text = "Cancel", onClick, className = "", spinStar
     return (
       <button 
         onClick={onClick}
-        className={`relative w-48 py-3.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-2xl bg-[#6e4376] hover:bg-[#5a3d5c] ${className}`}
+        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-2xl bg-[#6e4376] hover:bg-[#5a3d5c] ${className}`}
       >
         {/* Content */}
         <div className="relative flex items-center">

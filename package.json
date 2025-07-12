@@ -19,6 +19,8 @@
     "docusign-click": "^3.0.0",
     "docusign-esign": "^8.1.0",
     "firebase": "^11.6.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.518.0",
     "prop-types": "^15.8.1",
@@ -52,35 +54,37 @@
     "tailwindcss": "^3.4.1",
     "vite": "^6.3.5"
   },
-    "jest": {
-      "testEnvironment": "jsdom",
-      "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
-      "moduleNameMapper": {
-        "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-        "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
-      },
-      "transform": {
-        "^.+\\.(js|jsx|mjs)$": "babel-jest"
-      },
-      "transformIgnorePatterns": [
-        "node_modules/(?!(.*\\.mjs$))"
-      ],
-      "collectCoverageFrom": [
-        "src/**/*.{js,jsx}",
-        "!src/index.js",
-        "!src/serviceWorker.js"
-      ],
-      "coverageThreshold": {
-        "global": {
-          "branches": 70,
-          "functions": 70,
-          "lines": 70,
-          "statements": 70
-        }
-      },
-      "testMatch": [
-        "<rootDir>/src/**/__tests__/**/*.{js,jsx}",
-        "<rootDir>/src/**/*.{spec,test}.{js,jsx}"
-      ]
-    }
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+      "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "transform": {
+      "^.+\\.(js|jsx|mjs)$": "babel-jest"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(.*\\.mjs$))"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/index.js",
+      "!src/serviceWorker.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "testMatch": [
+      "<rootDir>/src/**/__tests__/**/*.{js,jsx}",
+      "<rootDir>/src/**/*.{spec,test}.{js,jsx}"
+    ]
+  }
 }

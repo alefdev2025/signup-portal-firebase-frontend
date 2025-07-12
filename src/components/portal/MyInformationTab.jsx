@@ -1,12 +1,20 @@
 // VERSION 1
 
-
-
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { memberDataService } from './services/memberDataService';
 import dewarsImage from '../../assets/images/dewars2.jpg';
+import contactImage from '../../assets/images/contact-image.jpg';
+import personalInfoImage from '../../assets/images/personal-info.jpg';
+import addressesImage from '../../assets/images/home-address.jpg';
+import familyImage from '../../assets/images/family-info.jpg';
+import occupationImage from '../../assets/images/occupation.jpg';
+import healthImage from '../../assets/images/health-building.jpg';
+import fundingImage from '../../assets/images/financial.jpg';
+import legalImage from '../../assets/images/computer-table.jpg';
+import contractsImage from '../../assets/images/contracts.jpg';
+import emergencyContactImage from '../../assets/images/emergency-contact.jpg';
 
 import { 
   updateMemberPersonalInfo,
@@ -62,7 +70,33 @@ import { memberCategoryConfig, isFieldRequired, isSectionVisible } from './membe
 
 
 // Import style config
-import styleConfig from './styleConfig';
+import styleConfig from './styleConfig2';
+
+const sectionImages = {
+  contact: contactImage,
+  personal: personalInfoImage,        // Change to: personalImage when you have it
+  addresses: addressesImage,          // Change to: addressImage when you have it
+  family: familyImage,                // Change to: familyImage when you have it
+  occupation: occupationImage,        // Change to: workImage when you have it
+  medical: healthImage,               // Change to: medicalImage when you have it
+  cryoArrangements: contractsImage,   // Change to: cryoImage when you have it
+  funding: fundingImage,              // Change to: fundingImage when you have it
+  legal: legalImage,                  // Change to: legalImage when you have it
+  nextOfKin: emergencyContactImage    // Change to: emergencyImage when you have it
+};
+
+const sectionLabels = {
+  contact: "CONTACT",
+  personal: "PERSONAL",
+  addresses: "ADDRESSES",
+  family: "FAMILY",
+  occupation: "OCCUPATION",
+  medical: "MEDICAL",
+  cryoArrangements: "CRYO",
+  funding: "FUNDING",
+  legal: "LEGAL",
+  nextOfKin: "EMERGENCY"
+};
 
 const MyInformationTab = () => {
   const { 
@@ -2633,15 +2667,14 @@ const saveFunding = async () => {
     });
   };
 
-  
   return (
     <div className="my-information-tab relative min-h-screen">
       {/* White Background - Mobile Only */}
       <div className="fixed inset-0 z-0 sm:hidden bg-white">
       </div>
       
-      {/* Main Content Container - REDUCED PADDING for edge-to-edge */}
-      <div className="relative z-10 bg-transparent sm:bg-gray-50 px-4 sm:p-6 lg:p-8 pt-2 sm:pt-8 pb-6 sm:pb-8">
+      {/* Main Content Container - WITH PADDING */}
+      <div className="relative z-10 bg-transparent px-6 sm:p-6 lg:p-8 pt-6 sm:pt-8 pb-6 sm:pb-8">
         {/* Save Message */}
         {saveMessage.text && (
           <Alert 
@@ -2651,230 +2684,463 @@ const saveFunding = async () => {
             {saveMessage.text}
           </Alert>
         )}
-        
-        {/* Add the rest of your content here */}
+
+        {/* Mobile view - negative margins to extend past padding */}
+        <div className="sm:hidden -mx-6">
+          <div className="space-y-6">
+            {/* Contact Information - Always visible for all member types */}
+            {isSectionVisible(memberCategory, 'contact') && (
+              <>
+                {!sectionsLoaded.contact ? (
+                  <SectionSkeleton />
+                ) : (
+                  <ContactInfoSection
+                    contactInfo={contactInfo || {}}
+                    setContactInfo={setContactInfo}
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveContactInfo={saveContactInfo}
+                    savingSection={savingSection}
+                    fieldErrors={fieldErrors}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Personal Information */}
+            {isSectionVisible(memberCategory, 'personal') && (
+              <>
+                {!sectionsLoaded.personal ? (
+                  <SectionSkeleton />
+                ) : (
+                  <PersonalInfoSection
+                    personalInfo={personalInfo || {}}
+                    setPersonalInfo={setPersonalInfo}
+                    familyInfo={familyInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    savePersonalInfo={savePersonalInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Addresses */}
+            {isSectionVisible(memberCategory, 'addresses') && (
+              <>
+                {!sectionsLoaded.addresses ? (
+                  <SectionSkeleton />
+                ) : (
+                  <AddressesSection
+                    addresses={addresses || {}}
+                    setAddresses={setAddresses}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveAddresses={saveAddresses}
+                    savingSection={savingSection}
+                    setAddressValidationModal={setAddressValidationModal}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Family Information - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'family') && (
+              <>
+                {!sectionsLoaded.family ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FamilyInfoSection
+                    familyInfo={familyInfo || {}}
+                    setFamilyInfo={setFamilyInfo}
+                    personalInfo={personalInfo || {}}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFamilyInfo={saveFamilyInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Occupation - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'occupation') && (
+              <>
+                {!sectionsLoaded.occupation ? (
+                  <SectionSkeleton />
+                ) : (
+                  <OccupationSection
+                    occupation={occupation || {}}
+                    setOccupation={setOccupation}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveOccupation={saveOccupation}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Medical Information - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'medical') && (
+              <>
+                {!sectionsLoaded.medical ? (
+                  <SectionSkeleton />
+                ) : (
+                  <MedicalInfoSection
+                    medicalInfo={medicalInfo || {}}
+                    setMedicalInfo={setMedicalInfo}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveMedicalInfo={saveMedicalInfo}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Cryopreservation Arrangements */}
+            {isSectionVisible(memberCategory, 'cryoArrangements') && (
+              <>
+                {!sectionsLoaded.cryoArrangements ? (
+                  <SectionSkeleton />
+                ) : (
+                  <CryoArrangementsSection
+                    cryoArrangements={cryoArrangements || {}}
+                    setCryoArrangements={setCryoArrangements}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveCryoArrangements={saveCryoArrangements}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                    setAddressValidationModal={setAddressValidationModal}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Funding/Life Insurance - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'funding') && (
+              <>
+                {!sectionsLoaded.funding ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FundingSection
+                    funding={funding || {}}
+                    setFunding={setFunding}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFunding={saveFunding}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Legal/Will - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'legal') && (
+              <>
+                {!sectionsLoaded.legal ? (
+                  <SectionSkeleton />
+                ) : (
+                  <LegalSection
+                    legal={legal || {}}
+                    setLegal={setLegal}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveLegal={saveLegal}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Next of Kin - Only for Applicants and Members */}
+            {isSectionVisible(memberCategory, 'nextOfKin') && (
+              <>
+                {!sectionsLoaded.nextOfKin ? (
+                  <SectionSkeleton />
+                ) : (
+                  <NextOfKinSection
+                    nextOfKinList={nextOfKinList}
+                    setNextOfKinList={setNextOfKinList}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveNextOfKin={saveNextOfKin}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
+                    salesforceContactId={salesforceContactId}
+                    fieldErrors={fieldErrors}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop view - Keep existing layout with separators */}
+        <div className="hidden sm:block">
+  {/* Contact Information */}
+  {isSectionVisible(memberCategory, 'contact') && (
+    <>
+      {!sectionsLoaded.contact ? (
+        <SectionSkeleton />
+      ) : (
+        <ContactInfoSection
+          contactInfo={contactInfo || {}}
+          setContactInfo={setContactInfo}
+          personalInfo={personalInfo || {}}
+          setPersonalInfo={setPersonalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveContactInfo={saveContactInfo}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          memberCategory={memberCategory}
+          sectionImage={sectionImages.contact}
+          sectionLabel={sectionLabels.contact}
+        />
+              )}
+              {sectionSeparator()}
+            </>
+          )}
+
+          {/* Personal Information */}
+          {isSectionVisible(memberCategory, 'personal') && (
+            <>
+              {!sectionsLoaded.personal ? (
+                <SectionSkeleton />
+              ) : (
+              <PersonalInfoSection
+                personalInfo={personalInfo || {}}
+                setPersonalInfo={setPersonalInfo}
+                familyInfo={familyInfo || {}}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                savePersonalInfo={savePersonalInfo}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.personal}
+                sectionLabel={sectionLabels.personal}
+              />
+              )}
+              {sectionSeparator()}
+            </>
+          )}
+
+        {/* Addresses */}
+        {isSectionVisible(memberCategory, 'addresses') && (
+          <>
+            {!sectionsLoaded.addresses ? (
+              <SectionSkeleton />
+            ) : (
+              <AddressesSection
+                addresses={addresses || {}}
+                setAddresses={setAddresses}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveAddresses={saveAddresses}
+                savingSection={savingSection}
+                setAddressValidationModal={setAddressValidationModal}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.addresses}  // Add this line
+                sectionLabel={sectionLabels.addresses}   // Add this line
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Family Information - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'family') && (
+          <>
+            {!sectionsLoaded.family ? (
+              <SectionSkeleton />
+            ) : (
+              <FamilyInfoSection
+                familyInfo={familyInfo || {}}
+                setFamilyInfo={setFamilyInfo}
+                personalInfo={personalInfo || {}}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveFamilyInfo={saveFamilyInfo}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.family}
+                sectionLabel={sectionLabels.family}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+        {/* Occupation - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'occupation') && (
+          <>
+            {!sectionsLoaded.occupation ? (
+              <SectionSkeleton />
+            ) : (
+              <OccupationSection
+                occupation={occupation || {}}
+                setOccupation={setOccupation}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveOccupation={saveOccupation}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.occupation}
+                sectionLabel={sectionLabels.occupation}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Medical Information - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'medical') && (
+          <>
+            {!sectionsLoaded.medical ? (
+              <SectionSkeleton />
+            ) : (
+              <MedicalInfoSection
+                medicalInfo={medicalInfo || {}}
+                setMedicalInfo={setMedicalInfo}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveMedicalInfo={saveMedicalInfo}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.medical}
+                sectionLabel={sectionLabels.medical}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+        {isSectionVisible(memberCategory, 'cryoArrangements') && (
+          <>
+            {!sectionsLoaded.cryoArrangements ? (
+              <SectionSkeleton />
+            ) : (
+              <CryoArrangementsSection
+                cryoArrangements={cryoArrangements || {}}
+                setCryoArrangements={setCryoArrangements}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveCryoArrangements={saveCryoArrangements}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                setAddressValidationModal={setAddressValidationModal}
+                sectionImage={sectionImages.cryoArrangements}
+                sectionLabel={sectionLabels.cryoArrangements}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Funding/Life Insurance - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'funding') && (
+          <>
+            {!sectionsLoaded.funding ? (
+              <SectionSkeleton />
+            ) : (
+              <FundingSection
+                funding={funding || {}}
+                setFunding={setFunding}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveFunding={saveFunding}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.funding}
+                sectionLabel={sectionLabels.funding}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Legal/Will - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'legal') && (
+          <>
+            {!sectionsLoaded.legal ? (
+              <SectionSkeleton />
+            ) : (
+              <LegalSection
+                legal={legal || {}}
+                setLegal={setLegal}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveLegal={saveLegal}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.legal}
+                sectionLabel={sectionLabels.legal}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Next of Kin - Only for Applicants and Members */}
+        {isSectionVisible(memberCategory, 'nextOfKin') && (
+          <>
+            {!sectionsLoaded.nextOfKin ? (
+              <SectionSkeleton />
+            ) : (
+              <NextOfKinSection
+                nextOfKinList={nextOfKinList}
+                setNextOfKinList={setNextOfKinList}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveNextOfKin={saveNextOfKin}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                salesforceContactId={salesforceContactId}
+                fieldErrors={fieldErrors}
+                sectionImage={sectionImages.nextOfKin}
+                sectionLabel={sectionLabels.nextOfKin}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+        </div>
+      </div>
       
-{/* Member Status Banner <MemberStatusBanner category={memberCategory} /> */}
-
-{/* Contact Information - Always visible for all member types */}
-{isSectionVisible(memberCategory, 'contact') && (
-  <>
-    {!sectionsLoaded.contact ? (
-      <SectionSkeleton />
-    ) : (
-      <ContactInfoSection
-        contactInfo={contactInfo || {}}
-        setContactInfo={setContactInfo}
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveContactInfo={saveContactInfo}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Personal Information */}
-{isSectionVisible(memberCategory, 'personal') && (
-  <>
-    {!sectionsLoaded.personal ? (
-      <SectionSkeleton />
-    ) : (
-      <PersonalInfoSection
-        personalInfo={personalInfo || {}}
-        setPersonalInfo={setPersonalInfo}
-        familyInfo={familyInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        savePersonalInfo={savePersonalInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Addresses */}
-{isSectionVisible(memberCategory, 'addresses') && (
-  <>
-    {!sectionsLoaded.addresses ? (
-      <SectionSkeleton />
-    ) : (
-      <AddressesSection
-        addresses={addresses || {}}
-        setAddresses={setAddresses}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveAddresses={saveAddresses}
-        savingSection={savingSection}
-        setAddressValidationModal={setAddressValidationModal}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Family Information - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'family') && (
-  <>
-    {!sectionsLoaded.family ? (
-      <SectionSkeleton />
-    ) : (
-      <FamilyInfoSection
-        familyInfo={familyInfo || {}}
-        setFamilyInfo={setFamilyInfo}
-        personalInfo={personalInfo || {}}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFamilyInfo={saveFamilyInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Occupation - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'occupation') && (
-  <>
-    {!sectionsLoaded.occupation ? (
-      <SectionSkeleton />
-    ) : (
-      <OccupationSection
-        occupation={occupation || {}}
-        setOccupation={setOccupation}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveOccupation={saveOccupation}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Medical Information - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'medical') && (
-  <>
-    {!sectionsLoaded.medical ? (
-      <SectionSkeleton />
-    ) : (
-      <MedicalInfoSection
-        medicalInfo={medicalInfo || {}}
-        setMedicalInfo={setMedicalInfo}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveMedicalInfo={saveMedicalInfo}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{isSectionVisible(memberCategory, 'cryoArrangements') && (
-  <>
-    {!sectionsLoaded.cryoArrangements ? (
-      <SectionSkeleton />
-    ) : (
-      <CryoArrangementsSection
-        cryoArrangements={cryoArrangements || {}}
-        setCryoArrangements={setCryoArrangements}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveCryoArrangements={saveCryoArrangements}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-        setAddressValidationModal={setAddressValidationModal}  // ADD THIS
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Funding/Life Insurance - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'funding') && (
-  <>
-    {!sectionsLoaded.funding ? (
-      <SectionSkeleton />
-    ) : (
-      <FundingSection
-        funding={funding || {}}
-        setFunding={setFunding}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveFunding={saveFunding}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Legal/Will - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'legal') && (
-  <>
-    {!sectionsLoaded.legal ? (
-      <SectionSkeleton />
-    ) : (
-      <LegalSection
-        legal={legal || {}}
-        setLegal={setLegal}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveLegal={saveLegal}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
-    )}
-    {sectionSeparator()}
-  </>
-)}
-
-{/* Next of Kin - Only for Applicants and Members */}
-{isSectionVisible(memberCategory, 'nextOfKin') && (
-  <>
-    {!sectionsLoaded.nextOfKin ? (
-      <SectionSkeleton />
-    ) : (
-      <NextOfKinSection
-        nextOfKinList={nextOfKinList}
-        setNextOfKinList={setNextOfKinList}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveNextOfKin={saveNextOfKin}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-        salesforceContactId={salesforceContactId}
-        fieldErrors={fieldErrors}  // IMPORTANT: Pass fieldErrors prop
-      />
-    )}
-  </>
-)}
-      
-{/* Address Validation Modal - Rendered via Portal at the MyInformationTab level */}
-{addressValidationModal.isOpen && ReactDOM.createPortal(
+      {/* Address Validation Modal - Rendered via Portal at the MyInformationTab level */}
+      {addressValidationModal.isOpen && ReactDOM.createPortal(
         <div className="fixed inset-0 z-[100] overflow-y-auto">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={closeValidationModal}></div>
           
@@ -2940,7 +3206,6 @@ const saveFunding = async () => {
         </div>,
         document.body
       )}
-    </div>
     </div>
   );
 };

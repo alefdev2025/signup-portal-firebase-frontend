@@ -36,7 +36,8 @@ const navigationItems = [
       icon: ( <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg> ),
       subItems: [
         { id: 'forms', label: 'Forms' },
-        { id: 'information', label: 'Information' }
+        { id: 'information', label: 'Information' },
+        { id: 'procedure', label: 'Procedure' }  // Add this line
       ]
     },
     { 
@@ -76,7 +77,7 @@ const PortalSidebar = ({
   useEffect(() => {
     // Check if mobile on mount and window resize
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1280);
     };
     
     checkMobile();
@@ -158,20 +159,20 @@ const PortalSidebar = ({
   const sidebarStyles = getBackgroundStyle();
 
   // Same width for both modes, but narrower
-  const sidebarWidth = 'w-[70vw] md:w-[280px]';
+  const sidebarWidth = 'w-[70vw] xl:w-[280px]';
 
   const sidebarClasses = layoutMode === 'floating'
     ? `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
-       fixed md:relative z-50
-       right-0 md:left-0 md:right-auto
-       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+       fixed xl:relative z-50
+       right-0 xl:left-0 xl:right-auto
+       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
        ${isElevated ? 'shadow-2xl' : ''}`
     : `${sidebarWidth} h-full flex-shrink-0 flex flex-col 
        transition-all duration-700 ease-in-out
-       fixed md:relative shadow-2xl z-50
-       right-0 md:left-0 md:right-auto
-       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+       fixed xl:relative shadow-2xl z-50
+       right-0 xl:left-0 xl:right-auto
+       ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
        overflow-hidden`;
 
   // Get corner mask colors based on device
@@ -196,7 +197,7 @@ const PortalSidebar = ({
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/20 z-40 xl:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
@@ -207,7 +208,7 @@ const PortalSidebar = ({
         <>
           {/* Top right corner mask */}
           <div 
-            className="absolute top-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            className="absolute top-0 right-[-30px] w-[30px] h-[30px] hidden xl:block"
             style={{
               background: cornerMaskColors.top
             }}
@@ -219,7 +220,7 @@ const PortalSidebar = ({
           
           {/* Bottom right corner mask */}
           <div 
-            className="absolute bottom-0 right-[-30px] w-[30px] h-[30px] hidden md:block"
+            className="absolute bottom-0 right-[-30px] w-[30px] h-[30px] hidden xl:block"
             style={{
               background: cornerMaskColors.bottom
             }}
@@ -243,7 +244,7 @@ const PortalSidebar = ({
               <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
                 <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
                 <button 
-                  className="text-white/60 hover:text-white md:hidden"
+                  className="text-white/60 hover:text-white xl:hidden"
                   onClick={() => setIsMobileMenuOpen(false)}
                   aria-label="Close menu"
                 >
@@ -273,7 +274,7 @@ const PortalSidebar = ({
                         </div>
                         {item.subItems && (
                           <svg 
-                            className={`w-4 h-4 transition-all duration-200 opacity-0 md:group-hover:opacity-100 ${
+                            className={`w-4 h-4 transition-all duration-200 opacity-0 xl:group-hover:opacity-100 ${
                               expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
                             }`} 
                             fill="none" 
@@ -338,7 +339,7 @@ const PortalSidebar = ({
             <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
               <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
               <button 
-                className="text-white/60 hover:text-white md:hidden"
+                className="text-white/60 hover:text-white xl:hidden"
                 onClick={() => setIsMobileMenuOpen(false)}
                 aria-label="Close menu"
               >
@@ -368,7 +369,7 @@ const PortalSidebar = ({
                       </div>
                       {item.subItems && (
                         <svg 
-                          className={`w-4 h-4 transition-all duration-200 opacity-0 md:group-hover:opacity-100 ${
+                          className={`w-4 h-4 transition-all duration-200 opacity-0 xl:group-hover:opacity-100 ${
                             expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
                           }`} 
                           fill="none" 

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
-import styleConfig, { getSectionCheckboxColor } from '../styleConfig2';
+import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { cleanAddressData, cleanAddressObject } from '../utils/dataFormatting';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Melissa API configuration
 const MELISSA_API_KEY = 'AVUaS6bp3WJyyFKHjjwqgj**nSAcwXpxhQ0PC2lXxuDAZ-**';
@@ -13,8 +15,18 @@ const MELISSA_API_URL = 'https://address.melissadata.net/v3/WEB/GlobalAddress/do
 // Display component for showing info in read-only mode
 const InfoDisplay = ({ label, value, className = "" }) => (
   <div className={className}>
-    <dt className={styleConfig.display.item.label}>{label}</dt>
-    <dd className={styleConfig.display.item.value}>{value || styleConfig.display.item.empty}</dd>
+    <dt className={styleConfig2.display.item.label}>{label}</dt>
+    <dd 
+      className="text-gray-900" 
+      style={{ 
+        WebkitTextStroke: '0.6px #1f2937',
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        fontSize: '15px'
+      }}
+    >
+      {value || styleConfig2.display.item.empty}
+    </dd>
   </div>
 );
 
@@ -26,7 +38,9 @@ const AddressesSection = ({
   cancelEdit, 
   saveAddresses, 
   savingSection,
-  setAddressValidationModal 
+  setAddressValidationModal,
+  sectionImage,  // Add this prop
+  sectionLabel   // Add this prop
 }) => {
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [validationErrors, setValidationErrors] = useState({
@@ -35,9 +49,11 @@ const AddressesSection = ({
   });
   const [skipValidationFlag, setSkipValidationFlag] = useState(false);
   
-  // Add state for mobile collapse
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  // Add state for mobile
   const [isMobile, setIsMobile] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
   
   // Detect mobile
   useEffect(() => {
@@ -47,11 +63,106 @@ const AddressesSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Add loading animation styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .addresses-section-fade-in {
+        animation: addressesFadeIn 0.8s ease-out forwards;
+      }
+      .addresses-section-slide-in {
+        animation: addressesSlideIn 0.8s ease-out forwards;
+      }
+      .addresses-section-stagger-in > * {
+        opacity: 0;
+        animation: addressesSlideIn 0.5s ease-out forwards;
+      }
+      .addresses-section-stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
+      .addresses-section-stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
+      .addresses-section-stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
+      .addresses-section-stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+      .addresses-section-stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
+      .addresses-section-stagger-in > *:nth-child(6) { animation-delay: 0.3s; }
+      .addresses-section-stagger-in > *:nth-child(7) { animation-delay: 0.35s; }
+      .addresses-section-stagger-in > *:nth-child(8) { animation-delay: 0.4s; }
+      .addresses-section-stagger-in > *:nth-child(9) { animation-delay: 0.45s; }
+      .addresses-section-stagger-in > *:nth-child(10) { animation-delay: 0.5s; }
+      .addresses-section-stagger-in > *:nth-child(11) { animation-delay: 0.55s; }
+      .addresses-section-stagger-in > *:nth-child(12) { animation-delay: 0.6s; }
+      @keyframes addressesFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes addressesSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Intersection Observer for scroll-triggered animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          setTimeout(() => setHasLoaded(true), 100);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
+
   // Format address for display
   const formatAddress = (street, city, state, postalCode, country) => {
     const parts = [street, city, state, postalCode, country].filter(Boolean);
-    if (parts.length === 0) return styleConfig.display.item.empty;
+    if (parts.length === 0) return styleConfig2.display.item.empty;
     return parts.join(', ');
+  };
+  
+  // Helper function to check if addresses are effectively the same
+  const areAddressesSame = () => {
+    // Check explicit flag first
+    if (addresses.sameAsHome === true) return true;
+    
+    // Check if mailing address fields are empty or same as home
+    const mailingEmpty = !addresses.mailingStreet && !addresses.mailingCity && 
+                        !addresses.mailingState && !addresses.mailingPostalCode;
+    
+    if (mailingEmpty) return true;
+    
+    // Check if all fields match
+    const fieldsMatch = addresses.homeStreet === addresses.mailingStreet &&
+                       addresses.homeCity === addresses.mailingCity &&
+                       addresses.homeState === addresses.mailingState &&
+                       addresses.homePostalCode === addresses.mailingPostalCode &&
+                       (addresses.homeCountry || 'US') === (addresses.mailingCountry || 'US');
+    
+    return fieldsMatch;
   };
   
   // Mobile preview data
@@ -447,7 +558,7 @@ const AddressesSection = ({
   };
 
   return (
-    <div className={isMobile ? "" : styleConfig.section.wrapperEnhanced}>
+    <div ref={sectionRef} className={`${isMobile ? "" : styleConfig2.section.wrapperEnhanced} ${hasLoaded && isVisible ? 'addresses-section-fade-in' : 'opacity-0'}`}>
       {isMobile ? (
         <MobileInfoCard
           iconComponent={
@@ -457,37 +568,50 @@ const AddressesSection = ({
             </svg>
           }
           title="Addresses"
-          preview={getMobilePreview()}
+          backgroundImage={formsHeaderImage}
+          overlayText="Location Details"
           subtitle="Your home and mailing addresses. All addresses are validated for accuracy."
           isEditMode={editMode.addresses}
         >
           {/* Display Mode */}
           {!editMode.addresses ? (
             <>
-              <div className="space-y-4">
-                <DisplayField 
-                  label="Home Address" 
-                  value={formatAddress(
-                    addresses.homeStreet,
-                    addresses.homeCity,
-                    addresses.homeState,
-                    addresses.homePostalCode,
-                    addresses.homeCountry
-                  )} 
-                />
-                <DisplayField 
-                  label="Mailing Address" 
-                  value={addresses.sameAsHome ? 
-                    'Same as home address' : 
-                    formatAddress(
-                      addresses.mailingStreet,
-                      addresses.mailingCity,
-                      addresses.mailingState,
-                      addresses.mailingPostalCode,
-                      addresses.mailingCountry
-                    )
-                  } 
-                />
+              <div className={`space-y-4 ${hasLoaded && isVisible ? 'addresses-section-stagger-in' : ''}`}>
+                {areAddressesSame() ? (
+                  <DisplayField 
+                    label="Home & Mailing Address" 
+                    value={formatAddress(
+                      addresses.homeStreet,
+                      addresses.homeCity,
+                      addresses.homeState,
+                      addresses.homePostalCode,
+                      addresses.homeCountry
+                    )} 
+                  />
+                ) : (
+                  <>
+                    <DisplayField 
+                      label="Home Address" 
+                      value={formatAddress(
+                        addresses.homeStreet,
+                        addresses.homeCity,
+                        addresses.homeState,
+                        addresses.homePostalCode,
+                        addresses.homeCountry
+                      )} 
+                    />
+                    <DisplayField 
+                      label="Mailing Address" 
+                      value={formatAddress(
+                        addresses.mailingStreet,
+                        addresses.mailingCity,
+                        addresses.mailingState,
+                        addresses.mailingPostalCode,
+                        addresses.mailingCountry
+                      )} 
+                    />
+                  </>
+                )}
               </div>
               
               <ActionButtons 
@@ -542,7 +666,7 @@ const AddressesSection = ({
 
                 {/* Mailing Address */}
                 <div>
-                <label className="flex items-center text-gray-700 mb-4">
+                  <label className="flex items-center text-gray-700 mb-4">
                     <input
                       type="checkbox"
                       checked={addresses.sameAsHome || false}
@@ -610,195 +734,292 @@ const AddressesSection = ({
         </MobileInfoCard>
       ) : (
         /* Desktop view */
-        <div className={styleConfig.section.innerPadding}>
-          {/* Desktop Header */}
-          <div className={styleConfig.header.wrapper}>
-            <div className={styleConfig.sectionIcons.addresses}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <div className={styleConfig.header.textContainer}>
-              <h2 className={styleConfig.header.title}>Addresses</h2>
-              <p className={styleConfig.header.subtitle}>
-                Your home and mailing addresses. All addresses are validated for accuracy.
-              </p>
+        <div className={styleConfig2.section.innerPadding}>
+          {/* Desktop Header Section */}
+          <div className={`relative pb-6 mb-6 border-b border-gray-200 ${hasLoaded && isVisible ? 'addresses-section-slide-in' : ''}`}>
+            {/* Header content */}
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <div className={styleConfig2.header.wrapper}>
+                  <div className={styleConfig2.sectionIcons.addresses}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div className={styleConfig2.header.textContainer}>
+                    <h2 className={styleConfig2.header.title}>Addresses</h2>
+                    <p className="text-gray-600 text-base mt-1">
+                      Your home and mailing addresses. All addresses are validated for accuracy.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image on right side */}
+              {sectionImage && (
+                <div className="flex-shrink-0 ml-8">
+                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={sectionImage} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    {sectionLabel && (
+                      <div className="absolute bottom-0 right-0">
+                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
+                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
+                            {sectionLabel}
+                            <img src={alcorStar} alt="" className="w-3 h-3" />
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Desktop Content */}
-          {/* Display Mode */}
-          {!editMode.addresses ? (
-            <dl className={styleConfig.display.dl.wrapperSingle}>
-              <div>
-                <dt className={`${styleConfig.display.item.label} mb-1`}>Home Address</dt>
-                <dd className={styleConfig.display.item.value}>
-                  {formatAddress(
-                    addresses.homeStreet,
-                    addresses.homeCity,
-                    addresses.homeState,
-                    addresses.homePostalCode,
-                    addresses.homeCountry
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className={`${styleConfig.display.item.label} mb-1`}>Mailing Address</dt>
-                <dd className={styleConfig.display.item.value}>
-                  {addresses.sameAsHome ? 
-                    'Same as home address' : 
-                    formatAddress(
-                      addresses.mailingStreet,
-                      addresses.mailingCity,
-                      addresses.mailingState,
-                      addresses.mailingPostalCode,
-                      addresses.mailingCountry
-                    )
-                  }
-                </dd>
-              </div>
-            </dl>
-          ) : (
-            /* Edit Mode - Form */
-            <>
-              {/* Home Address */}
-              <div className="mb-6">
-                <h3 className="font-medium text-[#2a2346] mb-4">Home Address</h3>
-                <div className={styleConfig.section.grid.twoColumn}>
-                  <Input
-                    containerClassName="col-span-2"
-                    label="Street Address *"
-                    type="text"
-                    value={addresses.homeStreet || ''}
-                    onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
-                    disabled={!editMode.addresses}
-                  />
-                  <Input
-                    label="City *"
-                    type="text"
-                    value={addresses.homeCity || ''}
-                    onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
-                    disabled={!editMode.addresses}
-                  />
-                  <Input
-                    label="State/Province *"
-                    type="text"
-                    value={addresses.homeState || ''}
-                    onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
-                    disabled={!editMode.addresses}
-                  />
-                  <Input
-                    label="Zip/Postal Code *"
-                    type="text"
-                    value={addresses.homePostalCode || ''}
-                    onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
-                    disabled={!editMode.addresses}
-                  />
-                  <Input
-                    label="Country"
-                    type="text"
-                    value={addresses.homeCountry || 'US'}
-                    onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
-                    disabled={!editMode.addresses}
-                  />
-                </div>
-                {validationErrors.home && (
-                  <p className="mt-2 text-sm text-red-600">{validationErrors.home}</p>
-                )}
-              </div>
-
-              {/* Mailing Address */}
-              <div className="mb-6">
-                <Checkbox
-                  label="Mailing address is the same as home address"
-                  checked={addresses.sameAsHome || false}
-                  onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
-                  disabled={!editMode.addresses}
-                />
-                
-                {!addresses.sameAsHome && (
+          {/* Desktop Content - Fields Section */}
+          <div className="bg-white">
+            {/* Display Mode */}
+            {!editMode.addresses ? (
+              <div className={`max-w-2xl ${hasLoaded && isVisible ? 'addresses-section-stagger-in' : ''}`}>
+                {areAddressesSame() ? (
+                  /* Single Address Display when mailing is same as home */
+                  <div>
+                    <h3 className="font-medium text-[#2a2346] mb-4">Home & Mailing Address</h3>
+                    <dl className="grid grid-cols-3 gap-x-4 gap-y-3">
+                      <InfoDisplay 
+                        label="Street Address" 
+                        value={addresses.homeStreet} 
+                        className="col-span-3"
+                      />
+                      <InfoDisplay 
+                        label="City" 
+                        value={addresses.homeCity} 
+                      />
+                      <InfoDisplay 
+                        label="State/Province" 
+                        value={addresses.homeState} 
+                      />
+                      <InfoDisplay 
+                        label="Zip/Postal Code" 
+                        value={addresses.homePostalCode} 
+                      />
+                      <InfoDisplay 
+                        label="Country" 
+                        value={addresses.homeCountry || 'US'} 
+                        className="col-span-2"
+                      />
+                    </dl>
+                  </div>
+                ) : (
+                  /* Separate Address Display */
                   <>
-                    <h3 className="font-medium text-[#2a2346] mb-4 mt-4">Mailing Address</h3>
-                    <div className={styleConfig.section.grid.twoColumn}>
-                      <Input
-                        containerClassName="col-span-2"
-                        label="Street Address *"
-                        type="text"
-                        value={addresses.mailingStreet || ''}
-                        onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
-                        disabled={!editMode.addresses}
-                      />
-                      <Input
-                        label="City *"
-                        type="text"
-                        value={addresses.mailingCity || ''}
-                        onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
-                        disabled={!editMode.addresses}
-                      />
-                      <Input
-                        label="State/Province *"
-                        type="text"
-                        value={addresses.mailingState || ''}
-                        onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
-                        disabled={!editMode.addresses}
-                      />
-                      <Input
-                        label="Zip/Postal Code *"
-                        type="text"
-                        value={addresses.mailingPostalCode || ''}
-                        onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
-                        disabled={!editMode.addresses}
-                      />
-                      <Input
-                        label="Country"
-                        type="text"
-                        value={addresses.mailingCountry || 'US'}
-                        onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
-                        disabled={!editMode.addresses}
-                      />
+                    {/* Home Address Section */}
+                    <div className="mb-8">
+                      <h3 className="font-medium text-[#2a2346] mb-4">Home Address</h3>
+                      <dl className="grid grid-cols-3 gap-x-4 gap-y-3">
+                        <InfoDisplay 
+                          label="Street Address" 
+                          value={addresses.homeStreet} 
+                          className="col-span-3"
+                        />
+                        <InfoDisplay 
+                          label="City" 
+                          value={addresses.homeCity} 
+                        />
+                        <InfoDisplay 
+                          label="State/Province" 
+                          value={addresses.homeState} 
+                        />
+                        <InfoDisplay 
+                          label="Zip/Postal Code" 
+                          value={addresses.homePostalCode} 
+                        />
+                        <InfoDisplay 
+                          label="Country" 
+                          value={addresses.homeCountry || 'US'} 
+                          className="col-span-2"
+                        />
+                      </dl>
                     </div>
-                    {validationErrors.mailing && (
-                      <p className="mt-2 text-sm text-red-600">{validationErrors.mailing}</p>
-                    )}
+
+                    {/* Mailing Address Section */}
+                    <div>
+                      <h3 className="font-medium text-[#2a2346] mb-4">Mailing Address</h3>
+                      <dl className="grid grid-cols-3 gap-x-4 gap-y-3">
+                        <InfoDisplay 
+                          label="Street Address" 
+                          value={addresses.mailingStreet} 
+                          className="col-span-3"
+                        />
+                        <InfoDisplay 
+                          label="City" 
+                          value={addresses.mailingCity} 
+                        />
+                        <InfoDisplay 
+                          label="State/Province" 
+                          value={addresses.mailingState} 
+                        />
+                        <InfoDisplay 
+                          label="Zip/Postal Code" 
+                          value={addresses.mailingPostalCode} 
+                        />
+                        <InfoDisplay 
+                          label="Country" 
+                          value={addresses.mailingCountry || 'US'} 
+                          className="col-span-2"
+                        />
+                      </dl>
+                    </div>
                   </>
                 )}
               </div>
-            </>
-          )}
-          
-          <div className="flex justify-end mt-6">
-            {editMode?.addresses ? (
-              <div className="flex">
-                <WhiteButton
-                  text="Cancel"
-                  onClick={() => cancelEdit && cancelEdit('addresses')}
-                  className="scale-75 -mr-8"
-                  spinStar={false}
-                />
-                {(validationErrors.home || validationErrors.mailing) && (
+            ) : (
+              /* Edit Mode - Form */
+              <div className="max-w-2xl">
+                {/* Home Address */}
+                <div className="mb-6">
+                  <h3 className="font-medium text-[#2a2346] mb-4">Home Address</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      containerClassName="col-span-2"
+                      label="Street Address *"
+                      type="text"
+                      value={addresses.homeStreet || ''}
+                      onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
+                      disabled={!editMode.addresses}
+                    />
+                    <Input
+                      label="City *"
+                      type="text"
+                      value={addresses.homeCity || ''}
+                      onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
+                      disabled={!editMode.addresses}
+                    />
+                    <Input
+                      label="State/Province *"
+                      type="text"
+                      value={addresses.homeState || ''}
+                      onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
+                      disabled={!editMode.addresses}
+                    />
+                    <Input
+                      label="Zip/Postal Code *"
+                      type="text"
+                      value={addresses.homePostalCode || ''}
+                      onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
+                      disabled={!editMode.addresses}
+                    />
+                    <Input
+                      label="Country"
+                      type="text"
+                      value={addresses.homeCountry || 'US'}
+                      onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
+                      disabled={!editMode.addresses}
+                    />
+                  </div>
+                  {validationErrors.home && (
+                    <p className="mt-2 text-sm text-red-600">{validationErrors.home}</p>
+                  )}
+                </div>
+
+                {/* Mailing Address */}
+                <div className="mb-6">
+                  <Checkbox
+                    label="Mailing address is the same as home address"
+                    checked={addresses.sameAsHome || false}
+                    onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
+                    disabled={!editMode.addresses}
+                  />
+                  
+                  {!addresses.sameAsHome && (
+                    <>
+                      <h3 className="font-medium text-[#2a2346] mb-4 mt-4">Mailing Address</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input
+                          containerClassName="col-span-2"
+                          label="Street Address *"
+                          type="text"
+                          value={addresses.mailingStreet || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
+                          disabled={!editMode.addresses}
+                        />
+                        <Input
+                          label="City *"
+                          type="text"
+                          value={addresses.mailingCity || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
+                          disabled={!editMode.addresses}
+                        />
+                        <Input
+                          label="State/Province *"
+                          type="text"
+                          value={addresses.mailingState || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
+                          disabled={!editMode.addresses}
+                        />
+                        <Input
+                          label="Zip/Postal Code *"
+                          type="text"
+                          value={addresses.mailingPostalCode || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
+                          disabled={!editMode.addresses}
+                        />
+                        <Input
+                          label="Country"
+                          type="text"
+                          value={addresses.mailingCountry || 'US'}
+                          onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
+                          disabled={!editMode.addresses}
+                        />
+                      </div>
+                      {validationErrors.mailing && (
+                        <p className="mt-2 text-sm text-red-600">{validationErrors.mailing}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Action buttons */}
+            <div className="flex justify-end mt-6 -mr-8">
+              {editMode?.addresses ? (
+                <div className="flex">
                   <WhiteButton
-                    text="Save Anyway"
-                    onClick={handleSaveAnyway}
+                    text="Cancel"
+                    onClick={() => cancelEdit && cancelEdit('addresses')}
                     className="scale-75 -mr-8"
                     spinStar={false}
                   />
-                )}
-                <PurpleButton
-                  text={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
-                  onClick={handleSaveAddresses}
+                  {(validationErrors.home || validationErrors.mailing) && (
+                    <WhiteButton
+                      text="Save Anyway"
+                      onClick={handleSaveAnyway}
+                      className="scale-75 -mr-8"
+                      spinStar={false}
+                    />
+                  )}
+                  <PurpleButton
+                    text={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
+                    onClick={handleSaveAddresses}
+                    className="scale-75"
+                    spinStar={false}
+                  />
+                </div>
+              ) : (
+                <RainbowButton
+                  text="Edit"
+                  onClick={() => toggleEditMode && toggleEditMode('addresses')}
                   className="scale-75"
-                  spinStar={false}
+                  spinStar={true}
                 />
-              </div>
-            ) : (
-              <RainbowButton
-                text="Edit"
-                onClick={() => toggleEditMode && toggleEditMode('addresses')}
-                className="scale-75"
-                spinStar={true}
-              />
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
