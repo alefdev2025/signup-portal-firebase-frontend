@@ -232,11 +232,11 @@ const PortalHome = () => {
             setIsOpen(!isOpen);
           }}
         >
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className="w-7 h-7" fill="none" stroke="#f7cd46" strokeWidth="1.5" viewBox="0 0 24 24" style={{filter: 'drop-shadow(0 0 1px #794384)'}}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 bg-white text-[#1a2744] text-xs flex items-center justify-center font-bold pointer-events-none">
+            <span className="absolute -top-1 -right-1 h-5 w-5 bg-white text-[#1a2744] text-xs rounded-full flex items-center justify-center font-bold pointer-events-none">
               {unreadCount}
             </span>
           )}
@@ -253,7 +253,7 @@ const PortalHome = () => {
         {/* Dropdown */}
         {isOpen && (
           <div 
-            className="fixed right-2 top-[85px] w-72 bg-white shadow-xl border border-gray-200 z-[100]"
+            className="fixed right-2 top-[85px] w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-[100]"
           >
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Notifications</h3>
@@ -295,7 +295,7 @@ const PortalHome = () => {
                             {notification.title}
                           </p>
                           {!notification.read && (
-                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] mt-1.5"></span>
+                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>

@@ -520,8 +520,9 @@ const NotificationsTab = () => {
   // Loading state
   if (!notificationsLoaded) {
     return (
-      <div className="-mx-6 -mt-6 lg:mx-0 lg:mt-0">
-        <div className="animate-pulse">
+      <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
+        <div className="h-8"></div>
+        <div className="animate-pulse px-4">
           <div className="bg-white border border-gray-100 p-8 rounded-2xl">
             <div className="space-y-6">
               <div className="h-4 bg-gray-100 w-32 mb-2 rounded"></div>
@@ -534,11 +535,13 @@ const NotificationsTab = () => {
   }
 
   return (
-    <div className="notifications-tab -mx-6 -mt-6 lg:mx-0 lg:mt-0" ref={notificationsRef}>
+    <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4" ref={notificationsRef}>
+      {/* Small top padding */}
+      <div className="h-8"></div>
+      
       {/* Main Card */}
-      <div className="px-2 sm:px-6 lg:px-0 pt-10 lg:pt-0">
+      <div className="px-4 sm:px-6 lg:px-0">
         <div className="max-w-5xl">
-        <div className="mx-auto w-[95%] sm:w-full">
           <div className="professional-card bg-white shadow-lg border border-gray-200 rounded-2xl overflow-hidden gradient-border-top">
             {/* Card Header */}
             <div className="px-6 lg:px-8 py-5 lg:py-6 pb-8 lg:pb-10 border-b border-gray-200 fade-in">
@@ -776,14 +779,13 @@ const NotificationsTab = () => {
               )}
             </div>
           </div>
-          </div>
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="mt-16 px-6 lg:px-0 pb-2 lg:pb-8 max-w-5xl">
+      <div className="mt-16 px-4 lg:px-0 pb-2 lg:pb-8 max-w-5xl">
         <div className="luxury-divider mb-8"></div>
-        <div className="flex items-center justify-between px-4 lg:px-0">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></div>
             <p className="text-xs text-gray-600 lg:text-gray-500 tracking-wider uppercase font-light">Updates in real-time</p>
@@ -869,92 +871,93 @@ const NotificationsTab = () => {
         </div>,
         document.body
       )}
+      
       {/* Help Button - Desktop Only */}
-<div className="hidden lg:block fixed bottom-8 right-8 z-50">
-  <button
-    className="w-14 h-14 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
-    onClick={() => setShowHelpPopup(!showHelpPopup)}
-  >
-    <svg 
-      className="w-7 h-7 text-white" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="1.8" 
-      viewBox="0 0 24 24"
-    >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-      />
-    </svg>
-  </button>
-
-  {/* Help Popup */}
-  {showHelpPopup && (
-    <div className="fixed bottom-28 right-8 w-80 bg-white rounded-lg shadow-2xl overflow-hidden z-50 animate-slideIn">
-      <div className="bg-[#9f5fa6] text-white px-4 py-3 flex items-center justify-between">
-        <h3 className="text-base" style={{ fontWeight: 500 }}>Help & Information</h3>
+      <div className="hidden lg:block fixed bottom-8 right-8 z-50">
         <button
-          onClick={() => setShowHelpPopup(false)}
-          className="text-white hover:bg-white/20 rounded p-1 transition-colors"
+          className="w-14 h-14 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
+          onClick={() => setShowHelpPopup(!showHelpPopup)}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          <svg 
+            className="w-7 h-7 text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="1.8" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+            />
           </svg>
         </button>
-      </div>
-      
-      <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
-        <div className="pb-4 border-b border-gray-100">
-          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notifications Overview</h4>
-          <p className="text-sm text-gray-600">View and manage all your notifications including messages, announcements, and updates from Alcor.</p>
-        </div>
-        
-        <div className="pb-4 border-b border-gray-100">
-          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Filter Options</h4>
-          <p className="text-sm text-gray-600">Use filters to view all notifications, only unread ones, or previously read messages. Filter by type to see specific categories.</p>
-        </div>
-        
-        <div className="pb-4 border-b border-gray-100">
-          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notification Types</h4>
-          <p className="text-sm text-gray-600">Messages from staff, travel updates, announcements, podcasts, and newsletters. Click any notification to view details.</p>
-        </div>
-        
-        <div className="pb-4 border-b border-gray-100">
-          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Managing Notifications</h4>
-          <p className="text-sm text-gray-600">Mark notifications as read/unread or delete them using the menu icon. Use "Mark all as read" to clear all unread notifications.</p>
-        </div>
-        
-        <div>
-          <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
-          <p className="text-sm text-gray-600">
-            Contact support at{' '}
-            <a href="mailto:support@alcor.org" className="text-[#9f5fa6] hover:underline">
-              support@alcor.org
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
-  )}
-</div>
 
-<style>{`
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  .animate-slideIn {
-    animation: slideIn 0.3s ease-out;
-  }
-`}</style>
+        {/* Help Popup */}
+        {showHelpPopup && (
+          <div className="fixed bottom-28 right-8 w-80 bg-white rounded-lg shadow-2xl overflow-hidden z-50 animate-slideIn">
+            <div className="bg-[#9f5fa6] text-white px-4 py-3 flex items-center justify-between">
+              <h3 className="text-base" style={{ fontWeight: 500 }}>Help & Information</h3>
+              <button
+                onClick={() => setShowHelpPopup(false)}
+                className="text-white hover:bg-white/20 rounded p-1 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
+              <div className="pb-4 border-b border-gray-100">
+                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notifications Overview</h4>
+                <p className="text-sm text-gray-600">View and manage all your notifications including messages, announcements, and updates from Alcor.</p>
+              </div>
+              
+              <div className="pb-4 border-b border-gray-100">
+                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Filter Options</h4>
+                <p className="text-sm text-gray-600">Use filters to view all notifications, only unread ones, or previously read messages. Filter by type to see specific categories.</p>
+              </div>
+              
+              <div className="pb-4 border-b border-gray-100">
+                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notification Types</h4>
+                <p className="text-sm text-gray-600">Messages from staff, travel updates, announcements, podcasts, and newsletters. Click any notification to view details.</p>
+              </div>
+              
+              <div className="pb-4 border-b border-gray-100">
+                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Managing Notifications</h4>
+                <p className="text-sm text-gray-600">Mark notifications as read/unread or delete them using the menu icon. Use "Mark all as read" to clear all unread notifications.</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
+                <p className="text-sm text-gray-600">
+                  Contact support at{' '}
+                  <a href="mailto:support@alcor.org" className="text-[#9f5fa6] hover:underline">
+                    support@alcor.org
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

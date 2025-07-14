@@ -1,12 +1,635 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
+import { 
+  overlayStyles, 
+  infoCardStyles, 
+  sectionImageStyles, 
+  headerStyles, 
+  buttonStyles, 
+  animationStyles 
+} from './desktopCardStyles/index';
+import { InfoField, InfoCard } from './SharedInfoComponents';
 
-// Multi-select dropdown component for desktop
+// Overlay Component
+const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, personalInfo, setPersonalInfo, savePersonalInfo }) => {
+  const [editMode, setEditMode] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setEditMode(false);  // Start in display mode
+      setShowSuccess(false);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const formatSSN = (ssn) => {
+    if (!ssn) return '—';
+    if (ssn.includes('*')) return ssn;
+    const cleaned = ssn.replace(/\D/g, '');
+    if (cleaned.length >= 4) {
+      return `***-**-${cleaned.slice(-4)}`;
+    }
+    return '—';
+  };
+
+  const formatMultipleSelections = (selections) => {
+    if (!selections || selections.length === 0) return '—';
+    return selections.join(', ');
+  };
+
+  const handleEdit = () => {
+    setEditMode(true);
+  };
+
+  const handleSave = () => {
+    savePersonalInfo();
+    setEditMode(false);
+    setShowSuccess(true);
+    
+    setTimeout(() => {
+      setShowSuccess(false);
+      onClose();
+    }, 2000);
+  };
+
+  const handleCancel = () => {
+    setPersonalInfo(data.personalInfo);
+    setEditMode(false);
+  };
+
+  const getFieldDescriptions = () => {
+    switch (section) {
+      case 'identity':
+        return {
+          title: 'Identity Details',
+          description: 'Your personal identification information including birth name, government ID, and gender identity.',
+          fields: {
+            'Birth Name': 'Your name at birth if different from your current legal name.',
+            'SSN/Government ID': 'Your Social Security Number or government-issued identification number.',
+            'Gender': 'Your gender identity.'
+          }
+        };
+      case 'demographics':
+        return {
+          title: 'Demographics',
+          description: 'Demographic information that helps us better understand our member community and ensure inclusive services.',
+          fields: {
+            'Race': 'Your racial background (you may select multiple options).',
+            'Ethnicity': 'Your ethnic heritage.',
+            'Marital Status': 'Your current marital or relationship status.'
+          }
+        };
+      case 'origin':
+        return {
+          title: 'Origin & Citizenship',
+          description: 'Information about your place of birth and citizenship status, which may be relevant for legal documentation.',
+          fields: {
+            'Place of Birth': 'The city, state/province, and country where you were born.',
+            'Citizenship': 'Countries where you hold citizenship (you may select multiple).'
+          }
+        };
+      default:
+        return { title: '', description: '', fields: {} };
+    }
+  };
+
+  const fieldInfo = getFieldDescriptions();
+
+  // Race options
+  const raceOptions = [
+    "American Indian or Alaska Native",
+    "Asian",
+    "Black or African American",
+    "Hispanic or Latino",
+    "Native Hawaiian or Other Pacific Islander",
+    "White or Caucasian",
+    "Multiracial",
+    "Middle Eastern",
+    "Prefer Not to Say",
+    "Other"
+  ];
+
+  // Citizenship options - Full list from mobile
+  const citizenshipOptions = [
+    "United States of America",
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Côte d'Ivoire",
+    "Cabo Verde",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Colombia",
+    "Comoros",
+    "Congo (Congo-Brazzaville)",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czechia (Czech Republic)",
+    "Democratic Republic of the Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini (fmr. \"Swaziland\")",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Holy See",
+    "Honduras",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar (formerly Burma)",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine State",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe"
+  ];
+
+  // Ethnicity options
+  const ethnicityOptions = [
+    { value: "Hispanic or Latino", label: "Hispanic or Latino" },
+    { value: "Not Hispanic or Latino", label: "Not Hispanic or Latino" }
+  ];
+
+  // Marital Status options
+  const maritalStatusOptions = [
+    { value: "", label: "Select..." },
+    { value: "Single", label: "Single" },
+    { value: "Married", label: "Married" },
+    { value: "Divorced", label: "Divorced" },
+    { value: "Separated", label: "Separated" },
+    { value: "Widowed", label: "Widowed" },
+    { value: "Widower", label: "Widower" },
+    { value: "Domestic Partner", label: "Domestic Partner" },
+    { value: "Significant Other", label: "Significant Other" }
+  ];
+
+  return ReactDOM.createPortal(
+    <div className={overlayStyles.container}>
+      <div className={overlayStyles.backdrop} onClick={onClose}></div>
+      
+      <div className={overlayStyles.contentWrapper}>
+        <div className={overlayStyles.contentBox}>
+          {/* Header */}
+          <div className={overlayStyles.header.wrapper}>
+            <button
+              onClick={onClose}
+              className={overlayStyles.header.closeButton}
+            >
+              <svg className={overlayStyles.header.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className={overlayStyles.header.content}>
+              <div className={overlayStyles.header.iconSection}>
+                <div className={overlayStyles.header.iconBox} style={overlayStyles.header.iconBoxBg}>
+                  <svg className={overlayStyles.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={overlayStyles.header.iconColor}>
+                    {section === 'identity' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                    )}
+                    {section === 'demographics' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    )}
+                    {section === 'origin' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    )}
+                  </svg>
+                </div>
+                <div className={overlayStyles.header.textWrapper}>
+                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                    {fieldInfo.title}
+                  </span>
+                  <p className={overlayStyles.header.description}>
+                    {fieldInfo.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className={overlayStyles.body.wrapper}>
+            {/* Success Message */}
+            {showSuccess && (
+              <div className={overlayStyles.body.successMessage.container}>
+                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
+              </div>
+            )}
+
+            {/* Fields */}
+            {!editMode ? (
+              /* Display Mode */
+              <div className="space-y-6">
+                {section === 'identity' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-8">
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>Birth Name</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.birthName || personalInfo?.birthName === 'Same as current')}
+                        >
+                          {personalInfo?.birthName || 'Same as current'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>SSN/Government ID</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.ssn)}
+                        >
+                          {formatSSN(personalInfo?.ssn)}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Gender</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.gender)}
+                      >
+                        {personalInfo?.gender || '—'}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {section === 'demographics' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Race</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.race || personalInfo?.race?.length === 0)}
+                      >
+                        {formatMultipleSelections(personalInfo?.race)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Ethnicity</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.ethnicity)}
+                      >
+                        {personalInfo?.ethnicity || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Marital Status</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.maritalStatus)}
+                      >
+                        {personalInfo?.maritalStatus || '—'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {section === 'origin' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Place of Birth</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.placeOfBirth)}
+                      >
+                        {personalInfo?.placeOfBirth || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Citizenship</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.citizenship || personalInfo?.citizenship?.length === 0)}
+                      >
+                        {formatMultipleSelections(personalInfo?.citizenship)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Edit Mode */
+              <div className="space-y-6">
+                {section === 'identity' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="Birth Name"
+                        type="text"
+                        value={personalInfo?.birthName || ''}
+                        onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
+                        disabled={savingSection === 'personal'}
+                        placeholder="Same as current"
+                      />
+                      <StyledSelect
+                        label="Gender *"
+                        value={personalInfo?.gender || ''}
+                        onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                        disabled={savingSection === 'personal'}
+                      >
+                        <option value="">Select...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </StyledSelect>
+                    </div>
+                  </>
+                )}
+
+                {section === 'demographics' && (
+                  <>
+                    <MultiSelectDropdown
+                      label="Race"
+                      options={raceOptions}
+                      value={personalInfo?.race || []}
+                      onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    <SingleSelectDropdown
+                      label="Ethnicity"
+                      options={ethnicityOptions}
+                      value={personalInfo?.ethnicity || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    <SingleSelectDropdown
+                      label="Marital Status"
+                      options={maritalStatusOptions}
+                      value={personalInfo?.maritalStatus || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                  </>
+                )}
+
+                {section === 'origin' && (
+                  <>
+                    <Input
+                      label="Place of Birth"
+                      type="text"
+                      value={personalInfo?.placeOfBirth || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    <MultiSelectDropdown
+                      label="Citizenship"
+                      options={citizenshipOptions}
+                      value={personalInfo?.citizenship || []}
+                      onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
+                      disabled={savingSection === 'personal'}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className={overlayStyles.footer.wrapper}>
+            {!editMode ? (
+              <PurpleButton
+                text="Edit"
+                onClick={handleEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            ) : (
+              <>
+                <WhiteButton
+                  text="Cancel"
+                  onClick={handleCancel}
+                  className={buttonStyles.overlayButtons.cancel}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+                <PurpleButton
+                  text={savingSection === 'personal' ? 'Saving...' : 'Save'}
+                  onClick={handleSave}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                  disabled={savingSection === 'personal'}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// Modified InfoCard component with View More link
+const InfoCardWithViewMore = ({ title, icon, sectionKey, hoveredSection, onMouseEnter, onMouseLeave, onClick, children, viewMoreCount = 3, cardIndex, isVisible }) => {
+  const childrenArray = React.Children.toArray(children);
+  const visibleChildren = childrenArray.slice(0, viewMoreCount);
+  const hasMore = childrenArray.length > viewMoreCount;
+
+  return (
+    <InfoCard 
+      title={title} 
+      icon={icon}
+      sectionKey={sectionKey}
+      hoveredSection={hoveredSection}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+      cardIndex={cardIndex}
+      isVisible={isVisible}
+    >
+      {visibleChildren}
+      {hasMore && (
+        <div className="mt-3 pt-3 border-t border-gray-100 text-center">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+            className="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors duration-200"
+          >
+            View More
+          </button>
+        </div>
+      )}
+    </InfoCard>
+  );
+};
+
 const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -201,24 +824,6 @@ const StyledSelect = ({ label, value, onChange, disabled, children, error }) => 
   );
 };
 
-// Display component for showing info in read-only mode
-const InfoDisplay = ({ label, value, className = "", isPlaceholder = false }) => (
-  <div className={className}>
-    <dt className={styleConfig2.display.item.label}>{label}</dt>
-    <dd 
-      className="text-gray-900" 
-      style={{ 
-        WebkitTextStroke: '0.6px #1f2937',
-        fontWeight: 400,
-        letterSpacing: '0.01em',
-        fontSize: '15px'
-      }}
-    >
-      {value || styleConfig2.display.item.empty}
-    </dd>
-  </div>
-);
-
 const PersonalInfoSection = ({ 
   personalInfo, 
   setPersonalInfo, 
@@ -229,36 +834,35 @@ const PersonalInfoSection = ({
   savePersonalInfo, 
   savingSection,
   memberCategory,
-  sectionImage,  // Add this prop
-  sectionLabel   // Add this prop
+  sectionImage,
+  sectionLabel
 }) => {
-  // Add state for mobile
-  const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [hoveredSection, setHoveredSection] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlaySection, setOverlaySection] = useState(null);
+  const [cardsVisible, setCardsVisible] = useState(false);
   const sectionRef = useRef(null);
 
   useEffect(() => {
-    console.log('🔍 === PersonalInfoSection RENDER ===');
-    console.log('📋 Props received:', {
-      personalInfo: personalInfo,
-      ethnicity: personalInfo?.ethnicity,
-      citizenship: personalInfo?.citizenship,
-      maritalStatus: personalInfo?.maritalStatus,
-      hasAllData: !!(personalInfo?.ethnicity || personalInfo?.citizenship || personalInfo?.maritalStatus)
+    // Inject animation styles
+    const style = animationStyles.injectStyles();
+    
+    setTimeout(() => setHasLoaded(true), 100);
+    
+    // Setup scroll trigger instead of automatic animation
+    const observer = animationStyles.helpers.setupScrollTrigger(sectionRef, () => {
+      // Trigger card animations when section comes into view
+      setTimeout(() => setCardsVisible(true), 100);
     });
-    console.log('🔍 === END PersonalInfoSection ===\n');
-  }, [personalInfo]);
-  
-  // Debug ethnicity specifically in edit mode
-  useEffect(() => {
-    if (editMode.personal && isMobile) {
-      console.log('📱 Mobile Edit Mode - Ethnicity value:', personalInfo?.ethnicity);
-      console.log('📱 Type of ethnicity:', typeof personalInfo?.ethnicity);
-      console.log('📱 Exact value with quotes:', `"${personalInfo?.ethnicity}"`);
-    }
-  }, [editMode.personal, personalInfo?.ethnicity, isMobile]);
-  
+    
+    return () => {
+      document.head.removeChild(style);
+      if (observer) observer.disconnect();
+    };
+  }, []);
+
   // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -266,84 +870,6 @@ const PersonalInfoSection = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Add loading animation styles
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .personal-section-fade-in {
-        animation: personalFadeIn 0.8s ease-out forwards;
-      }
-      .personal-section-slide-in {
-        animation: personalSlideIn 0.8s ease-out forwards;
-      }
-      .personal-section-stagger-in > * {
-        opacity: 0;
-        animation: personalSlideIn 0.5s ease-out forwards;
-      }
-      .personal-section-stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
-      .personal-section-stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
-      .personal-section-stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
-      .personal-section-stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
-      .personal-section-stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
-      .personal-section-stagger-in > *:nth-child(6) { animation-delay: 0.3s; }
-      .personal-section-stagger-in > *:nth-child(7) { animation-delay: 0.35s; }
-      .personal-section-stagger-in > *:nth-child(8) { animation-delay: 0.4s; }
-      .personal-section-stagger-in > *:nth-child(9) { animation-delay: 0.45s; }
-      .personal-section-stagger-in > *:nth-child(10) { animation-delay: 0.5s; }
-      .personal-section-stagger-in > *:nth-child(11) { animation-delay: 0.55s; }
-      .personal-section-stagger-in > *:nth-child(12) { animation-delay: 0.6s; }
-      .personal-section-stagger-in > *:nth-child(13) { animation-delay: 0.65s; }
-      .personal-section-stagger-in > *:nth-child(14) { animation-delay: 0.7s; }
-      .personal-section-stagger-in > *:nth-child(15) { animation-delay: 0.75s; }
-      .personal-section-stagger-in > *:nth-child(16) { animation-delay: 0.8s; }
-      @keyframes personalFadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes personalSlideIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  // Intersection Observer for scroll-triggered animation
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          setTimeout(() => setHasLoaded(true), 100);
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px'
-      }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, [isVisible]);
 
   // Mapping functions for citizenship values
   const mapCitizenshipFromBackend = (backendValue) => {
@@ -366,7 +892,7 @@ const PersonalInfoSection = ({
 
   // Format SSN for display (show only last 4 digits)
   const formatSSN = (ssn) => {
-    if (!ssn) return styleConfig2.display.item.empty;
+    if (!ssn) return '—';
     // If SSN is already masked, return it
     if (ssn.includes('*')) return ssn;
     // Otherwise mask it
@@ -374,12 +900,12 @@ const PersonalInfoSection = ({
     if (cleaned.length >= 4) {
       return `***-**-${cleaned.slice(-4)}`;
     }
-    return styleConfig2.display.item.empty;
+    return '—';
   };
 
   // Format multiple selections for display
   const formatMultipleSelections = (selections) => {
-    if (!selections || selections.length === 0) return styleConfig2.display.item.empty;
+    if (!selections || selections.length === 0) return '—';
     return selections.join(', ');
   };
 
@@ -609,7 +1135,7 @@ const PersonalInfoSection = ({
     { value: "Married", label: "Married" },
     { value: "Divorced", label: "Divorced" },
     { value: "Separated", label: "Separated" },
-    { value: "Widowed", label: "Widowed" },  // This will be mapped to "Widow" in backend
+    { value: "Widowed", label: "Widowed" },
     { value: "Widower", label: "Widower" },
     { value: "Domestic Partner", label: "Domestic Partner" },
     { value: "Significant Other", label: "Significant Other" }
@@ -620,35 +1146,34 @@ const PersonalInfoSection = ({
     ? personalInfo.citizenship.map(mapCitizenshipFromBackend)
     : [];
 
-  // Mobile preview data
-  const getMobilePreview = () => {
-    const previewParts = [];
-    
-    if (personalInfo?.gender) {
-      previewParts.push(personalInfo.gender);
-    }
-    if (personalInfo?.maritalStatus) {
-      previewParts.push(personalInfo.maritalStatus);
-    }
-    if (personalInfo?.ethnicity) {
-      previewParts.push(personalInfo.ethnicity);
-    }
-    if (personalInfo?.citizenship && personalInfo.citizenship.length > 0) {
-      const citizenshipDisplay = personalInfo.citizenship.length === 1 
-        ? mapCitizenshipFromBackend(personalInfo.citizenship[0])
-        : `${personalInfo.citizenship.length} citizenships`;
-      previewParts.push(citizenshipDisplay);
-    }
-    if (personalInfo?.placeOfBirth) {
-      previewParts.push(personalInfo.placeOfBirth);
-    }
-    
-    return previewParts.slice(0, 3).join(' • '); // Return as string with bullet separators
+  const handleCardClick = (sectionKey) => {
+    setOverlaySection(sectionKey);
+    setOverlayOpen(true);
+  };
+
+  const handleOverlaySave = () => {
+    savePersonalInfo();
   };
 
   return (
-    <div ref={sectionRef} className={`${isMobile ? "" : styleConfig2.section.wrapperEnhanced} ${hasLoaded && isVisible ? 'personal-section-fade-in' : 'opacity-0'}`}>
+    <div ref={sectionRef} className={`personal-info-section ${animationStyles.classes.scrollTriggerSection} ${hasLoaded ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
+      {/* Overlay */}
+      <CardOverlay
+        isOpen={overlayOpen}
+        onClose={() => setOverlayOpen(false)}
+        section={overlaySection}
+        data={{ personalInfo }}
+        onEdit={() => {}}
+        onSave={handleOverlaySave}
+        savingSection={savingSection}
+        fieldErrors={{}}
+        personalInfo={personalInfo}
+        setPersonalInfo={setPersonalInfo}
+        savePersonalInfo={savePersonalInfo}
+      />
+      
       {isMobile ? (
+        /* Mobile Version - Keeping original mobile implementation */
         <MobileInfoCard
           iconComponent={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -664,7 +1189,7 @@ const PersonalInfoSection = ({
           {/* Display Mode */}
           {!editMode.personal ? (
             <>
-              <div className={`space-y-4 ${hasLoaded && isVisible ? 'personal-section-stagger-in' : ''}`}>
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <DisplayField label="Birth Name" value={personalInfo.birthName || 'Same as current'} />
                   <DisplayField label="SSN/Gov ID" value={formatSSN(personalInfo.ssn)} />
@@ -737,14 +1262,7 @@ const PersonalInfoSection = ({
               <FormInput
                 label="Place of Birth"
                 value={personalInfo.placeOfBirth || ''}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  console.log('Mobile Place of Birth onChange:', newValue);
-                  console.log('Current state before update:', personalInfo);
-                  const updatedInfo = {...personalInfo, placeOfBirth: newValue};
-                  console.log('State after update:', updatedInfo);
-                  setPersonalInfo(updatedInfo);
-                }}
+                onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
               />
               
               <MobileMultiSelect
@@ -767,190 +1285,248 @@ const PersonalInfoSection = ({
           )}
         </MobileInfoCard>
       ) : (
-        /* Desktop view */
-        <div className={styleConfig2.section.innerPadding}>
-          {/* Desktop Header Section */}
-          <div className={`relative pb-6 mb-6 border-b border-gray-200 ${hasLoaded && isVisible ? 'personal-section-slide-in' : ''}`}>
-            {/* Header content */}
-            <div className="relative z-10 flex justify-between items-start">
-              <div>
-                <div className={styleConfig2.header.wrapper}>
-                  <div className={styleConfig2.sectionIcons.personal}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig2.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className={styleConfig2.header.textContainer}>
-                    <h2 className={styleConfig2.header.title}>Personal Information</h2>
-                    <p className="text-gray-600 text-base mt-1">
-                      Additional personal details for your member file.
-                    </p>
+        /* Desktop Version - Using imported styles */
+        <div className={styleConfig2.section.wrapperEnhanced}>
+          <div className={styleConfig2.section.innerPadding}>
+            {/* Header Section */}
+            <div className={headerStyles.container}>
+              <div className={headerStyles.contentWrapper}>
+                <div className={headerStyles.leftContent}>
+                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
+                    <div className={headerStyles.getIconContainer(styleConfig2, 'personal')}>
+                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className={headerStyles.textContainer(styleConfig2)}>
+                      <h2 className={headerStyles.title(styleConfig2)}>Personal Information</h2>
+                      <p className={headerStyles.subtitle}>
+                        Additional personal details for your member file.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Image on right side */}
-              {sectionImage && (
-                <div className="flex-shrink-0 ml-8">
-                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
-                    <img 
-                      src={sectionImage} 
-                      alt="" 
-                      className="w-full h-full object-cover grayscale"
-                    />
-                    {sectionLabel && (
-                      <div className="absolute bottom-0 right-0">
-                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
-                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
-                            {sectionLabel}
-                            <img src={alcorStar} alt="" className="w-3 h-3" />
-                          </p>
-                        </div>
+                
+                {/* Image on right side */}
+                {sectionImage && (
+                  <div className={sectionImageStyles.wrapper}>
+                    <div className={sectionImageStyles.imageBox}>
+                      <img 
+                        src={sectionImage} 
+                        alt="" 
+                        className={sectionImageStyles.image}
+                      />
+                      {/* Dark purple/blue overlay base */}
+                      <div 
+                        className={sectionImageStyles.overlays.darkBase.className} 
+                        style={sectionImageStyles.overlays.darkBase.style}
+                      ></div>
+                      {/* Radial yellow glow from bottom */}
+                      <div 
+                        className={sectionImageStyles.overlays.yellowGlow.className} 
+                        style={sectionImageStyles.overlays.yellowGlow.style}
+                      ></div>
+                      {/* Purple/pink glow overlay */}
+                      <div 
+                        className={sectionImageStyles.overlays.purpleGlow.className} 
+                        style={sectionImageStyles.overlays.purpleGlow.style}
+                      ></div>
+                      {/* Large star positioned lower */}
+                      <div className={sectionImageStyles.star.wrapper}>
+                        <img 
+                          src={alcorStar} 
+                          alt="" 
+                          className={sectionImageStyles.star.image}
+                          style={sectionImageStyles.star.imageStyle}
+                        />
                       </div>
-                    )}
+                      {sectionLabel && (
+                        <div className={sectionImageStyles.label.wrapper}>
+                          <div className={sectionImageStyles.label.container}>
+                            <p className={sectionImageStyles.label.text}>
+                              {sectionLabel}
+                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Desktop Content - Fields Section */}
-          <div className="bg-white">
-            {/* Display Mode */}
-            {!editMode.personal ? (
-              <div className={`max-w-2xl ${hasLoaded && isVisible ? 'personal-section-stagger-in' : ''}`}>
-                <dl className={styleConfig2.display.dl.wrapperThree}>
-                  <InfoDisplay 
-                    label="Birth Name" 
-                    value={personalInfo.birthName || 'Same as current'} 
-                  />
-                  <InfoDisplay 
-                    label="SSN/Government ID Number" 
-                    value={formatSSN(personalInfo.ssn)} 
-                  />
-                  <InfoDisplay 
-                    label="Gender" 
-                    value={personalInfo.gender} 
-                  />
-                  <InfoDisplay 
-                    label="Race" 
-                    value={formatMultipleSelections(personalInfo.race)} 
-                  />
-                  <InfoDisplay 
-                    label="Ethnicity" 
-                    value={personalInfo.ethnicity} 
-                  />
-                  <InfoDisplay 
-                    label="Citizenship" 
-                    value={formatMultipleSelections(personalInfo.citizenship)} 
-                  />
-                  <InfoDisplay 
-                    label="Place of Birth" 
-                    value={personalInfo.placeOfBirth} 
-                  />
-                  <InfoDisplay 
-                    label="Marital Status" 
-                    value={personalInfo.maritalStatus} 
-                  />
-                </dl>
-              </div>
-            ) : (
-              /* Edit Mode - Form */
-              <div className="max-w-2xl">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Birth Name"
-                    type="text"
-                    value={personalInfo.birthName || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
-                    disabled={!editMode.personal}
-                    placeholder="Same as current"
-                  />
-                  
-                  <StyledSelect
-                    label="Gender *"
-                    value={personalInfo.gender || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
-                    disabled={!editMode.personal}
+            {/* Content */}
+            <div className="bg-white">
+              {!editMode.personal ? (
+                /* Display Mode with Cards */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Identity Card */}
+                  <InfoCardWithViewMore 
+                    title="Identity Details" 
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                    }
+                    sectionKey="identity"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('identity')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('identity')}
+                    viewMoreCount={3}
+                    cardIndex={0}
+                    isVisible={cardsVisible}
                   >
-                    <option value="">Select...</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </StyledSelect>
-                  
-                  <MultiSelectDropdown
-                    label="Race"
-                    options={raceOptions}
-                    value={personalInfo.race || []}
-                    onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
-                    disabled={!editMode.personal}
-                  />
-                  
-                  <SingleSelectDropdown
-                    label="Ethnicity"
-                    options={ethnicityOptions}
-                    value={personalInfo.ethnicity || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
-                    disabled={!editMode.personal}
-                  />
-                  
-                  <MultiSelectDropdown
-                    label="Citizenship"
-                    options={citizenshipOptions}
-                    value={mappedCitizenshipValue}
-                    onChange={(selected) => {
-                      // Map back to backend format when saving
-                      const backendValues = selected.map(mapCitizenshipToBackend);
-                      setPersonalInfo({...personalInfo, citizenship: backendValues});
-                    }}
-                    disabled={!editMode.personal}
-                  />
-                  
-                  <Input
-                    label="Place of Birth"
-                    type="text"
-                    value={personalInfo.placeOfBirth || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
-                    disabled={!editMode.personal}
-                  />
-                  
-                  <SingleSelectDropdown
-                    label="Marital Status"
-                    options={maritalStatusOptions}
-                    value={personalInfo.maritalStatus || ''}
-                    onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
-                    disabled={!editMode.personal}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* Action buttons */}
-            <div className="flex justify-end mt-6 -mr-8">
-              {editMode?.personal ? (
-                <div className="flex">
-                  <WhiteButton
-                    text="Cancel"
-                    onClick={() => cancelEdit && cancelEdit('personal')}
-                    className="scale-75 -mr-8"
-                    spinStar={false}
-                  />
-                  <PurpleButton
-                    text={savingSection === 'saved' ? 'Saved' : savingSection === 'personal' ? 'Saving...' : 'Save'}
-                    onClick={savePersonalInfo}
-                    className="scale-75"
-                    spinStar={false}
-                  />
+                    <InfoField label="Birth Name" value={personalInfo?.birthName || 'Same as current'} />
+                    <InfoField label="SSN/Government ID" value={formatSSN(personalInfo?.ssn)} />
+                    <InfoField label="Gender" value={personalInfo?.gender || '—'} />
+                  </InfoCardWithViewMore>
+
+                  {/* Demographics Card */}
+                  <InfoCardWithViewMore 
+                    title="Demographics" 
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    }
+                    sectionKey="demographics"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('demographics')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('demographics')}
+                    viewMoreCount={3}
+                    cardIndex={1}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Race" value={formatMultipleSelections(personalInfo?.race)} />
+                    <InfoField label="Ethnicity" value={personalInfo?.ethnicity || '—'} />
+                    <InfoField label="Marital Status" value={personalInfo?.maritalStatus || '—'} />
+                  </InfoCardWithViewMore>
+
+                  {/* Origin Card */}
+                  <InfoCardWithViewMore 
+                    title="Origin & Citizenship" 
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                    sectionKey="origin"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('origin')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('origin')}
+                    viewMoreCount={3}
+                    cardIndex={2}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Place of Birth" value={personalInfo?.placeOfBirth || '—'} />
+                    <InfoField label="Citizenship" value={formatMultipleSelections(personalInfo?.citizenship)} />
+                    <div className="opacity-0 pointer-events-none">
+                      <InfoField label="" value="" />
+                    </div>
+                  </InfoCardWithViewMore>
                 </div>
               ) : (
-                <RainbowButton
-                  text="Edit"
-                  onClick={() => toggleEditMode && toggleEditMode('personal')}
-                  className="scale-75"
-                  spinStar={true}
-                />
+                /* Edit Mode - Using same style as ContactInfoSection */
+                <div className="max-w-2xl">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Birth Name"
+                      type="text"
+                      value={personalInfo.birthName || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                      placeholder="Same as current"
+                    />
+                    
+                    <StyledSelect
+                      label="Gender *"
+                      value={personalInfo.gender || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </StyledSelect>
+                    
+                    <MultiSelectDropdown
+                      label="Race"
+                      options={raceOptions}
+                      value={personalInfo.race || []}
+                      onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    
+                    <SingleSelectDropdown
+                      label="Ethnicity"
+                      options={ethnicityOptions}
+                      value={personalInfo.ethnicity || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    
+                    <MultiSelectDropdown
+                      label="Citizenship"
+                      options={citizenshipOptions}
+                      value={mappedCitizenshipValue}
+                      onChange={(selected) => {
+                        // Map back to backend format when saving
+                        const backendValues = selected.map(mapCitizenshipToBackend);
+                        setPersonalInfo({...personalInfo, citizenship: backendValues});
+                      }}
+                      disabled={savingSection === 'personal'}
+                    />
+                    
+                    <Input
+                      label="Place of Birth"
+                      type="text"
+                      value={personalInfo.placeOfBirth || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                    
+                    <SingleSelectDropdown
+                      label="Marital Status"
+                      options={maritalStatusOptions}
+                      value={personalInfo.maritalStatus || ''}
+                      onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
+                      disabled={savingSection === 'personal'}
+                    />
+                  </div>
+                </div>
               )}
+              
+              {/* Action buttons */}
+              <div className={buttonStyles.actionContainer}>
+                {editMode?.personal ? (
+                  <div className={buttonStyles.buttonGroup}>
+                    <WhiteButton
+                      text="Cancel"
+                      onClick={() => cancelEdit && cancelEdit('personal')}
+                      className={buttonStyles.whiteButton.withMargin}
+                      spinStar={buttonStyles.starConfig.enabled}
+                    />
+                    <PurpleButton
+                      text={buttonStyles.getSaveButtonText(savingSection)}
+                      onClick={savePersonalInfo}
+                      className={buttonStyles.purpleButton.base}
+                      spinStar={buttonStyles.starConfig.enabled}
+                    />
+                  </div>
+                ) : (
+                  <WhiteButton
+                    text="Edit"
+                    onClick={() => toggleEditMode && toggleEditMode('personal')}
+                    className={buttonStyles.whiteButton.base}
+                    spinStar={buttonStyles.starConfig.enabled}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

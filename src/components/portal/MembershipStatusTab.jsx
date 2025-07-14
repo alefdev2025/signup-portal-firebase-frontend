@@ -397,7 +397,7 @@ const MembershipStatusTab = () => {
 
             {/* Content Section - Desktop */}
             <div className="hidden lg:block bg-white pt-4 lg:pt-6">
-              <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-10 min-h-[300px] lg:min-h-[400px]">
+              <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-10 min-h-[300px] lg:min-h-[300px]">
                 {/* Personal Information Section */}
                 {activeSection === 'personal' && (
                   <div className="stagger-in">

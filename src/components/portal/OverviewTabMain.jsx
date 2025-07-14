@@ -95,6 +95,20 @@ const OverviewTab = ({ setActiveTab }) => {
       return () => clearTimeout(timer);
     }
   }, [salesforceContactId, profileLoading, userName]);
+  
+  // Then in your JSX (around line 476-490):
+  <h1 
+    className={`font-semibold text-white mb-3 drop-shadow-lg tracking-tight transition-opacity duration-500 ${
+      showWelcome ? 'opacity-100' : 'opacity-0'
+    }`}
+    style={{ 
+      fontSize: '1.75rem',
+      fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important"
+    }}
+  >
+    <span className="text-white/90">Welcome</span>
+    <span className="text-white">, {userName}!</span>
+  </h1>
 
   // Fetch user name - now using profile data as primary source
   useEffect(() => {
@@ -297,79 +311,59 @@ const OverviewTab = ({ setActiveTab }) => {
   };
 
   return (
+    //<div className="-mt-4 px-6 md:px-8 lg:px-12">
     <div className="overview-tab -mt-4 pt-6 px-6 md:px-8 lg:px-12">
-      {/* Hero Banner - Updated with gradient overlays and reduced height */}
+      {/* Hero Banner */}
       <div 
         className="relative rounded-xl overflow-hidden mb-12 animate-fadeIn"
-        style={{ height: '200px' }} // Reduced from ~400px to 200px
+        style={bannerStyles.container}
       >
         <style jsx>{fadeInAnimation}</style>
         
-        {/* Background Image */}
-        <img 
-          src={dewarsImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'grayscale(0.2)' }}
-        />
-        
-        {/* Dark purple/blue overlay base */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'rgba(26, 18, 47, 0.7)'
+            ...bannerStyles.backgroundImage,  // Spread the styles from banner file
+            backgroundImage: `url(${dewarsImage})`,  // Keep the image URL here
           }}
         />
         
-        {/* Radial yellow glow from bottom */}
+        {/* Main gradient */}
         <div 
           className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 120% 80% at 50% 120%, rgba(255, 215, 0, 0.8) 0%, rgba(255, 184, 0, 0.6) 20%, rgba(255, 140, 0, 0.4) 40%, transparent 70%)'
-          }}
+          style={bannerStyles.mainGradient}
         />
         
-        {/* Purple/pink glow overlay */}
+        {/* Right side gradient overlay */}
         <div 
           className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 100% 100% at 50% 100%, rgba(147, 51, 234, 0.3) 0%, rgba(109, 40, 217, 0.4) 30%, transparent 60%)',
-            mixBlendMode: 'screen'
-          }}
+          style={bannerStyles.rightGradientOverlay}
         />
         
-        {/* Star decoration */}
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-center" style={{ height: '150%' }}>
-          <img 
-            src={alcorStar} 
-            alt="" 
-            className="w-32 h-32 opacity-40"
-            style={{
-              filter: 'brightness(2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))',
-              transform: 'translateY(50%)'
-            }}
-          />
-        </div>
+        {/* Vignette overlay */}
+        <div 
+          className="absolute inset-0"
+          style={bannerStyles.vignetteOverlay}
+        />
         
-        {/* Content */}
-        <div className="relative z-10 px-8 py-4 h-full flex items-center">
+        <div className="relative z-10 px-8 py-6 h-full flex items-center">
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message */}
             <div className="flex-1">
-              <h1 
-                className="font-semibold text-white mb-2 drop-shadow-lg tracking-tight"
-                style={{ 
-                  fontSize: '1.5rem',
-                  fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
-                  opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
-                  transition: 'opacity 0.5s ease-in-out',
-                  transitionDelay: '0.3s'
-                }}
-              >
-                <span className="text-white/90">Welcome</span>
-                <span className="text-white">, {userName}!</span>
-              </h1>
-              <p className="text-sm md:text-base text-white/90 mb-4 drop-shadow">
+            <h1 
+  className="font-semibold text-white mb-3 drop-shadow-lg tracking-tight"
+  style={{ 
+    fontSize: '1.75rem',
+    fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
+    opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
+    transition: 'opacity 0.5s ease-in-out',
+    transitionDelay: '0.3s'
+  }}
+>
+  <span className="text-white/90">Welcome</span>
+  <span className="text-white">, {userName}!</span>
+</h1>
+              <p className="text-base md:text-lg text-white/90 mb-6 drop-shadow">
                 Access your membership settings, documents, and resources all in one place.
               </p>
               <GradientButton 
@@ -382,7 +376,7 @@ const OverviewTab = ({ setActiveTab }) => {
                   }
                 }}
                 variant="outline"
-                size="sm"
+                size="sm"  // Changed from "md" to "sm"
                 className="border-white/30 text-white hover:bg-white/10"
               >
                 View Membership Status
@@ -391,13 +385,13 @@ const OverviewTab = ({ setActiveTab }) => {
             
             {/* Latest Media - only show if we have podcasts */}
             {mediaItems.filter(item => item.type === 'podcast').length > 0 && (
-              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-4 max-w-sm border border-white/20">
+              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-6 max-w-md border border-white/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-white text-xs font-semibold drop-shadow">LATEST MEDIA</h3>
+                  <h3 className="text-white text-sm font-semibold drop-shadow">LATEST MEDIA</h3>
                   <img 
                     src={alcorStar} 
                     alt="Alcor Star" 
-                    className="w-3 h-3"
+                    className="w-4 h-4"
                   />
                 </div>
                 <div className="flex items-start gap-3">
@@ -410,7 +404,7 @@ const OverviewTab = ({ setActiveTab }) => {
                         <img 
                           src={podcastImage} 
                           alt={latestPodcast.title}
-                          className="w-20 h-14 object-cover rounded flex-shrink-0"
+                          className="w-24 h-16 object-cover rounded flex-shrink-0"
                         />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -421,7 +415,7 @@ const OverviewTab = ({ setActiveTab }) => {
                               {formatNotificationTime(latestPodcast.publishDate)}
                             </span>
                           </div>
-                          <h4 className="text-xs font-medium text-white line-clamp-2 mb-1 drop-shadow">
+                          <h4 className="text-xs font-medium text-white line-clamp-2 mb-1.5 drop-shadow">
                             {latestPodcast.title}
                           </h4>
                           {latestPodcast.link && (
@@ -445,8 +439,8 @@ const OverviewTab = ({ setActiveTab }) => {
         </div>
       </div>
 
-      {/* Quick Actions - HIDDEN
-      <div ref={quickActionsRef} id="quickActions" className="mb-8 mt-16">
+{/* Quick Actions */}
+<div ref={quickActionsRef} id="quickActions" className="mb-8 mt-16">
         <h2 className={`text-2xl font-semibold text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div 
@@ -534,7 +528,6 @@ const OverviewTab = ({ setActiveTab }) => {
           </div>
         </div>
       </div>
-      */}
 
       {/* Announcements Section */}
       <div ref={announcementsRef} id="announcements" className="mt-16">

@@ -44,8 +44,6 @@ const OverviewTab = ({ setActiveTab }) => {
   const newslettersRef = useRef(null);
   const recentActivityRef = useRef(null);
 
-  const [showWelcome, setShowWelcome] = useState(false);
-
   // Helper function to format notification time
   const formatNotificationTime = (dateString) => {
     if (!dateString) return '';
@@ -84,17 +82,6 @@ const OverviewTab = ({ setActiveTab }) => {
       setIsRefreshing(false);
     }
   };
-
-  useEffect(() => {
-    if (salesforceContactId && !profileLoading && userName && userName !== '0031I00000tRcNZ') {
-      // Delay showing the welcome message
-      const timer = setTimeout(() => {
-        setShowWelcome(true);
-      }, 300); // Adjust delay as needed
-      
-      return () => clearTimeout(timer);
-    }
-  }, [salesforceContactId, profileLoading, userName]);
 
   // Fetch user name - now using profile data as primary source
   useEffect(() => {
@@ -223,30 +210,16 @@ const OverviewTab = ({ setActiveTab }) => {
       { threshold: 0.1 }
     );
 
-    const delayedObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleSections((prev) => new Set([...prev, entry.target.id]));
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    // Quick actions and recent activity use regular observer
     if (quickActionsRef.current) observer.observe(quickActionsRef.current);
     if (recentActivityRef.current) observer.observe(recentActivityRef.current);
-    
-    // Announcements and newsletters need more scroll
-    if (announcementsRef.current) delayedObserver.observe(announcementsRef.current);
-    if (newslettersRef.current) delayedObserver.observe(newslettersRef.current);
+    if (announcementsRef.current) observer.observe(announcementsRef.current);
+    if (newslettersRef.current) observer.observe(newslettersRef.current);
 
     return () => {
       if (quickActionsRef.current) observer.unobserve(quickActionsRef.current);
       if (recentActivityRef.current) observer.unobserve(recentActivityRef.current);
-      if (announcementsRef.current) delayedObserver.unobserve(announcementsRef.current);
-      if (newslettersRef.current) delayedObserver.unobserve(newslettersRef.current);
+      if (announcementsRef.current) observer.unobserve(announcementsRef.current);
+      if (newslettersRef.current) observer.unobserve(newslettersRef.current);
     };
   }, []);
 
@@ -298,246 +271,10 @@ const OverviewTab = ({ setActiveTab }) => {
 
   return (
     <div className="overview-tab -mt-4 pt-6 px-6 md:px-8 lg:px-12">
-      {/* Hero Banner - Updated with gradient overlays and reduced height */}
-      <div 
-        className="relative rounded-xl overflow-hidden mb-12 animate-fadeIn"
-        style={{ height: '200px' }} // Reduced from ~400px to 200px
-      >
-        <style jsx>{fadeInAnimation}</style>
-        
-        {/* Background Image */}
-        <img 
-          src={dewarsImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'grayscale(0.2)' }}
-        />
-        
-        {/* Dark purple/blue overlay base */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'rgba(26, 18, 47, 0.7)'
-          }}
-        />
-        
-        {/* Radial yellow glow from bottom */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 120% 80% at 50% 120%, rgba(255, 215, 0, 0.8) 0%, rgba(255, 184, 0, 0.6) 20%, rgba(255, 140, 0, 0.4) 40%, transparent 70%)'
-          }}
-        />
-        
-        {/* Purple/pink glow overlay */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 100% 100% at 50% 100%, rgba(147, 51, 234, 0.3) 0%, rgba(109, 40, 217, 0.4) 30%, transparent 60%)',
-            mixBlendMode: 'screen'
-          }}
-        />
-        
-        {/* Star decoration */}
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-center" style={{ height: '150%' }}>
-          <img 
-            src={alcorStar} 
-            alt="" 
-            className="w-32 h-32 opacity-40"
-            style={{
-              filter: 'brightness(2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))',
-              transform: 'translateY(50%)'
-            }}
-          />
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-10 px-8 py-4 h-full flex items-center">
-          <div className="flex items-center gap-12 w-full">
-            {/* Welcome message */}
-            <div className="flex-1">
-              <h1 
-                className="font-semibold text-white mb-2 drop-shadow-lg tracking-tight"
-                style={{ 
-                  fontSize: '1.5rem',
-                  fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
-                  opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
-                  transition: 'opacity 0.5s ease-in-out',
-                  transitionDelay: '0.3s'
-                }}
-              >
-                <span className="text-white/90">Welcome</span>
-                <span className="text-white">, {userName}!</span>
-              </h1>
-              <p className="text-sm md:text-base text-white/90 mb-4 drop-shadow">
-                Access your membership settings, documents, and resources all in one place.
-              </p>
-              <GradientButton 
-                onClick={() => {
-                  console.log('🔄 [OverviewTab] Navigating to membership status tab');
-                  if (setActiveTab) {
-                    setActiveTab('membership-status');
-                  } else {
-                    console.error('❌ [OverviewTab] setActiveTab function not provided');
-                  }
-                }}
-                variant="outline"
-                size="sm"
-                className="border-white/30 text-white hover:bg-white/10"
-              >
-                View Membership Status
-              </GradientButton>
-            </div>
-            
-            {/* Latest Media - only show if we have podcasts */}
-            {mediaItems.filter(item => item.type === 'podcast').length > 0 && (
-              <div className="hidden lg:block bg-white/15 backdrop-blur-sm rounded p-4 max-w-sm border border-white/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-white text-xs font-semibold drop-shadow">LATEST MEDIA</h3>
-                  <img 
-                    src={alcorStar} 
-                    alt="Alcor Star" 
-                    className="w-3 h-3"
-                  />
-                </div>
-                <div className="flex items-start gap-3">
-                  {(() => {
-                    const latestPodcast = mediaItems.find(item => item.type === 'podcast');
-                    if (!latestPodcast) return null;
-                    
-                    return (
-                      <>
-                        <img 
-                          src={podcastImage} 
-                          alt={latestPodcast.title}
-                          className="w-20 h-14 object-cover rounded flex-shrink-0"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-                              PODCAST
-                            </span>
-                            <span className="text-xs text-white/70">
-                              {formatNotificationTime(latestPodcast.publishDate)}
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-medium text-white line-clamp-2 mb-1 drop-shadow">
-                            {latestPodcast.title}
-                          </h4>
-                          {latestPodcast.link && (
-                            <a 
-                              href={latestPodcast.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-white/90 hover:text-white transition-colors font-medium inline-block"
-                            >
-                              LISTEN NOW →
-                            </a>
-                          )}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <style jsx>{fadeInAnimation}</style>
 
-      {/* Quick Actions - HIDDEN
-      <div ref={quickActionsRef} id="quickActions" className="mb-8 mt-16">
-        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '100ms',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
-              style={{ 
-                background: USE_GRADIENT_COLORS ? gradients.account : originalColor 
-              }}
-            >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Account</h3>
-            <p className="text-sm text-gray-500 font-normal">Manage your profile and preferences</p>
-          </div>
-          
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '200ms',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
-              style={{ 
-                background: USE_GRADIENT_COLORS ? gradients.membership : originalColor 
-              }}
-            >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-              </svg>
-            </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Membership</h3>
-            <p className="text-sm text-gray-500 font-normal">Check your membership details</p>
-          </div>
-          
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '300ms',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
-              style={{ 
-                background: USE_GRADIENT_COLORS ? gradients.payments : originalColor 
-              }}
-            >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-              </svg>
-            </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Payments</h3>
-            <p className="text-sm text-gray-500 font-normal">Review recent transactions</p>
-          </div>
-          
-          <div 
-            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-            style={{ 
-              transitionDelay: '400ms',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}
-          >
-            <div 
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
-              style={{ 
-                background: USE_GRADIENT_COLORS ? gradients.support : originalColor 
-              }}
-            >
-              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-            </div>
-            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Support</h3>
-            <p className="text-sm text-gray-500 font-normal">Get help when you need it</p>
-          </div>
-        </div>
-      </div>
-      */}
-
-      {/* Announcements Section */}
-      <div ref={announcementsRef} id="announcements" className="mt-16">
+      {/* Announcements Section - Now First */}
+      <div ref={announcementsRef} id="announcements" className="mb-16">
         <h2 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           Announcements
         </h2>
@@ -643,8 +380,8 @@ const OverviewTab = ({ setActiveTab }) => {
         )}
       </div>
 
-      {/* Member Newsletter Section */}
-      <div ref={newslettersRef} id="newsletters" className="mt-20">
+      {/* Member Newsletter Section - Now Second */}
+      <div ref={newslettersRef} id="newsletters" className="mb-16">
         <h2 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-800 ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           Member Newsletters
         </h2>
@@ -715,8 +452,106 @@ const OverviewTab = ({ setActiveTab }) => {
         )}
       </div>
 
-      {/* Recent Activity */}
-      <div ref={recentActivityRef} id="recentActivity" className="mt-16 mb-20">
+      {/* Quick Actions - Now Third */}
+      <div ref={quickActionsRef} id="quickActions" className="mb-16">
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-8 transition-all duration-800 ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div 
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ 
+              transitionDelay: '100ms',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <div 
+              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
+              style={{ 
+                background: USE_GRADIENT_COLORS ? gradients.account : originalColor 
+              }}
+            >
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Account</h3>
+            <p className="text-sm text-gray-500 font-normal">Manage your profile and preferences</p>
+          </div>
+          
+          <div 
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ 
+              transitionDelay: '200ms',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+            onClick={() => {
+              console.log('🔄 [OverviewTab] Navigating to membership status tab');
+              if (setActiveTab) {
+                setActiveTab('membership-status');
+              } else {
+                console.error('❌ [OverviewTab] setActiveTab function not provided');
+              }
+            }}
+          >
+            <div 
+              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
+              style={{ 
+                background: USE_GRADIENT_COLORS ? gradients.membership : originalColor 
+              }}
+            >
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Membership</h3>
+            <p className="text-sm text-gray-500 font-normal">Check your membership details</p>
+          </div>
+          
+          <div 
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ 
+              transitionDelay: '300ms',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <div 
+              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
+              style={{ 
+                background: USE_GRADIENT_COLORS ? gradients.payments : originalColor 
+              }}
+            >
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Payments</h3>
+            <p className="text-sm text-gray-500 font-normal">Review recent transactions</p>
+          </div>
+          
+          <div 
+            className={`bg-gray-100 hover:bg-gray-50 hover:scale-105 rounded p-6 transition-all cursor-pointer group duration-300 shadow-lg ${visibleSections.has('quickActions') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ 
+              transitionDelay: '400ms',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <div 
+              className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative overflow-hidden"
+              style={{ 
+                background: USE_GRADIENT_COLORS ? gradients.support : originalColor 
+              }}
+            >
+              <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-lg text-[#2a2346] mb-1">Support</h3>
+            <p className="text-sm text-gray-500 font-normal">Get help when you need it</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity - Now Last */}
+      <div ref={recentActivityRef} id="recentActivity" className="mb-20">
         <h2 className={`text-2xl font-semibold text-[#2a2346] mb-4 transition-all duration-800 ${visibleSections.has('recentActivity') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Recent Activity</h2>
         <div className="space-y-4">
           {activitiesLoading ? (

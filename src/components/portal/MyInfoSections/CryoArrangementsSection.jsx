@@ -1,55 +1,519 @@
 import React, { useState, useEffect } from 'react';
-import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
+import ReactDOM from 'react-dom';
+import { Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
-import styleConfig from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
-import { isSectionEditable } from '../memberCategoryConfig';
-import { cleanAddressData, cleanAddressObject, formatEmail, formatPhone, formatStreetAddress, formatCity, formatStateProvince, formatPostalCode, formatCountry } from '../utils/dataFormatting';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
+import styleConfig2 from '../styleConfig2';
+import { 
+  overlayStyles, 
+  infoCardStyles, 
+  sectionImageStyles, 
+  headerStyles, 
+  buttonStyles, 
+  animationStyles 
+} from './desktopCardStyles/index';
+import { InfoField, InfoCard } from './SharedInfoComponents';
+import { isSectionEditable } from '../memberCategoryConfig';
+import { cleanAddressData, cleanAddressObject, formatEmail, formatPhone, formatStreetAddress, formatCity, formatStateProvince, formatPostalCode, formatCountry } from '../utils/dataFormatting';
 
 // Melissa API configuration
 const MELISSA_API_KEY = 'AVUaS6bp3WJyyFKHjjwqgj**nSAcwXpxhQ0PC2lXxuDAZ-**';
 const MELISSA_API_URL = 'https://address.melissadata.net/v3/WEB/GlobalAddress/doGlobalAddress';
 
-// Display component for showing info in read-only mode
-const InfoDisplay = ({ label, value, className = "" }) => (
-  <div className={className}>
-    <dt className={styleConfig.display.item.label}>{label}</dt>
-    <dd 
-      className="text-gray-900" 
-      style={{ 
-        WebkitTextStroke: '0.6px #1f2937',
-        fontWeight: 400,
-        letterSpacing: '0.01em',
-        fontSize: '15px'
-      }}
-    >
-      {value || styleConfig.display.item.empty}
-    </dd>
-  </div>
-);
+// Overlay Component
+const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, cryoArrangements, setCryoArrangements, saveCryoArrangements, validatingAddress, validationError, handleSaveWithValidation, handleSaveAnyway, canEdit, memberCategory }) => {
+  const [editMode, setEditMode] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setEditMode(canEdit);  // Only start in edit mode if user can edit
+      setShowSuccess(false);
+    }
+  }, [isOpen, canEdit]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (canEdit) {
+      handleSaveWithValidation();
+    }
+  };
+
+  const handleCancel = () => {
+    setCryoArrangements(data.cryoArrangements);
+    setEditMode(false);
+    onClose();
+  };
+
+  const formatMethod = (method) => {
+    if (!method) return '—';
+    if (method === 'WholeBody') return 'Whole Body Cryopreservation ($220,000 US / $230,000 International)';
+    if (method === 'Neuro') return 'Neurocryopreservation ($80,000 US / $90,000 International)';
+    return method;
+  };
+
+  const formatCryoDisclosure = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'Alcor is authorized to freely release Cryopreservation Member information at its discretion';
+    if (disclosure === 'confidential') return 'Alcor will make reasonable efforts to maintain confidentiality of Cryopreservation Member information';
+    return disclosure;
+  };
+
+  const formatMemberDisclosure = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'I give Alcor permission to freely release my name and related Alcor membership status at its discretion';
+    if (disclosure === 'confidential') return 'Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor\'s General Terms and Conditions';
+    return disclosure;
+  };
+
+  const formatRemainsHandling = (handling) => {
+    if (!handling) return '—';
+    if (handling === 'return') return 'Return to designated recipient';
+    if (handling === 'donate') return 'Donate to medical research or dispose at Alcor\'s discretion';
+    return handling;
+  };
+
+  const formatAddress = (street, city, state, postalCode, country) => {
+    const parts = [street, city, state, postalCode, country].filter(Boolean);
+    if (parts.length === 0) return '—';
+    return parts.join(', ');
+  };
+
+  const getFieldDescriptions = () => {
+    switch (section) {
+      case 'method':
+        return {
+          title: 'Cryopreservation Method',
+          description: 'Your chosen method of cryopreservation and associated funding requirements. These selections affect your funding minimums and cannot be changed through this portal.',
+          fields: {
+            'Method': 'Whole Body or Neurocryopreservation',
+            'CMS Waiver': 'Comprehensive Member Standby waiver option'
+          }
+        };
+      case 'remains':
+        return {
+          title: 'Remains Handling',
+          description: 'Instructions for handling of non-cryopreserved remains. If returning to a recipient, please provide complete contact information.',
+          fields: {
+            'Handling': 'Return to recipient or donate to medical research',
+            'Recipient': 'Contact person for remains return'
+          }
+        };
+      case 'disclosure':
+        return {
+          title: 'Privacy & Disclosure',
+          description: 'Your preferences for how Alcor handles your personal information and membership status. These settings control public disclosure of your cryopreservation arrangements.',
+          fields: {
+            'Information': 'Cryopreservation information disclosure preference',
+            'Name': 'Member name and status disclosure preference'
+          }
+        };
+      default:
+        return { title: '', description: '', fields: {} };
+    }
+  };
+
+  const fieldInfo = getFieldDescriptions();
+
+  return ReactDOM.createPortal(
+    <div className={overlayStyles.container}>
+      <div className={overlayStyles.backdrop} onClick={onClose}></div>
+      
+      <div className={overlayStyles.contentWrapper}>
+        <div className={overlayStyles.contentBox}>
+          {/* Header */}
+          <div className={overlayStyles.header.wrapper}>
+            <button
+              onClick={onClose}
+              className={overlayStyles.header.closeButton}
+            >
+              <svg className={overlayStyles.header.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className={overlayStyles.header.content}>
+              <div className={overlayStyles.header.iconSection}>
+                <div className={overlayStyles.header.iconBox} style={overlayStyles.header.iconBoxBg}>
+                  <svg className={overlayStyles.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={overlayStyles.header.iconColor}>
+                    {section === 'method' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    )}
+                    {section === 'remains' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.5l-11.224 4.52a1 1 0 01-1.553-.894V7.874a1 1 0 011.553-.894L21 11.5v-3zm0 7v-3l-11.224 4.52a1 1 0 01-1.553-.894v-4.252a1 1 0 011.553-.894L21 15.5z" />
+                    )}
+                    {section === 'disclosure' && (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    )}
+                  </svg>
+                </div>
+                <div className={overlayStyles.header.textWrapper}>
+                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                    {fieldInfo.title}
+                  </span>
+                  <p className={overlayStyles.header.description}>
+                    {fieldInfo.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Success Message */}
+          {showSuccess && (
+            <div className={overlayStyles.body.successMessage.container}>
+              <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className={overlayStyles.body.wrapper}>
+            {/* Fields */}
+            {!editMode || !canEdit ? (
+              /* Display Mode */
+              <div className={overlayStyles.body.content}>
+                {section === 'method' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Method of Cryopreservation</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.method)}
+                      >
+                        {formatMethod(cryoArrangements?.method)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>CMS Fee Waiver</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(cryoArrangements?.cmsWaiver === undefined)}
+                      >
+                        {cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
+                      </p>
+                    </div>
+                    {!canEdit && (
+                      <div className={overlayStyles.displayMode.field.note}>
+                        <p className="text-sm text-gray-500 italic">
+                          Contact Alcor staff to make changes to these selections
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {section === 'remains' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Non-Cryopreserved Remains Handling</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.remainsHandling)}
+                      >
+                        {formatRemainsHandling(cryoArrangements?.remainsHandling)}
+                      </p>
+                    </div>
+                    {cryoArrangements?.remainsHandling === 'return' && (
+                      <>
+                        <div>
+                          <label className={overlayStyles.displayMode.field.label}>Recipient Name</label>
+                          <p 
+                            className={overlayStyles.displayMode.field.value}
+                            style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.recipientName)}
+                          >
+                            {cryoArrangements?.recipientName || '—'}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-8">
+                          <div>
+                            <label className={overlayStyles.displayMode.field.label}>Recipient Phone</label>
+                            <p 
+                              className={overlayStyles.displayMode.field.value}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.recipientPhone)}
+                            >
+                              {cryoArrangements?.recipientPhone || '—'}
+                            </p>
+                          </div>
+                          <div>
+                            <label className={overlayStyles.displayMode.field.label}>Recipient Email</label>
+                            <p 
+                              className={overlayStyles.displayMode.field.value}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.recipientEmail)}
+                            >
+                              {cryoArrangements?.recipientEmail || '—'}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className={overlayStyles.displayMode.field.label}>Recipient Mailing Address</label>
+                          <p 
+                            className={overlayStyles.displayMode.field.value}
+                            style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.recipientMailingStreet)}
+                          >
+                            {formatAddress(
+                              cryoArrangements?.recipientMailingStreet,
+                              cryoArrangements?.recipientMailingCity,
+                              cryoArrangements?.recipientMailingState,
+                              cryoArrangements?.recipientMailingPostalCode,
+                              cryoArrangements?.recipientMailingCountry
+                            )}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {section === 'disclosure' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Cryopreservation Information Disclosure</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.cryopreservationDisclosure)}
+                      >
+                        {formatCryoDisclosure(cryoArrangements?.cryopreservationDisclosure)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>Member Name Disclosure</label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!cryoArrangements?.memberPublicDisclosure)}
+                      >
+                        {formatMemberDisclosure(cryoArrangements?.memberPublicDisclosure)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Edit Mode - Only for editable sections */
+              <div className={overlayStyles.body.content}>
+                {section === 'method' && (
+                  <div className="space-y-4">
+                    <div className={overlayStyles.editMode.readOnly.wrapper}>
+                      <label className={overlayStyles.editMode.readOnly.label}>
+                        Method of Cryopreservation
+                        <span className={overlayStyles.editMode.readOnly.helperText}>
+                          (Contact Alcor staff to make changes)
+                        </span>
+                      </label>
+                      <div className={overlayStyles.editMode.readOnly.value}>
+                        {formatMethod(cryoArrangements?.method)}
+                      </div>
+                    </div>
+                    <div className={overlayStyles.editMode.readOnly.wrapper}>
+                      <label className={overlayStyles.editMode.readOnly.label}>
+                        CMS Fee Waiver
+                        <span className={overlayStyles.editMode.readOnly.helperText}>
+                          (Contact Alcor staff to make changes)
+                        </span>
+                      </label>
+                      <div className={overlayStyles.editMode.readOnly.value}>
+                        {cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {section === 'remains' && (
+                  <div className="space-y-4">
+                    <Select
+                      label="Non-Cryopreserved Remains Handling"
+                      value={cryoArrangements?.remainsHandling || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="return">Return to designated recipient</option>
+                      <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
+                    </Select>
+
+                    {cryoArrangements?.remainsHandling === 'return' && (
+                      <>
+                        <Input
+                          label="Recipient Name"
+                          type="text"
+                          value={cryoArrangements?.recipientName || ''}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Recipient Phone"
+                            type="tel"
+                            value={cryoArrangements?.recipientPhone || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                          <Input
+                            label="Recipient Email"
+                            type="email"
+                            value={cryoArrangements?.recipientEmail || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                        </div>
+                        
+                        <h4 className="text-sm font-medium text-gray-700 mt-4">Recipient Mailing Address</h4>
+                        <Input
+                          label="Street Address"
+                          value={cryoArrangements?.recipientMailingStreet || ''}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="City"
+                            value={cryoArrangements?.recipientMailingCity || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                          <Input
+                            label="State/Province"
+                            value={cryoArrangements?.recipientMailingState || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingState: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Zip/Postal Code"
+                            value={cryoArrangements?.recipientMailingPostalCode || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingPostalCode: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                          <Input
+                            label="Country"
+                            value={cryoArrangements?.recipientMailingCountry || 'US'}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCountry: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                        </div>
+                        {validationError && (
+                          <p className="mt-2 text-sm text-red-600">{validationError}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {section === 'disclosure' && (
+                  <div className="space-y-4">
+                    <Select
+                      label="Cryopreservation Information Disclosure"
+                      value={cryoArrangements?.cryopreservationDisclosure || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
+                      <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
+                    </Select>
+
+                    <Select
+                      label="Member Name Disclosure"
+                      value={cryoArrangements?.memberPublicDisclosure || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="freely">I give Alcor permission to freely release my name</option>
+                      <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className={overlayStyles.footer.wrapper}>
+            {canEdit && editMode ? (
+              <>
+                <WhiteButton
+                  text="Cancel"
+                  onClick={handleCancel}
+                  className={buttonStyles.overlayButtons.cancel}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+                {validationError && (
+                  <WhiteButton
+                    text="Save Anyway"
+                    onClick={handleSaveAnyway}
+                    className={`${buttonStyles.overlayButtons.cancel} ml-2`}
+                    spinStar={buttonStyles.starConfig.enabled}
+                  />
+                )}
+                <PurpleButton
+                  text={validatingAddress ? 'Validating...' : savingSection === 'cryoArrangements' ? 'Saving...' : 'Save'}
+                  onClick={handleSave}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                  disabled={savingSection === 'cryoArrangements' || validatingAddress}
+                />
+              </>
+            ) : (
+              <PurpleButton
+                text="Close"
+                onClick={onClose}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
 
 const CryoArrangementsSection = ({ 
-  cryoArrangements, 
+  cryoArrangements = {}, 
   setCryoArrangements, 
-  editMode, 
+  editMode = {}, 
   toggleEditMode, 
   cancelEdit, 
   saveCryoArrangements, 
   savingSection,
   memberCategory,
   setAddressValidationModal,
-  sectionImage,  // Add this prop
-  sectionLabel   // Add this prop
+  sectionImage,
+  sectionLabel,
+  fieldErrors = {}
 }) => {
-  // Add state for mobile detection
   const [isMobile, setIsMobile] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hoveredSection, setHoveredSection] = useState(null);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlaySection, setOverlaySection] = useState(null);
+  const [cardsVisible, setCardsVisible] = useState(false);
   
   // Check if section should be editable based on member category
   const canEdit = isSectionEditable(memberCategory, 'cryoArrangements');
+
+  useEffect(() => {
+    // Inject animation styles
+    const style = animationStyles.injectStyles();
+    
+    setTimeout(() => setHasLoaded(true), 100);
+    
+    // Trigger card animations after section loads
+    setTimeout(() => setCardsVisible(true), 300);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   
   // Detect mobile
   useEffect(() => {
@@ -65,18 +529,27 @@ const CryoArrangementsSection = ({
       setValidationError('');
     }
   }, [editMode.cryoArrangements]);
+
+  const handleCardClick = (sectionKey) => {
+    setOverlaySection(sectionKey);
+    setOverlayOpen(true);
+  };
+
+  const handleOverlaySave = () => {
+    handleSaveWithValidation();
+  };
   
   // Format method display
   const formatMethod = (method) => {
-    if (!method) return styleConfig.display.item.empty;
+    if (!method) return '—';
     if (method === 'WholeBody') return 'Whole Body Cryopreservation ($220,000 US / $230,000 International)';
     if (method === 'Neuro') return 'Neurocryopreservation ($80,000 US / $90,000 International)';
     return method;
   };
 
-  // Format method short for mobile preview
+  // Format method short for mobile preview and cards
   const formatMethodShort = (method) => {
-    if (!method) return '';
+    if (!method) return '—';
     if (method === 'WholeBody') return 'Whole Body';
     if (method === 'Neuro') return 'Neuro';
     return method;
@@ -84,17 +557,33 @@ const CryoArrangementsSection = ({
 
   // Format cryopreservation disclosure display (information disclosure)
   const formatCryoDisclosure = (disclosure) => {
-    if (!disclosure) return styleConfig.display.item.empty;
+    if (!disclosure) return '—';
     if (disclosure === 'freely') return 'Alcor is authorized to freely release Cryopreservation Member information at its discretion';
     if (disclosure === 'confidential') return 'Alcor will make reasonable efforts to maintain confidentiality of Cryopreservation Member information';
     return disclosure;
   };
 
+  // Format cryopreservation disclosure short
+  const formatCryoDisclosureShort = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'Freely release';
+    if (disclosure === 'confidential') return 'Confidential';
+    return disclosure;
+  };
+
   // Format member public disclosure display (name disclosure)
   const formatMemberDisclosure = (disclosure) => {
-    if (!disclosure) return styleConfig.display.item.empty;
+    if (!disclosure) return '—';
     if (disclosure === 'freely') return 'I give Alcor permission to freely release my name and related Alcor membership status at its discretion';
     if (disclosure === 'confidential') return 'Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor\'s General Terms and Conditions';
+    return disclosure;
+  };
+
+  // Format member disclosure short
+  const formatMemberDisclosureShort = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'Public';
+    if (disclosure === 'confidential') return 'Confidential';
     return disclosure;
   };
 
@@ -114,9 +603,17 @@ const CryoArrangementsSection = ({
 
   // Format remains handling display
   const formatRemainsHandling = (handling) => {
-    if (!handling) return styleConfig.display.item.empty;
+    if (!handling) return '—';
     if (handling === 'return') return 'Return to designated recipient';
     if (handling === 'donate') return 'Donate to medical research or dispose at Alcor\'s discretion';
+    return handling;
+  };
+
+  // Format remains handling short
+  const formatRemainsHandlingShort = (handling) => {
+    if (!handling) return '—';
+    if (handling === 'return') return 'Return to recipient';
+    if (handling === 'donate') return 'Donate/Dispose';
     return handling;
   };
   
@@ -344,7 +841,28 @@ const CryoArrangementsSection = ({
   };
 
   return (
-    <div className={isMobile ? "" : styleConfig.section.wrapperEnhanced}>
+    <div className={`cryo-arrangements-section ${hasLoaded ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
+      {/* Overlay */}
+      <CardOverlay
+        isOpen={overlayOpen}
+        onClose={() => setOverlayOpen(false)}
+        section={overlaySection}
+        data={{ cryoArrangements }}
+        onEdit={() => {}}
+        onSave={handleOverlaySave}
+        savingSection={savingSection}
+        fieldErrors={fieldErrors}
+        cryoArrangements={cryoArrangements}
+        setCryoArrangements={setCryoArrangements}
+        saveCryoArrangements={saveCryoArrangements}
+        validatingAddress={validatingAddress}
+        validationError={validationError}
+        handleSaveWithValidation={handleSaveWithValidation}
+        handleSaveAnyway={handleSaveAnyway}
+        canEdit={canEdit}
+        memberCategory={memberCategory}
+      />
+
       {isMobile ? (
         <MobileInfoCard
           iconComponent={
@@ -396,7 +914,7 @@ const CryoArrangementsSection = ({
                         cryoArrangements.recipientMailingState,
                         cryoArrangements.recipientMailingPostalCode,
                         cryoArrangements.recipientMailingCountry
-                      ) || styleConfig.display.item.empty} 
+                      ) || '—'} 
                     />
                   </>
                 )}
@@ -542,291 +1060,328 @@ const CryoArrangementsSection = ({
           )}
         </MobileInfoCard>
       ) : (
-        /* Desktop view */
-        <div className={styleConfig.section.innerPadding}>
-          {/* Desktop Header Section */}
-          <div className="relative pb-6 mb-6 border-b border-gray-200">
-            {/* Header content */}
-            <div className="relative z-10 flex justify-between items-start">
-              <div>
-                <div className={styleConfig.header.wrapper}>
-                  <div className={styleConfig.sectionIcons.cryo}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className={styleConfig.header.icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                  </div>
-                  <div className={styleConfig.header.textContainer}>
-                    <h2 className={styleConfig.header.title}>Cryopreservation Arrangements</h2>
-                    <p className="text-gray-600 text-base mt-1">
-                      Your cryopreservation method and handling preferences.
-                    </p>
+        /* Desktop Version */
+        <div className={styleConfig2.section.wrapperEnhanced}>
+          <div className={styleConfig2.section.innerPadding}>
+            {/* Header Section */}
+            <div className={headerStyles.container}>
+              <div className={headerStyles.contentWrapper}>
+                <div className={headerStyles.leftContent}>
+                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
+                    <div className={headerStyles.getIconContainer(styleConfig2, 'cryo')}>
+                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <div className={headerStyles.textContainer(styleConfig2)}>
+                      <h2 className={headerStyles.title(styleConfig2)}>Cryopreservation Arrangements</h2>
+                      <p className={headerStyles.subtitle}>
+                        Your cryopreservation method and handling preferences.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Image on right side */}
-              {sectionImage && (
-                <div className="flex-shrink-0 ml-8">
-                  <div className="relative w-64 h-24 rounded-lg overflow-hidden shadow-md">
-                    <img 
-                      src={sectionImage} 
-                      alt="" 
-                      className="w-full h-full object-cover grayscale"
-                    />
-                    {sectionLabel && (
-                      <div className="absolute bottom-0 right-0">
-                        <div className="px-2.5 py-0.5 bg-gradient-to-r from-[#162740] to-[#6e4376]">
-                          <p className="text-white text-xs font-medium tracking-wider flex items-center gap-1">
-                            {sectionLabel}
-                            <img src={alcorStar} alt="" className="w-3 h-3" />
-                          </p>
-                        </div>
+                
+                {/* Image on right side */}
+                {sectionImage && (
+                  <div className={sectionImageStyles.wrapper}>
+                    <div className={sectionImageStyles.imageBox}>
+                      <img 
+                        src={sectionImage} 
+                        alt="" 
+                        className={sectionImageStyles.image}
+                      />
+                      <div 
+                        className={sectionImageStyles.overlays.darkBase.className} 
+                        style={sectionImageStyles.overlays.darkBase.style}
+                      ></div>
+                      <div 
+                        className={sectionImageStyles.overlays.yellowGlow.className} 
+                        style={sectionImageStyles.overlays.yellowGlow.style}
+                      ></div>
+                      <div 
+                        className={sectionImageStyles.overlays.purpleGlow.className} 
+                        style={sectionImageStyles.overlays.purpleGlow.style}
+                      ></div>
+                      <div className={sectionImageStyles.star.wrapper}>
+                        <img 
+                          src={alcorStar} 
+                          alt="" 
+                          className={sectionImageStyles.star.image}
+                          style={sectionImageStyles.star.imageStyle}
+                        />
                       </div>
+                      {sectionLabel && (
+                        <div className={sectionImageStyles.label.wrapper}>
+                          <div className={sectionImageStyles.label.container}>
+                            <p className={sectionImageStyles.label.text}>
+                              {sectionLabel}
+                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="bg-white">
+              {!editMode.cryoArrangements ? (
+                /* Display Mode with Cards */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Cryopreservation Method Card */}
+                  <InfoCard
+                    title="Cryopreservation Method"
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    }
+                    sectionKey="method"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('method')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('method')}
+                    cardIndex={0}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Method" value={formatMethodShort(cryoArrangements?.method)} />
+                    <InfoField label="CMS Waiver" value={cryoArrangements?.cmsWaiver ? 'Yes' : 'No'} />
+                  </InfoCard>
+
+                  {/* Remains Handling Card */}
+                  <InfoCard
+                    title="Remains Handling"
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.5l-11.224 4.52a1 1 0 01-1.553-.894V7.874a1 1 0 011.553-.894L21 11.5v-3zm0 7v-3l-11.224 4.52a1 1 0 01-1.553-.894v-4.252a1 1 0 011.553-.894L21 15.5z" />
+                      </svg>
+                    }
+                    sectionKey="remains"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('remains')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('remains')}
+                    cardIndex={1}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Handling" value={formatRemainsHandlingShort(cryoArrangements?.remainsHandling)} />
+                    {cryoArrangements?.remainsHandling === 'return' && (
+                      <>
+                        <InfoField label="Recipient" value={cryoArrangements?.recipientName || '—'} />
+                        <InfoField label="Contact" value={cryoArrangements?.recipientPhone || cryoArrangements?.recipientEmail || '—'} />
+                      </>
                     )}
+                  </InfoCard>
+
+                  {/* Privacy & Disclosure Card */}
+                  <InfoCard
+                    title="Privacy & Disclosure"
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    }
+                    sectionKey="disclosure"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('disclosure')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('disclosure')}
+                    cardIndex={2}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Information" value={formatCryoDisclosureShort(cryoArrangements?.cryopreservationDisclosure)} />
+                    <InfoField label="Name" value={formatMemberDisclosureShort(cryoArrangements?.memberPublicDisclosure)} />
+                  </InfoCard>
+                </div>
+              ) : (
+                /* Edit Mode */
+                <div className="max-w-2xl">
+                  <div className="space-y-6">
+                    {/* Method - Display Only */}
+                    <div>
+                      <label className={styleConfig2.form.label}>
+                        Method of Cryopreservation
+                        <span className="text-sm font-normal text-gray-600 ml-2">
+                          (Contact Alcor staff to make changes)
+                        </span>
+                      </label>
+                      <div className={styleConfig2.display.readOnly.wrapper}>
+                        {formatMethod(cryoArrangements.method)}
+                      </div>
+                    </div>
+
+                    {/* CMS Waiver - Display Only */}
+                    <div>
+                      <label className={styleConfig2.form.label}>
+                        CMS Fee Waiver
+                        <span className="text-sm font-normal text-gray-600 ml-2">
+                          (Contact Alcor staff to make changes)
+                        </span>
+                      </label>
+                      <div className={styleConfig2.display.readOnly.wrapper}>
+                        {cryoArrangements.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
+                      </div>
+                    </div>
+
+                    <Select
+                      label="Non-Cryopreserved Remains Handling"
+                      value={cryoArrangements.remainsHandling || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="return">Return to designated recipient</option>
+                      <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
+                    </Select>
+
+                    {cryoArrangements.remainsHandling === 'return' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Recipient Name"
+                            type="text"
+                            value={cryoArrangements.recipientName || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                          <Input
+                            label="Recipient Phone"
+                            type="tel"
+                            value={cryoArrangements.recipientPhone || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                          <Input
+                            containerClassName="col-span-2"
+                            label="Recipient Email"
+                            type="email"
+                            value={cryoArrangements.recipientEmail || ''}
+                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
+                            disabled={savingSection === 'cryoArrangements'}
+                          />
+                        </div>
+                        
+                        {/* Recipient Mailing Address */}
+                        <div>
+                          <h3 className="font-medium text-[#2a2346] mb-4">Recipient Mailing Address</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              containerClassName="col-span-2"
+                              label="Street Address"
+                              type="text"
+                              value={cryoArrangements.recipientMailingStreet || ''}
+                              onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
+                              disabled={savingSection === 'cryoArrangements'}
+                            />
+                            <Input
+                              label="City"
+                              type="text"
+                              value={cryoArrangements.recipientMailingCity || ''}
+                              onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
+                              disabled={savingSection === 'cryoArrangements'}
+                            />
+                            <Input
+                              label="State/Province"
+                              type="text"
+                              value={cryoArrangements.recipientMailingState || ''}
+                              onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingState: e.target.value})}
+                              disabled={savingSection === 'cryoArrangements'}
+                            />
+                            <Input
+                              label="Zip/Postal Code"
+                              type="text"
+                              value={cryoArrangements.recipientMailingPostalCode || ''}
+                              onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingPostalCode: e.target.value})}
+                              disabled={savingSection === 'cryoArrangements'}
+                            />
+                            <Input
+                              label="Country"
+                              type="text"
+                              value={cryoArrangements.recipientMailingCountry || 'US'}
+                              onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCountry: e.target.value})}
+                              disabled={savingSection === 'cryoArrangements'}
+                            />
+                          </div>
+                          {validationError && (
+                            <p className="mt-2 text-sm text-red-600">{validationError}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    <Select
+                      label="Cryopreservation Information Disclosure"
+                      value={cryoArrangements.cryopreservationDisclosure || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
+                      <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
+                    </Select>
+
+                    <Select
+                      label="Member Name Disclosure"
+                      value={cryoArrangements.memberPublicDisclosure || ''}
+                      onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
+                      disabled={savingSection === 'cryoArrangements'}
+                    >
+                      <option value="">Select...</option>
+                      <option value="freely">I give Alcor permission to freely release my name</option>
+                      <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
+                    </Select>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Desktop Content - Fields Section */}
-          <div className="bg-white">
-            {/* Desktop Display Mode */}
-            {!editMode.cryoArrangements ? (
-              <div className="max-w-2xl">
-                <dl className={styleConfig.display.dl.wrapperSingle}>
-                  <InfoDisplay 
-                    label="Method of Cryopreservation" 
-                    value={formatMethod(cryoArrangements.method)} 
-                  />
-                  <InfoDisplay 
-                    label="CMS Fee Waiver" 
-                    value={cryoArrangements.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'} 
-                  />
-                  <InfoDisplay 
-                    label="Non-Cryopreserved Remains Handling" 
-                    value={formatRemainsHandling(cryoArrangements.remainsHandling)} 
-                  />
-                  {cryoArrangements.remainsHandling === 'return' && (
-                    <>
-                      <InfoDisplay 
-                        label="Recipient Name" 
-                        value={cryoArrangements.recipientName} 
-                      />
-                      <InfoDisplay 
-                        label="Recipient Phone" 
-                        value={cryoArrangements.recipientPhone} 
-                      />
-                      <InfoDisplay 
-                        label="Recipient Email" 
-                        value={cryoArrangements.recipientEmail} 
-                      />
-                      <InfoDisplay 
-                        label="Recipient Mailing Address" 
-                        value={formatAddress(
-                          cryoArrangements.recipientMailingStreet,
-                          cryoArrangements.recipientMailingCity,
-                          cryoArrangements.recipientMailingState,
-                          cryoArrangements.recipientMailingPostalCode,
-                          cryoArrangements.recipientMailingCountry
-                        )} 
-                      />
-                    </>
-                  )}
-                  <InfoDisplay 
-                    label="Cryopreservation Information Disclosure" 
-                    value={formatCryoDisclosure(cryoArrangements.cryopreservationDisclosure)} 
-                  />
-                  <InfoDisplay 
-                    label="Member Name Disclosure" 
-                    value={formatMemberDisclosure(cryoArrangements.memberPublicDisclosure)} 
-                  />
-                </dl>
-                
-                {/* Add info message for CryoMembers */}
-              </div>
-            ) : (
-              /* Desktop Edit Mode - Form */
-              <div className="max-w-2xl">
-                <div className={styleConfig.form.fieldSpacing}>
-                  {/* Method - Display Only */}
-                  <div>
-                    <label className={styleConfig.form.label}>
-                      Method of Cryopreservation
-                      <span className="text-sm font-normal text-gray-600 ml-2">
-                        (Contact Alcor staff to make changes)
-                      </span>
-                    </label>
-                    <div className={styleConfig.display.readOnly.wrapper}>
-                      {formatMethod(cryoArrangements.method)}
-                    </div>
-                  </div>
-
-                  {/* CMS Waiver - Display Only */}
-                  <div>
-                    <label className={styleConfig.form.label}>
-                      CMS Fee Waiver
-                      <span className="text-sm font-normal text-gray-600 ml-2">
-                        (Contact Alcor staff to make changes)
-                      </span>
-                    </label>
-                    <div className={styleConfig.display.readOnly.wrapper}>
-                      {cryoArrangements.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
-                    </div>
-                  </div>
-
-                  <Select
-                    label="Non-Cryopreserved Remains Handling"
-                    value={cryoArrangements.remainsHandling || ''}
-                    onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
-                    disabled={!editMode.cryoArrangements}
-                  >
-                    <option value="">Select...</option>
-                    <option value="return">Return to designated recipient</option>
-                    <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
-                  </Select>
-
-                  {cryoArrangements.remainsHandling === 'return' && (
-                    <>
-                      <div className={`${styleConfig.section.grid.twoColumn} ${styleConfig.form.subSection}`}>
-                        <Input
-                          label="Recipient Name"
-                          type="text"
-                          value={cryoArrangements.recipientName || ''}
-                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
-                          disabled={!editMode.cryoArrangements}
-                        />
-                        <Input
-                          label="Recipient Phone"
-                          type="tel"
-                          value={cryoArrangements.recipientPhone || ''}
-                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
-                          disabled={!editMode.cryoArrangements}
-                        />
-                        <Input
-                          containerClassName="col-span-2"
-                          label="Recipient Email"
-                          type="email"
-                          value={cryoArrangements.recipientEmail || ''}
-                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
-                          disabled={!editMode.cryoArrangements}
-                        />
-                      </div>
-                      
-                      {/* Recipient Mailing Address */}
-                      <div className="mb-6">
-                        <h3 className="font-medium text-[#2a2346] mb-4">Recipient Mailing Address</h3>
-                        <div className={styleConfig.section.grid.twoColumn}>
-                          <Input
-                            containerClassName="col-span-2"
-                            label="Street Address"
-                            type="text"
-                            value={cryoArrangements.recipientMailingStreet || ''}
-                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
-                            disabled={!editMode.cryoArrangements}
-                          />
-                          <Input
-                            label="City"
-                            type="text"
-                            value={cryoArrangements.recipientMailingCity || ''}
-                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
-                            disabled={!editMode.cryoArrangements}
-                          />
-                          <Input
-                            label="State/Province"
-                            type="text"
-                            value={cryoArrangements.recipientMailingState || ''}
-                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingState: e.target.value})}
-                            disabled={!editMode.cryoArrangements}
-                          />
-                          <Input
-                            label="Zip/Postal Code"
-                            type="text"
-                            value={cryoArrangements.recipientMailingPostalCode || ''}
-                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingPostalCode: e.target.value})}
-                            disabled={!editMode.cryoArrangements}
-                          />
-                          <Input
-                            label="Country"
-                            type="text"
-                            value={cryoArrangements.recipientMailingCountry || 'US'}
-                            onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCountry: e.target.value})}
-                            disabled={!editMode.cryoArrangements}
-                          />
-                        </div>
-                        {validationError && (
-                          <p className="mt-2 text-sm text-red-600">{validationError}</p>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  <Select
-                    label="Cryopreservation Information Disclosure"
-                    value={cryoArrangements.cryopreservationDisclosure || ''}
-                    onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
-                    disabled={!editMode.cryoArrangements}
-                  >
-                    <option value="">Select...</option>
-                    <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
-                    <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
-                  </Select>
-
-                  <Select
-                    label="Member Name Disclosure"
-                    value={cryoArrangements.memberPublicDisclosure || ''}
-                    onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
-                    disabled={!editMode.cryoArrangements}
-                  >
-                    <option value="">Select...</option>
-                    <option value="freely">I give Alcor permission to freely release my name</option>
-                    <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
-                  </Select>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex justify-end mt-6">
+              
+              {/* Action buttons */}
               {editMode?.cryoArrangements ? (
-                <div className="flex -mr-8">
-                  <WhiteButton
-                    text="Cancel"
-                    onClick={() => cancelEdit && cancelEdit('cryoArrangements')}
-                    className="scale-75 -mr-8"
-                    spinStar={false}
-                  />
-                  {validationError && (
+                <div className={buttonStyles.actionContainer}>
+                  <div className={buttonStyles.buttonGroup}>
                     <WhiteButton
-                      text="Save Anyway"
-                      onClick={handleSaveAnyway}
-                      className="scale-75 -mr-8"
-                      spinStar={false}
+                      text="Cancel"
+                      onClick={() => cancelEdit && cancelEdit('cryoArrangements')}
+                      className={buttonStyles.whiteButton.withMargin}
+                      spinStar={buttonStyles.starConfig.enabled}
                     />
-                  )}
-                  <PurpleButton
-                    text={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'cryoArrangements' ? 'Saving...' : 'Save'}
-                    onClick={handleSaveWithValidation}
-                    className="scale-75"
-                    spinStar={false}
-                    disabled={savingSection === 'cryoArrangements' || validatingAddress}
-                  />
+                    {validationError && (
+                      <WhiteButton
+                        text="Save Anyway"
+                        onClick={handleSaveAnyway}
+                        className={buttonStyles.whiteButton.withMargin}
+                        spinStar={buttonStyles.starConfig.enabled}
+                      />
+                    )}
+                    <PurpleButton
+                      text={validatingAddress ? 'Validating...' : savingSection === 'cryoArrangements' ? 'Saving...' : 'Save'}
+                      onClick={handleSaveWithValidation}
+                      className={buttonStyles.purpleButton.base}
+                      spinStar={buttonStyles.starConfig.enabled}
+                      disabled={savingSection === 'cryoArrangements' || validatingAddress}
+                    />
+                  </div>
                 </div>
               ) : (
-                // Only show Edit button for CryoApplicants
-                canEdit ? (
-                  <div className="-mr-8">
-                    <RainbowButton
-                      text="Edit"
-                      onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
-                      className="scale-75"
-                      spinStar={true}
-                    />
-                  </div>
-                ) : (
-                  <div className={styleConfig.nonEditable.inlineMessage}>
-                    Contact Alcor to update cryopreservation arrangements
-                  </div>
-                )
+                <>
+                  {!canEdit ? (
+                    <div className="text-sm text-gray-500 italic mt-12 pt-6 text-right">
+                      Contact Alcor to update arrangements
+                    </div>
+                  ) : (
+                    <div className={buttonStyles.actionContainer}>
+                      <WhiteButton
+                        text="Edit"
+                        onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
+                        className={buttonStyles.whiteButton.base}
+                        spinStar={buttonStyles.starConfig.enabled}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

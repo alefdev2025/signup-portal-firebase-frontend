@@ -494,6 +494,7 @@ const MyInformationTab = () => {
     style.innerHTML = `
       .my-information-tab * {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
       }
       .my-information-tab .font-bold,
       .my-information-tab .font-semibold,
@@ -501,10 +502,10 @@ const MyInformationTab = () => {
       .my-information-tab h2,
       .my-information-tab h3,
       .my-information-tab h4 {
-        font-weight: 500 !important;
+        font-weight: 700 !important;
       }
       .my-information-tab .font-medium {
-        font-weight: 400 !important;
+        font-weight: 500 !important;
       }
     `;
     document.head.appendChild(style);

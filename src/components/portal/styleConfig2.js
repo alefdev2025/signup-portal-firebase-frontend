@@ -5,11 +5,11 @@ const styleConfig2 = {
   section: {
     wrapper: "bg-white rounded-lg shadow-sm p-8 mb-6",
     // Mobile: more rounded corners, purple border, stronger shadow, WIDER with negative margins
-    // styleConfig.js
-    wrapperEnhanced: "bg-white rounded-2xl sm:rounded-xl shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-md border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-[5%] sm:mx-0",
+    // Desktop: Now uses same shadow and rounded corners as FormsTab
+    wrapperEnhanced: "bg-white rounded-2xl sm:rounded-[1.25rem] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] sm:shadow-[4px_6px_12px_rgba(0,0,0,0.08),-2px_-2px_6px_rgba(0,0,0,0.03)] border border-gray-500 sm:border-gray-200 mb-6 sm:mb-8 -mx-[5%] sm:mx-0",
     wrapperConsistent: "bg-white shadow-md border border-gray-400 rounded-[1.5rem] overflow-hidden",
-    // Box shadow to match FormsTab
-    boxShadow: { boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' },
+    // Box shadow to match FormsTab - now applied via inline style for desktop
+    boxShadow: { boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' },
     innerPadding: "px-6 py-6 sm:p-6 md:p-8", // MORE GENEROUS mobile padding
     title: "text-xl font-bold text-gray-800 mb-6", // Changed to font-bold
     grid: {
@@ -38,15 +38,15 @@ const styleConfig2 = {
     inlineMessage: "text-sm text-gray-600 font-medium px-4 py-2 bg-gray-100 rounded-lg inline-block"
   },
  
-  // Header with icon styles - Updated to match Membership Status
+  // Header with icon styles - Updated with less internal padding
   header: {
     wrapper: "mb-8 sm:mb-8 md:mb-9 flex items-start", // More space below header on mobile
-    iconContainer: "p-3.5 rounded-lg transform transition duration-300", // Changed to p-3.5
-    icon: "w-7 h-7 text-white stroke-[1.5]", // Changed to w-7 h-7 to match
-    iconStrokeWidth: "1.5",
+    iconContainer: "p-2.5 rounded-lg transform transition duration-300", // Moderate padding
+    icon: "w-9 h-9 sm:w-10 sm:h-10 text-white stroke-[0.8] scale-[0.85] origin-center", // Added scale to make inner lines smaller
+    iconStrokeWidth: "0.8", // Thinner stroke
     textContainer: "ml-5 pt-0.5", // More space between icon and text
     title: "text-lg sm:text-xl font-bold text-gray-800", // Changed to font-bold
-    subtitle: "text-xs text-gray-500 mt-1" // Changed to text-xs and text-gray-500
+    subtitle: "text-xs text-gray-500 mt-1 sm:text-gray-400 sm:font-light" // Thinner and lighter on desktop
   },
  
   // Clean mobile collapsible styles for dark theme
@@ -72,7 +72,7 @@ mobileSection: {
   header: "p-5 cursor-pointer bg-white", // White header background
   headerContent: "flex items-center justify-between", // Header layout
   iconWrapper: "flex items-center", // Icon and text container
-  iconBox: "p-3.5 rounded-lg mr-3.5", // Icon background with gradient
+  iconBox: "p-2 rounded-lg mr-3.5", // Icon background with gradient - reduced padding from p-3.5 to p-2
   iconGradient: "background: linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)", // Icon gradient style
   icon: "h-7 w-7 text-white", // Icon size and color
   titleWrapper: "div", // Title container
@@ -150,17 +150,17 @@ mobileSection: {
 
   // Section-specific dark backgrounds for mobile, icon styles for desktop
   sectionIcons: {
-    // Icon-only styles for desktop
-    contact: "bg-[#13283f] p-3.5 rounded-lg transform transition duration-300",
-    personal: "bg-[#1a2f4a] p-3.5 rounded-lg transform transition duration-300",
-    addresses: "bg-[#243655] p-3.5 rounded-lg transform transition duration-300",
-    family: "bg-[#2e3d60] p-3.5 rounded-lg transform transition duration-300",
-    occupation: "bg-[#404060] p-3.5 rounded-lg transform transition duration-300",
-    medical: "bg-[#52476b] p-3.5 rounded-lg transform transition duration-300",
-    cryo: "bg-[#644e76] p-3.5 rounded-lg transform transition duration-300",
-    funding: "bg-[#705579] p-3.5 rounded-lg transform transition duration-300",
-    legal: "bg-[#795a7b] p-3.5 rounded-lg transform transition duration-300",
-    nextOfKin: "bg-[#825f7c] p-3.5 rounded-lg transform transition duration-300"
+    // Icon-only styles for desktop with more pronounced gradients - reduced padding
+    contact: "bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] p-2 rounded-lg transform transition duration-300",
+    personal: "bg-gradient-to-br from-[#244060] via-[#1a2f4a] to-[#111f33] p-2 rounded-lg transform transition duration-300",
+    addresses: "bg-gradient-to-br from-[#2f476b] via-[#243655] to-[#192540] p-2 rounded-lg transform transition duration-300",
+    family: "bg-gradient-to-br from-[#3a4f78] via-[#2e3d60] to-[#202b48] p-2 rounded-lg transform transition duration-300",
+    occupation: "bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] p-2 rounded-lg transform transition duration-300",
+    medical: "bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] p-2 rounded-lg transform transition duration-300",
+    cryo: "bg-gradient-to-br from-[#7a638f] via-[#644e76] to-[#4c395d] p-2 rounded-lg transform transition duration-300",
+    funding: "bg-gradient-to-br from-[#876b93] via-[#705579] to-[#57405f] p-2 rounded-lg transform transition duration-300",
+    legal: "bg-gradient-to-br from-[#907095] via-[#795a7b] to-[#5f4461] p-2 rounded-lg transform transition duration-300",
+    nextOfKin: "bg-gradient-to-br from-[#997596] via-[#825f7c] to-[#664862] p-2 rounded-lg transform transition duration-300"
   },
   
   // Full section backgrounds for mobile dark theme
