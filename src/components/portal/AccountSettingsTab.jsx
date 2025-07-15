@@ -149,6 +149,46 @@ const SettingsTab = () => {
        0% { background-position: -200% 0; }
        100% { background-position: 200% 0; }
      }
+     @keyframes fadeInUp {
+       from {
+         opacity: 0;
+         transform: translateY(10px);
+       }
+       to {
+         opacity: 1;
+         transform: translateY(0);
+       }
+     }
+     @keyframes subtleFadeIn {
+       from {
+         opacity: 0;
+       }
+       to {
+         opacity: 1;
+       }
+     }
+     @keyframes gentleSlideIn {
+       from {
+         opacity: 0;
+         transform: translateY(8px);
+       }
+       to {
+         opacity: 1;
+         transform: translateY(0);
+       }
+     }
+     .animate-fadeInUp {
+       opacity: 0;
+       animation: fadeInUp 0.5s ease-out forwards;
+     }
+     .animate-subtleFadeIn {
+       opacity: 0;
+       animation: subtleFadeIn 0.6s ease-out forwards;
+     }
+     .animate-gentleSlideIn {
+       opacity: 0;
+       animation: gentleSlideIn 0.4s ease-out forwards;
+     }
      .custom-switch-handle {
        background-color: #374151 !important;
      }
@@ -175,6 +215,10 @@ const SettingsTab = () => {
        font-size: 0.6875rem !important;
        text-transform: uppercase !important;
      }
+     /* Initial states for animated elements */
+     .settings-tab [class*="animate-"] {
+       will-change: opacity, transform;
+     }
      .settings-list-item {
        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
        position: relative;
@@ -191,23 +235,23 @@ const SettingsTab = () => {
        transition: left 0.6s ease;
      }
      .professional-card {
-       box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+       box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.08);
        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
        background: #ffffff;
        border-radius: 1rem;
      }
      @media (max-width: 767px) {
        .professional-card {
-         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+         box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.08);
        }
      }
      .professional-card:hover {
-       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+       box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.08);
        transform: translateY(-2px);
      }
      @media (max-width: 767px) {
        .professional-card:hover {
-         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+         box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.08);
        }
      }
      .luxury-divider {
@@ -248,7 +292,7 @@ const SettingsTab = () => {
      .settings-description {
        font-weight: 300 !important;
        line-height: 1.6 !important;
-       color: #9ca3af !important;
+       color: #6b7280 !important;
      }
      .settings-list-item h3 {
        font-weight: 500 !important;
@@ -256,7 +300,7 @@ const SettingsTab = () => {
      }
      .settings-list-item p {
        font-weight: 300 !important;
-       color: #9ca3af !important;
+       color: #6b7280 !important;
      }
    `;
    document.head.appendChild(style);
@@ -405,12 +449,12 @@ const SettingsTab = () => {
  };
 
  // Custom Switch component with pulse animation
- const CustomSwitch = ({ checked, onChange, settingName }) => (
+ const CustomSwitch = ({ checked, onChange, settingName, color = "#374151" }) => (
    <div className="relative">
      <Switch
        checked={checked}
        onChange={onChange}
-       onColor="#374151"
+       onColor={color}
        offColor="#e5e7eb"
        uncheckedIcon={false}
        checkedIcon={false}
@@ -464,42 +508,43 @@ const SettingsTab = () => {
      <div className="h-8"></div>
      
      {/* Header */}
-     <div className="mb-12 px-4 md:px-0 hidden sm:block">
-       <h1 className="text-[1.375rem] md:text-[1.625rem] font-medium text-gray-900 mb-2 leading-tight">Account Settings</h1>
-       <p className="text-gray-400 text-xs md:text-sm tracking-wide uppercase section-subtitle">Manage your preferences and security</p>
+     <div className="mb-12 px-4 md:px-0 hidden sm:block animate-subtleFadeIn">
+       <h1 className="text-[1.375rem] md:text-[1.325rem] font-medium text-gray-900 mb-2 leading-tight animate-gentleSlideIn">Account Settings</h1>
+       <p className="text-gray-400 text-xs md:text-sm tracking-wide uppercase section-subtitle animate-gentleSlideIn" style={{ animationDelay: '0.1s' }}>Manage your preferences and security</p>
      </div>
 
      {/* Settings Grid */}
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 md:px-0">
        {/* Notifications Card */}
-       <div className="professional-card bg-white shadow-lg border border-gray-100 rounded-2xl overflow-hidden">
+       <div className="professional-card bg-white border border-gray-200 rounded-2xl overflow-hidden animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', animationDelay: '0.2s', opacity: 0 }}>
          <div className="px-8 py-6">
            <div className="flex items-center gap-4 mb-8">
-             <IconWrapper className="icon-luxury" size="large">
+             <IconWrapper className="icon-luxury" size="large" color="navy">
                <BellIcon className={iconStyle.iconSizeLarge} />
              </IconWrapper>
              <h2 className="text-lg font-normal text-gray-800 card-title">Notifications</h2>
            </div>
 
            <div className="space-y-6">
-             {/* Media Notifications */}
-             <div className="settings-list-item p-5 bg-white border border-gray-100/50 rounded-xl" style={{boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.15), -0.5px -0.5px 1px rgba(0, 0, 0, 0.04)'}}>
+             <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.3s' }}>
                <div className="flex items-start justify-between gap-4">
                  <div className="flex-1">
                    <h3 className="text-base font-medium text-gray-800 mb-1">Media Updates</h3>
-                   <p className="text-xs text-gray-300 leading-relaxed settings-description">
+                   <p className="text-xs text-gray-500 leading-relaxed settings-description">
                      Get email notifications for new announcements, newsletters and podcasts
                    </p>
-                   {settings.receiveMediaNotifications && (
-                     <div className="mt-3 inline-flex items-center">
-                       <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
-                         <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
-                         <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
-                           ACTIVE
-                         </span>
+                   <div className="mt-3 animate-subtleFadeIn" style={{ minHeight: '32px', animationDelay: '0.5s' }}>
+                     {settings.receiveMediaNotifications && (
+                       <div className="inline-flex items-center">
+                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                           <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                           <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                             ACTIVE
+                           </span>
+                         </div>
                        </div>
-                     </div>
-                   )}
+                     )}
+                   </div>
                  </div>
                  <CustomSwitch
                    checked={settings.receiveMediaNotifications}
@@ -509,24 +554,25 @@ const SettingsTab = () => {
                </div>
              </div>
 
-             {/* Staff Messages */}
-             <div className="settings-list-item p-5 bg-white border border-gray-100/50 rounded-xl" style={{boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.15), -0.5px -0.5px 1px rgba(0, 0, 0, 0.04)'}}>
+             <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.4s' }}>
                <div className="flex items-start justify-between gap-4">
                  <div className="flex-1">
                    <h3 className="text-base font-medium text-gray-800 mb-1">Staff Messages</h3>
-                   <p className="text-xs text-gray-300 leading-relaxed settings-description">
+                   <p className="text-xs text-gray-500 leading-relaxed settings-description">
                      Get email notifications when Alcor staff message portal users
                    </p>
-                   {settings.receiveStaffMessages && (
-                     <div className="mt-3 inline-flex items-center">
-                       <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
-                         <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
-                         <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
-                           ACTIVE
-                         </span>
+                   <div className="mt-3 animate-subtleFadeIn" style={{ minHeight: '32px', animationDelay: '0.6s' }}>
+                     {settings.receiveStaffMessages && (
+                       <div className="inline-flex items-center">
+                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                           <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                           <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                             ACTIVE
+                           </span>
+                         </div>
                        </div>
-                     </div>
-                   )}
+                     )}
+                   </div>
                  </div>
                  <CustomSwitch
                    checked={settings.receiveStaffMessages}
@@ -540,16 +586,16 @@ const SettingsTab = () => {
        </div>
 
        {/* Security Card */}
-       <div className="professional-card bg-white shadow-lg border border-gray-100 rounded-2xl overflow-hidden">
+       <div className="professional-card bg-white border border-gray-200 rounded-2xl overflow-hidden animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', animationDelay: '0.3s', opacity: 0 }}>
          <div className="px-8 py-6">
            <div className="flex items-center gap-4 mb-8">
-             <IconWrapper className="icon-luxury" size="large">
+             <IconWrapper className="icon-luxury" size="large" color="purple">
                <ShieldIcon className={iconStyle.iconSizeLarge} />
              </IconWrapper>
              <h2 className="text-lg font-normal text-gray-800 card-title">Security</h2>
            </div>
 
-           <div className="settings-list-item p-5 bg-white border border-gray-100/50 rounded-xl" style={{boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.15), -0.5px -0.5px 1px rgba(0, 0, 0, 0.04)'}}>
+           <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)', animationDelay: '0.5s' }}>
              <div className="flex items-start justify-between gap-4">
                <div className="flex-1">
                  <h3 className="text-base font-medium text-gray-800 mb-1">Two-Factor Authentication</h3>
@@ -557,33 +603,36 @@ const SettingsTab = () => {
                    Enhanced security with additional verification
                  </p>
                  
-                 {!settings.twoFactorEnabled ? (
-                   <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-100/50 p-4 rounded-xl">
-                     <div className="flex gap-3">
-                       <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1} />
-                       <div>
-                         <p className="text-xs font-medium text-gray-700 tracking-wider uppercase">Recommended</p>
-                         <p className="text-xs text-gray-400 mt-1 leading-relaxed font-light">
-                           Activate two-factor authentication for premium security
-                         </p>
+                 <div className="animate-subtleFadeIn" style={{ minHeight: '80px', animationDelay: '0.7s' }}>
+                   {!settings.twoFactorEnabled ? (
+                     <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-100/50 p-4 rounded-xl">
+                       <div className="flex gap-3">
+                         <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1} />
+                         <div>
+                           <p className="text-xs font-medium text-gray-700 tracking-wider uppercase">Recommended</p>
+                           <p className="text-xs text-gray-400 mt-1 leading-relaxed font-light">
+                             Secure your account
+                           </p>
+                         </div>
                        </div>
                      </div>
-                   </div>
-                 ) : (
-                   <div className="inline-flex items-center">
-                     <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 border border-emerald-100 rounded-lg">
-                       <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2} />
-                       <span className="text-[0.6875rem] tracking-widest text-emerald-700 font-medium status-badge">
-                         SECURED
-                       </span>
+                   ) : (
+                     <div className="inline-flex items-center">
+                       <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 border border-emerald-100 rounded-lg">
+                         <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2} />
+                         <span className="text-[0.6875rem] tracking-widest text-emerald-700 font-medium status-badge">
+                           SECURED
+                         </span>
+                       </div>
                      </div>
-                   </div>
-                 )}
+                   )}
+                 </div>
                </div>
                <CustomSwitch
                  checked={settings.twoFactorEnabled}
                  onChange={() => handleToggle('twoFactorEnabled')}
                  settingName="twoFactorEnabled"
+                 color="#7d4582"
                />
              </div>
            </div>
@@ -592,9 +641,9 @@ const SettingsTab = () => {
      </div>
 
      {/* Footer Actions */}
-     <div className="mt-16 px-4 md:px-0 pb-2 sm:pb-8">
-       <div className="luxury-divider mb-8"></div>
-       <div className="flex items-center justify-between px-4 sm:px-0">
+     <div className="mt-16 px-4 md:px-0 pb-2 sm:pb-8 animate-subtleFadeIn" style={{ animationDelay: '0.6s' }}>
+       <div className="luxury-divider mb-8 animate-gentleSlideIn" style={{ animationDelay: '0.7s' }}></div>
+       <div className="flex items-center justify-between px-4 sm:px-0 animate-gentleSlideIn" style={{ animationDelay: '0.8s' }}>
          <div className="flex items-center gap-3">
            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></div>
            <p className="text-xs text-gray-500 sm:text-gray-500 text-gray-600 tracking-wider uppercase font-light">Changes save automatically</p>
