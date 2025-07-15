@@ -14,7 +14,7 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 const DEMO_MODE = true;  // <-- TOGGLE THIS ON/OFF
 
 // Set this to 'nicole' or 'anthony'
-const DEMO_PERSON = 'nicole'; // 'nicole' or 'anthony'
+const DEMO_PERSON = 'anthony'; // 'nicole' or 'anthony'
 
 const DEMO_CONFIGS = {
   nicole: {
@@ -137,19 +137,18 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
   // Refs for intervals
   const refreshIntervalRef = useRef(null);
 
-  // Function to preload all member info
   const preloadMemberInfo = async (forceRefresh = false) => {
     if (!salesforceCustomer?.id) {
       console.log('[MemberPortal] No Salesforce ID available for member info preload');
       return;
     }
-
+  
     // Check if we've already loaded and don't need to refresh
     if (memberInfoLoaded && !forceRefresh) {
       console.log('[MemberPortal] Member info already loaded, skipping preload');
       return memberInfoData;
     }
-
+  
     console.log('🚀 [MemberPortal] Preloading all member information...');
     
     try {
@@ -157,8 +156,8 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
       if (forceRefresh) {
         memberDataService.clearCache(salesforceCustomer.id);
       }
-
-      // Fetch all member data in parallel
+  
+      // Fetch all member data in parallel - INCLUDING FUNDING
       const [
         personalRes,
         contactRes,
@@ -170,7 +169,8 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         legalRes,
         emergencyRes,
         insuranceRes,
-        categoryRes
+        categoryRes,
+        fundingRes  // ADD THIS
       ] = await Promise.allSettled([
         memberDataService.getPersonalInfo(salesforceCustomer.id),
         memberDataService.getContactInfo(salesforceCustomer.id),
@@ -182,9 +182,10 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         memberDataService.getLegalInfo(salesforceCustomer.id),
         memberDataService.getEmergencyContacts(salesforceCustomer.id),
         memberDataService.getInsurance(salesforceCustomer.id),
-        getMemberCategory(salesforceCustomer.id)
+        getMemberCategory(salesforceCustomer.id),
+        memberDataService.getFundingInfo(salesforceCustomer.id)  // ADD THIS
       ]);
-
+  
       // Process results
       const data = {
         personal: personalRes.status === 'fulfilled' ? personalRes.value : null,
@@ -196,13 +197,14 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
         cryo: cryoRes.status === 'fulfilled' ? cryoRes.value : null,
         legal: legalRes.status === 'fulfilled' ? legalRes.value : null,
         emergency: emergencyRes.status === 'fulfilled' ? emergencyRes.value : null,
-        funding: insuranceRes.status === 'fulfilled' ? insuranceRes.value : null,
-        category: categoryRes.status === 'fulfilled' ? categoryRes.value : null
+        insurance: insuranceRes.status === 'fulfilled' ? insuranceRes.value : null,
+        category: categoryRes.status === 'fulfilled' ? categoryRes.value : null,
+        funding: fundingRes.status === 'fulfilled' ? fundingRes.value : null  // ADD THIS
       };
-
+  
       setMemberInfoData(data);
       setMemberInfoLoaded(true);
-
+  
       console.log('✅ [MemberPortal] Member info preloaded successfully');
       return data;
     } catch (error) {

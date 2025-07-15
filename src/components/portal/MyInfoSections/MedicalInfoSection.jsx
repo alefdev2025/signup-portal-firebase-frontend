@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
@@ -647,6 +647,8 @@ const MedicalInfoSection = ({
   const [showTooltipBottom, setShowTooltipBottom] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
   const [hoveredSection, setHoveredSection] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -657,15 +659,41 @@ const MedicalInfoSection = ({
     // Inject animation styles
     const style = animationStyles.injectStyles();
     
-    setTimeout(() => setHasLoaded(true), 100);
-    
-    // Trigger card animations after section loads
-    setTimeout(() => setCardsVisible(true), 300);
-    
     return () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Intersection Observer for scroll-triggered animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          // Delay to create smooth entrance
+          setTimeout(() => {
+            setHasLoaded(true);
+            // Stagger card animations after section fades in
+            setTimeout(() => setCardsVisible(true), 200);
+          }, 100);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
 
   // Detect mobile
   useEffect(() => {
@@ -853,7 +881,7 @@ const MedicalInfoSection = ({
   );
 
   return (
-    <div className={`medical-info-section ${hasLoaded ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
+    <div ref={sectionRef} className={`medical-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}

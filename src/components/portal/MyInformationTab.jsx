@@ -144,16 +144,18 @@ const MyInformationTab = () => {
   });
   
   // Data states - current values
-  const [personalInfo, setPersonalInfo] = useState({});
-  const [contactInfo, setContactInfo] = useState({});
-  const [addresses, setAddresses] = useState({});
-  const [familyInfo, setFamilyInfo] = useState({});
-  const [occupation, setOccupation] = useState({});
-  const [medicalInfo, setMedicalInfo] = useState({});
-  const [cryoArrangements, setCryoArrangements] = useState({});
-
-  const [legal, setLegal] = useState({});
+  const [personalInfo, setPersonalInfo] = useState(null);
+  const [contactInfo, setContactInfo] = useState(null);
+  const [addresses, setAddresses] = useState(null);
+  const [familyInfo, setFamilyInfo] = useState(null);
+  const [occupation, setOccupation] = useState(null);
+  const [medicalInfo, setMedicalInfo] = useState(null);
+  const [cryoArrangements, setCryoArrangements] = useState(null);
+  const [legal, setLegal] = useState(null);
   const [nextOfKinList, setNextOfKinList] = useState([]);
+  const [funding, setFunding] = useState(null);
+
+
   
   // Field errors state
   const [fieldErrors, setFieldErrors] = useState({});
@@ -167,7 +169,19 @@ const MyInformationTab = () => {
     onAccept: null
   });
 
-  const [funding, setFunding] = useState({
+  const safeSetState = (setter, newData, originalDataSetter, key) => {
+    if (!newData || (typeof newData === 'object' && Object.keys(newData).length === 0)) {
+      console.warn(`⚠️ Skipping empty ${key} data update`);
+      return;
+    }
+    
+    setter(newData);
+    if (originalDataSetter) {
+      originalDataSetter(prev => ({ ...prev, [key]: newData }));
+    }
+  };
+
+  /*const [funding, setFunding] = useState({
     fundingType: '',
     hasMultiplePolicies: false,
     companyName: '',
@@ -179,7 +193,7 @@ const MyInformationTab = () => {
     termLength: null,
     fundsRecordId: null,
     insuranceRecordId: null
-  });
+  });*/
 
   const [initializedFromCache, setInitializedFromCache] = useState(false);
 
@@ -269,14 +283,29 @@ const MyInformationTab = () => {
         
         if (memberInfoData.occupation?.success && memberInfoData.occupation.data) {
           const occupationData = memberInfoData.occupation.data.data || memberInfoData.occupation.data;
+          
           const cleanedOccupation = {
-            ...occupationData,
-            occupation: cleanString(occupationData.occupation),
-            occupationalIndustry: cleanString(occupationData.occupationalIndustry),
-            militaryBranch: cleanString(occupationData.militaryBranch)
+            occupation: cleanString(occupationData.occupation || ''),
+            occupationalIndustry: cleanString(occupationData.occupationalIndustry || occupationData.industry || ''),
+            hasMilitaryService: !!(
+              occupationData.hasMilitaryService || 
+              occupationData.militaryService?.branch ||
+              occupationData.militaryBranch
+            ),
+            militaryBranch: cleanString(
+              occupationData.militaryBranch || 
+              occupationData.militaryService?.branch || 
+              ''
+            ),
+            servedFrom: occupationData.servedFrom || 
+                        occupationData.militaryService?.startYear || 
+                        '',
+            servedTo: occupationData.servedTo || 
+                      occupationData.militaryService?.endYear || 
+                      ''
           };
-          setOccupation(cleanedOccupation);
-          setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
+          
+          safeSetState(setOccupation, cleanedOccupation, setOriginalData, 'occupation');
         }
         
         if (memberInfoData.medical?.success && memberInfoData.medical.data) {
@@ -399,9 +428,9 @@ const MyInformationTab = () => {
 
         if (memberInfoData.funding?.success && memberInfoData.funding.data) {
           const fundingData = memberInfoData.funding.data.data || memberInfoData.funding.data;
-          console.log('🔍 Cached funding data:', fundingData);
-          setFunding(fundingData);
-          setOriginalData(prev => ({ ...prev, funding: fundingData }));
+          if (fundingData && Object.keys(fundingData).length > 0) {
+            safeSetState(setFunding, fundingData, setOriginalData, 'funding');
+          }
         }
 
         if (memberInfoData.legal?.success && memberInfoData.legal.data) {
@@ -439,7 +468,8 @@ const MyInformationTab = () => {
   
   // Stagger section loading after data is loaded
   useEffect(() => {
-    if (!isLoading && personalInfo.firstName) {
+    // Add null check for personalInfo
+    if (!isLoading && personalInfo && personalInfo.firstName) {
       const timers = [];
       
       timers.push(setTimeout(() => {
@@ -486,7 +516,7 @@ const MyInformationTab = () => {
         timers.forEach(timer => clearTimeout(timer));
       };
     }
-  }, [isLoading, personalInfo.firstName]);
+  }, [isLoading, personalInfo]); 
   
 
   useEffect(() => {
@@ -709,18 +739,29 @@ const MyInformationTab = () => {
         const occupationData = results.occupationRes.data.data || results.occupationRes.data;
         
         const cleanedOccupation = {
-          ...occupationData,
-          occupation: cleanString(occupationData.occupation),
-          occupationalIndustry: cleanString(occupationData.industry), // Note: backend returns 'industry', not 'occupationalIndustry'
-          // Extract military data from the militaryService object
-          hasMilitaryService: !!(occupationData.militaryService?.branch),
-          militaryBranch: cleanString(occupationData.militaryService?.branch || ''),
-          servedFrom: occupationData.militaryService?.startYear || '',
-          servedTo: occupationData.militaryService?.endYear || ''
+          occupation: cleanString(occupationData.occupation || ''),
+          occupationalIndustry: cleanString(occupationData.industry || occupationData.occupationalIndustry || ''),
+          // CRITICAL: Check ALL possible locations for military data
+          hasMilitaryService: !!(
+            occupationData.hasMilitaryService || 
+            occupationData.militaryService?.branch ||
+            occupationData.militaryBranch
+          ),
+          militaryBranch: cleanString(
+            occupationData.militaryBranch || 
+            occupationData.militaryService?.branch || 
+            ''
+          ),
+          servedFrom: occupationData.servedFrom || 
+                      occupationData.militaryService?.startYear || 
+                      '',
+          servedTo: occupationData.servedTo || 
+                    occupationData.militaryService?.endYear || 
+                    ''
         };
         
-        setOccupation(cleanedOccupation);
-        setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
+        console.log('🎖️ Setting occupation:', cleanedOccupation);
+        safeSetState(setOccupation, cleanedOccupation, setOriginalData, 'occupation');
       }
       
       // Medical Info - Clean medical data
@@ -873,9 +914,13 @@ const MyInformationTab = () => {
 
       if (results.fundingRes.success && results.fundingRes.data) {
         const fundingData = results.fundingRes.data.data || results.fundingRes.data;
-        console.log('Setting funding data:', fundingData);
-        setFunding(fundingData);
-        setOriginalData(prev => ({ ...prev, funding: fundingData }));
+        
+        console.log('💰 Raw funding data:', fundingData);
+        
+        // Only set if we actually have data
+        if (fundingData && typeof fundingData === 'object' && Object.keys(fundingData).length > 0) {
+          safeSetState(setFunding, fundingData, setOriginalData, 'funding');
+        }
       }
       
     } catch (error) {
@@ -1025,50 +1070,89 @@ const loadMemberCategory = async () => {
 };
   
   const cancelEdit = (section) => {
+    console.log(`🔙 Canceling edit for section: ${section}`);
+    
     switch (section) {
       case 'personal':
-        setPersonalInfo(originalData.personal);
+        if (originalData.personal) {
+          setPersonalInfo(originalData.personal);
+        }
         break;
+        
       case 'contact':
-        setContactInfo(originalData.contact);
+        if (originalData.contact) {
+          setContactInfo(originalData.contact);
+        }
         // Also restore the personal info fields that are now in contact section
-        setPersonalInfo(prev => ({
-          ...prev,
-          firstName: originalData.personal.firstName || '',
-          lastName: originalData.personal.lastName || '',
-          dateOfBirth: originalData.personal.dateOfBirth || ''
-        }));
-        setFieldErrors({}); // Clear any field errors
+        if (originalData.personal) {
+          setPersonalInfo(prev => ({
+            ...prev,
+            firstName: originalData.personal.firstName || '',
+            lastName: originalData.personal.lastName || '',
+            dateOfBirth: originalData.personal.dateOfBirth || ''
+          }));
+        }
         break;
+        
       case 'addresses':
-        setAddresses(originalData.addresses);
+        if (originalData.addresses) {
+          setAddresses(originalData.addresses);
+        }
         break;
+        
       case 'family':
-        setFamilyInfo(originalData.family);
+        if (originalData.family) {
+          setFamilyInfo(originalData.family);
+        }
         break;
+        
       case 'occupation':
-        setOccupation(originalData.occupation);
+        if (originalData.occupation) {
+          setOccupation(originalData.occupation);
+        }
         break;
+        
       case 'medical':
-        setMedicalInfo(originalData.medical);
+        if (originalData.medical) {
+          setMedicalInfo(originalData.medical);
+        }
         break;
+        
       case 'cryoArrangements':
-        setCryoArrangements(originalData.cryoArrangements);
+        if (originalData.cryoArrangements) {
+          setCryoArrangements(originalData.cryoArrangements);
+        }
         break;
+        
       case 'funding':
-        setFunding(originalData.funding);
+        if (originalData.funding) {
+          setFunding(originalData.funding);
+        }
         break;
+        
       case 'legal':
-        setLegal(originalData.legal);
+        if (originalData.legal) {
+          setLegal(originalData.legal);
+        }
         break;
+        
       case 'nextOfKin':
-        setNextOfKinList(originalData.nextOfKin || []); // Make sure to use array
-        setFieldErrors({}); // Clear field errors when canceling
+        // Next of kin is always an array, so handle it differently
+        setNextOfKinList(originalData.nextOfKin || []);
+        break;
+        
+      default:
+        console.warn(`Unknown section in cancelEdit: ${section}`);
         break;
     }
+    
+    // Clear edit mode for this section
     setEditMode(prev => ({ ...prev, [section]: false }));
-    // Clear any field errors for all sections
+    
+    // Clear any field errors
     setFieldErrors({});
+    
+    console.log(`✅ Edit canceled for section: ${section}`);
   };
 
   const savePersonalInfo = async () => {
@@ -2689,26 +2773,26 @@ const saveFunding = async () => {
           <div className="space-y-6">
             {/* Contact Information - Always visible for all member types */}
             {isSectionVisible(memberCategory, 'contact') && (
-              <>
-                {!sectionsLoaded.contact ? (
-                  <SectionSkeleton />
-                ) : (
-                  <ContactInfoSection
-                    contactInfo={contactInfo || {}}
-                    setContactInfo={setContactInfo}
-                    personalInfo={personalInfo || {}}
-                    setPersonalInfo={setPersonalInfo}
-                    editMode={editMode}
-                    toggleEditMode={toggleEditMode}
-                    cancelEdit={cancelEdit}
-                    saveContactInfo={saveContactInfo}
-                    savingSection={savingSection}
-                    fieldErrors={fieldErrors}
-                    memberCategory={memberCategory}
-                  />
-                )}
-              </>
-            )}
+            <>
+              {!sectionsLoaded.contact ? (
+                <SectionSkeleton />
+              ) : (
+                <ContactInfoSection
+                  contactInfo={contactInfo || {}}
+                  setContactInfo={setContactInfo}
+                  personalInfo={personalInfo || {}}
+                  setPersonalInfo={setPersonalInfo}
+                  editMode={editMode}
+                  toggleEditMode={toggleEditMode}
+                  cancelEdit={cancelEdit}
+                  saveContactInfo={saveContactInfo}
+                  savingSection={savingSection}
+                  fieldErrors={fieldErrors}
+                  memberCategory={memberCategory}
+                />
+              )}
+            </>
+          )}
 
             {/* Personal Information */}
             {isSectionVisible(memberCategory, 'personal') && (
@@ -2776,7 +2860,7 @@ const saveFunding = async () => {
             {/* Occupation - Only for Applicants and Members */}
             {isSectionVisible(memberCategory, 'occupation') && (
               <>
-                {!sectionsLoaded.occupation ? (
+                {!sectionsLoaded.occupation || !occupation ? (
                   <SectionSkeleton />
                 ) : (
                   <OccupationSection
@@ -2837,11 +2921,11 @@ const saveFunding = async () => {
             {/* Funding/Life Insurance - Only for Applicants and Members */}
             {isSectionVisible(memberCategory, 'funding') && (
               <>
-                {!sectionsLoaded.funding ? (
+                {!sectionsLoaded.funding || !funding ? (
                   <SectionSkeleton />
                 ) : (
                   <FundingSection
-                    funding={funding || {}}
+                    funding={funding}
                     setFunding={setFunding}
                     editMode={editMode}
                     toggleEditMode={toggleEditMode}
@@ -3000,7 +3084,7 @@ const saveFunding = async () => {
         {/* Occupation - Only for Applicants and Members */}
         {isSectionVisible(memberCategory, 'occupation') && (
           <>
-            {!sectionsLoaded.occupation ? (
+            {!sectionsLoaded.occupation || !occupation ? (
               <SectionSkeleton />
             ) : (
               <OccupationSection
@@ -3068,7 +3152,7 @@ const saveFunding = async () => {
         {/* Funding/Life Insurance - Only for Applicants and Members */}
         {isSectionVisible(memberCategory, 'funding') && (
           <>
-            {!sectionsLoaded.funding ? (
+            {!sectionsLoaded.funding || !funding ? (
               <SectionSkeleton />
             ) : (
               <FundingSection

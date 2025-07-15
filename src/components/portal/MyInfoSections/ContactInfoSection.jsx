@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
@@ -160,9 +160,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                  <h3 className={overlayStyles.header.title}>
                     {fieldInfo.title}
-                  </span>
+                  </h3>
                   <p className={overlayStyles.header.description}>
                     {fieldInfo.description}
                   </p>
@@ -457,26 +457,14 @@ const ContactInfoSection = ({
   sectionLabel
 }) => {
   const safePersonalInfo = personalInfo || {};
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [hoveredSection, setHoveredSection] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
+  const [hoveredSection, setHoveredSection] = useState(null);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
-
-  useEffect(() => {
-    // Inject animation styles
-    const style = animationStyles.injectStyles();
-    
-    setTimeout(() => setHasLoaded(true), 100);
-    
-    // Trigger card animations after section loads
-    setTimeout(() => setCardsVisible(true), 300);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
 
   // Detect mobile
   useEffect(() => {
@@ -485,6 +473,46 @@ const ContactInfoSection = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Inject animation styles
+  useEffect(() => {
+    const style = animationStyles.injectStyles();
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Intersection Observer for scroll-triggered animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          // Delay to create smooth entrance
+          setTimeout(() => {
+            setHasLoaded(true);
+            // Stagger card animations after section fades in
+            setTimeout(() => setCardsVisible(true), 200);
+          }, 100);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
 
   const formatDateForDisplay = (dateOfBirth) => {
     if (!dateOfBirth) return '—';
@@ -514,7 +542,7 @@ const ContactInfoSection = ({
   };
 
   return (
-    <div className={`contact-info-section ${hasLoaded ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
+    <div ref={sectionRef} className={`contact-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
@@ -549,7 +577,7 @@ const ContactInfoSection = ({
           {/* Mobile content remains the same */}
           {!editMode.contact ? (
             <>
-              <div className="space-y-4">
+              <div className={`space-y-4 ${hasLoaded && isVisible ? 'contact-section-stagger-in' : ''}`}>
                 <div className="grid grid-cols-2 gap-4">
                   <DisplayField label="First Name" value={safePersonalInfo?.firstName} />
                   <DisplayField label="Middle Name" value={safePersonalInfo?.middleName} />

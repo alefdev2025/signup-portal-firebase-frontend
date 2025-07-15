@@ -11,7 +11,7 @@ const styleConfig2 = {
     // Box shadow to match FormsTab - now applied via inline style for desktop
     boxShadow: { boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' },
     innerPadding: "px-6 py-6 sm:p-6 md:p-8", // MORE GENEROUS mobile padding
-    title: "text-xl font-bold text-gray-800 mb-6", // Changed to font-bold
+    title: "text-lg sm:text-3xl font-light text-gray-800", 
     grid: {
       twoColumn: "grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-6", // Increased mobile gap
       fourColumn: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6", // Increased gap
@@ -45,8 +45,8 @@ const styleConfig2 = {
     icon: "w-9 h-9 sm:w-10 sm:h-10 text-white stroke-[0.8] scale-[0.85] origin-center", // Added scale to make inner lines smaller
     iconStrokeWidth: "0.8", // Thinner stroke
     textContainer: "ml-5 pt-0.5", // More space between icon and text
-    title: "text-lg sm:text-xl font-bold text-gray-800", // Changed to font-bold
-    subtitle: "text-xs text-gray-500 mt-1 sm:text-gray-400 sm:font-light" // Thinner and lighter on desktop
+    title: "text-lg sm:text-[1.375rem] font-light text-gray-800",
+    subtitle: "text-xs text-gray-500 mt-1 sm:text-gray-600 sm:font-light" // Thinner and lighter on desktop
   },
  
   // Clean mobile collapsible styles for dark theme
