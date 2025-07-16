@@ -157,15 +157,40 @@ const FormsTab = () => {
         alert('Please log in to download documents');
         return;
       }
-
+  
       setDownloading(prev => ({ ...prev, [fileName]: true }));
-
-      const fileRef = ref(storage, `documents/forms/${fileName}`);
-      const url = await getDownloadURL(fileRef);
-
-      window.open(url, '_blank');
-
-      console.log(`Successfully opened ${fileName} in new tab`);
+  
+      let fileRef;
+      let url;
+      let downloadSuccessful = false;
+  
+      // First try the documents/forms path
+      try {
+        fileRef = ref(storage, `documents/forms/${fileName}`);
+        url = await getDownloadURL(fileRef);
+        window.open(url, '_blank');
+        console.log(`Successfully opened ${fileName} from documents/forms/`);
+        downloadSuccessful = true;
+      } catch (firstError) {
+        console.log(`File not found in documents/forms/, trying root level for: ${fileName}`);
+        
+        // If that fails, try root level
+        try {
+          fileRef = ref(storage, fileName);
+          url = await getDownloadURL(fileRef);
+          window.open(url, '_blank');
+          console.log(`Successfully opened ${fileName} from root`);
+          downloadSuccessful = true;
+        } catch (secondError) {
+          // Both attempts failed
+          console.error('Download failed from both paths:', {
+            documentsFormsError: firstError,
+            rootError: secondError
+          });
+          throw secondError; // Throw the second error to be caught by outer catch
+        }
+      }
+  
     } catch (error) {
       console.error('Download error:', error);
       
@@ -196,6 +221,12 @@ const FormsTab = () => {
           description: "Cryonics-specific legal documents for end-of-life medical decisions.",
           fileName: "POA - HealthCare Directive.docx",
           pages: 8
+        },
+        {
+          title: "Check-In Service Enrollment",
+          description: "Alcor Member Calls Agreement",
+          fileName: "AlcorSubscriberAgreement.pdf",
+          pages: 12
         }
       ]
     },

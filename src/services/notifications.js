@@ -34,6 +34,17 @@ export const getNotifications = async () => {
     const url = `${API_BASE_URL}/api/notifications`;
     
     console.log('🌐 [NotificationService] Making request to:', url);
+
+        // ADD THIS LOGGING
+        const user = auth.currentUser;
+        console.log('🔑 [NotificationService] Current user details:', {
+          uid: user?.uid,
+          email: user?.email,
+          displayName: user?.displayName,
+          emailVerified: user?.emailVerified,
+          metadata: user?.metadata,
+          providerData: user?.providerData
+        });
     
     const response = await fetch(url, {
       headers: {
@@ -58,17 +69,55 @@ export const getNotifications = async () => {
       throw new Error(`Failed to fetch notifications: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    // Clone response to read it twice for debugging
+    const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    
+    console.log('📄 [NotificationService] Raw response text:', responseText);
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error('❌ [NotificationService] Failed to parse JSON:', jsonError);
+      console.error('📄 [NotificationService] Response that failed to parse:', responseText);
+      throw new Error('Invalid JSON response from server');
+    }
+    
     const endTime = Date.now();
     
     console.log('✅ [NotificationService] Notifications fetched successfully:', {
       timeMs: endTime - startTime,
       success: data.success,
+      dataStructure: Object.keys(data),
+      dataObject: data,
+      hasNotificationsProperty: 'notifications' in data,
+      notificationsType: typeof data.notifications,
+      notificationsIsArray: Array.isArray(data.notifications),
       count: data.notifications?.length || 0,
       notifications: data.notifications
     });
 
-    // Log details of first few notifications
+    // Log the entire data structure for debugging
+    console.log('🔍 [NotificationService] Full response data structure:', JSON.stringify(data, null, 2));
+
+    // Check different possible response formats
+    if (data.data && Array.isArray(data.data)) {
+      console.log('📊 [NotificationService] Found notifications in data.data property:', data.data);
+      return data.data;
+    }
+    
+    if (data.notifications && Array.isArray(data.notifications)) {
+      console.log('📊 [NotificationService] Found notifications in data.notifications property:', data.notifications);
+      return data.notifications;
+    }
+    
+    if (Array.isArray(data)) {
+      console.log('📊 [NotificationService] Response is directly an array:', data);
+      return data;
+    }
+
+    // Log details of first few notifications if they exist
     if (data.notifications && data.notifications.length > 0) {
       console.log('📋 [NotificationService] First 3 notifications:');
       data.notifications.slice(0, 3).forEach((notif, index) => {
@@ -78,9 +127,13 @@ export const getNotifications = async () => {
           title: notif.title,
           read: notif.read,
           createdAt: notif.createdAt,
-          userId: notif.userId
+          userId: notif.userId,
+          fullNotification: notif
         });
       });
+    } else {
+      console.warn('⚠️ [NotificationService] No notifications found in response');
+      console.warn('⚠️ [NotificationService] Current user:', auth.currentUser?.uid, auth.currentUser?.email);
     }
 
     return data.notifications || [];

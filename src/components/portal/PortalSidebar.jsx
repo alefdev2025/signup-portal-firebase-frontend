@@ -274,7 +274,9 @@ const PortalSidebar = ({
                         </div>
                         {item.subItems && (
                           <svg 
-                            className={`w-4 h-4 transition-all duration-200 opacity-0 xl:group-hover:opacity-100 ${
+                            className={`w-4 h-4 transition-all duration-200 ${
+                              isMobile ? 'opacity-100' : 'xl:opacity-60 xl:group-hover:opacity-100'
+                            } ${
                               expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
                             }`} 
                             fill="none" 
@@ -310,22 +312,22 @@ const PortalSidebar = ({
               </nav>
 
               <div className="p-4 border-t border-white/20">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
-                    <p className="text-white/80 text-xs truncate">Associate Member</p>
-                  </div>
-                </div>
-              </div>
+  <div className="flex items-center gap-3 px-4 py-3">
+    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
+      {profileImage ? (
+        <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
+      ) : (
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )}
+    </div>
+    <div className="flex-1 overflow-hidden">
+      <p className="text-white text-sm font-medium truncate drop-shadow-sm">Test User</p>
+      <p className="text-white/80 text-xs truncate">Member</p>
+    </div>
+  </div>
+</div>
             </div>
         </div>
       ) : (
@@ -369,7 +371,9 @@ const PortalSidebar = ({
                       </div>
                       {item.subItems && (
                         <svg 
-                          className={`w-4 h-4 transition-all duration-200 opacity-0 xl:group-hover:opacity-100 ${
+                          className={`w-4 h-4 transition-all duration-200 ${
+                            isMobile ? 'opacity-100' : 'xl:opacity-60 xl:group-hover:opacity-100'
+                          } ${
                             expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
                           }`} 
                           fill="none" 
@@ -405,22 +409,22 @@ const PortalSidebar = ({
             </nav>
 
             <div className="p-4 border-t border-white/20">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <svg className="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-white text-sm font-medium truncate drop-shadow-sm">Nikki Olson</p>
-                  <p className="text-white/80 text-xs truncate">Associate Member</p>
-                </div>
-              </div>
-            </div>
+  <div className="flex items-center gap-3 px-4 py-3">
+    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
+      {profileImage ? (
+        <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
+      ) : (
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )}
+    </div>
+    <div className="flex-1 overflow-hidden">
+      <p className="text-white text-sm font-medium truncate drop-shadow-sm">Test User</p>
+      <p className="text-white/80 text-xs truncate">Member</p>
+    </div>
+  </div>
+</div>
           </div>
         </div>
       )}

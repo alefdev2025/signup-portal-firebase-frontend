@@ -527,14 +527,35 @@ const PortalHome = () => {
         return <InvoicesTab customerId={customerId} />;
       
       // Resources subtabs
-      case 'resources':
-        return <ResourcesTab />;
       case 'resources-media':
-        return <MediaTab />;
+        return (
+          <div className="flex items-center justify-center min-h-[60vh] bg-white">
+            <div className="text-center">
+              <h2 className="text-3xl font-light text-gray-400 mb-2">Coming Soon</h2>
+              <p className="text-gray-400">Media resources are under development</p>
+            </div>
+          </div>
+        );
+      
       case 'resources-community':
-        return <CommunityTab />;
+        return (
+          <div className="flex items-center justify-center min-h-[60vh] bg-white">
+            <div className="text-center">
+              <h2 className="text-3xl font-light text-gray-400 mb-2">Coming Soon</h2>
+              <p className="text-gray-400">Community features are under development</p>
+            </div>
+          </div>
+        );
+      
       case 'resources-support':
-        return <SupportTab />;
+        return (
+          <div className="flex items-center justify-center min-h-[60vh] bg-white">
+            <div className="text-center">
+              <h2 className="text-3xl font-light text-gray-400 mb-2">Coming Soon</h2>
+              <p className="text-gray-400">Support features are under development</p>
+            </div>
+          </div>
+        );
       
       default: 
         const DefaultOverviewTab = overviewTabVersions[overviewTabVersion].component;

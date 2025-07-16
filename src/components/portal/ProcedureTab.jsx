@@ -2,7 +2,7 @@
 // npm install jspdf
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, Phone, User, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Clock, Calendar, Phone, User, FileText, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import alcorStar from '../../assets/images/alcor-star.png';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
@@ -28,6 +28,7 @@ const ProcedureTab = ({ contactId }) => {
     heightWeight: '',
     
     // Medical Information
+    whatsGoingOn: '', // New field - not required
     medicalCondition: '',
     facilityAddress: '',
     facilityPhone: '',
@@ -50,6 +51,7 @@ const ProcedureTab = ({ contactId }) => {
   const [submittedPdfBlob, setSubmittedPdfBlob] = useState(null);
   const [submittedPdfName, setSubmittedPdfName] = useState('');
   const [submittedPoaStatus, setSubmittedPoaStatus] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Prepopulate form with member data
   useEffect(() => {
@@ -276,6 +278,10 @@ const ProcedureTab = ({ contactId }) => {
   };
 
   const isFieldInvalid = (fieldName) => {
+    // whatsGoingOn is not required, so it's never invalid
+    if (fieldName === 'whatsGoingOn') {
+      return false;
+    }
     return touchedFields[fieldName] && (!formData[fieldName] || formData[fieldName].toString().trim() === '');
   };
 
@@ -373,6 +379,10 @@ const ProcedureTab = ({ contactId }) => {
     yPos += 10;
     
     // Medical Information fields
+    // Add What's Going On if it has content
+    if (formData.whatsGoingOn && formData.whatsGoingOn.trim()) {
+      yPos = drawField("In a few sentences, share what's going on?:", formData.whatsGoingOn, yPos);
+    }
     yPos = drawField('Medical Condition:', formData.medicalCondition, yPos);
     yPos = drawField('Facility Address:', formData.facilityAddress, yPos);
     yPos = drawField('Phone:', formData.facilityPhone, yPos);
@@ -409,16 +419,20 @@ const ProcedureTab = ({ contactId }) => {
     });
     setTouchedFields(allFieldsTouched);
     
-    // Check every single field
+    // Check every single field EXCEPT whatsGoingOn
     let hasEmptyFields = false;
     for (const [key, value] of Object.entries(formData)) {
+      // Skip whatsGoingOn since it's not required
+      if (key === 'whatsGoingOn') {
+        continue;
+      }
       if (!value || value.toString().trim() === '') {
         console.log(`Field "${key}" is empty:`, value);
         hasEmptyFields = true;
       }
     }
     
-    // If ANY field is empty, stop right here
+    // If ANY required field is empty, stop right here
     if (hasEmptyFields) {
       console.log('VALIDATION FAILED - hasEmptyFields is true');
       console.log('Setting error message and returning...');
@@ -431,7 +445,7 @@ const ProcedureTab = ({ contactId }) => {
     console.log('VALIDATION PASSED - All fields have values');
     console.log('About to show success screen...');
     
-    // Only get here if ALL fields are filled
+    // Only get here if ALL required fields are filled
     setIsSaving(true);
     setSaveMessage('');
     
@@ -539,6 +553,7 @@ const ProcedureTab = ({ contactId }) => {
               phone: phone,
               emergencyContact: emergencyContact,
               heightWeight: '',
+              whatsGoingOn: '',
               medicalCondition: '',
               facilityAddress: '',
               facilityPhone: '',
@@ -802,154 +817,59 @@ const ProcedureTab = ({ contactId }) => {
 
               {/* Form Fields */}
               <div className="px-6 py-6 space-y-6">
-                {/* Member Information Section */}
+                {/* Medical Information Section */}
                 <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-200">Member Information</h3>
+                  <h3 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-200">Medical Information</h3>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('date') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Member Name <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="memberName"
-                      value={formData.memberName}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('memberName') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Alcor Number <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="alcorNumber"
-                      value={formData.alcorNumber}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      placeholder="A-####"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('alcorNumber') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Age <span className="text-red-500">*</span></label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      min="1"
-                      max="150"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('age') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        In a few sentences, share what's going on?
+                      </label>
+                      <div className="relative inline-block">
+                        <HelpCircle 
+                          className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"
+                          strokeWidth={2}
+                          onMouseEnter={() => setShowTooltip(true)}
+                          onMouseLeave={() => setShowTooltip(false)}
+                          onClick={() => setShowTooltip(!showTooltip)}
+                        />
+                        {showTooltip && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 w-64">
+                            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-semibold text-gray-900">
+                                  Help
+                                </h3>
+                                <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="px-4 py-3">
+                              <p className="text-sm text-gray-700">
+                                You're on this form to tell us about your upcoming procedure - so in a few sentences, share what's been going on (your symptoms, concerns or questions, and any steps you've already taken). We'll ask for the exact procedure details next.
+                              </p>
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                              <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                              <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <textarea
-                      name="address"
-                      value={formData.address}
+                      name="whatsGoingOn"
+                      value={formData.whatsGoingOn}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       rows="2"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
-                      }`}
+                      placeholder="Brief description (optional)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent"
                     />
-                    {isFieldInvalid('address') && (
-                      <p className="error-text">This field is required</p>
-                    )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('phone') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Emergency/POA Contact <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="emergencyContact"
-                      value={formData.emergencyContact}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('emergencyContact') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Height/Weight <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      name="heightWeight"
-                      value={formData.heightWeight}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
-                      }`}
-                    />
-                    {isFieldInvalid('heightWeight') && (
-                      <p className="error-text">This field is required</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Medical Information Section */}
-                <div className="space-y-4 pt-4">
-                  <h3 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-200">Medical Information</h3>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Medical Condition <span className="text-red-500">*</span></label>
                     <textarea
@@ -1181,6 +1101,150 @@ const ProcedureTab = ({ contactId }) => {
                     )}
                   </div>
                 </div>
+
+                {/* Member Information Section */}
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-200">Member Information</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('date') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Member Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="memberName"
+                      value={formData.memberName}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('memberName') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alcor Number <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="alcorNumber"
+                      value={formData.alcorNumber}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      placeholder="A-####"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('alcorNumber') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Age <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      name="age"
+                      value={formData.age}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      min="1"
+                      max="150"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('age') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
+                    <textarea
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      rows="2"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('address') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('phone') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Emergency/POA Contact <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="emergencyContact"
+                      value={formData.emergencyContact}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('emergencyContact') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Height/Weight <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="heightWeight"
+                      value={formData.heightWeight}
+                      onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                        isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
+                      }`}
+                    />
+                    {isFieldInvalid('heightWeight') && (
+                      <p className="error-text">This field is required</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Submit Button */}
@@ -1230,155 +1294,59 @@ const ProcedureTab = ({ contactId }) => {
               {/* Form Content */}
               <div className={`${wider ? 'p-10' : 'p-8'}`}>
                 <div className={`space-y-8 ${wider ? 'max-w-6xl' : 'max-w-4xl'}`}>
-                  {/* Member Information Section */}
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">Member Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Date <span className="text-red-500">*</span></label>
-                        <input
-                          type="date"
-                          name="date"
-                          value={formData.date}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('date') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Member Name <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          name="memberName"
-                          value={formData.memberName}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('memberName') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Alcor Number <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          name="alcorNumber"
-                          value={formData.alcorNumber}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          placeholder="A-####"
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('alcorNumber') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Age <span className="text-red-500">*</span></label>
-                        <input
-                          type="number"
-                          name="age"
-                          value={formData.age}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          min="1"
-                          max="150"
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('age') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Address <span className="text-red-500">*</span></label>
-                        <textarea
-                          name="address"
-                          value={formData.address}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          rows="2"
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('address') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone <span className="text-red-500">*</span></label>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('phone') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Emergency/POA Contact <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          name="emergencyContact"
-                          value={formData.emergencyContact}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('emergencyContact') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Height/Weight <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          name="heightWeight"
-                          value={formData.heightWeight}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
-                          }`}
-                        />
-                        {isFieldInvalid('heightWeight') && (
-                          <p className="error-text">This field is required</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Medical Information Section */}
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">Medical Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            In a few sentences, share what's going on?
+                          </label>
+                          <div className="relative inline-block">
+                            <HelpCircle 
+                              className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"
+                              strokeWidth={2}
+                              onMouseEnter={() => setShowTooltip(true)}
+                              onMouseLeave={() => setShowTooltip(false)}
+                              onClick={() => setShowTooltip(!showTooltip)}
+                            />
+                            {showTooltip && (
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 w-72">
+                                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-semibold text-gray-900">
+                                      Help
+                                    </h3>
+                                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <div className="px-4 py-3">
+                                  <p className="text-sm text-gray-700">
+                                    You're on this form to tell us about your upcoming procedure - so in a few sentences, share what's been going on (your symptoms, concerns or questions, and any steps you've already taken). We'll ask for the exact procedure details next.
+                                  </p>
+                                </div>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <textarea
+                          name="whatsGoingOn"
+                          value={formData.whatsGoingOn}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          rows="2"
+                          placeholder="Brief description (optional)"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent"
+                        />
+                      </div>
+
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Medical Condition <span className="text-red-500">*</span></label>
                         <textarea
@@ -1606,6 +1574,151 @@ const ProcedureTab = ({ contactId }) => {
                           <option value="already_on_file">Already on file</option>
                         </select>
                         {isFieldInvalid('poaOnFile') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Member Information Section */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">Member Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Date <span className="text-red-500">*</span></label>
+                        <input
+                          type="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('date') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Member Name <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="memberName"
+                          value={formData.memberName}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('memberName') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Alcor Number <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="alcorNumber"
+                          value={formData.alcorNumber}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          placeholder="A-####"
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('alcorNumber') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Age <span className="text-red-500">*</span></label>
+                        <input
+                          type="number"
+                          name="age"
+                          value={formData.age}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          min="1"
+                          max="150"
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('age') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address <span className="text-red-500">*</span></label>
+                        <textarea
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          rows="2"
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('address') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone <span className="text-red-500">*</span></label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('phone') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Emergency/POA Contact <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="emergencyContact"
+                          value={formData.emergencyContact}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('emergencyContact') && (
+                          <p className="error-text">This field is required</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Height/Weight <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="heightWeight"
+                          value={formData.heightWeight}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                            isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
+                          }`}
+                        />
+                        {isFieldInvalid('heightWeight') && (
                           <p className="error-text">This field is required</p>
                         )}
                       </div>

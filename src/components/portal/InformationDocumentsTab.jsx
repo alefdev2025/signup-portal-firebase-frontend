@@ -161,15 +161,40 @@ const InformationDocumentsTab = () => {
         alert('Please log in to download documents');
         return;
       }
-
+  
       setDownloading(prev => ({ ...prev, [fileName]: true }));
-
-      const fileRef = ref(storage, `documents/forms/${fileName}`);
-      const url = await getDownloadURL(fileRef);
-
-      window.open(url, '_blank');
-
-      console.log(`Successfully opened ${fileName} in new tab`);
+  
+      let fileRef;
+      let url;
+      let downloadSuccessful = false;
+  
+      // First try the documents/forms path
+      try {
+        fileRef = ref(storage, `documents/forms/${fileName}`);
+        url = await getDownloadURL(fileRef);
+        window.open(url, '_blank');
+        console.log(`Successfully opened ${fileName} from documents/forms/`);
+        downloadSuccessful = true;
+      } catch (firstError) {
+        console.log(`File not found in documents/forms/, trying root level for: ${fileName}`);
+        
+        // If that fails, try root level
+        try {
+          fileRef = ref(storage, fileName);
+          url = await getDownloadURL(fileRef);
+          window.open(url, '_blank');
+          console.log(`Successfully opened ${fileName} from root`);
+          downloadSuccessful = true;
+        } catch (secondError) {
+          // Both attempts failed
+          console.error('Download failed from both paths:', {
+            documentsFormsError: firstError,
+            rootError: secondError
+          });
+          throw secondError; // Throw the second error to be caught by outer catch
+        }
+      }
+  
     } catch (error) {
       console.error('Download error:', error);
       
@@ -231,10 +256,16 @@ const InformationDocumentsTab = () => {
           pages: 1
         },
         {
-          title: "Emergency Notification Guide",
-          description: "Critical guidance on when and how to notify Alcor - 24/7 hotline included.",
+          title: "When to Notify Alcor - Health Decline Guide",
+          description: "Critical guidance on notifying Alcor about member health decline or life-threatening events.",
           fileName: "When to Notify Alcor About a Member.pdf",
           pages: 2
+        },
+        {
+          title: "General Information for Physicians",
+          description: "Comprehensive guide for medical professionals on cryonics procedures and protocols.",
+          fileName: "General-Information-Physician-2025.pdf",
+          pages: 1
         }
       ]
     },
