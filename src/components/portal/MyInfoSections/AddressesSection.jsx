@@ -17,10 +17,7 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
-
-// Melissa API configuration
-const MELISSA_API_KEY = 'AVUaS6bp3WJyyFKHjjwqgj**nSAcwXpxhQ0PC2lXxuDAZ-**';
-const MELISSA_API_URL = 'https://address.melissadata.net/v3/WEB/GlobalAddress/doGlobalAddress';
+import { CompletionWheelWithLegend } from './CompletionWheel';
 
 // Overlay Component
 const CardOverlay = ({ 
@@ -34,55 +31,20 @@ const CardOverlay = ({
   savingSection
 }) => {
   const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [localAddresses, setLocalAddresses] = useState(addresses);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [localValidatingAddress, setLocalValidatingAddress] = useState(false);
-  const [localValidationErrors, setLocalValidationErrors] = useState({
-    home: '',
-    mailing: '',
-    homeFields: {
-      street: false,
-      city: false,
-      state: false,
-      postalCode: false
-    },
-    mailingFields: {
-      street: false,
-      city: false,
-      state: false,
-      postalCode: false
-    }
-  });
-
-  // Debug validation errors
+  // Add effect to track state changes
   useEffect(() => {
-    console.log('📊 Current validation errors:', localValidationErrors);
-  }, [localValidationErrors]);
+    console.log('Overlay state:', { editMode, isSaving });
+  }, [editMode, isSaving]);
 
   useEffect(() => {
     if (isOpen) {
       setEditMode(false);  // Start in display mode
-      setShowSuccess(false);
       // Reset local addresses to match the current addresses when opening
       setLocalAddresses(addresses);
-      // Clear any validation errors when opening
-      setLocalValidationErrors({
-        home: '',
-        mailing: '',
-        homeFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        },
-        mailingFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      });
+      setIsSaving(false);
     }
   }, [isOpen, addresses]);
 
@@ -96,152 +58,37 @@ const CardOverlay = ({
 
   const handleEdit = () => {
     setEditMode(true);
-    // Clear any existing validation errors when entering edit mode
-    setLocalValidationErrors({
-      home: '',
-      mailing: '',
-      homeFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      },
-      mailingFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      }
-    });
   };
 
   const handleSave = async () => {
-    console.log('🔴 SAVE CLICKED - Starting validation');
-    console.log('Current addresses:', localAddresses);
+    if (isSaving) return;
     
-    // Clear any existing validation errors first
-    setLocalValidationErrors({
-      home: '',
-      mailing: '',
-      homeFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      },
-      mailingFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      }
-    });
+    console.log('=== SAVE STARTED ===');
+    console.log('Setting isSaving to true');
+    setIsSaving(true);
     
-    // Set validating state
-    setLocalValidatingAddress(true);
+    // Force a re-render
+    await new Promise(resolve => setTimeout(resolve, 0));
     
     try {
-      let hasErrors = false;
-      
-      // ALWAYS validate home address
-      console.log('🏠 Validating home address...');
-      const homeValidation = await validateAddressWithMelissa({
-        street: localAddresses.homeStreet || '',
-        city: localAddresses.homeCity || '',
-        state: localAddresses.homeState || '',
-        postalCode: localAddresses.homePostalCode || '',
-        country: localAddresses.homeCountry || 'US'
-      }, 'home');
-
-      console.log('Home validation result:', homeValidation);
-
-      if (!homeValidation.isValid) {
-        console.log('❌ Home address INVALID');
-        setLocalValidationErrors(prev => { 
-          const newErrors = {
-            ...prev, 
-            home: 'This address could not be verified. Please double-check it\'s correct.',
-            homeFields: homeValidation.invalidFields
-          };
-          console.log('Setting home errors:', newErrors);
-          return newErrors;
-        });
-        hasErrors = true;
-      }
-
-      // Validate mailing if not same as home
-      if (!localAddresses.sameAsHome) {
-        console.log('📬 Validating mailing address...');
-        const mailingValidation = await validateAddressWithMelissa({
-          street: localAddresses.mailingStreet || '',
-          city: localAddresses.mailingCity || '',
-          state: localAddresses.mailingState || '',
-          postalCode: localAddresses.mailingPostalCode || '',
-          country: localAddresses.mailingCountry || 'US'
-        }, 'mailing');
-
-        console.log('Mailing validation result:', mailingValidation);
-
-        if (!mailingValidation.isValid) {
-          console.log('❌ Mailing address INVALID');
-          setLocalValidationErrors(prev => {
-            const newErrors = {
-              ...prev, 
-              mailing: 'This address could not be verified. Please double-check it\'s correct.',
-              mailingFields: mailingValidation.invalidFields
-            };
-            console.log('Setting mailing errors:', newErrors);
-            return newErrors;
-          });
-          hasErrors = true;
-        }
-      }
-
-      setLocalValidatingAddress(false);
-
-      if (hasErrors) {
-        console.log('🛑 VALIDATION FAILED - NOT SAVING - SHOWING ERRORS');
-        // Force a re-render by updating state
-        setEditMode(true);
-        // DO NOT SAVE - just show errors
-        return;
-      }
-
-      // Only reach here if validation passed
-      console.log('✅ Validation passed - saving to backend');
+      // Clean the addresses before saving
+      const cleanedAddresses = cleanAddressData(localAddresses);
+      console.log('Cleaned addresses:', cleanedAddresses);
       
       // Update parent state
-      setAddresses(localAddresses);
+      setAddresses(cleanedAddresses);
       
       // Save to backend
+      console.log('Calling saveAddresses...');
       await saveAddresses();
+      console.log('saveAddresses completed');
       
-      setEditMode(false);
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        onClose();
-      }, 2000);
-      
+      // Close immediately after save completes
+      console.log('Closing overlay');
+      onClose();
     } catch (error) {
-      console.error('❌ Error during validation:', error);
-      setLocalValidationErrors({ 
-        home: 'An error occurred during validation. Please try again.',
-        mailing: '',
-        homeFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        },
-        mailingFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      });
-      setLocalValidatingAddress(false);
+      console.error('Error saving addresses:', error);
+      setIsSaving(false);
     }
   };
 
@@ -251,205 +98,12 @@ const CardOverlay = ({
     setEditMode(false);
   };
 
-  const handleSaveAnyway = async () => {
-    console.log('🟡 SAVE ANYWAY CLICKED - Bypassing validation');
-    
-    // Clear all validation errors
-    setLocalValidationErrors({ 
-      home: '', 
-      mailing: '',
-      homeFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      },
-      mailingFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      }
-    });
-    
-    // Update parent addresses with local changes
-    console.log('Updating parent with addresses:', localAddresses);
-    setAddresses(localAddresses);
-    
-    // SAVE TO BACKEND
-    console.log('Calling saveAddresses to save to backend...');
-    await saveAddresses();
-    console.log('Save complete!');
-    
-    // Show success and close
-    setEditMode(false);
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  // Validate address with Melissa API
-  const validateAddressWithMelissa = async (address, addressType) => {
-    console.log('🔵 === START validateAddressWithMelissa ===');
-    console.log('📋 Address to validate:', addressType, address);
-    
-    // First check if any required fields are empty
-    const emptyFields = {
-      street: !address.street || address.street.trim() === '',
-      city: !address.city || address.city.trim() === '',
-      state: !address.state || address.state.trim() === '',
-      postalCode: !address.postalCode || address.postalCode.trim() === ''
-    };
-    
-    // If any required fields are empty, mark only those as invalid
-    if (Object.values(emptyFields).some(v => v)) {
-      console.log('❌ Empty fields detected:', emptyFields);
-      return {
-        isValid: false,
-        invalidFields: emptyFields
-      };
-    }
-    
-    try {
-      const params = new URLSearchParams({
-        id: MELISSA_API_KEY,
-        a1: address.street || '',
-        a2: '',
-        loc: address.city || '',
-        admarea: address.state || '',
-        postal: address.postalCode || '',
-        ctry: address.country || 'US',
-        format: 'json'
-      });
-
-      const fullUrl = `${MELISSA_API_URL}?${params}`;
-      
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-      console.log('📦 Melissa API Response:', JSON.stringify(data, null, 2));
-
-      // Check for transmission errors
-      if (data.TransmissionResults && data.TransmissionResults !== '' && data.TransmissionResults !== 'GE00') {
-        console.log('❌ API Error detected');
-        // For API errors, we can't determine which field is wrong, so don't mark any
-        return { 
-          isValid: false,
-          invalidFields: {
-            street: false,
-            city: false,
-            state: false,
-            postalCode: false
-          }
-        };
-      }
-
-      if (data.Version && data.Records && data.Records.length > 0) {
-        const record = data.Records[0];
-        
-        if (record) {
-          const addressVerificationCode = record.Results || '';
-          console.log('✅ Verification code:', addressVerificationCode);
-          
-          // ONLY accept AV25, AV24, AV23 - these are fully verified addresses
-          const fullyVerifiedCodes = ['AV25', 'AV24', 'AV23'];
-          const isFullyVerified = fullyVerifiedCodes.some(code => addressVerificationCode.includes(code));
-          
-          // Also check for ANY error codes
-          const hasErrors = addressVerificationCode.includes('AE') || // Address Error
-                           addressVerificationCode.includes('AC') || // Address Change/Correction needed
-                           !addressVerificationCode.includes('AV');   // No address verification at all
-          
-          console.log('📬 Is fully verified?', isFullyVerified);
-          console.log('❌ Has errors?', hasErrors);
-          
-          // Must be fully verified AND have no errors
-          const isValid = isFullyVerified && !hasErrors;
-          
-          // Try to determine which specific field is wrong based on error codes
-          let invalidFields = {
-            street: false,
-            city: false,
-            state: false,
-            postalCode: false
-          };
-          
-          // Check specific error codes
-          if (!isValid) {
-            // Check if street is invalid
-            if (addressVerificationCode.includes('AE01') || addressVerificationCode.includes('AE02') || 
-                addressVerificationCode.includes('AS01') || addressVerificationCode.includes('AS02')) {
-              invalidFields.street = true;
-            }
-            // Check if city is invalid
-            else if (addressVerificationCode.includes('AE03') || addressVerificationCode.includes('AE04') ||
-                     addressVerificationCode.includes('AS03')) {
-              invalidFields.city = true;
-            }
-            // Check if state is invalid
-            else if (addressVerificationCode.includes('AE05') || addressVerificationCode.includes('AE06')) {
-              invalidFields.state = true;
-            }
-            // Check if zip is invalid
-            else if (addressVerificationCode.includes('AE07') || addressVerificationCode.includes('AE08') ||
-                     addressVerificationCode.includes('AE09') || addressVerificationCode.includes('AE10') ||
-                     addressVerificationCode.includes('AE11')) {
-              invalidFields.postalCode = true;
-            }
-            // If we can't determine specific field, don't mark any as red
-            else {
-              invalidFields = {
-                street: false,
-                city: false,
-                state: false,
-                postalCode: false
-              };
-            }
-          }
-          
-          return { isValid, invalidFields };
-        }
-      }
-      
-      console.log('❌ No valid response - address not verified');
-      // Can't determine specific field, so don't mark any
-      return { 
-        isValid: false,
-        invalidFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      };
-    } catch (error) {
-      console.error('❌ Melissa API error:', error);
-      // Can't determine specific field, so don't mark any
-      return { 
-        isValid: false,
-        invalidFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      };
-    }
-  };
-
   const getFieldDescriptions = () => {
     switch (section) {
       case 'home':
         return {
           title: 'Home Address',
-          description: 'Your primary residential address. This address will be validated for accuracy.',
+          description: 'Your primary residential address.',
           fields: {
             'Street Address': 'Your street address including apartment or unit number.',
             'City': 'The city where you reside.',
@@ -477,12 +131,18 @@ const CardOverlay = ({
 
   const fieldInfo = getFieldDescriptions();
 
+  // Custom overlay styles with less rounded corners
+  const customOverlayStyles = {
+    ...overlayStyles,
+    contentBox: "relative bg-white rounded-lg w-full max-w-3xl animate-fadeInUp shadow-xl", // Changed from rounded-2xl to rounded-lg
+  };
+
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
-        <div className={overlayStyles.contentBox}>
+        <div className={customOverlayStyles.contentBox}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
@@ -515,16 +175,6 @@ const CardOverlay = ({
 
           {/* Content */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Address updated successfully!</p>
-              </div>
-            )}
-
             {/* Fields */}
             {!editMode ? (
               /* Display Mode */
@@ -658,8 +308,7 @@ const CardOverlay = ({
                       type="text"
                       value={localAddresses?.homeStreet || ''}
                       onChange={(e) => setLocalAddresses({...localAddresses, homeStreet: e.target.value})}
-                      disabled={savingSection === 'addresses' || localValidatingAddress}
-                      error={localValidationErrors.homeFields?.street}
+                      disabled={savingSection === 'addresses'}
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <Input
@@ -667,16 +316,14 @@ const CardOverlay = ({
                         type="text"
                         value={localAddresses?.homeCity || ''}
                         onChange={(e) => setLocalAddresses({...localAddresses, homeCity: e.target.value})}
-                        disabled={savingSection === 'addresses' || localValidatingAddress}
-                        error={localValidationErrors.homeFields?.city}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="State/Province *"
                         type="text"
                         value={localAddresses?.homeState || ''}
                         onChange={(e) => setLocalAddresses({...localAddresses, homeState: e.target.value})}
-                        disabled={savingSection === 'addresses' || localValidatingAddress}
-                        error={localValidationErrors.homeFields?.state}
+                        disabled={savingSection === 'addresses'}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -685,8 +332,7 @@ const CardOverlay = ({
                         type="text"
                         value={localAddresses?.homePostalCode || ''}
                         onChange={(e) => setLocalAddresses({...localAddresses, homePostalCode: e.target.value})}
-                        disabled={savingSection === 'addresses' || localValidatingAddress}
-                        error={localValidationErrors.homeFields?.postalCode}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="Country"
@@ -696,16 +342,6 @@ const CardOverlay = ({
                         disabled={savingSection === 'addresses'}
                       />
                     </div>
-                    {localValidationErrors.home && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600 flex items-center">
-                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                          {localValidationErrors.home}
-                        </p>
-                      </div>
-                    )}
                   </>
                 )}
 
@@ -715,7 +351,7 @@ const CardOverlay = ({
                       label="Mailing address is the same as home address"
                       checked={localAddresses?.sameAsHome || false}
                       onChange={(e) => setLocalAddresses({...localAddresses, sameAsHome: e.target.checked})}
-                      disabled={savingSection === 'addresses' || localValidatingAddress}
+                      disabled={savingSection === 'addresses'}
                     />
                     
                     {!localAddresses?.sameAsHome && (
@@ -725,8 +361,7 @@ const CardOverlay = ({
                           type="text"
                           value={localAddresses?.mailingStreet || ''}
                           onChange={(e) => setLocalAddresses({...localAddresses, mailingStreet: e.target.value})}
-                          disabled={savingSection === 'addresses' || localValidatingAddress}
-                          error={localValidationErrors.mailingFields?.street}
+                          disabled={savingSection === 'addresses'}
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <Input
@@ -734,16 +369,14 @@ const CardOverlay = ({
                             type="text"
                             value={localAddresses?.mailingCity || ''}
                             onChange={(e) => setLocalAddresses({...localAddresses, mailingCity: e.target.value})}
-                            disabled={savingSection === 'addresses' || localValidatingAddress}
-                            error={localValidationErrors.mailingFields?.city}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="State/Province *"
                             type="text"
                             value={localAddresses?.mailingState || ''}
                             onChange={(e) => setLocalAddresses({...localAddresses, mailingState: e.target.value})}
-                            disabled={savingSection === 'addresses' || localValidatingAddress}
-                            error={localValidationErrors.mailingFields?.state}
+                            disabled={savingSection === 'addresses'}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -752,8 +385,7 @@ const CardOverlay = ({
                             type="text"
                             value={localAddresses?.mailingPostalCode || ''}
                             onChange={(e) => setLocalAddresses({...localAddresses, mailingPostalCode: e.target.value})}
-                            disabled={savingSection === 'addresses' || localValidatingAddress}
-                            error={localValidationErrors.mailingFields?.postalCode}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="Country"
@@ -763,16 +395,6 @@ const CardOverlay = ({
                             disabled={savingSection === 'addresses'}
                           />
                         </div>
-                        {localValidationErrors.mailing && (
-                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                            <p className="text-sm text-red-600 flex items-center">
-                              <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                              </svg>
-                              {localValidationErrors.mailing}
-                            </p>
-                          </div>
-                        )}
                       </>
                     )}
                   </>
@@ -783,12 +405,24 @@ const CardOverlay = ({
 
           {/* Footer */}
           <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 mr-4">
+              editMode: {String(editMode)}, isSaving: {String(isSaving)}
+            </div>
+            
+            {!editMode && !isSaving ? (
               <PurpleButton
                 text="Edit"
                 onClick={handleEdit}
                 className={buttonStyles.overlayButtons.save}
                 spinStar={buttonStyles.starConfig.enabled}
+              />
+            ) : isSaving ? (
+              <PurpleButton
+                text="Saving..."
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={true}
               />
             ) : (
               <>
@@ -798,24 +432,12 @@ const CardOverlay = ({
                   className={buttonStyles.overlayButtons.cancel}
                   spinStar={buttonStyles.starConfig.enabled}
                 />
-                {(localValidationErrors.home || localValidationErrors.mailing) && (
-                  <WhiteButton
-                    text="Save Anyway"
-                    onClick={handleSaveAnyway}
-                    className={buttonStyles.overlayButtons.cancel}
-                    spinStar={buttonStyles.starConfig.enabled}
-                  />
-                )}
                 <PurpleButton
-                  text={localValidatingAddress ? 'Validating...' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
-                  onClick={() => {
-                    // Update parent addresses with local changes before saving
-                    setAddresses(localAddresses);
-                    handleSave();
-                  }}
+                  text="Save"
+                  onClick={handleSave}
                   className={buttonStyles.overlayButtons.save}
                   spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'addresses' || localValidatingAddress}
+                  disabled={savingSection === 'addresses'}
                 />
               </>
             )}
@@ -839,25 +461,6 @@ const AddressesSection = ({
   sectionImage,
   sectionLabel
 }) => {
-  const [validatingAddress, setValidatingAddress] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({
-    home: '',
-    mailing: '',
-    homeFields: {
-      street: false,
-      city: false,
-      state: false,
-      postalCode: false
-    },
-    mailingFields: {
-      street: false,
-      city: false,
-      state: false,
-      postalCode: false
-    }
-  });
-  const [skipValidation, setSkipValidation] = useState(false);
-  
   // Add state for mobile
   const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -916,6 +519,24 @@ const AddressesSection = ({
     };
   }, [isVisible]);
 
+  // Field configuration for completion wheel
+  const fieldConfig = {
+    required: {
+      homeStreet: { field: 'homeStreet', source: 'addresses', label: 'Home Street' },
+      homeCity: { field: 'homeCity', source: 'addresses', label: 'Home City' },
+      homeState: { field: 'homeState', source: 'addresses', label: 'Home State' },
+      homePostalCode: { field: 'homePostalCode', source: 'addresses', label: 'Home Postal Code' },
+      mailingStreet: { field: 'mailingStreet', source: 'addresses', label: 'Mailing Street' },
+      mailingCity: { field: 'mailingCity', source: 'addresses', label: 'Mailing City' },
+      mailingState: { field: 'mailingState', source: 'addresses', label: 'Mailing State' },
+      mailingPostalCode: { field: 'mailingPostalCode', source: 'addresses', label: 'Mailing Postal Code' }
+    },
+    recommended: {
+      homeCountry: { field: 'homeCountry', source: 'addresses', label: 'Home Country' },
+      mailingCountry: { field: 'mailingCountry', source: 'addresses', label: 'Mailing Country' }
+    }
+  };
+
   // Format address for display
   const formatAddress = (street, city, state, postalCode, country) => {
     const parts = [street, city, state, postalCode, country].filter(Boolean);
@@ -944,364 +565,32 @@ const AddressesSection = ({
     return fieldsMatch;
   };
 
-  // Validate address with Melissa API
-  const validateAddressWithMelissa = async (address, addressType) => {
-    console.log('🔵 === START validateAddressWithMelissa ===');
-    console.log('📋 Address to validate:', addressType, address);
-    
-    // First check if any required fields are empty
-    const emptyFields = {
-      street: !address.street || address.street.trim() === '',
-      city: !address.city || address.city.trim() === '',
-      state: !address.state || address.state.trim() === '',
-      postalCode: !address.postalCode || address.postalCode.trim() === ''
-    };
-    
-    // If any required fields are empty, mark only those as invalid
-    if (Object.values(emptyFields).some(v => v)) {
-      console.log('❌ Empty fields detected:', emptyFields);
-      return {
-        isValid: false,
-        invalidFields: emptyFields
-      };
-    }
-    
-    try {
-      const params = new URLSearchParams({
-        id: MELISSA_API_KEY,
-        a1: address.street || '',
-        a2: '',
-        loc: address.city || '',
-        admarea: address.state || '',
-        postal: address.postalCode || '',
-        ctry: address.country || 'US',
-        format: 'json'
-      });
-
-      const fullUrl = `${MELISSA_API_URL}?${params}`;
-      
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-      console.log('📦 Melissa API Response:', JSON.stringify(data, null, 2));
-
-      // Check for transmission errors
-      if (data.TransmissionResults && data.TransmissionResults !== '' && data.TransmissionResults !== 'GE00') {
-        console.log('❌ API Error detected');
-        // For API errors, we can't determine which field is wrong, so don't mark any
-        return { 
-          isValid: false,
-          invalidFields: {
-            street: false,
-            city: false,
-            state: false,
-            postalCode: false
-          }
-        };
-      }
-
-      if (data.Version && data.Records && data.Records.length > 0) {
-        const record = data.Records[0];
-        
-        if (record) {
-          const addressVerificationCode = record.Results || '';
-          console.log('✅ Verification code:', addressVerificationCode);
-          
-          // ONLY accept AV25, AV24, AV23 - these are fully verified addresses
-          const fullyVerifiedCodes = ['AV25', 'AV24', 'AV23'];
-          const isFullyVerified = fullyVerifiedCodes.some(code => addressVerificationCode.includes(code));
-          
-          // Also check for ANY error codes
-          const hasErrors = addressVerificationCode.includes('AE') || // Address Error
-                           addressVerificationCode.includes('AC') || // Address Change/Correction needed
-                           !addressVerificationCode.includes('AV');   // No address verification at all
-          
-          console.log('📬 Is fully verified?', isFullyVerified);
-          console.log('❌ Has errors?', hasErrors);
-          
-          // Must be fully verified AND have no errors
-          const isValid = isFullyVerified && !hasErrors;
-          
-          // Try to determine which specific field is wrong based on error codes
-          let invalidFields = {
-            street: false,
-            city: false,
-            state: false,
-            postalCode: false
-          };
-          
-          // Check specific error codes
-          if (!isValid) {
-            // Check if street is invalid
-            if (addressVerificationCode.includes('AE01') || addressVerificationCode.includes('AE02') || 
-                addressVerificationCode.includes('AS01') || addressVerificationCode.includes('AS02')) {
-              invalidFields.street = true;
-            }
-            // Check if city is invalid
-            else if (addressVerificationCode.includes('AE03') || addressVerificationCode.includes('AE04') ||
-                     addressVerificationCode.includes('AS03')) {
-              invalidFields.city = true;
-            }
-            // Check if state is invalid
-            else if (addressVerificationCode.includes('AE05') || addressVerificationCode.includes('AE06')) {
-              invalidFields.state = true;
-            }
-            // Check if zip is invalid
-            else if (addressVerificationCode.includes('AE07') || addressVerificationCode.includes('AE08') ||
-                     addressVerificationCode.includes('AE09') || addressVerificationCode.includes('AE10') ||
-                     addressVerificationCode.includes('AE11')) {
-              invalidFields.postalCode = true;
-            }
-            // If we can't determine specific field, don't mark any as red
-            else {
-              invalidFields = {
-                street: false,
-                city: false,
-                state: false,
-                postalCode: false
-              };
-            }
-          }
-          
-          return { isValid, invalidFields };
-        }
-      }
-      
-      console.log('❌ No valid response - address not verified');
-      // Can't determine specific field, so don't mark any
-      return { 
-        isValid: false,
-        invalidFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      };
-    } catch (error) {
-      console.error('❌ Melissa API error:', error);
-      // Can't determine specific field, so don't mark any
-      return { 
-        isValid: false,
-        invalidFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      };
-    }
-  };
-
-  // Handle accepting suggested address (called from parent modal)
-  const handleAcceptSuggestion = (addressType, suggestedAddress) => {
-    const prefix = addressType.toLowerCase();
-    
-    setAddresses({
-      ...addresses,
-      [`${prefix}Street`]: suggestedAddress.street,
-      [`${prefix}City`]: suggestedAddress.city,
-      [`${prefix}State`]: suggestedAddress.state,
-      [`${prefix}PostalCode`]: suggestedAddress.postalCode,
-      [`${prefix}Country`]: suggestedAddress.country
-    });
-    
-    setValidationErrors(prev => ({ ...prev, [prefix]: '' }));
-  };
-
-  // Clear errors when edit mode changes
-  useEffect(() => {
-    if (!editMode.addresses) {
-      setValidationErrors({ 
-        home: '', 
-        mailing: '',
-        homeFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        },
-        mailingFields: {
-          street: false,
-          city: false,
-          state: false,
-          postalCode: false
-        }
-      });
-      setSkipValidation(false);
-    }
-  }, [editMode.addresses]);
-
-  // Continue with save after validation
-  const continueWithSave = async () => {
-    // All addresses are now validated, proceed with save
-    await saveAddresses();
-  };
-
-  // Handle save anyway
-  const handleSaveAnyway = async () => {
-    console.log('🟡 Save Anyway clicked from overlay');
-    
-    // Clear validation errors
-    setValidationErrors({ 
-      home: '', 
-      mailing: '',
-      homeFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      },
-      mailingFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      }
-    });
-    
-    // Update parent addresses with local changes
-    setAddresses(addresses);
-    
-    // Clean the addresses before saving
-    const cleanedAddresses = cleanAddressData(addresses);
-    setAddresses(cleanedAddresses);
-    
-    await saveAddresses();
-    
-    // Show success and close
-    setEditMode(false);
-    setShowSuccess(false);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  // Handle save with validation
+  // Handle save with cleaning
   const handleSaveAddresses = async () => {
-    console.log('🟢 === START handleSaveAddresses ===');
-    console.log('📋 Current addresses:', addresses);
+    console.log('Saving addresses...');
+    console.log('Current addresses:', addresses);
     
     // Prevent double-clicks
-    if (validatingAddress || savingSection === 'addresses') {
-      console.log('⚠️ Already processing, ignoring click');
+    if (savingSection === 'addresses') {
+      console.log('Already processing, ignoring click');
       return;
     }
     
-    // Clean the addresses before validation
+    // Clean the addresses before saving
     const cleanedAddresses = cleanAddressData(addresses);
+    console.log('Cleaned addresses:', cleanedAddresses);
     setAddresses(cleanedAddresses);
+
+    // Save to backend
+    await saveAddresses();
+    console.log('Save complete!');
     
-    setValidatingAddress(true);
-    setValidationErrors({ 
-      home: '', 
-      mailing: '',
-      homeFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      },
-      mailingFields: {
-        street: false,
-        city: false,
-        state: false,
-        postalCode: false
-      }
-    });
-
-    try {
-      let hasErrors = false;
-
-      // Validate home address if all fields are filled
-      if (cleanedAddresses.homeStreet && cleanedAddresses.homeCity && cleanedAddresses.homeState && cleanedAddresses.homePostalCode) {
-        console.log('🏠 Validating home address...');
-        const homeValidation = await validateAddressWithMelissa({
-          street: cleanedAddresses.homeStreet,
-          city: cleanedAddresses.homeCity,
-          state: cleanedAddresses.homeState,
-          postalCode: cleanedAddresses.homePostalCode,
-          country: cleanedAddresses.homeCountry || 'US'
-        }, 'home');
-
-        if (!homeValidation.isValid) {
-          setValidationErrors(prev => ({ 
-            ...prev, 
-            home: 'This address could not be verified. Please double-check it\'s correct.',
-            homeFields: homeValidation.invalidFields || {
-              street: true,
-              city: true,
-              state: true,
-              postalCode: true
-            }
-          }));
-          hasErrors = true;
-        }
-      }
-
-      // Only validate mailing if not same as home and all fields are filled
-      if (!cleanedAddresses.sameAsHome) {
-        if (cleanedAddresses.mailingStreet && cleanedAddresses.mailingCity && cleanedAddresses.mailingState && cleanedAddresses.mailingPostalCode) {
-          console.log('📬 Validating mailing address...');
-          const mailingValidation = await validateAddressWithMelissa({
-            street: cleanedAddresses.mailingStreet,
-            city: cleanedAddresses.mailingCity,
-            state: cleanedAddresses.mailingState,
-            postalCode: cleanedAddresses.mailingPostalCode,
-            country: cleanedAddresses.mailingCountry || 'US'
-          }, 'mailing');
-
-          if (!mailingValidation.isValid) {
-            setValidationErrors(prev => ({ 
-              ...prev, 
-              mailing: 'This address could not be verified. Please double-check it\'s correct.',
-              mailingFields: mailingValidation.invalidFields || {
-                street: true,
-                city: true,
-                state: true,
-                postalCode: true
-              }
-            }));
-            hasErrors = true;
-          }
-        }
-      }
-
-      setValidatingAddress(false);
-
-      // If validation errors, don't save automatically
-      if (hasErrors) {
-        console.log('❌ Validation errors found, showing Save Anyway option');
-        console.log('🟢 === END handleSaveAddresses (ERRORS) ===\n');
-        return;
-      }
-
-      // All addresses are valid, proceed with save
-      console.log('✅ All addresses valid, proceeding with save');
-      await saveAddresses();
-      console.log('🟢 === END handleSaveAddresses (SAVED) ===\n');
-      
-      // Close overlay after successful save
-      if (overlayOpen) {
-        setOverlayOpen(false);
-      }
-      
-      return 'saved';
-    } catch (error) {
-      console.error('❌ Error during address validation:', error);
-      setValidationErrors({ 
-        home: 'An error occurred during validation. Please try again.',
-        mailing: ''
-      });
-      setValidatingAddress(false);
-      console.log('🟢 === END handleSaveAddresses (ERROR) ===\n');
+    // Close overlay after successful save
+    if (overlayOpen) {
+      setOverlayOpen(false);
     }
+    
+    return 'saved';
   };
 
   const handleCardClick = (sectionKey) => {
@@ -1342,7 +631,7 @@ const AddressesSection = ({
           title="Addresses"
           backgroundImage={formsHeaderImage}
           overlayText="Location Details"
-          subtitle="Your home and mailing addresses. All addresses are validated for accuracy."
+          subtitle="Your home and mailing addresses."
           isEditMode={editMode.addresses}
         >
           {/* Display Mode */}
@@ -1431,9 +720,6 @@ const AddressesSection = ({
                       />
                     </div>
                   </div>
-                  {validationErrors.home && (
-                    <p className="mt-2 text-sm text-red-300">{validationErrors.home}</p>
-                  )}
                 </div>
 
                 {/* Mailing Address */}
@@ -1484,9 +770,6 @@ const AddressesSection = ({
                           />
                         </div>
                       </div>
-                      {validationErrors.mailing && (
-                        <p className="mt-2 text-sm text-red-300">{validationErrors.mailing}</p>
-                      )}
                     </>
                   )}
                 </div>
@@ -1496,10 +779,8 @@ const AddressesSection = ({
                 editMode={true}
                 onSave={handleSaveAddresses}
                 onCancel={() => cancelEdit && cancelEdit('addresses')}
-                saving={savingSection === 'addresses' || validatingAddress}
-                saveText={validatingAddress ? 'Validating...' : savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
-                showSaveAnyway={(validationErrors.home || validationErrors.mailing) ? true : false}
-                onSaveAnyway={handleSaveAnyway}
+                saving={savingSection === 'addresses'}
+                saveText={savingSection === 'saved' ? 'Saved' : savingSection === 'addresses' ? 'Saving...' : 'Save'}
               />
             </>
           )}
@@ -1510,70 +791,47 @@ const AddressesSection = ({
           <div className={styleConfig2.section.innerPadding}>
             {/* Desktop Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'addresses')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Addresses</h2>
-                      <p className={headerStyles.subtitle}>
-                        Your home and mailing addresses. All addresses are validated for accuracy.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      {/* Dark purple/blue overlay base */}
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      {/* Radial yellow glow from bottom */}
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      {/* Purple/pink glow overlay */}
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      {/* Large star positioned lower */}
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'addresses')} style={{ backgroundColor: '#022B4F' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
                         </div>
-                      )}
+                        <h2 className={headerStyles.title(styleConfig2)}>Addresses</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'addresses')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 font-normal max-w-lg">
+                            Your home and mailing addresses.
+                          </p>
+                          <p className="text-gray-400 text-sm mt-3">
+                            Required: Home Street, City, State, Postal Code
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Optional: Mailing Address (if different from home)
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Completion Section */}
+                  <CompletionWheelWithLegend
+                    data={{ addresses }}
+                    fieldConfig={fieldConfig}
+                    sectionColor="#022B4F"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1654,40 +912,37 @@ const AddressesSection = ({
                         type="text"
                         value={addresses.homeStreet || ''}
                         onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
-                        disabled={!editMode.addresses}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="City *"
                         type="text"
                         value={addresses.homeCity || ''}
                         onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
-                        disabled={!editMode.addresses}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="State/Province *"
                         type="text"
                         value={addresses.homeState || ''}
                         onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
-                        disabled={!editMode.addresses}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="Zip/Postal Code *"
                         type="text"
                         value={addresses.homePostalCode || ''}
                         onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
-                        disabled={!editMode.addresses}
+                        disabled={savingSection === 'addresses'}
                       />
                       <Input
                         label="Country"
                         type="text"
                         value={addresses.homeCountry || 'US'}
                         onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
-                        disabled={!editMode.addresses}
+                        disabled={savingSection === 'addresses'}
                       />
                     </div>
-                    {validationErrors.home && (
-                      <p className="mt-2 text-sm text-red-600">{validationErrors.home}</p>
-                    )}
                   </div>
 
                   {/* Mailing Address */}
@@ -1696,7 +951,7 @@ const AddressesSection = ({
                       label="Mailing address is the same as home address"
                       checked={addresses.sameAsHome || false}
                       onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
-                      disabled={!editMode.addresses}
+                      disabled={savingSection === 'addresses'}
                     />
                     
                     {!addresses.sameAsHome && (
@@ -1709,40 +964,37 @@ const AddressesSection = ({
                             type="text"
                             value={addresses.mailingStreet || ''}
                             onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
-                            disabled={!editMode.addresses}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="City *"
                             type="text"
                             value={addresses.mailingCity || ''}
                             onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
-                            disabled={!editMode.addresses}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="State/Province *"
                             type="text"
                             value={addresses.mailingState || ''}
                             onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
-                            disabled={!editMode.addresses}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="Zip/Postal Code *"
                             type="text"
                             value={addresses.mailingPostalCode || ''}
                             onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
-                            disabled={!editMode.addresses}
+                            disabled={savingSection === 'addresses'}
                           />
                           <Input
                             label="Country"
                             type="text"
                             value={addresses.mailingCountry || 'US'}
                             onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
-                            disabled={!editMode.addresses}
+                            disabled={savingSection === 'addresses'}
                           />
                         </div>
-                        {validationErrors.mailing && (
-                          <p className="mt-2 text-sm text-red-600">{validationErrors.mailing}</p>
-                        )}
                       </>
                     )}
                   </div>
@@ -1759,19 +1011,12 @@ const AddressesSection = ({
                       className={buttonStyles.whiteButton.withMargin}
                       spinStar={buttonStyles.starConfig.enabled}
                     />
-                    {(validationErrors.home || validationErrors.mailing) && (
-                      <WhiteButton
-                        text="Save Anyway"
-                        onClick={handleSaveAnyway}
-                        className={buttonStyles.whiteButton.withMargin}
-                        spinStar={buttonStyles.starConfig.enabled}
-                      />
-                    )}
                     <PurpleButton
-                      text={validatingAddress ? 'Validating...' : buttonStyles.getSaveButtonText(savingSection)}
+                      text={buttonStyles.getSaveButtonText(savingSection)}
                       onClick={handleSaveAddresses}
                       className={buttonStyles.purpleButton.base}
                       spinStar={buttonStyles.starConfig.enabled}
+                      disabled={savingSection === 'addresses'}
                     />
                   </div>
                 ) : (

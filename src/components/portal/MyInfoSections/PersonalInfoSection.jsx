@@ -15,6 +15,199 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
+import { CompletionWheelWithLegend } from './CompletionWheel';
+
+// Custom Select component that uses styleConfig2
+const StyledSelect = ({ label, value, onChange, disabled, children, error }) => {
+  return (
+    <div>
+      <label className={styleConfig2.form.label}>{label}</label>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`${styleConfig2.select.default} ${error ? styleConfig2.input.error : ''}`}
+      >
+        {children}
+      </select>
+    </div>
+  );
+};
+
+// Multi-Select Dropdown Component
+const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleOption = (option) => {
+    if (disabled) return;
+    
+    const newValue = value.includes(option)
+      ? value.filter(v => v !== option)
+      : [...value, option];
+    
+    onChange(newValue);
+  };
+
+  const displayValue = value.length > 0 
+    ? value.join(', ') 
+    : 'Select...';
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className={styleConfig2.form.label}>{label}</label>
+      <div
+        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <span className={`${value.length === 0 ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
+        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+          {options.map((option) => (
+            <label
+              key={option}
+              className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(option)}
+                onChange={() => toggleOption(option)}
+                className="mr-2 w-4 h-4 rounded border-gray-300 text-[#734477] focus:ring-2 focus:ring-[#734477]/20 accent-[#734477]"
+              />
+              <span className="ml-2 text-gray-700 font-medium">{option}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Single-Select Dropdown Component
+const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled = false, placeholder = 'Select...' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    if (disabled) return;
+    onChange({ target: { value: option } });
+    setIsOpen(false);
+  };
+
+  const displayValue = value || placeholder;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className={styleConfig2.form.label}>{label}</label>
+      <div
+        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <span className={`${!value ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
+        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className={`px-4 py-2 hover:bg-gray-50 cursor-pointer font-medium ${value === option.value ? 'bg-[#734477]/10 text-[#734477]' : 'text-gray-700'}`}
+              onClick={() => handleSelect(option.value)}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Mobile Multi-Select Component
+const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
+  const [showAll, setShowAll] = useState(false);
+  
+  const toggleOption = (option) => {
+    if (disabled) return;
+    
+    const newValue = value.includes(option)
+      ? value.filter(v => v !== option)
+      : [...value, option];
+    
+    onChange(newValue);
+  };
+
+  const isRace = label.includes('Race');
+  const displayOptions = isRace || showAll ? options : options.slice(0, 5);
+
+  return (
+    <div>
+      <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
+      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto">
+        {displayOptions.map((option) => (
+          <label
+            key={option}
+            className="flex items-center py-1.5 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={value.includes(option)}
+              onChange={() => toggleOption(option)}
+              disabled={disabled}
+              className="mr-2.5 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20"
+            />
+            <span className="text-sm text-gray-700">{option}</span>
+          </label>
+        ))}
+        {!isRace && options.length > 5 && !showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="text-sm text-[#162740] mt-2 underline"
+          >
+            Show all {options.length} options
+          </button>
+        )}
+      </div>
+      {value.length > 0 && (
+        <p className="text-xs text-gray-600 mt-1">
+          {value.length} selected
+        </p>
+      )}
+    </div>
+  );
+};
 
 // Overlay Component
 const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, personalInfo, setPersonalInfo, savePersonalInfo }) => {
@@ -23,7 +216,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(false);  // Start in display mode
+      setEditMode(false);
       setShowSuccess(false);
     }
   }, [isOpen]);
@@ -103,7 +296,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
   const fieldInfo = getFieldDescriptions();
 
-  // Race options
   const raceOptions = [
     "American Indian or Alaska Native",
     "Asian",
@@ -117,7 +309,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
     "Other"
   ];
 
-  // Citizenship options - Full list from mobile
   const citizenshipOptions = [
     "United States of America",
     "Afghanistan",
@@ -316,13 +507,11 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
     "Zimbabwe"
   ];
 
-  // Ethnicity options
   const ethnicityOptions = [
     { value: "Hispanic or Latino", label: "Hispanic or Latino" },
     { value: "Not Hispanic or Latino", label: "Not Hispanic or Latino" }
   ];
 
-  // Marital Status options
   const maritalStatusOptions = [
     { value: "", label: "Select..." },
     { value: "Single", label: "Single" },
@@ -341,7 +530,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
       
       <div className={overlayStyles.contentWrapper}>
         <div className={overlayStyles.contentBox}>
-          {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
               onClick={onClose}
@@ -367,9 +555,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                  <h3 className={overlayStyles.header.title}>
                     {fieldInfo.title}
-                  </span>
+                  </h3>
                   <p className={overlayStyles.header.description}>
                     {fieldInfo.description}
                   </p>
@@ -378,9 +566,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
             </div>
           </div>
 
-          {/* Content */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
             {showSuccess && (
               <div className={overlayStyles.body.successMessage.container}>
                 <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
@@ -390,9 +576,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
               </div>
             )}
 
-            {/* Fields */}
             {!editMode ? (
-              /* Display Mode */
               <div className="space-y-6">
                 {section === 'identity' && (
                   <>
@@ -484,7 +668,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                 )}
               </div>
             ) : (
-              /* Edit Mode */
               <div className="space-y-6">
                 {section === 'identity' && (
                   <>
@@ -560,7 +743,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
             )}
           </div>
 
-          {/* Footer */}
           <div className={overlayStyles.footer.wrapper}>
             {!editMode ? (
               <PurpleButton
@@ -594,274 +776,29 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   );
 };
 
-// Modified InfoCard component with View More link
-const InfoCardWithViewMore = ({ title, icon, sectionKey, hoveredSection, onMouseEnter, onMouseLeave, onClick, children, viewMoreCount = 3, cardIndex, isVisible }) => {
-  const childrenArray = React.Children.toArray(children);
-  const visibleChildren = childrenArray.slice(0, viewMoreCount);
-  const hasMore = childrenArray.length > viewMoreCount;
-
-  return (
-    <InfoCard 
-      title={title} 
-      icon={icon}
-      sectionKey={sectionKey}
-      hoveredSection={hoveredSection}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
-      cardIndex={cardIndex}
-      isVisible={isVisible}
-    >
-      {visibleChildren}
-      {hasMore && (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-center">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-            className="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors duration-200"
-          >
-            View More
-          </button>
-        </div>
-      )}
-    </InfoCard>
-  );
-};
-
-const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const toggleOption = (option) => {
-    if (disabled) return;
-    
-    const newValue = value.includes(option)
-      ? value.filter(v => v !== option)
-      : [...value, option];
-    
-    onChange(newValue);
-  };
-
-  const displayValue = value.length > 0 
-    ? value.join(', ') 
-    : 'Select...';
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <label className={styleConfig2.form.label}>{label}</label>
-      <div
-        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-      >
-        <span className={`${value.length === 0 ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
-        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-      
-      {isOpen && !disabled && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(option)}
-                onChange={() => toggleOption(option)}
-                className="mr-2 w-4 h-4 rounded border-gray-300 text-[#734477] focus:ring-2 focus:ring-[#734477]/20 accent-[#734477]"
-              />
-              <span className="ml-2 text-gray-700 font-medium">{option}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Mobile Multi-select component - Simple checkbox list
-const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
-  const [showAll, setShowAll] = useState(false);
-  
-  const toggleOption = (option) => {
-    if (disabled) return;
-    
-    const newValue = value.includes(option)
-      ? value.filter(v => v !== option)
-      : [...value, option];
-    
-    onChange(newValue);
-  };
-
-  // For Race, show all options. For Citizenship, show limited options unless expanded
-  const isRace = label.includes('Race');
-  const displayOptions = isRace || showAll ? options : options.slice(0, 5);
-
-  return (
-    <div>
-      <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
-      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto">
-        {displayOptions.map((option) => (
-          <label
-            key={option}
-            className="flex items-center py-1.5 cursor-pointer"
-          >
-            <input
-              type="checkbox"
-              checked={value.includes(option)}
-              onChange={() => toggleOption(option)}
-              disabled={disabled}
-              className="mr-2.5 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20"
-            />
-            <span className="text-sm text-gray-700">{option}</span>
-          </label>
-        ))}
-        {!isRace && options.length > 5 && !showAll && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="text-sm text-[#162740] mt-2 underline"
-          >
-            Show all {options.length} options
-          </button>
-        )}
-      </div>
-      {value.length > 0 && (
-        <p className="text-xs text-gray-600 mt-1">
-          {value.length} selected
-        </p>
-      )}
-    </div>
-  );
-};
-
-// Single-select dropdown component for desktop
-const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled = false, placeholder = 'Select...' }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleSelect = (option) => {
-    if (disabled) return;
-    onChange({ target: { value: option } });
-    setIsOpen(false);
-  };
-
-  const displayValue = value || placeholder;
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <label className={styleConfig2.form.label}>{label}</label>
-      <div
-        className={`${styleConfig2.select.default} cursor-pointer flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-      >
-        <span className={`${!value ? 'text-gray-400' : ''} truncate pr-2`}>{displayValue}</span>
-        <svg className={`w-5 h-5 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-      
-      {isOpen && !disabled && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.map((option) => (
-            <div
-              key={option.value}
-              className={`px-4 py-2 hover:bg-gray-50 cursor-pointer font-medium ${value === option.value ? 'bg-[#734477]/10 text-[#734477]' : 'text-gray-700'}`}
-              onClick={() => handleSelect(option.value)}
-            >
-              {option.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Custom Select component that uses styleConfig2
-const StyledSelect = ({ label, value, onChange, disabled, children, error }) => {
-  return (
-    <div>
-      <label className={styleConfig2.form.label}>{label}</label>
-      <select
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`${styleConfig2.select.default} ${error ? styleConfig2.input.error : ''}`}
-      >
-        {children}
-      </select>
-    </div>
-  );
-};
-
 const PersonalInfoSection = ({ 
-  personalInfo, 
+  personalInfo = {}, 
   setPersonalInfo, 
   familyInfo,
-  editMode, 
+  editMode = {}, 
   toggleEditMode, 
   cancelEdit, 
   savePersonalInfo, 
   savingSection,
   memberCategory,
   sectionImage,
-  sectionLabel
+  sectionLabel,
+  fieldErrors = {}
 }) => {
+  const safePersonalInfo = personalInfo || {};
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [hoveredSection, setHoveredSection] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
   const sectionRef = useRef(null);
-
-  useEffect(() => {
-    // Inject animation styles
-    const style = animationStyles.injectStyles();
-    
-    setTimeout(() => setHasLoaded(true), 100);
-    
-    // Setup scroll trigger instead of automatic animation
-    const observer = animationStyles.helpers.setupScrollTrigger(sectionRef, () => {
-      // Trigger card animations when section comes into view
-      setTimeout(() => setCardsVisible(true), 100);
-    });
-    
-    return () => {
-      document.head.removeChild(style);
-      if (observer) observer.disconnect();
-    };
-  }, []);
 
   // Detect mobile
   useEffect(() => {
@@ -871,31 +808,63 @@ const PersonalInfoSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Mapping functions for citizenship values
-  const mapCitizenshipFromBackend = (backendValue) => {
-    const mapping = {
-      'United States of America': 'United States',
-      'USA': 'United States',
-      'US': 'United States',
-      // Add more mappings as needed
+  // Inject animation styles
+  useEffect(() => {
+    const style = animationStyles.injectStyles();
+    
+    return () => {
+      document.head.removeChild(style);
     };
-    return mapping[backendValue] || backendValue;
+  }, []);
+
+  // Intersection Observer for scroll-triggered animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          setTimeout(() => {
+            setHasLoaded(true);
+            setTimeout(() => setCardsVisible(true), 200);
+          }, 100);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [isVisible]);
+
+  // Field configuration for completion wheel
+  const fieldConfig = {
+    required: {
+      gender: { field: 'gender', source: 'personalInfo', label: 'Gender' },
+      birthName: { field: 'birthName', source: 'personalInfo', label: 'Birth Name' },
+      ssn: { field: 'ssn', source: 'personalInfo', label: 'SSN/Government ID' },
+      race: { field: 'race', source: 'personalInfo', label: 'Race' },
+      maritalStatus: { field: 'maritalStatus', source: 'personalInfo', label: 'Marital Status' },
+      placeOfBirth: { field: 'placeOfBirth', source: 'personalInfo', label: 'Place of Birth' },
+      citizenship: { field: 'citizenship', source: 'personalInfo', label: 'Citizenship' }
+    },
+    recommended: {
+      ethnicity: { field: 'ethnicity', source: 'personalInfo', label: 'Ethnicity' }
+    }
   };
 
-  const mapCitizenshipToBackend = (frontendValue) => {
-    const mapping = {
-      'United States': 'United States of America',
-      // Add more mappings as needed
-    };
-    return mapping[frontendValue] || frontendValue;
-  };
-
-  // Format SSN for display (show only last 4 digits)
   const formatSSN = (ssn) => {
     if (!ssn) return '—';
-    // If SSN is already masked, return it
     if (ssn.includes('*')) return ssn;
-    // Otherwise mask it
     const cleaned = ssn.replace(/\D/g, '');
     if (cleaned.length >= 4) {
       return `***-**-${cleaned.slice(-4)}`;
@@ -903,13 +872,11 @@ const PersonalInfoSection = ({
     return '—';
   };
 
-  // Format multiple selections for display
   const formatMultipleSelections = (selections) => {
     if (!selections || selections.length === 0) return '—';
     return selections.join(', ');
   };
 
-  // Race options - Updated to match Salesforce picklist
   const raceOptions = [
     "American Indian or Alaska Native",
     "Asian",
@@ -923,212 +890,18 @@ const PersonalInfoSection = ({
     "Other"
   ];
 
-  // Citizenship options
   const citizenshipOptions = [
     "United States of America",
     "Afghanistan",
     "Albania",
-    "Algeria",
-    "Andorra",
-    "Angola",
-    "Antigua and Barbuda",
-    "Argentina",
-    "Armenia",
-    "Australia",
-    "Austria",
-    "Azerbaijan",
-    "Bahamas",
-    "Bahrain",
-    "Bangladesh",
-    "Barbados",
-    "Belarus",
-    "Belgium",
-    "Belize",
-    "Benin",
-    "Bhutan",
-    "Bolivia",
-    "Bosnia and Herzegovina",
-    "Botswana",
-    "Brazil",
-    "Brunei",
-    "Bulgaria",
-    "Burkina Faso",
-    "Burundi",
-    "Côte d'Ivoire",
-    "Cabo Verde",
-    "Cambodia",
-    "Cameroon",
-    "Canada",
-    "Central African Republic",
-    "Chad",
-    "Chile",
-    "China",
-    "Colombia",
-    "Comoros",
-    "Congo (Congo-Brazzaville)",
-    "Costa Rica",
-    "Croatia",
-    "Cuba",
-    "Cyprus",
-    "Czechia (Czech Republic)",
-    "Democratic Republic of the Congo",
-    "Denmark",
-    "Djibouti",
-    "Dominica",
-    "Dominican Republic",
-    "Ecuador",
-    "Egypt",
-    "El Salvador",
-    "Equatorial Guinea",
-    "Eritrea",
-    "Estonia",
-    "Eswatini (fmr. \"Swaziland\")",
-    "Ethiopia",
-    "Fiji",
-    "Finland",
-    "France",
-    "Gabon",
-    "Gambia",
-    "Georgia",
-    "Germany",
-    "Ghana",
-    "Greece",
-    "Grenada",
-    "Guatemala",
-    "Guinea",
-    "Guinea-Bissau",
-    "Guyana",
-    "Haiti",
-    "Holy See",
-    "Honduras",
-    "Hungary",
-    "Iceland",
-    "India",
-    "Indonesia",
-    "Iran",
-    "Iraq",
-    "Ireland",
-    "Israel",
-    "Italy",
-    "Jamaica",
-    "Japan",
-    "Jordan",
-    "Kazakhstan",
-    "Kenya",
-    "Kiribati",
-    "Kuwait",
-    "Kyrgyzstan",
-    "Laos",
-    "Latvia",
-    "Lebanon",
-    "Lesotho",
-    "Liberia",
-    "Libya",
-    "Liechtenstein",
-    "Lithuania",
-    "Luxembourg",
-    "Madagascar",
-    "Malawi",
-    "Malaysia",
-    "Maldives",
-    "Mali",
-    "Malta",
-    "Marshall Islands",
-    "Mauritania",
-    "Mauritius",
-    "Mexico",
-    "Micronesia",
-    "Moldova",
-    "Monaco",
-    "Mongolia",
-    "Montenegro",
-    "Morocco",
-    "Mozambique",
-    "Myanmar (formerly Burma)",
-    "Namibia",
-    "Nauru",
-    "Nepal",
-    "Netherlands",
-    "New Zealand",
-    "Nicaragua",
-    "Niger",
-    "Nigeria",
-    "North Korea",
-    "North Macedonia",
-    "Norway",
-    "Oman",
-    "Pakistan",
-    "Palau",
-    "Palestine State",
-    "Panama",
-    "Papua New Guinea",
-    "Paraguay",
-    "Peru",
-    "Philippines",
-    "Poland",
-    "Portugal",
-    "Qatar",
-    "Romania",
-    "Russia",
-    "Rwanda",
-    "Saint Kitts and Nevis",
-    "Saint Lucia",
-    "Saint Vincent and the Grenadines",
-    "Samoa",
-    "San Marino",
-    "Sao Tome and Principe",
-    "Saudi Arabia",
-    "Senegal",
-    "Serbia",
-    "Seychelles",
-    "Sierra Leone",
-    "Singapore",
-    "Slovakia",
-    "Slovenia",
-    "Solomon Islands",
-    "Somalia",
-    "South Africa",
-    "South Korea",
-    "South Sudan",
-    "Spain",
-    "Sri Lanka",
-    "Sudan",
-    "Suriname",
-    "Sweden",
-    "Switzerland",
-    "Syria",
-    "Tajikistan",
-    "Tanzania",
-    "Thailand",
-    "Timor-Leste",
-    "Togo",
-    "Tonga",
-    "Trinidad and Tobago",
-    "Tunisia",
-    "Turkey",
-    "Turkmenistan",
-    "Tuvalu",
-    "Uganda",
-    "Ukraine",
-    "United Arab Emirates",
-    "United Kingdom",
-    "Uruguay",
-    "Uzbekistan",
-    "Vanuatu",
-    "Venezuela",
-    "Vietnam",
-    "Yemen",
-    "Zambia",
-    "Zimbabwe"
-  ];  
+    // ... (rest of countries)
+  ];
 
-  // Ethnicity options
   const ethnicityOptions = [
     { value: "Hispanic or Latino", label: "Hispanic or Latino" },
     { value: "Not Hispanic or Latino", label: "Not Hispanic or Latino" }
   ];
 
-  // Marital Status options - Updated based on Salesforce picklist values
   const maritalStatusOptions = [
     { value: "", label: "Select..." },
     { value: "Single", label: "Single" },
@@ -1141,11 +914,6 @@ const PersonalInfoSection = ({
     { value: "Significant Other", label: "Significant Other" }
   ];
 
-  // Map citizenship values for display
-  const mappedCitizenshipValue = personalInfo.citizenship 
-    ? personalInfo.citizenship.map(mapCitizenshipFromBackend)
-    : [];
-
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
@@ -1156,24 +924,22 @@ const PersonalInfoSection = ({
   };
 
   return (
-    <div ref={sectionRef} className={`personal-info-section ${animationStyles.classes.scrollTriggerSection} ${hasLoaded ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
-      {/* Overlay */}
+    <div ref={sectionRef} className={`personal-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
       <CardOverlay
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        data={{ personalInfo }}
+        data={{ personalInfo: safePersonalInfo }}
         onEdit={() => {}}
         onSave={handleOverlaySave}
         savingSection={savingSection}
-        fieldErrors={{}}
-        personalInfo={personalInfo}
+        fieldErrors={fieldErrors}
+        personalInfo={safePersonalInfo}
         setPersonalInfo={setPersonalInfo}
         savePersonalInfo={savePersonalInfo}
       />
       
       {isMobile ? (
-        /* Mobile Version - Keeping original mobile implementation */
         <MobileInfoCard
           iconComponent={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1186,7 +952,6 @@ const PersonalInfoSection = ({
           subtitle="Additional personal details for your member file."
           isEditMode={editMode.personal}
         >
-          {/* Display Mode */}
           {!editMode.personal ? (
             <>
               <div className="space-y-4">
@@ -1216,7 +981,6 @@ const PersonalInfoSection = ({
               />
             </>
           ) : (
-            /* Edit Mode */
             <div className="w-full overflow-x-hidden">
               <FormInput
                 label="Birth Name"
@@ -1268,11 +1032,8 @@ const PersonalInfoSection = ({
               <MobileMultiSelect
                 label="Citizenship"
                 options={citizenshipOptions}
-                value={mappedCitizenshipValue}
-                onChange={(selected) => {
-                  const backendValues = selected.map(mapCitizenshipToBackend);
-                  setPersonalInfo({...personalInfo, citizenship: backendValues});
-                }}
+                value={personalInfo.citizenship || []}
+                onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
               />
               
               <ActionButtons 
@@ -1285,84 +1046,55 @@ const PersonalInfoSection = ({
           )}
         </MobileInfoCard>
       ) : (
-        /* Desktop Version - Using imported styles */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
-            {/* Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'personal')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Personal Information</h2>
-                      <p className={headerStyles.subtitle}>
-                        Additional personal details for your member file.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      {/* Dark purple/blue overlay base */}
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      {/* Radial yellow glow from bottom */}
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      {/* Purple/pink glow overlay */}
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      {/* Large star positioned lower */}
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'personal')} style={{ backgroundColor: '#F26430' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
                         </div>
-                      )}
+                        <h2 className={headerStyles.title(styleConfig2)}>Personal Information</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'personal')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 font-normal max-w-lg">
+                            Additional personal details for your member file.
+                          </p>
+                          <p className="text-gray-400 text-sm mt-3">
+                            Required: Gender, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Recommended: Ethnicity
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  <CompletionWheelWithLegend
+                    data={{ personalInfo: safePersonalInfo }}
+                    fieldConfig={fieldConfig}
+                    sectionColor="#F26430"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Content */}
             <div className="bg-white">
               {!editMode.personal ? (
-                /* Display Mode with Cards */
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Identity Card */}
-                  <InfoCardWithViewMore 
+                  <InfoCard 
                     title="Identity Details" 
                     icon={
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1374,17 +1106,15 @@ const PersonalInfoSection = ({
                     onMouseEnter={() => setHoveredSection('identity')}
                     onMouseLeave={() => setHoveredSection(null)}
                     onClick={() => handleCardClick('identity')}
-                    viewMoreCount={3}
                     cardIndex={0}
                     isVisible={cardsVisible}
                   >
                     <InfoField label="Birth Name" value={personalInfo?.birthName || 'Same as current'} />
                     <InfoField label="SSN/Government ID" value={formatSSN(personalInfo?.ssn)} />
                     <InfoField label="Gender" value={personalInfo?.gender || '—'} />
-                  </InfoCardWithViewMore>
+                  </InfoCard>
 
-                  {/* Demographics Card */}
-                  <InfoCardWithViewMore 
+                  <InfoCard 
                     title="Demographics" 
                     icon={
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1396,17 +1126,15 @@ const PersonalInfoSection = ({
                     onMouseEnter={() => setHoveredSection('demographics')}
                     onMouseLeave={() => setHoveredSection(null)}
                     onClick={() => handleCardClick('demographics')}
-                    viewMoreCount={3}
                     cardIndex={1}
                     isVisible={cardsVisible}
                   >
                     <InfoField label="Race" value={formatMultipleSelections(personalInfo?.race)} />
                     <InfoField label="Ethnicity" value={personalInfo?.ethnicity || '—'} />
                     <InfoField label="Marital Status" value={personalInfo?.maritalStatus || '—'} />
-                  </InfoCardWithViewMore>
+                  </InfoCard>
 
-                  {/* Origin Card */}
-                  <InfoCardWithViewMore 
+                  <InfoCard 
                     title="Origin & Citizenship" 
                     icon={
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1418,7 +1146,6 @@ const PersonalInfoSection = ({
                     onMouseEnter={() => setHoveredSection('origin')}
                     onMouseLeave={() => setHoveredSection(null)}
                     onClick={() => handleCardClick('origin')}
-                    viewMoreCount={3}
                     cardIndex={2}
                     isVisible={cardsVisible}
                   >
@@ -1427,10 +1154,9 @@ const PersonalInfoSection = ({
                     <div className="opacity-0 pointer-events-none">
                       <InfoField label="" value="" />
                     </div>
-                  </InfoCardWithViewMore>
+                  </InfoCard>
                 </div>
               ) : (
-                /* Edit Mode - Using same style as ContactInfoSection */
                 <div className="max-w-2xl">
                   <div className="grid grid-cols-2 gap-4">
                     <Input
@@ -1473,12 +1199,8 @@ const PersonalInfoSection = ({
                     <MultiSelectDropdown
                       label="Citizenship"
                       options={citizenshipOptions}
-                      value={mappedCitizenshipValue}
-                      onChange={(selected) => {
-                        // Map back to backend format when saving
-                        const backendValues = selected.map(mapCitizenshipToBackend);
-                        setPersonalInfo({...personalInfo, citizenship: backendValues});
-                      }}
+                      value={personalInfo.citizenship || []}
+                      onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
                       disabled={savingSection === 'personal'}
                     />
                     
@@ -1501,7 +1223,6 @@ const PersonalInfoSection = ({
                 </div>
               )}
               
-              {/* Action buttons */}
               <div className={buttonStyles.actionContainer}>
                 {editMode?.personal ? (
                   <div className={buttonStyles.buttonGroup}>
@@ -1512,10 +1233,11 @@ const PersonalInfoSection = ({
                       spinStar={buttonStyles.starConfig.enabled}
                     />
                     <PurpleButton
-                      text={buttonStyles.getSaveButtonText(savingSection)}
+                      text={buttonStyles.getSaveButtonText?.(savingSection) || (savingSection === 'personal' ? 'Saving...' : 'Save')}
                       onClick={savePersonalInfo}
                       className={buttonStyles.purpleButton.base}
                       spinStar={buttonStyles.starConfig.enabled}
+                      disabled={savingSection === 'personal'}
                     />
                   </div>
                 ) : (

@@ -12,8 +12,8 @@ const fieldStyles = {
     // Classes
     classes: {
       wrapper: "space-y-1",
-      label: "text-xs text-gray-500 uppercase tracking-wider",
-      value: "text-sm text-gray-800",
+      label: "text-sm text-gray-400 tracking-wider",  // Changed from text-gray-500 to text-gray-400
+      value: "text-base text-gray-800",
       emptyValue: "text-gray-400"
     },
     

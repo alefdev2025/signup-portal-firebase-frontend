@@ -1,8 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import alcorWhiteLogo from '../../assets/images/alcor-white-logo.png';
 
+// =============================================
+// GLOBAL CONFIGURATION VARIABLES
+// =============================================
+
+// Desktop gradient mode: 'purple', 'mobile-style', or 'original'
+const DESKTOP_GRADIENT_MODE = 'purple'; // Change this to switch modes
+
 // Color theme toggle - set to true for new colors, false for original colors
 const USE_NEW_COLORS = true;
+
+// Gradient definitions
+const GRADIENTS = {
+  // Purple gradient option
+  purple: 'linear-gradient(155deg, #0a0f1f 0%, #0a0f1f 10%, #212747 25%, #4c3565 55%, #72407f 100%)',
+  
+  // Mobile gradient applied to desktop
+  mobileStyle: 'linear-gradient(155deg, #0a0f1f 0%, #0a0f1f 8%, #1c2644 18%, #3c305b 30%, #74417f 55%, #975d6e 80%, #f1b443 100%)',
+  
+  // Original gradient
+  original: USE_NEW_COLORS 
+    ? 'linear-gradient(155deg, #0a1628 0%, #0a1628 10%, #12243c 30%, #6e4376 100%)' 
+    : 'linear-gradient(155deg, #12243c 0%, #12243c 10%, #6e4376 100%)',
+  
+  // Mobile gradient (always the same)
+  mobile: 'linear-gradient(170deg, #1c2644 0%, #3c305b 20%, #74417f 50%, #975d6e 80%, #f1b443 100%)'
+};
+
+// Corner mask colors for each mode
+const CORNER_MASKS = {
+  purple: {
+    top: 'linear-gradient(180deg, #0a0f1f 0%, #212747 100%)',
+    bottom: 'linear-gradient(180deg, #4c3565 0%, #72407f 100%)'
+  },
+  mobileStyle: {
+    top: 'linear-gradient(180deg, #0a0f1f 0%, #1c2644 100%)',
+    bottom: 'linear-gradient(180deg, #975d6e 0%, #f1b443 100%)'
+  },
+  original: {
+    top: USE_NEW_COLORS 
+      ? 'linear-gradient(180deg, #0a1628 0%, #12243c 100%)' 
+      : 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)',
+    bottom: USE_NEW_COLORS 
+      ? 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)' 
+      : 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
+  },
+  mobile: {
+    top: 'linear-gradient(180deg, #1c2644 0%, #3c305b 100%)',
+    bottom: 'linear-gradient(180deg, #975d6e 0%, #f1b443 100%)'
+  }
+};
+
+// =============================================
+// COMPONENT
+// =============================================
 
 const navigationItems = [
     { 
@@ -144,15 +196,29 @@ const PortalSidebar = ({
     return activeTab === itemId || activeTab.startsWith(`${itemId}-`);
   };
 
+  // Get gradient based on device and mode
+  const getGradient = () => {
+    if (isMobile) {
+      return GRADIENTS.mobile;
+    }
+    
+    switch (DESKTOP_GRADIENT_MODE) {
+      case 'purple':
+        return GRADIENTS.purple;
+      case 'mobile-style':
+        return GRADIENTS.mobileStyle;
+      case 'original':
+      default:
+        return GRADIENTS.original;
+    }
+  };
+
   // Different styles based on layout mode and device
   const getBackgroundStyle = () => {
-    if (isMobile) {
-      // New mobile gradient using your colors - slightly diagonal
-      return { background: 'linear-gradient(170deg, #1c2644 0%, #3c305b 20%, #74417f 50%, #975d6e 80%, #f1b443 100%)' };
-    } else if (layoutMode === 'floating') {
-      return { background: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 25%, #6e4376 100%)' : 'linear-gradient(180deg, #12243c 0%, #6e4376 100%)' };
+    if (layoutMode === 'floating') {
+      return { background: getGradient() };
     } else {
-      return { backgroundColor: USE_NEW_COLORS ? '#1a2744' : '#1a2744' };
+      return { backgroundColor: '#1a2744' };
     }
   };
 
@@ -178,15 +244,17 @@ const PortalSidebar = ({
   // Get corner mask colors based on device
   const getCornerMaskColors = () => {
     if (isMobile) {
-      return {
-        top: 'linear-gradient(180deg, #1c2644 0%, #3c305b 100%)',
-        bottom: 'linear-gradient(180deg, #975d6e 0%, #f1b443 100%)'
-      };
-    } else {
-      return {
-        top: USE_NEW_COLORS ? 'linear-gradient(180deg, #0a1628 0%, #12243c 100%)' : 'linear-gradient(180deg, #12243c 0%, #1a2d4a 100%)',
-        bottom: USE_NEW_COLORS ? 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)' : 'linear-gradient(180deg, #6a3f73 0%, #6e4376 100%)'
-      };
+      return CORNER_MASKS.mobile;
+    }
+    
+    switch (DESKTOP_GRADIENT_MODE) {
+      case 'purple':
+        return CORNER_MASKS.purple;
+      case 'mobile-style':
+        return CORNER_MASKS.mobileStyle;
+      case 'original':
+      default:
+        return CORNER_MASKS.original;
     }
   };
 
@@ -262,12 +330,12 @@ const PortalSidebar = ({
                         onClick={() => handleNavClick(item.id)}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
                           isItemActive(item.id)
-                            ? 'bg-white/10 text-white'
-                            : 'text-white/80 hover:text-white hover:bg-white/5'
+                            ? 'bg-white/20 text-white shadow-lg'
+                            : 'text-white/90 hover:text-white hover:bg-white/5'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
+                          <span className={isItemActive(item.id) ? 'text-white' : 'text-white/90'}>
                             {item.icon}
                           </span>
                           <span className="text-lg">{item.label}</span>
@@ -297,8 +365,8 @@ const PortalSidebar = ({
                               onClick={() => handleSubItemClick(item.id, subItem.id)}
                               className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
                                 activeTab === `${item.id}-${subItem.id}`
-                                  ? 'bg-white/10 text-white'
-                                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                                  ? 'bg-white/20 text-white shadow-md'
+                                  : 'text-white/85 hover:text-white hover:bg-white/5'
                               }`}
                             >
                               {subItem.label}
@@ -313,18 +381,18 @@ const PortalSidebar = ({
 
               <div className="p-4 border-t border-white/20">
   <div className="flex items-center gap-3 px-4 py-3">
-    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
+    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
       {profileImage ? (
         <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
       ) : (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       )}
     </div>
     <div className="flex-1 overflow-hidden">
-      <p className="text-white text-sm font-medium truncate drop-shadow-sm">Test User</p>
-      <p className="text-white/80 text-xs truncate">Member</p>
+      <p className="text-white text-base font-medium truncate drop-shadow-sm">Test User</p>
+      <p className="text-white/90 text-sm truncate">Member</p>
     </div>
   </div>
 </div>
@@ -359,7 +427,7 @@ const PortalSidebar = ({
                       onClick={() => handleNavClick(item.id)}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
                         isItemActive(item.id)
-                          ? 'bg-white/10 text-white'
+                          ? 'bg-white/20 text-white shadow-lg'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
@@ -394,7 +462,7 @@ const PortalSidebar = ({
                             onClick={() => handleSubItemClick(item.id, subItem.id)}
                             className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
                               activeTab === `${item.id}-${subItem.id}`
-                                ? 'bg-white/10 text-white'
+                                ? 'bg-white/20 text-white shadow-md'
                                 : 'text-white/70 hover:text-white hover:bg-white/5'
                             }`}
                           >

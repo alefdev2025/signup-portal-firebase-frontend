@@ -5,6 +5,7 @@ import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
 import { settingsApi } from '../../services/settingsApi';
 import alcorStar from '../../assets/images/alcor-yellow-star.png';
+import FloatingFooter from './FloatingFooter'; 
 // Import the new icon components
 import { IconWrapper, BellIcon, ShieldIcon, iconStyle } from './iconStyle';
 

@@ -4,26 +4,31 @@ import fieldStyles from './desktopCardStyles/fieldStyles';
 import infoCardStyles from './desktopCardStyles/infoCardStyles';
 import animationStyles from './desktopCardStyles/animationStyles';
 
-// ONE InfoField component used by ALL sections
-export const InfoField = ({ label, value, fieldIndex = 0 }) => {
-  const isEmpty = !value || value === '—';
-  const labelStyles = fieldStyles.getStyles.label();
-  const valueStyles = fieldStyles.getStyles.value(isEmpty);
-  
-  // Add animation classes
-  const animationClass = animationStyles.helpers.getFieldAnimationClasses(fieldIndex);
+export const InfoField = ({ label, value, isRequired, isRecommended, requiredColor = '#512BD9', recommendedColor = '#F26430' }) => {
+  const isEmpty = !value || value === '—' || value === 'Not provided';
   
   return (
-    <div className={`${fieldStyles.getStyles.wrapper()} ${animationClass}`}>
+    <div className={infoCardStyles.field.wrapper}>
+      <div className="flex items-center gap-1.5">
+        {(isRequired || isRecommended) && (
+          <div 
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
+            style={{ backgroundColor: isRequired ? requiredColor : recommendedColor }}
+          />
+        )}
+        <label 
+          className={infoCardStyles.field.label}
+          style={infoCardStyles.field.labelStyle}
+        >
+          {label}
+        </label>
+      </div>
       <p 
-        className={labelStyles.className} 
-        style={labelStyles.style}
-      >
-        {label}
-      </p>
-      <p 
-        className={valueStyles.className}
-        style={valueStyles.style}
+        className={isEmpty ? infoCardStyles.field.emptyValue : infoCardStyles.field.value}
+        style={{ 
+          fontWeight: fieldStyles.weights[isEmpty ? 'empty' : 'value'],
+          paddingLeft: (isRequired || isRecommended) ? '0.75rem' : '0' // 12px indent
+        }}
       >
         {value || '—'}
       </p>
@@ -81,7 +86,7 @@ export const InfoCard = ({ title, icon, children, sectionKey, hoveredSection, on
             </svg>
           </div>
           <div className={infoCardStyles.hoverIndicators.bottomRight.wrapper}>
-            <span className={infoCardStyles.hoverIndicators.bottomRight.text}>Edit</span>
+            <span className={infoCardStyles.hoverIndicators.bottomRight.text}>Click to edit</span>
           </div>
         </>
       )}

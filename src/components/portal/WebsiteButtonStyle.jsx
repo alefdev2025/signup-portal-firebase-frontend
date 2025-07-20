@@ -31,28 +31,24 @@ export const RainbowButton = ({ text = "Stay Informed", onClick, className = "",
   );
 };
 
-// White button (for Cancel) - with light purple background
+// White button (for Cancel/Edit) - OUTLINE STYLE
 export const WhiteButton = ({ text = "Cancel", onClick, className = "", spinStar = false }) => {
     return (
       <button 
         onClick={onClick}
-        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-lg border-1 ${className}`}
-        style={{
-          backgroundColor: '#ebe3ed',
-          borderColor: '#794384'
-        }}
+        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-lg bg-white border-2 border-gray-300 hover:bg-gray-50 ${className}`}
       >
         {/* Content */}
         <div className="relative flex items-center">
-          <span className="text-[#794384] text-lg font-semibold tracking-wide flex-1 text-center">{text}</span>
+          <span className="text-gray-600 text-lg font-semibold tracking-wide flex-1 text-center">{text}</span>
           
-          {/* Alcor Star - smaller */}
+          {/* Alcor Star - gray color */}
           <img 
             src={alcorStar} 
             alt="" 
             className={`w-8 h-8 transition-transform duration-500 ${spinStar ? 'group-hover:rotate-180' : ''} absolute right-1`}
             style={{
-              filter: 'brightness(0) saturate(100%) invert(27%) sepia(15%) saturate(1736%) hue-rotate(249deg) brightness(89%) contrast(88%)'
+              filter: 'brightness(0) saturate(100%) invert(50%) sepia(8%) saturate(0%) hue-rotate(186deg) brightness(95%) contrast(91%)'
             }}
           />
         </div>
@@ -60,22 +56,25 @@ export const WhiteButton = ({ text = "Cancel", onClick, className = "", spinStar
     );
   };
   
-  // Purple button (for Save)
+  // Purple button (for Save) - OUTLINE STYLE
   export const PurpleButton = ({ text = "Save", onClick, className = "", spinStar = false }) => {
     return (
       <button 
         onClick={onClick}
-        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-2xl bg-[#6e4376] hover:bg-[#5a3d5c] ${className}`}
+        className={`relative w-48 py-2.5 rounded-full overflow-hidden group transition-all duration-300 hover:shadow-xl bg-white border-2 border-[#7c3aed] hover:bg-[#7c3aed]/5 ${className}`}
       >
         {/* Content */}
         <div className="relative flex items-center">
-          <span className="text-white text-lg font-semibold tracking-wide flex-1 text-center">{text}</span>
+          <span className="text-[#7c3aed] text-lg font-semibold tracking-wide flex-1 text-center">{text}</span>
           
-          {/* Alcor Star - smaller */}
+          {/* Alcor Star - purple color */}
           <img 
             src={alcorStar} 
             alt="" 
-            className={`w-8 h-8 brightness-0 invert transition-transform duration-500 ${spinStar ? 'group-hover:rotate-180' : ''} absolute right-1`}
+            className={`w-8 h-8 transition-transform duration-500 ${spinStar ? 'group-hover:rotate-180' : ''} absolute right-1`}
+            style={{
+              filter: 'brightness(0) saturate(100%) invert(35%) sepia(84%) saturate(1736%) hue-rotate(253deg) brightness(94%) contrast(92%)'
+            }}
           />
         </div>
       </button>

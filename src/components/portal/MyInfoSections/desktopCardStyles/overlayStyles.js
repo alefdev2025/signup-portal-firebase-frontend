@@ -10,23 +10,23 @@ const overlayStyles = Object.freeze({
   contentWrapper: "flex min-h-full items-center justify-center p-4",
   contentBox: "relative bg-white rounded-2xl w-full max-w-3xl animate-fadeInUp shadow-xl",
   
-  // Header section - Updated for professional look with yellow theme
+  // Header section - Subtle updates with your colors
   header: Object.freeze({
     wrapper: "px-10 py-6 border-b border-gray-100 relative",
     closeButton: "absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2",
     closeIcon: "w-5 h-5",
-    content: "flex items-center gap-3",
-    iconSection: "flex items-center gap-3",
-    iconBox: "p-2.5 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50",
+    content: "flex items-center gap-4",
+    iconSection: "flex items-center gap-4",
+    iconBox: "p-4 rounded-xl transition-all duration-300", // Bigger padding, smoother corners
     iconBoxBg: Object.freeze({ 
-      background: 'linear-gradient(135deg, #f3f0ff 0%, #ede9fe 100%)',
-      border: '1px solid rgba(139, 92, 246, 0.1)'
+      background: 'linear-gradient(135deg, #512BD9 0%, #032CA6 100%)', // Your purple to blue gradient
+      border: '1px solid rgba(81, 43, 217, 0.2)', // Subtle purple border
+      boxShadow: '0 4px 12px rgba(81, 43, 217, 0.15)' // Soft purple shadow
     }),
-    icon: "w-5 h-5",
-    iconColor: Object.freeze({ color: '#7c3aed' }),
+    icon: "w-6 h-6", // Back to normal size (was w-8 h-8)
+    iconColor: Object.freeze({ color: '#FFFFFF' }), // White icon on gradient
     textWrapper: "flex-1",
     title: "text-xl font-semibold text-gray-900",
-    // Description moved - no longer in header
     description: "hidden"
   }),
   
@@ -39,7 +39,6 @@ const overlayStyles = Object.freeze({
       text: "text-green-800 font-medium"
     }),
     content: "space-y-6",
-    // New description section - appears after fields
     description: Object.freeze({
       container: "mt-8 pt-6 border-t border-gray-100",
       text: "text-sm text-gray-600 leading-relaxed"
@@ -52,7 +51,7 @@ const overlayStyles = Object.freeze({
     buttonGroup: "flex gap-2"
   }),
   
-  // Display mode styles - NOW USING CENTRAL CONFIG
+  // Display mode styles
   displayMode: Object.freeze({
     grid: Object.freeze({
       twoColumn: "grid grid-cols-2 gap-8",
@@ -62,7 +61,6 @@ const overlayStyles = Object.freeze({
       wrapper: fieldStyles.classes.wrapper,
       label: `block ${fieldStyles.classes.label} mb-2`,
       value: `text-lg ${fieldStyles.classes.value}`,
-      // Use the central getFieldStyle helper
       getFieldStyle: (isEmpty = false) => fieldStyles.getStyles.value(isEmpty).style,
       note: "mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg"
     })

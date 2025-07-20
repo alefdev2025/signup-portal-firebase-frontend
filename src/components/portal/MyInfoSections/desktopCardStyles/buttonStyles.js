@@ -14,10 +14,11 @@ const buttonStyles = {
     base: "scale-75 spin-star-button"
   },
   
-  // Overlay button styles - TALLER (!py-3), NARROWER (!w-32), SINGLE SLOW SPIN
+  // Overlay button styles - OUTLINE VERSION with correct purple
   overlayButtons: {
-    cancel: "!w-32 !py-3 [&>div>span]:!text-xs [&_img]:!w-6 [&_img]:!h-6 [&_img]:!-right-2 spin-star-button-once-slow",
-    save: "!w-32 !py-3 [&>div>span]:!text-xs [&_img]:!w-6 [&_img]:!h-6 [&_img]:!-right-2 ml-2 spin-star-button-once-slow"
+    cancel: "!w-32 !py-2 [&>div>span]:!text-xs [&_img]:!w-6 [&_img]:!h-6 [&_img]:!-right-2 spin-star-button-once-slow",
+    save: "!w-32 !py-2 [&>div>span]:!text-xs [&_img]:!w-6 [&_img]:!h-6 [&_img]:!-right-2 ml-2 spin-star-button-once-slow !bg-white !border-2 !border-[#7c3aed] [&>div>span]:!text-[#7c3aed]",
+    edit: "!w-32 !py-2 [&>div>span]:!text-xs [&_img]:!w-6 [&_img]:!h-6 [&_img]:!-right-2 spin-star-button-once-slow !bg-white !border-2 !border-[#7c3aed] [&>div>span]:!text-[#7c3aed]"
   },
   
   // Button text helpers

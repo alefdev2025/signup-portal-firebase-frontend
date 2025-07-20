@@ -257,32 +257,16 @@ const OverviewTab = ({ setActiveTab }) => {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
         font-weight: 300 !important;
       }
-      /* Welcome message - a little more bold */
-      .overview-tab h1 {
-        font-weight: 500 !important;  /* Medium weight for welcome */
-      }
-      /* Semi-bold and bold classes */
       .overview-tab .font-bold,
-      .overview-tab .font-semibold {
-        font-weight: 700 !important;
-      }
-      /* Regular headings including announcements - slightly less bold */
+      .overview-tab .font-semibold,
+      .overview-tab h1, 
       .overview-tab h2, 
       .overview-tab h3, 
       .overview-tab h4 {
-        font-weight: 400 !important;  /* Slightly less bold than before */
+        font-weight: 700 !important;
       }
-      /* Medium weight */
       .overview-tab .font-medium {
         font-weight: 500 !important;
-      }
-      /* Light weight override */
-      .overview-tab .font-light {
-        font-weight: 300 !important;
-      }
-      /* Normal weight override */
-      .overview-tab .font-normal {
-        font-weight: 400 !important;
       }
     `;
     document.head.appendChild(style);
@@ -372,17 +356,16 @@ const OverviewTab = ({ setActiveTab }) => {
           <div className="flex items-center gap-12 w-full">
             {/* Welcome message */}
             <div className="flex-1">
-            <h1 
-              className="font-semibold text-white mb-2 drop-shadow-lg tracking-tight"
-              style={{ 
-                fontSize: '1.5rem',
-                fontWeight: '500 !important',  // Add this line
-                fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
-                opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
-                transition: 'opacity 0.5s ease-in-out',
-                transitionDelay: '0.3s'
-              }}
-            >
+              <h1 
+                className="font-semibold text-white mb-2 drop-shadow-lg tracking-tight"
+                style={{ 
+                  fontSize: '1.5rem',
+                  fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important",
+                  opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
+                  transition: 'opacity 0.5s ease-in-out',
+                  transitionDelay: '0.3s'
+                }}
+              >
                 <span className="text-white/90">Welcome</span>
                 <span className="text-white">, {userName}!</span>
               </h1>
@@ -555,9 +538,9 @@ const OverviewTab = ({ setActiveTab }) => {
 
       {/* Announcements Section */}
       <div ref={announcementsRef} id="announcements" className="mt-16">
-        <h3 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <h2 className={`text-2xl font-semibold text-[#2a2346] mb-10 transition-all duration-1000 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           Announcements
-        </h3>
+        </h2>
         {!contentLoaded && announcements.length === 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ContentSkeleton />
@@ -565,100 +548,89 @@ const OverviewTab = ({ setActiveTab }) => {
           </div>
         ) : announcements.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-{announcements.slice(0, 2).map((announcement, index) => (
-  <div 
-    key={announcement.id}
-    className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-1000 cursor-pointer border-2 border-purple-200 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-    style={{ transitionDelay: `${200 + (index * 200)}ms` }}
-    onClick={() => {
-      if (announcement.link) {
-        window.open(announcement.link, '_blank');
-      }
-    }}
-  >
-    <div className="relative h-64 overflow-hidden">
-      {announcement.imageUrl ? (
-        <img 
-          src={announcement.imageUrl}
-          alt={announcement.title}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
-          <div className="text-white text-center">
-            <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-            </svg>
-            <p className="text-sm opacity-75">Announcement</p>
-          </div>
-        </div>
-      )}
-      
-      {/* Gradient overlay - flipped for second card */}
-      <div 
-        className="absolute inset-0" 
-        style={{ 
-          background: index === 0 
-            ? 'linear-gradient(135deg, rgba(33, 40, 73, 0.9) 0%, rgba(77, 54, 102, 0.9) 20%, rgba(125, 69, 130, 0.9) 35%, rgba(134, 77, 123, 0.9) 50%, rgba(159, 99, 103, 0.85) 65%, rgba(170, 108, 97, 0.85) 75%, rgba(182, 118, 91, 0.8) 82%, rgba(196, 128, 86, 0.8) 88%, rgba(225, 152, 71, 0.8) 94%, rgba(243, 189, 69, 0.8) 100%)'
-            : 'linear-gradient(225deg, rgba(33, 40, 73, 0.9) 0%, rgba(77, 54, 102, 0.9) 20%, rgba(125, 69, 130, 0.9) 35%, rgba(134, 77, 123, 0.9) 50%, rgba(159, 99, 103, 0.85) 65%, rgba(170, 108, 97, 0.85) 75%, rgba(182, 118, 91, 0.8) 82%, rgba(196, 128, 86, 0.8) 88%, rgba(225, 152, 71, 0.8) 94%, rgba(243, 189, 69, 0.8) 100%)'
-        }}
-      />
-      
-      <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
-        <h3 className="text-2xl font-light mb-2 drop-shadow-lg">{announcement.title}</h3>
-        {announcement.subtitle && (
-          <p className="text-lg font-light mb-3 text-white drop-shadow-lg">{announcement.subtitle}</p>
-        )}
-        <div className="flex items-center gap-4 text-sm text-white drop-shadow">
-          {announcement.eventDate && (
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {announcement.eventDate}
-            </span>
-          )}
-          {announcement.eventTime && (
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {announcement.eventTime}
-            </span>
-          )}
-          {announcement.location && (
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {announcement.location}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-    <div className="p-6 bg-white">
-      <p className="text-gray-600 mb-4">{announcement.description}</p>
-      {announcement.link && (
-        <a 
-          href={announcement.link} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-[#6b5b7e] hover:text-[#4a4266] font-medium transition-colors inline-flex items-center gap-2 underline underline-offset-4"
-          onClick={(e) => e.stopPropagation()}
-        >
-          Learn More
-          <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </a>
-      )}
-    </div>
-  </div>
-))}
-
+            {announcements.slice(0, 2).map((announcement, index) => (
+              <div 
+                key={announcement.id}
+                className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-1000 cursor-pointer border-2 border-purple-200 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                style={{ transitionDelay: `${200 + (index * 200)}ms` }}
+                onClick={() => {
+                  if (announcement.link) {
+                    window.open(announcement.link, '_blank');
+                  }
+                }}
+              >
+                <div className="relative h-64 overflow-hidden">
+                  {announcement.imageUrl ? (
+                    <img 
+                      src={announcement.imageUrl}
+                      alt={announcement.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                        <p className="text-sm opacity-75">Announcement</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
+                  
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
+                    <h3 className="text-2xl font-medium mb-2">{announcement.title}</h3>
+                    {announcement.subtitle && (
+                      <p className="text-lg mb-3 text-white/90">{announcement.subtitle}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-white/80">
+                      {announcement.eventDate && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {announcement.eventDate}
+                        </span>
+                      )}
+                      {announcement.eventTime && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {announcement.eventTime}
+                        </span>
+                      )}
+                      {announcement.location && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {announcement.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 bg-white">
+                  <p className="text-gray-600 mb-4">{announcement.description}</p>
+                  {announcement.link && (
+                    <a 
+                      href={announcement.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#6b5b7e] hover:text-[#4a4266] font-medium transition-colors inline-flex items-center gap-2 underline underline-offset-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Learn More
+                      <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="bg-gray-50 rounded-lg p-12 text-center">

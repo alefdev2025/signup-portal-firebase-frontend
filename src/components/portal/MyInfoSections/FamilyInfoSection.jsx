@@ -15,6 +15,7 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
+import { CompletionWheelWithLegend } from './CompletionWheel';
 import { HelpCircle } from 'lucide-react';
 
 // Overlay Component
@@ -25,12 +26,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(true);  // Start in edit mode
+      setEditMode(false);  // Start in display mode
       setShowSuccess(false);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleEdit = () => {
+    setEditMode(true);
+  };
 
   const handleSave = () => {
     saveFamilyInfo();
@@ -46,7 +51,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   const handleCancel = () => {
     setFamilyInfo(data.familyInfo);
     setEditMode(false);
-    onClose();
   };
 
   const getFieldDescriptions = () => {
@@ -129,9 +133,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                  <h3 className={overlayStyles.header.title}>
                     {fieldInfo.title}
-                  </span>
+                  </h3>
                   <p className={overlayStyles.header.description}>
                     {fieldInfo.description}
                   </p>
@@ -155,51 +159,55 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
             {/* Fields */}
             {!editMode ? (
               /* Display Mode */
-              <div className={overlayStyles.body.content}>
+              <div className="space-y-6">
                 {section === 'father' && (
-                  <div className={overlayStyles.displayMode.grid.twoColumn}>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Father's Full Name</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersName)}
-                      >
-                        {familyInfo?.fathersName || '—'}
-                      </p>
+                  <>
+                    <div className="grid grid-cols-2 gap-8">
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>Father's Full Name</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersName)}
+                        >
+                          {familyInfo?.fathersName || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>Father's Birthplace</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersBirthplace)}
+                        >
+                          {familyInfo?.fathersBirthplace || '—'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Father's Birthplace</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersBirthplace)}
-                      >
-                        {familyInfo?.fathersBirthplace || '—'}
-                      </p>
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {section === 'mother' && (
-                  <div className={overlayStyles.displayMode.grid.twoColumn}>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Mother's Full Maiden Name</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersMaidenName)}
-                      >
-                        {familyInfo?.mothersMaidenName || '—'}
-                      </p>
+                  <>
+                    <div className="grid grid-cols-2 gap-8">
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>Mother's Full Maiden Name</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersMaidenName)}
+                        >
+                          {familyInfo?.mothersMaidenName || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className={overlayStyles.displayMode.field.label}>Mother's Birthplace</label>
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersBirthplace)}
+                        >
+                          {familyInfo?.mothersBirthplace || '—'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Mother's Birthplace</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersBirthplace)}
-                      >
-                        {familyInfo?.mothersBirthplace || '—'}
-                      </p>
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {section === 'spouse' && (
@@ -218,10 +226,10 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
               </div>
             ) : (
               /* Edit Mode */
-              <div className={overlayStyles.body.content}>
+              <div className="space-y-6">
                 {section === 'father' && (
-                  <div className={overlayStyles.editMode.grid.twoColumn}>
-                    <div>
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Father's Full Name *"
                         type="text"
@@ -230,8 +238,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         disabled={savingSection === 'family'}
                         error={fieldErrors.fathersName}
                       />
-                    </div>
-                    <div>
                       <Input
                         label="Father's Birthplace *"
                         type="text"
@@ -241,16 +247,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         disabled={savingSection === 'family'}
                         error={fieldErrors.fathersBirthplace}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Enter "Unknown" if not known
-                      </p>
                     </div>
-                  </div>
+                    <p className="text-xs text-gray-500 -mt-4">
+                      Enter "Unknown" if not known
+                    </p>
+                  </>
                 )}
 
                 {section === 'mother' && (
-                  <div className={overlayStyles.editMode.grid.twoColumn}>
-                    <div>
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Mother's Full Maiden Name *"
                         type="text"
@@ -259,8 +265,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         disabled={savingSection === 'family'}
                         error={fieldErrors.mothersMaidenName}
                       />
-                    </div>
-                    <div>
                       <Input
                         label="Mother's Birthplace *"
                         type="text"
@@ -270,11 +274,11 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         disabled={savingSection === 'family'}
                         error={fieldErrors.mothersBirthplace}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Enter "Unknown" if not known
-                      </p>
                     </div>
-                  </div>
+                    <p className="text-xs text-gray-500 -mt-4">
+                      Enter "Unknown" if not known
+                    </p>
+                  </>
                 )}
 
                 {section === 'spouse' && (
@@ -295,19 +299,30 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
           {/* Footer */}
           <div className={overlayStyles.footer.wrapper}>
-            <WhiteButton
-              text="Cancel"
-              onClick={handleCancel}
-              className={buttonStyles.overlayButtons.cancel}
-              spinStar={buttonStyles.starConfig.enabled}
-            />
-            <PurpleButton
-              text={savingSection === 'family' ? 'Saving...' : 'Save'}
-              onClick={handleSave}
-              className={buttonStyles.overlayButtons.save}
-              spinStar={buttonStyles.starConfig.enabled}
-              disabled={savingSection === 'family'}
-            />
+            {!editMode ? (
+              <PurpleButton
+                text="Edit"
+                onClick={handleEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            ) : (
+              <>
+                <WhiteButton
+                  text="Cancel"
+                  onClick={handleCancel}
+                  className={buttonStyles.overlayButtons.cancel}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+                <PurpleButton
+                  text={savingSection === 'family' ? 'Saving...' : 'Save'}
+                  onClick={handleSave}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                  disabled={savingSection === 'family'}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -394,6 +409,22 @@ const FamilyInfoSection = ({
       setFieldErrors({});
     }
   }, [editMode.family]);
+
+  // Field configuration for completion wheel
+  const fieldConfig = {
+    required: {
+      fathersName: { field: 'fathersName', source: 'familyInfo', label: "Father's Name" },
+      fathersBirthplace: { field: 'fathersBirthplace', source: 'familyInfo', label: "Father's Birthplace" },
+      mothersMaidenName: { field: 'mothersMaidenName', source: 'familyInfo', label: "Mother's Maiden Name" },
+      mothersBirthplace: { field: 'mothersBirthplace', source: 'familyInfo', label: "Mother's Birthplace" }
+    },
+    recommended: {}
+  };
+
+  // Add spouse fields if married
+  if (personalInfo.maritalStatus === 'Married') {
+    fieldConfig.required.spousesName = { field: 'spousesName', source: 'familyInfo', label: "Spouse's Name" };
+  }
 
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
@@ -607,65 +638,48 @@ const FamilyInfoSection = ({
           <div className={styleConfig2.section.innerPadding}>
             {/* Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'family')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Family Information</h2>
-                      <p className={headerStyles.subtitle}>
-                        Information about your immediate family members.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'family')} style={{ backgroundColor: '#862633' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
                         </div>
-                      )}
+                        <h2 className={headerStyles.title(styleConfig2)}>Family Information</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'family')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 font-normal max-w-lg">
+                            Information about your immediate family members.
+                          </p>
+                          <p className="text-gray-400 text-sm mt-3">
+                            Required: Father's Name & Birthplace, Mother's Name & Birthplace
+                          </p>
+                          {personalInfo.maritalStatus === 'Married' && (
+                            <p className="text-gray-400 text-sm mt-2">
+                              Required: Spouse's Name
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Completion Section */}
+                  <CompletionWheelWithLegend
+                    data={{ familyInfo }}
+                    fieldConfig={fieldConfig}
+                    sectionColor="#862633"
+                  />
+                </div>
               </div>
             </div>
 

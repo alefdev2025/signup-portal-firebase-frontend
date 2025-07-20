@@ -3,7 +3,25 @@ import React from 'react';
 // Icon style constants
 export const iconStyle = {
   // Gradient definition for icon backgrounds
-  backgroundGradient: 'linear-gradient(135deg, #212849 0%, #4d3666 25%, #7d4582 45%, #864d7b 60%, #9f6367 75%, #aa6c61 85%, #b6765b 93%, #c48056 97%, #d28c4f 100%)',
+  backgroundGradient: 'linear-gradient(135deg, #212849 0%, #4d3666 20%, #7d4582 35%, #864d7b 50%, #9f6367 65%, #aa6c61 75%, #b6765b 82%, #c48056 88%, #e19847 94%, #f3bd45 100%)',
+  
+  /* Alternative gradient color palette:
+  #13233e
+  #2e2c51
+  #483462
+  #5d3a71
+  #72417f
+  #784383
+  #884f79
+  #9e6169
+  #b5755d
+  #bf7d58
+  #e19847
+  #f3bd45
+  */
+  
+  // Rainbow bottom gradient (using new colors with a touch of yellow at the end)
+  rainbowBottomGradient: 'linear-gradient(90deg, #13233e 0%, #2e2c51 9%, #483462 18%, #5d3a71 27%, #72417f 36%, #784383 45%, #884f79 54%, #9e6169 63%, #b5755d 72%, #bf7d58 81%, #e19847 90%, #f3bd45 100%)',
   
   // Solid color versions (no orange)
   solidBlack: '#000000',
@@ -40,6 +58,8 @@ export const IconWrapper = ({ children, size = 'default', className = '', color 
   
   const backgroundStyle = color === 'gradient' 
     ? { background: iconStyle.backgroundGradient }
+    : color === 'rainbow'
+    ? { background: iconStyle.rainbowBottomGradient }
     : { backgroundColor: iconStyle[`solid${color.charAt(0).toUpperCase() + color.slice(1)}`] || iconStyle.solidNavy };
   
   return (
@@ -85,6 +105,17 @@ export const MailIcon = ({ className = iconStyle.iconSize }) => (
   </svg>
 );
 
+// Rainbow bottom component (can be used at the bottom of tabs/pages)
+export const RainbowBottom = ({ className = '', height = '4px' }) => (
+  <div 
+    className={`w-full ${className}`}
+    style={{ 
+      height,
+      background: iconStyle.rainbowBottomGradient 
+    }}
+  />
+);
+
 // Example usage component showing how to use these icons
 const IconStyleExample = () => {
   return (
@@ -113,6 +144,24 @@ const IconStyleExample = () => {
           
           <IconWrapper>
             <MailIcon />
+          </IconWrapper>
+        </div>
+      </div>
+      
+      {/* Rainbow gradient version */}
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Rainbow Gradient Icons</h3>
+        <div className="flex gap-4 items-center">
+          <IconWrapper color="rainbow">
+            <BellIcon />
+          </IconWrapper>
+          
+          <IconWrapper color="rainbow">
+            <ShieldIcon />
+          </IconWrapper>
+          
+          <IconWrapper color="rainbow">
+            <DocumentIcon />
           </IconWrapper>
         </div>
       </div>
@@ -213,6 +262,20 @@ const IconStyleExample = () => {
           <IconWrapper size="large">
             <BellIcon className={iconStyle.iconSizeLarge} />
           </IconWrapper>
+        </div>
+      </div>
+      
+      {/* Rainbow bottom example */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-2">Rainbow Bottom Bar</h3>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <p className="mb-4">Example content area</p>
+          <RainbowBottom />
+        </div>
+        
+        <div className="mt-4 bg-gray-100 p-4 rounded-lg">
+          <p className="mb-4">Thicker rainbow bottom</p>
+          <RainbowBottom height="8px" />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } fr
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
+import ContactInfoMobile from './ContactInfoMobile';
 import { 
   overlayStyles, 
   infoCardStyles, 
@@ -15,6 +16,7 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
+import { CompletionWheelWithLegend } from './CompletionWheel';
 
 // Custom Select component that uses styleConfig2
 const StyledSelect = ({ label, value, onChange, disabled, children, error }) => {
@@ -33,14 +35,25 @@ const StyledSelect = ({ label, value, onChange, disabled, children, error }) => 
   );
 };
 
-// Overlay Component
-const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, contactInfo, setContactInfo, personalInfo, setPersonalInfo, saveContactInfo }) => {
+// Simple Overlay Component
+const CardOverlay = ({ 
+  isOpen, 
+  onClose, 
+  section, 
+  contactInfo,
+  personalInfo,
+  setContactInfo,
+  setPersonalInfo,
+  saveContactInfo,
+  savingSection,
+  fieldErrors
+}) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(false);  // Start in display mode
+      setEditMode(false);
       setShowSuccess(false);
     }
   }, [isOpen]);
@@ -69,12 +82,10 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleSave = () => {
-    // Call saveContactInfo
     saveContactInfo();
     setEditMode(false);
     setShowSuccess(true);
     
-    // Auto close after 2 seconds
     setTimeout(() => {
       setShowSuccess(false);
       onClose();
@@ -82,9 +93,6 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleCancel = () => {
-    // Reset to original values
-    setContactInfo(data.contactInfo);
-    setPersonalInfo(data.personalInfo);
     setEditMode(false);
   };
 
@@ -94,35 +102,19 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
         return {
           title: 'Personal Details',
           description: 'Your personal identification information is essential for maintaining accurate member records and ensuring we can properly identify you in our systems.',
-          fields: {
-            'First Name': 'Your legal first name as it appears on official documents.',
-            'Middle Name': 'Your middle name or initial (optional but helps with identification).',
-            'Last Name': 'Your legal last name or surname.',
-            'Date of Birth': 'Your birth date for age verification and member benefits eligibility.'
-          }
         };
       case 'email':
         return {
           title: 'Email Addresses',
-          description: 'We use your email addresses for important member communications, newsletters, and account notifications. Having both personal and work emails ensures we can always reach you.',
-          fields: {
-            'Personal Email': 'Your primary personal email for member communications and account access.',
-            'Work Email': 'Your professional email address (optional) for work-related member benefits.'
-          }
+          description: 'We use your email addresses for important member communications, newsletters, and account notifications.',
         };
       case 'phone':
         return {
           title: 'Phone Numbers',
-          description: 'Phone numbers allow us to contact you for urgent matters, verification, and provide phone-based member services. Select your preferred contact method.',
-          fields: {
-            'Preferred Phone': 'Select which phone number we should use as your primary contact.',
-            'Mobile Phone': 'Your cell phone number for text alerts and mobile communications.',
-            'Home Phone': 'Your residential phone number.',
-            'Work Phone': 'Your office or business phone number.'
-          }
+          description: 'Phone numbers allow us to contact you for urgent matters, verification, and provide phone-based member services.',
         };
       default:
-        return { title: '', description: '', fields: {} };
+        return { title: '', description: '' };
     }
   };
 
@@ -192,19 +184,13 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>First Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.firstName)}
-                        >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {personalInfo?.firstName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Middle Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.middleName)}
-                        >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {personalInfo?.middleName || '—'}
                         </p>
                       </div>
@@ -212,19 +198,13 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Last Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.lastName)}
-                        >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {personalInfo?.lastName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Date of Birth</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.dateOfBirth)}
-                        >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {formatDateForDisplay(personalInfo?.dateOfBirth)}
                         </p>
                       </div>
@@ -236,19 +216,13 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Personal Email</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.personalEmail)}
-                        >
+                      <p className={overlayStyles.displayMode.field.value}>
                         {contactInfo?.personalEmail || '—'}
                       </p>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Work Email</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.workEmail)}
-                        >
+                      <p className={overlayStyles.displayMode.field.value}>
                         {contactInfo?.workEmail || '—'}
                       </p>
                     </div>
@@ -259,39 +233,27 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Preferred Phone</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.preferredPhone)}
-                        >
+                      <p className={overlayStyles.displayMode.field.value}>
                         {contactInfo?.preferredPhone ? `${contactInfo.preferredPhone} Phone` : '—'}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Mobile Phone</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.mobilePhone)}
-                          >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {formatPhone(contactInfo?.mobilePhone)}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Home Phone</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.homePhone)}
-                          >
+                        <p className={overlayStyles.displayMode.field.value}>
                           {formatPhone(contactInfo?.homePhone)}
                         </p>
                       </div>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Work Phone</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!contactInfo?.workPhone)}
-                        >
+                      <p className={overlayStyles.displayMode.field.value}>
                         {formatPhone(contactInfo?.workPhone)}
                       </p>
                     </div>
@@ -457,11 +419,11 @@ const ContactInfoSection = ({
   sectionLabel
 }) => {
   const safePersonalInfo = personalInfo || {};
-  const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
   const [hoveredSection, setHoveredSection] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
@@ -514,6 +476,35 @@ const ContactInfoSection = ({
     };
   }, [isVisible]);
 
+  // Field configuration
+// Field configuration
+const fieldConfig = {
+  required: {
+    firstName: { field: 'firstName', source: 'personalInfo', label: 'First Name' },
+    lastName: { field: 'lastName', source: 'personalInfo', label: 'Last Name' },
+    dateOfBirth: { field: 'dateOfBirth', source: 'personalInfo', label: 'Date of Birth' },
+    personalEmail: { field: 'personalEmail', source: 'contactInfo', label: 'Personal Email' },
+    preferredPhone: { field: 'preferredPhone', source: 'contactInfo', label: 'Preferred Phone' }
+  },
+  recommended: {
+    middleName: { field: 'middleName', source: 'personalInfo', label: 'Middle Name' },
+    workEmail: { field: 'workEmail', source: 'contactInfo', label: 'Work Email' },
+    anyPhone: { 
+      field: 'anyPhone', 
+      source: 'contactInfo', 
+      label: 'Phone Number',
+      // Custom check function for completion
+      checkValue: (data) => {
+        return !!(
+          (data.contactInfo?.mobilePhone && data.contactInfo.mobilePhone.trim() !== '') ||
+          (data.contactInfo?.homePhone && data.contactInfo.homePhone.trim() !== '') ||
+          (data.contactInfo?.workPhone && data.contactInfo.workPhone.trim() !== '')
+        );
+      }
+    }
+  }
+};
+
   const formatDateForDisplay = (dateOfBirth) => {
     if (!dateOfBirth) return '—';
     const date = new Date(dateOfBirth);
@@ -536,251 +527,84 @@ const ContactInfoSection = ({
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = () => {
-    // This wrapper ensures the save happens with the current state
-    saveContactInfo();
-  };
-
   return (
-    <div ref={sectionRef} className={`contact-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
-      {/* Overlay */}
+    <div ref={sectionRef} className={`contact-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
+      {/* Overlay with direct prop passing */}
       <CardOverlay
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        data={{ contactInfo, personalInfo: safePersonalInfo }}
-        onEdit={() => {}}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
         contactInfo={contactInfo}
-        setContactInfo={setContactInfo}
         personalInfo={safePersonalInfo}
+        setContactInfo={setContactInfo}
         setPersonalInfo={setPersonalInfo}
         saveContactInfo={saveContactInfo}
+        savingSection={savingSection}
+        fieldErrors={fieldErrors}
       />
 
       {isMobile ? (
-        /* Mobile Version - Keeping your original mobile implementation */
-        <MobileInfoCard
-          iconComponent={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          }
-          title="Contact Information"
-          backgroundImage={formsHeaderImage}
-          overlayText="Essential Info"
-          subtitle="Keep your contact details current for important member communications."
-          isEditMode={editMode.contact}
-        >
-          {/* Mobile content remains the same */}
-          {!editMode.contact ? (
-            <>
-              <div className={`space-y-4 ${hasLoaded && isVisible ? 'contact-section-stagger-in' : ''}`}>
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="First Name" value={safePersonalInfo?.firstName} />
-                  <DisplayField label="Middle Name" value={safePersonalInfo?.middleName} />
-                  <DisplayField label="Last Name" value={safePersonalInfo?.lastName} />
-                  <DisplayField label="Date of Birth" value={formatDateForDisplay(safePersonalInfo?.dateOfBirth)} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="Personal Email" value={contactInfo?.personalEmail} />
-                  <DisplayField label="Work Email" value={contactInfo?.workEmail} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="Preferred Phone" value={contactInfo?.preferredPhone ? `${contactInfo.preferredPhone} Phone` : '—'} />
-                  <DisplayField label="Mobile Phone" value={formatPhone(contactInfo?.mobilePhone)} />
-                  <DisplayField label="Home Phone" value={formatPhone(contactInfo?.homePhone)} />
-                  <DisplayField label="Work Phone" value={formatPhone(contactInfo?.workPhone)} />
-                </div>
-              </div>
-              
-              <ActionButtons 
-                editMode={false}
-                onEdit={() => toggleEditMode && toggleEditMode('contact')}
-              />
-            </>
-          ) : (
-            /* Edit Mode */
-            <>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="First Name *"
-                    value={safePersonalInfo?.firstName || ''}
-                    onChange={(e) => setPersonalInfo({...safePersonalInfo, firstName: e.target.value})}
-                    error={fieldErrors.firstName}
-                    disabled={savingSection === 'contact'}
-                  />
-                  <FormInput
-                    label="Middle Name"
-                    value={safePersonalInfo?.middleName || ''}
-                    onChange={(e) => setPersonalInfo({...safePersonalInfo, middleName: e.target.value})}
-                    disabled={savingSection === 'contact'}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Last Name *"
-                    value={safePersonalInfo?.lastName || ''}
-                    onChange={(e) => setPersonalInfo({...safePersonalInfo, lastName: e.target.value})}
-                    error={fieldErrors.lastName}
-                    disabled={savingSection === 'contact'}
-                  />
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Date of Birth</label>
-                    <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm">
-                      {formatDateForDisplay(safePersonalInfo?.dateOfBirth)}
-                    </div>
-                  </div>
-                </div>
-                
-                <FormInput
-                  label="Personal Email *"
-                  type="email"
-                  value={contactInfo?.personalEmail || ''}
-                  onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
-                  error={fieldErrors.personalEmail}
-                  disabled={savingSection === 'contact'}
-                />
-                
-                <FormInput
-                  label="Work Email"
-                  type="email"
-                  value={contactInfo?.workEmail || ''}
-                  onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
-                  disabled={savingSection === 'contact'}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormSelect
-                    label="Preferred Phone *"
-                    value={contactInfo?.preferredPhone || ''}
-                    onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
-                    error={fieldErrors.preferredPhone}
-                    disabled={savingSection === 'contact'}
-                  >
-                    <option value="">Select...</option>
-                    <option value="Mobile">Mobile Phone</option>
-                    <option value="Home">Home Phone</option>
-                    <option value="Work">Work Phone</option>
-                  </FormSelect>
-                  
-                  <FormInput
-                    label="Mobile Phone"
-                    type="tel"
-                    value={contactInfo?.mobilePhone || ''}
-                    onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
-                    placeholder="(555) 123-4567"
-                    error={fieldErrors.mobilePhone}
-                    disabled={savingSection === 'contact'}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Home Phone"
-                    type="tel"
-                    value={contactInfo?.homePhone || ''}
-                    onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
-                    placeholder="(555) 123-4567"
-                    error={fieldErrors.homePhone}
-                    disabled={savingSection === 'contact'}
-                  />
-                  <FormInput
-                    label="Work Phone"
-                    type="tel"
-                    value={contactInfo?.workPhone || ''}
-                    onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
-                    placeholder="(555) 123-4567"
-                    error={fieldErrors.workPhone}
-                    disabled={savingSection === 'contact'}
-                  />
-                </div>
-              </div>
-              
-              <ActionButtons 
-                editMode={true}
-                onSave={saveContactInfo}
-                onCancel={() => cancelEdit && cancelEdit('contact')}
-                saving={savingSection === 'contact'}
-              />
-            </>
-          )}
-        </MobileInfoCard>
+        <ContactInfoMobile
+          contactInfo={contactInfo}
+          personalInfo={safePersonalInfo}
+          setContactInfo={setContactInfo}
+          setPersonalInfo={setPersonalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveContactInfo={saveContactInfo}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfig}
+        />
       ) : (
-        /* Desktop Version - Matching styles */
+        /* Desktop Version - With completion wheel */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
             {/* Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'contact')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Contact Information</h2>
-                      <p className={headerStyles.subtitle}>
-                        Keep your contact details current for important member communications.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      {/* Dark purple/blue overlay base */}
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      {/* Radial yellow glow from bottom */}
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      {/* Purple/pink glow overlay */}
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      {/* Large star positioned lower */}
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'contact')} style={{ backgroundColor: '#512BD9' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
                         </div>
-                      )}
+
+                        <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Contact Information</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'contact')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <div>
+                        <p className="text-gray-600 text-sm leading-5 max-w-lg">
+                            Keep your contact details current for important member communications.
+                        </p>
+                        <p className="text-gray-400 text-sm leading-5 mt-2">
+                            Required: First Name, Last Name, Date of Birth, Personal Email, Preferred Phone
+                        </p>
+                        <p className="text-gray-400 text-sm leading-5 mt-1">
+                            Recommended: Middle Name
+                        </p>
+
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Completion Section - Using reusable component */}
+                  <CompletionWheelWithLegend
+                    data={{ contactInfo, personalInfo: safePersonalInfo }}
+                    fieldConfig={fieldConfig}
+                    sectionColor="#512BD9"
+                  />
+                </div>
               </div>
             </div>
 
@@ -805,9 +629,9 @@ const ContactInfoSection = ({
                     cardIndex={0}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="First Name" value={safePersonalInfo?.firstName || '—'} />
-                    <InfoField label="Middle Name" value={safePersonalInfo?.middleName || '—'} />
-                    <InfoField label="Last Name" value={safePersonalInfo?.lastName || '—'} />
+                    <InfoField label="First Name" value={safePersonalInfo?.firstName || '—'} isRequired />
+                    <InfoField label="Middle Name" value={safePersonalInfo?.middleName || '—'} isRecommended />
+                    <InfoField label="Last Name" value={safePersonalInfo?.lastName || '—'} isRequired />
                   </InfoCard>
 
                   {/* Phone Card - MOVED TO MIDDLE */}
@@ -826,9 +650,9 @@ const ContactInfoSection = ({
                     cardIndex={1}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Mobile Phone" value={formatPhone(contactInfo?.mobilePhone)} />
-                    <InfoField label="Home Phone" value={formatPhone(contactInfo?.homePhone)} />
-                    <InfoField label="Work Phone" value={formatPhone(contactInfo?.workPhone)} />
+                    <InfoField label="Mobile Phone" value={formatPhone(contactInfo?.mobilePhone)} isRecommended />
+                    <InfoField label="Home Phone" value={formatPhone(contactInfo?.homePhone)} isRecommended />
+                    <InfoField label="Work Phone" value={formatPhone(contactInfo?.workPhone)} isRecommended />
                   </InfoCard>
 
                   {/* Email Card - MOVED TO END */}
@@ -847,8 +671,8 @@ const ContactInfoSection = ({
                     cardIndex={2}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Personal Email" value={contactInfo?.personalEmail || '—'} />
-                    <InfoField label="Work Email" value={contactInfo?.workEmail || '—'} />
+                    <InfoField label="Personal Email" value={contactInfo?.personalEmail || '—'} isRequired />
+                    <InfoField label="Work Email" value={contactInfo?.workEmail || '—'} isRecommended />
                   </InfoCard>
                 </div>
               ) : (

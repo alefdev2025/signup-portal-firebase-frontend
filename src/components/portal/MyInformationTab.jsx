@@ -522,6 +522,10 @@ const MyInformationTab = () => {
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
+    .my-information-tab h2 {
+      font-family: 'HelveticaNeue-Medium', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+      font-weight: 500 !important;
+    }
       .my-information-tab * {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
       }
@@ -2011,57 +2015,126 @@ const loadMemberCategory = async () => {
   const saveOccupation = async () => {
     setSavingSection('occupation');
     setSaveMessage({ type: '', text: '' });
+    setFieldErrors({});
     
     try {
+      console.log('🔵 === START saveOccupation ===');
+      console.log('📋 Raw occupation state:', JSON.stringify(occupation, null, 2));
+      
       // Clean the occupation data
       const cleanedOccupation = cleanDataBeforeSave(occupation, 'occupation');
       
-      // Validate occupation is not just "Retired"
-      if (cleanedOccupation.occupation && 
-          cleanedOccupation.occupation.toLowerCase().trim() === 'retired') {
-        setSaveMessage({ 
-          type: 'error', 
-          text: 'Please specify your occupation before retirement (e.g., "Retired Software Engineer")' 
-        });
+      // Validate military service fields
+      const errors = {};
+      if (cleanedOccupation.hasMilitaryService) {
+        if (!cleanedOccupation.militaryBranch) {
+          errors.militaryBranch = 'Military branch is required';
+        }
+        if (!cleanedOccupation.servedFrom) {
+          errors.servedFrom = 'Service start year is required';
+        }
+        if (!cleanedOccupation.servedTo) {
+          errors.servedTo = 'Service end year is required';
+        }
+        
+        // Validate year format and range
+        const currentYear = new Date().getFullYear();
+        if (cleanedOccupation.servedFrom) {
+          const startYear = parseInt(cleanedOccupation.servedFrom);
+          if (!/^\d{4}$/.test(cleanedOccupation.servedFrom) || startYear < 1800 || startYear > currentYear) {
+            errors.servedFrom = `Please enter a valid year between 1900 and ${currentYear}`;
+          }
+        }
+        if (cleanedOccupation.servedTo) {
+          const endYear = parseInt(cleanedOccupation.servedTo);
+          if (!/^\d{4}$/.test(cleanedOccupation.servedTo) || endYear < 1800 || endYear > currentYear) {
+            errors.servedTo = `Please enter a valid year between 1900 and ${currentYear}`;
+          }
+        }
+        
+        // Validate year logic
+        if (cleanedOccupation.servedFrom && cleanedOccupation.servedTo) {
+          const startYear = parseInt(cleanedOccupation.servedFrom);
+          const endYear = parseInt(cleanedOccupation.servedTo);
+          if (startYear > endYear) {
+            errors.servedTo = 'End year must be after start year';
+          }
+        }
+      }
+      
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setSaveMessage({ type: 'error', text: 'Please fix the errors below' });
         setSavingSection('');
-        return;
+        return Promise.reject(new Error('Validation failed'));
       }
       
       // Transform data to match backend expectations
       const dataToSend = {
-        occupation: cleanedOccupation.occupation,
-        industry: cleanedOccupation.occupationalIndustry,
+        occupation: cleanedOccupation.occupation || null,          // ✅ Fixed: using 'occupation'
+        jobTitle: cleanedOccupation.occupation || null,            // ✅ Also send as jobTitle for Agreement
+        industry: cleanedOccupation.occupationalIndustry || null,
         militaryService: cleanedOccupation.hasMilitaryService ? {
-          branch: cleanedOccupation.militaryBranch,
-          startYear: cleanedOccupation.servedFrom,
-          endYear: cleanedOccupation.servedTo
-        } : null
+          branch: cleanedOccupation.militaryBranch || null,
+          startYear: cleanedOccupation.servedFrom || null,
+          endYear: cleanedOccupation.servedTo || null
+        } : {
+          branch: null,
+          startYear: null,
+          endYear: null
+        }
       };
       
+      console.log('📤 Final dataToSend:', JSON.stringify(dataToSend, null, 2));
+      
       const result = await updateMemberOccupation(salesforceContactId, dataToSend);
+      
       if (result.success) {
         setSaveMessage({ type: 'success', text: 'Occupation saved successfully!' });
         setOccupation(cleanedOccupation);
         setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
         setEditMode(prev => ({ ...prev, occupation: false }));
+        setFieldErrors({});
         memberDataService.clearCache(salesforceContactId);
         
-        // Refresh the cache
         if (refreshMemberInfo) {
           setTimeout(() => {
-            //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
             refreshMemberInfo();
           }, 500);
         }
+        
+        return Promise.resolve();
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to save occupation' });
+        console.error('❌ Backend returned error:', result);
+        
+        // Check if it's a partial success
+        if (result.partialSuccess && result.data?.updateResults) {
+          // Some fields were saved
+          setSaveMessage({ 
+            type: 'warning', 
+            text: 'Some information was saved, but there were errors. Please try again.'
+          });
+          
+          // Still update local state with what we have
+          setOccupation(cleanedOccupation);
+          setOriginalData(prev => ({ ...prev, occupation: cleanedOccupation }));
+          setEditMode(prev => ({ ...prev, occupation: false }));
+          
+          return Promise.resolve(); // Consider partial success as success
+        } else {
+          const errorMessage = result.error || 'Failed to save occupation';
+          setSaveMessage({ type: 'error', text: errorMessage });
+          return Promise.reject(new Error(errorMessage));
+        }
       }
     } catch (error) {
-      console.error('Error saving occupation:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to save occupation' });
+      console.error('❌ Exception in saveOccupation:', error);
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to save occupation' });
+      return Promise.reject(error);
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+      console.log('🔵 === END saveOccupation ===');
     }
   };
   

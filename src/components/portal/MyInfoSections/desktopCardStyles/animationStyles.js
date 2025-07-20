@@ -40,10 +40,31 @@ const animationStyles = {
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    
+    /* Updated spin animation - slower (1.5s) and single rotation */
     @keyframes spinOnce {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from { 
+        transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+      }
+      to { 
+        transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+      }
     }
+    
+    /* Single slow spin for overlay buttons */
+    @keyframes spinOnceSlow {
+      from { 
+        transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+      }
+      to { 
+        transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+      }
+    }
+    
     .animate-slideIn {
       animation: slideIn 0.3s ease-out;
     }
@@ -53,9 +74,47 @@ const animationStyles = {
     .animate-fadeInUp {
       animation: fadeIn 0.3s ease-out, slideIn 0.3s ease-out;
     }
-    /* Star spin on button hover - one rotation */
+    
+    /* Star spin on button hover - Safari optimized */
+    .spin-star-button {
+      /* Prepare for GPU acceleration */
+      will-change: transform;
+    }
+    
+    .spin-star-button img {
+      /* Safari optimization */
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      will-change: transform;
+      transition: transform 0.5s ease-in-out;
+      -webkit-transition: -webkit-transform 0.5s ease-in-out;
+      pointer-events: none; /* Prevent the star from interfering with hover */
+    }
+    
     .spin-star-button:hover img {
-      animation: spinOnce 0.5s ease-in-out;
+      transform: rotate(180deg);
+      -webkit-transform: rotate(180deg);
+    }
+    
+    /* Single slow spin for overlay buttons - same speed as regular buttons */
+    .spin-star-button-once-slow img {
+      transition: transform 0.5s ease-in-out;
+      -webkit-transition: -webkit-transform 0.5s ease-in-out;
+      pointer-events: none;
+    }
+    
+    .spin-star-button-once-slow:hover img {
+      transform: rotate(180deg);
+      -webkit-transform: rotate(180deg);
+    }
+    
+    /* Prevent animation restart on Safari */
+    .spin-star-button:not(:hover) img,
+    .spin-star-button-once-slow:not(:hover) img {
+      animation: none;
+      -webkit-animation: none;
     }
     
     /* NEW: Card entrance animations */
