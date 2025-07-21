@@ -1,8 +1,9 @@
-import dewarsImage from '../../../assets/images/dewars2.jpg';// ContactInfoMobile.js
 import React from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
+import dewarsImage from '../../../assets/images/dewars2.jpg';
+import styleConfig2 from '../styleConfig2';
 
 const ContactInfoMobile = ({ 
   contactInfo,
@@ -79,14 +80,15 @@ const ContactInfoMobile = ({
   const completionPercentage = calculateCompletion();
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
-      {/* White Header Section */}
+    <div className="-mx-2">
+      <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
+        {/* White Header Section */}
       <div className="bg-white px-6 py-6">
         <div className="flex flex-col gap-5 w-full">
           {/* Top row - Icon and Title */}
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
-              <svg className="w-7 h-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className={styleConfig2.sectionIcons.contact}>
+              <svg className={styleConfig2.header.icon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={styleConfig2.header.iconStrokeWidth}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
@@ -181,7 +183,23 @@ const ContactInfoMobile = ({
               </div>
             </div>
             
-
+            {/* Display Mode - Contact Preview */}
+            {!editMode.contact && (
+              <div className="bg-blue-50/30 rounded-lg p-4">
+                <p className="text-sm text-gray-600 text-center break-words px-2">
+                  {personalInfo?.firstName && personalInfo?.lastName ? 
+                    `${personalInfo.firstName} ${personalInfo.lastName}` : 
+                    'No name provided'} 
+                  {contactInfo?.personalEmail ? ` • ${contactInfo.personalEmail}` : ''}
+                  {contactInfo?.preferredPhone && (contactInfo?.mobilePhone || contactInfo?.homePhone || contactInfo?.workPhone) ? 
+                    ` • ${formatPhone(
+                      contactInfo.preferredPhone === 'Mobile' ? contactInfo.mobilePhone :
+                      contactInfo.preferredPhone === 'Home' ? contactInfo.homePhone :
+                      contactInfo.workPhone
+                    )}` : ''}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -292,7 +310,7 @@ const ContactInfoMobile = ({
               onClick={() => cancelEdit && cancelEdit('contact')}
               className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
             >
-              Cancel
+              Close
             </button>
             <button
               onClick={saveContactInfo}
@@ -305,17 +323,18 @@ const ContactInfoMobile = ({
         </div>
       )}
 
-      {/* Edit button when not in edit mode */}
+      {/* View/Edit button when not in edit mode */}
       {!editMode.contact && (
         <div className="bg-white px-6 pb-6">
           <button
             onClick={() => toggleEditMode && toggleEditMode('contact')}
             className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
           >
-            Edit
+            View/Edit
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 };

@@ -912,23 +912,22 @@ const FundingSection = ({
         memberCategory={effectiveMemberCategory}
       />
 
-      {isMobile ? (
-        <FundingMobile
-          funding={funding}
-          setFunding={setFunding}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveFunding={saveFunding}
-          savingSection={savingSection}
-          fieldErrors={fieldErrors}
-          fieldConfig={fieldConfigLocal}
-          canEdit={canEditSection}
-          memberCategory={effectiveMemberCategory}
-          getFieldError={getFieldError}
-          isFieldRequired={isFieldRequired}
-        />
-      ) : (
+        {isMobile ? (
+          <FundingMobile
+            funding={funding}
+            setFunding={setFunding}
+            editMode={editMode}
+            toggleEditMode={toggleEditMode}
+            cancelEdit={cancelEdit}
+            saveFunding={saveFunding}
+            savingSection={savingSection}
+            fieldErrors={fieldErrors}
+            fieldConfig={fieldConfigLocal}
+            canEdit={canEditSection}
+            memberCategory={effectiveMemberCategory}
+            isFieldRequired={isFieldRequired}
+          />
+        ) : (
         /* Desktop Version */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>

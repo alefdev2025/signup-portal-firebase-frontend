@@ -107,6 +107,13 @@ const CardOverlay = ({
     return parts.length > 0 ? parts.join(', ') : '—';
   };
 
+  // Local validateEmail if not provided
+  const validateEmailLocal = validateEmail || ((email) => {
+    if (!email) return false;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  });
+
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
@@ -306,7 +313,7 @@ const CardOverlay = ({
                     value={localNok?.email || ''}
                     onChange={(e) => updateLocalNok('email', e.target.value)}
                     error={fieldErrors[`nok_${nokIndex}_email`] || 
-                           (!validateEmail(localNok?.email) && localNok?.email ? 'Invalid email format' : '')}
+                           (!validateEmailLocal(localNok?.email) && localNok?.email ? 'Invalid email format' : '')}
                     disabled={savingSection === 'nextOfKin'}
                   />
                 </div>
@@ -465,7 +472,7 @@ const NextOfKinSection = ({
   formatAddress,
   formatPhoneDisplay,
   validateEmail,
-  getFieldError
+  getFieldError // This might not be passed, so we'll handle it
 }) => {
   // State management
   const [isMobile, setIsMobile] = useState(false);
@@ -478,7 +485,129 @@ const NextOfKinSection = ({
   const [cardsVisible, setCardsVisible] = useState(false);
   // Add pendingSave flag for triggering save after state update
   const [pendingSave, setPendingSave] = useState(false);
+
+  // Define default implementations if not provided
+  const validateEmailLocal = validateEmail || ((email) => {
+    if (!email) return false;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  });
+
+  const formatPhoneDisplayLocal = formatPhoneDisplay || ((phone) => {
+    if (!phone) return '';
+    // Remove all non-digits
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Format as (XXX) XXX-XXXX if it's 10 digits
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    
+    // Return original if not 10 digits
+    return phone;
+  });
+
+  const formatAddressLocal = formatAddress || ((address) => {
+    if (!address || typeof address !== 'object') return '—';
+    const parts = [
+      address.street1,
+      address.street2,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : '—';
+  });
+
+  // Define getFieldError if not provided
+  const getFieldErrorLocal = getFieldError || ((index, field) => {
+    if (!fieldErrors) return null;
+    return fieldErrors[`nok_${index}_${field}`] || null;
+  });
+
+  // Define updateNextOfKin if not provided
+  const updateNextOfKinLocal = updateNextOfKin || ((index, field, value) => {
+    const newList = [...nextOfKinList];
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (!newList[index][parent]) {
+        newList[index][parent] = {};
+      }
+      newList[index][parent][child] = value;
+    } else {
+      newList[index][field] = value;
+    }
+    setNextOfKinList(newList);
+  });
+
+  // Define addNextOfKin if not provided
+  const addNextOfKinLocal = addNextOfKin || (() => {
+    const newNok = {
+      id: `nok_${Date.now()}`, // Make ID a string with prefix
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      relationship: '',
+      dateOfBirth: '',
+      email: '',
+      mobilePhone: '',
+      homePhone: '',
+      address: {
+        street1: '',
+        street2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: ''
+      },
+      willingToSignAffidavit: '',
+      comments: ''
+    };
+    setNextOfKinList([...nextOfKinList, newNok]);
+  });
+
+  // Define removeNextOfKin if not provided
+  const removeNextOfKinLocal = removeNextOfKin || ((index) => {
+    const newList = nextOfKinList.filter((_, i) => i !== index);
+    setNextOfKinList(newList);
+  });
+
+  // Define saveNextOfKin if not provided
+  const saveNextOfKinLocal = saveNextOfKin || (() => {
+    console.log('Saving next of kin...', nextOfKinList);
+    // Ensure all IDs are strings before saving
+    const normalizedList = nextOfKinList.map(nok => ({
+      ...nok,
+      id: nok.id ? String(nok.id) : `nok_${Date.now()}_${Math.random()}`
+    }));
+    setNextOfKinList(normalizedList);
+    
+    // Add your actual save logic here
+    if (toggleEditMode) {
+      toggleEditMode('nextOfKin');
+    }
+  });
+
+  // Define cancelEdit if not provided
+  const cancelEditLocal = cancelEdit || ((section) => {
+    if (toggleEditMode) {
+      toggleEditMode(section);
+    }
+  });
   
+  // Normalize IDs to ensure they're all strings
+  useEffect(() => {
+    const hasNumericIds = nextOfKinList.some(nok => typeof nok.id === 'number');
+    if (hasNumericIds) {
+      const normalizedList = nextOfKinList.map(nok => ({
+        ...nok,
+        id: nok.id ? String(nok.id) : `nok_${Date.now()}_${Math.random()}`
+      }));
+      setNextOfKinList(normalizedList);
+    }
+  }, []); // Run once on mount
+
   // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -530,25 +659,10 @@ const NextOfKinSection = ({
   // Trigger save after state update from overlay
   useEffect(() => {
     if (pendingSave) {
-      saveNextOfKin();
+      saveNextOfKinLocal();
       setPendingSave(false);
     }
   }, [pendingSave, nextOfKinList]);
-
-  // Define formatPhoneDisplay if not passed as prop
-  const formatPhoneDisplayLocal = formatPhoneDisplay || ((phone) => {
-    if (!phone) return '';
-    // Remove all non-digits
-    const cleaned = phone.replace(/\D/g, '');
-    
-    // Format as (XXX) XXX-XXXX if it's 10 digits
-    if (cleaned.length === 10) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-    }
-    
-    // Return original if not 10 digits
-    return phone;
-  });
 
   // Field configuration for completion wheel
   const fieldConfigLocal = fieldConfig || {
@@ -639,7 +753,7 @@ const NextOfKinSection = ({
         onSave={handleOverlaySave}
         savingSection={savingSection}
         fieldErrors={fieldErrors}
-        validateEmail={validateEmail}
+        validateEmail={validateEmailLocal}
         formatPhoneDisplay={formatPhoneDisplayLocal}
       />
 
@@ -649,19 +763,19 @@ const NextOfKinSection = ({
           setNextOfKinList={setNextOfKinList}
           editMode={editMode}
           toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveNextOfKin={saveNextOfKin}
+          cancelEdit={cancelEditLocal}
+          saveNextOfKin={saveNextOfKinLocal}
           savingSection={savingSection}
           fieldErrors={fieldErrors}
-          fieldConfig={fieldConfig}
-          updateNextOfKin={updateNextOfKin}
-          addNextOfKin={addNextOfKin}
-          removeNextOfKin={removeNextOfKin}
+          fieldConfig={fieldConfigLocal}
+          updateNextOfKin={updateNextOfKinLocal}
+          addNextOfKin={addNextOfKinLocal}
+          removeNextOfKin={removeNextOfKinLocal}
           formatDateForDisplay={formatDateForDisplay}
-          formatAddress={formatAddress}
+          formatAddress={formatAddressLocal}
           formatPhoneDisplay={formatPhoneDisplayLocal}
-          validateEmail={validateEmail}
-          getFieldError={getFieldError}
+          validateEmail={validateEmailLocal}
+          getFieldError={getFieldErrorLocal}
         />
       ) : (
         /* Desktop view */
@@ -768,7 +882,7 @@ const NextOfKinSection = ({
                         <h4 className="text-lg font-medium text-gray-900">Emergency Contact {index + 1}</h4>
                         {nextOfKinList.length > 0 && (
                           <button
-                            onClick={() => removeNextOfKin(index)}
+                            onClick={() => removeNextOfKinLocal(index)}
                             className="text-red-600 hover:text-red-700 text-sm font-medium"
                             disabled={savingSection === 'nextOfKin'}
                           >
@@ -781,61 +895,61 @@ const NextOfKinSection = ({
                         <Input
                           label="First Name *"
                           value={nok.firstName || ''}
-                          onChange={(e) => updateNextOfKin(index, 'firstName', e.target.value)}
-                          error={getFieldError(index, 'firstName')}
+                          onChange={(e) => updateNextOfKinLocal(index, 'firstName', e.target.value)}
+                          error={getFieldErrorLocal(index, 'firstName')}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Middle Name"
                           value={nok.middleName || ''}
-                          onChange={(e) => updateNextOfKin(index, 'middleName', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'middleName', e.target.value)}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Last Name *"
                           value={nok.lastName || ''}
-                          onChange={(e) => updateNextOfKin(index, 'lastName', e.target.value)}
-                          error={getFieldError(index, 'lastName')}
+                          onChange={(e) => updateNextOfKinLocal(index, 'lastName', e.target.value)}
+                          error={getFieldErrorLocal(index, 'lastName')}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Relationship *"
                           value={nok.relationship || ''}
-                          onChange={(e) => updateNextOfKin(index, 'relationship', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'relationship', e.target.value)}
                           placeholder="e.g., Spouse, Child, Parent"
-                          error={getFieldError(index, 'relationship')}
+                          error={getFieldErrorLocal(index, 'relationship')}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Date of Birth"
                           type="date"
                           value={nok.dateOfBirth || ''}
-                          onChange={(e) => updateNextOfKin(index, 'dateOfBirth', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'dateOfBirth', e.target.value)}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Email *"
                           type="email"
                           value={nok.email || ''}
-                          onChange={(e) => updateNextOfKin(index, 'email', e.target.value)}
-                          error={getFieldError(index, 'email') || 
-                                 (!validateEmail(nok.email) && nok.email ? 'Invalid email format' : '')}
+                          onChange={(e) => updateNextOfKinLocal(index, 'email', e.target.value)}
+                          error={getFieldErrorLocal(index, 'email') || 
+                                 (!validateEmailLocal(nok.email) && nok.email ? 'Invalid email format' : '')}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Mobile Phone *"
                           type="tel"
                           value={nok.mobilePhone || ''}
-                          onChange={(e) => updateNextOfKin(index, 'mobilePhone', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'mobilePhone', e.target.value)}
                           placeholder="(555) 123-4567"
-                          error={getFieldError(index, 'mobilePhone')}
+                          error={getFieldErrorLocal(index, 'mobilePhone')}
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <Input
                           label="Home Phone"
                           type="tel"
                           value={nok.homePhone || ''}
-                          onChange={(e) => updateNextOfKin(index, 'homePhone', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'homePhone', e.target.value)}
                           placeholder="(555) 123-4567"
                           disabled={savingSection === 'nextOfKin'}
                         />
@@ -847,14 +961,14 @@ const NextOfKinSection = ({
                           <Input
                             label=""
                             value={nok.address?.street1 || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.street1', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.street1', e.target.value)}
                             placeholder="Street Address Line 1"
                             disabled={savingSection === 'nextOfKin'}
                           />
                           <Input
                             label=""
                             value={nok.address?.street2 || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.street2', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.street2', e.target.value)}
                             placeholder="Street Address Line 2"
                             disabled={savingSection === 'nextOfKin'}
                           />
@@ -862,14 +976,14 @@ const NextOfKinSection = ({
                             <Input
                               label=""
                               value={nok.address?.city || ''}
-                              onChange={(e) => updateNextOfKin(index, 'address.city', e.target.value)}
+                              onChange={(e) => updateNextOfKinLocal(index, 'address.city', e.target.value)}
                               placeholder="City"
                               disabled={savingSection === 'nextOfKin'}
                             />
                             <Input
                               label=""
                               value={nok.address?.state || ''}
-                              onChange={(e) => updateNextOfKin(index, 'address.state', e.target.value)}
+                              onChange={(e) => updateNextOfKinLocal(index, 'address.state', e.target.value)}
                               placeholder="State/Province"
                               disabled={savingSection === 'nextOfKin'}
                             />
@@ -878,14 +992,14 @@ const NextOfKinSection = ({
                             <Input
                               label=""
                               value={nok.address?.postalCode || ''}
-                              onChange={(e) => updateNextOfKin(index, 'address.postalCode', e.target.value)}
+                              onChange={(e) => updateNextOfKinLocal(index, 'address.postalCode', e.target.value)}
                               placeholder="Zip/Postal Code"
                               disabled={savingSection === 'nextOfKin'}
                             />
                             <Input
                               label=""
                               value={nok.address?.country || ''}
-                              onChange={(e) => updateNextOfKin(index, 'address.country', e.target.value)}
+                              onChange={(e) => updateNextOfKinLocal(index, 'address.country', e.target.value)}
                               placeholder="Country"
                               disabled={savingSection === 'nextOfKin'}
                             />
@@ -897,7 +1011,7 @@ const NextOfKinSection = ({
                         <Select
                           label="Willing to Sign Affidavit?"
                           value={nok.willingToSignAffidavit || ''}
-                          onChange={(e) => updateNextOfKin(index, 'willingToSignAffidavit', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'willingToSignAffidavit', e.target.value)}
                           disabled={savingSection === 'nextOfKin'}
                         >
                           <option value="">Select...</option>
@@ -913,7 +1027,7 @@ const NextOfKinSection = ({
                         </label>
                         <textarea
                           value={nok.comments || ''}
-                          onChange={(e) => updateNextOfKin(index, 'comments', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'comments', e.target.value)}
                           disabled={savingSection === 'nextOfKin'}
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
@@ -923,7 +1037,7 @@ const NextOfKinSection = ({
                   ))}
                   
                   <button
-                    onClick={addNextOfKin}
+                    onClick={addNextOfKinLocal}
                     className="w-full py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-500 hover:text-purple-600 transition-colors"
                     disabled={savingSection === 'nextOfKin'}
                   >
@@ -935,13 +1049,13 @@ const NextOfKinSection = ({
                     <div className={buttonStyles.buttonGroup}>
                       <WhiteButton
                         text="Cancel"
-                        onClick={() => cancelEdit && cancelEdit('nextOfKin')}
+                        onClick={() => cancelEditLocal('nextOfKin')}
                         className={buttonStyles.whiteButton.withMargin}
                         spinStar={buttonStyles.starConfig.enabled}
                       />
                       <PurpleButton
                         text={buttonStyles.getSaveButtonText(savingSection)}
-                        onClick={saveNextOfKin}
+                        onClick={saveNextOfKinLocal}
                         className={buttonStyles.purpleButton.base}
                         spinStar={buttonStyles.starConfig.enabled}
                         disabled={savingSection === 'nextOfKin'}

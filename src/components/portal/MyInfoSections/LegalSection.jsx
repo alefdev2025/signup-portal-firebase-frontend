@@ -477,18 +477,18 @@ const LegalSection = ({
 
       {isMobile ? (
         <LegalMobile
-          legal={legal}
-          setLegal={setLegal}
-          editMode={editMode}
-          toggleEditMode={toggleEditMode}
-          cancelEdit={cancelEdit}
-          saveLegal={saveLegal}
-          savingSection={savingSection}
-          fieldErrors={fieldErrors}
-          fieldConfig={fieldConfig}
-          memberCategory={memberCategory}
-          getFieldError={getFieldError}
-        />
+        legal={legal}
+        setLegal={setLegal}
+        editMode={editMode}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        saveLegal={saveLegal}
+        savingSection={savingSection}
+        fieldErrors={fieldErrors}
+        fieldConfig={fieldConfigLocal}
+        memberCategory={memberCategory}
+        getFieldError={getFieldError}
+      />
       ) : (
         /* Desktop view */
         <div className={styleConfig2.section.wrapperEnhanced}>

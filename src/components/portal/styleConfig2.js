@@ -150,19 +150,19 @@ mobileSection: {
 
   // Section-specific dark backgrounds for mobile, icon styles for desktop
   sectionIcons: {
-    // Icon-only styles for desktop with more pronounced gradients - reduced padding
-    contact: "bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] p-2 rounded-lg transform transition duration-300",
-    personal: "bg-gradient-to-br from-[#244060] via-[#1a2f4a] to-[#111f33] p-2 rounded-lg transform transition duration-300",
-    addresses: "bg-gradient-to-br from-[#2f476b] via-[#243655] to-[#192540] p-2 rounded-lg transform transition duration-300",
-    family: "bg-gradient-to-br from-[#3a4f78] via-[#2e3d60] to-[#202b48] p-2 rounded-lg transform transition duration-300",
-    occupation: "bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] p-2 rounded-lg transform transition duration-300",
-    medical: "bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] p-2 rounded-lg transform transition duration-300",
-    cryo: "bg-gradient-to-br from-[#7a638f] via-[#644e76] to-[#4c395d] p-2 rounded-lg transform transition duration-300",
-    funding: "bg-gradient-to-br from-[#876b93] via-[#705579] to-[#57405f] p-2 rounded-lg transform transition duration-300",
-    legal: "bg-gradient-to-br from-[#907095] via-[#795a7b] to-[#5f4461] p-2 rounded-lg transform transition duration-300",
-    nextOfKin: "bg-gradient-to-br from-[#997596] via-[#825f7c] to-[#664862] p-2 rounded-lg transform transition duration-300"
+    // Icon-only styles for desktop with gradients, outlines, and shadows
+    contact: "bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] p-2 rounded-lg transform transition duration-300 border-2 border-[#3B82F6] shadow-lg hover:shadow-xl",
+    personal: "bg-gradient-to-br from-[#244060] via-[#1a2f4a] to-[#111f33] p-2 rounded-lg transform transition duration-300 border-2 border-[#60A5FA] shadow-lg hover:shadow-xl",
+    addresses: "bg-gradient-to-br from-[#2f476b] via-[#243655] to-[#192540] p-2 rounded-lg transform transition duration-300 border-2 border-[#818CF8] shadow-lg hover:shadow-xl",
+    family: "bg-gradient-to-br from-[#3a4f78] via-[#2e3d60] to-[#202b48] p-2 rounded-lg transform transition duration-300 border-2 border-[#A78BFA] shadow-lg hover:shadow-xl",
+    occupation: "bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] p-2 rounded-lg transform transition duration-300 border-2 border-[#C084FC] shadow-lg hover:shadow-xl",
+    medical: "bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] p-2 rounded-lg transform transition duration-300 border-2 border-[#E879F9] shadow-lg hover:shadow-xl",
+    cryo: "bg-gradient-to-br from-[#7a638f] via-[#644e76] to-[#4c395d] p-2 rounded-lg transform transition duration-300 border-2 border-[#F472B6] shadow-lg hover:shadow-xl",
+    funding: "bg-gradient-to-br from-[#876b93] via-[#705579] to-[#57405f] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB7185] shadow-lg hover:shadow-xl",
+    legal: "bg-gradient-to-br from-[#907095] via-[#795a7b] to-[#5f4461] p-2 rounded-lg transform transition duration-300 border-2 border-[#FCA5A7] shadow-lg hover:shadow-xl",
+    nextOfKin: "bg-gradient-to-br from-[#997596] via-[#825f7c] to-[#664862] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB923C] shadow-lg hover:shadow-xl"
   },
-  
+
   // Full section backgrounds for mobile dark theme
   sectionBackgrounds: {
     contact: "bg-[#13283f]",      // Darkest blue

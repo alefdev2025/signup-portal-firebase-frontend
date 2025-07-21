@@ -1,6 +1,7 @@
 // CryoArrangementsMobile.js
 import React from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
+import styleConfig2 from '../styleConfig2';
 
 const CryoArrangementsMobile = ({ 
   cryoArrangements,
@@ -123,293 +124,295 @@ const CryoArrangementsMobile = ({
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
-      {/* White Header Section */}
-      <div className="bg-white px-6 py-6">
-        <div className="flex flex-col gap-5 w-full">
-          {/* Top row - Icon and Title */}
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
-              <svg className="w-7 h-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
+    <div className="-mx-2">
+      <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
+        {/* White Header Section */}
+        <div className="bg-white px-6 py-6">
+          <div className="flex flex-col gap-5 w-full">
+            {/* Top row - Icon and Title */}
+            <div className="flex items-center gap-3">
+              <div className={styleConfig2.sectionIcons.cryoArrangements}>
+                <svg className={styleConfig2.header.icon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={styleConfig2.header.iconStrokeWidth}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-light text-gray-900">Cryopreservation Arrangements</h3>
             </div>
-            <h3 className="text-xl font-light text-gray-900">Cryopreservation Arrangements</h3>
-          </div>
-          
-          <div className="border-t border-gray-200"></div>
-          
-          {/* Content area */}
-          <div className="space-y-5">
-            {/* Card with subtle shadow */}
-            <div className="relative w-full rounded-lg overflow-hidden shadow-sm bg-white">
-              {/* Content section */}
-              <div className="px-6 py-6">
-                {/* Header with completion */}
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Arrangement Details</h3>
-                    <p className="text-sm text-gray-600">Your cryopreservation method and preferences</p>
+            
+            <div className="border-t border-gray-200"></div>
+            
+            {/* Content area */}
+            <div className="space-y-5">
+              {/* Card with subtle shadow */}
+              <div className="relative w-full rounded-lg overflow-hidden shadow-sm bg-white">
+                {/* Content section */}
+                <div className="px-6 py-6">
+                  {/* Header with completion */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Arrangement Details</h3>
+                      <p className="text-sm text-gray-600">Your cryopreservation method and preferences</p>
+                    </div>
+                    
+                    {/* Compact completion indicator */}
+                    <div className="relative">
+                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                        <circle
+                          stroke="#f5f5f5"
+                          fill="transparent"
+                          strokeWidth={4}
+                          r={36}
+                          cx={40}
+                          cy={40}
+                        />
+                        <circle
+                          stroke="url(#gradient)"
+                          fill="transparent"
+                          strokeWidth={4}
+                          strokeDasharray={`${226.19} ${226.19}`}
+                          style={{ 
+                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            transition: 'stroke-dashoffset 0.5s ease',
+                            strokeLinecap: 'round'
+                          }}
+                          r={36}
+                          cx={40}
+                          cy={40}
+                        />
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#734477" />
+                            <stop offset="100%" stopColor="#F26430" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-base font-bold text-gray-900">{completionPercentage}%</div>
+                          <div className="text-[9px] text-gray-500 uppercase tracking-wider">Complete</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Compact completion indicator */}
-                  <div className="relative">
-                    <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
-                      <circle
-                        stroke="#f5f5f5"
-                        fill="transparent"
-                        strokeWidth={4}
-                        r={36}
-                        cx={40}
-                        cy={40}
-                      />
-                      <circle
-                        stroke="url(#gradient)"
-                        fill="transparent"
-                        strokeWidth={4}
-                        strokeDasharray={`${226.19} ${226.19}`}
-                        style={{ 
-                          strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
-                          transition: 'stroke-dashoffset 0.5s ease',
-                          strokeLinecap: 'round'
-                        }}
-                        r={36}
-                        cx={40}
-                        cy={40}
-                      />
-                      <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#734477" />
-                          <stop offset="100%" stopColor="#F26430" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-base font-bold text-gray-900">{completionPercentage}%</div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wider">Complete</div>
+                  {/* Divider */}
+                  <div className="h-px bg-gray-100 mb-5"></div>
+                  
+                  {/* Progress indicators */}
+                  <div className="space-y-3">
+                    {/* Required fields */}
+                    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-[#734477] flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-gray-900">Key Arrangements</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Method, CMS Waiver, Remains Handling, Disclosure Preferences
+                          {cryoArrangements?.remainsHandling === 'return' && ', Recipient Details'}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Divider */}
-                <div className="h-px bg-gray-100 mb-5"></div>
-                
-                {/* Progress indicators */}
-                <div className="space-y-3">
-                  {/* Required fields */}
-                  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-[#734477] flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-gray-900">Key Arrangements</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Method, CMS Waiver, Remains Handling, Disclosure Preferences
-                        {cryoArrangements?.remainsHandling === 'return' && ', Recipient Details'}
-                      </p>
-                    </div>
-                  </div>
+              </div>
+              
+              {/* Display Mode - Preview */}
+              {!editMode.cryoArrangements && (
+                <div className="bg-blue-50/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
                 </div>
-              </div>
+              )}
+              
+              {/* Note for non-editable users */}
+              {!canEdit && !editMode.cryoArrangements && (
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 text-center">
+                    Contact Alcor staff to make changes to these selections
+                  </p>
+                </div>
+              )}
             </div>
-            
-            {/* Display Mode - Preview */}
-            {!editMode.cryoArrangements && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
-              </div>
-            )}
-            
-            {/* Note for non-editable users */}
-            {!canEdit && !editMode.cryoArrangements && (
-              <div className="bg-yellow-50 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 text-center">
-                  Contact Alcor staff to make changes to these selections
-                </p>
-              </div>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Edit Form Section */}
-      {editMode.cryoArrangements && (
-        <div className="bg-white px-6 py-6 border-t border-gray-200">
-          <div className="space-y-6">
-            {/* Method - Read Only */}
-            <ReadOnlyField
-              label="Method of Cryopreservation *"
-              value={formatMethod(cryoArrangements?.method)}
-              helperText="(Contact Alcor staff to make changes)"
-            />
+        {/* Edit Form Section */}
+        {editMode.cryoArrangements && (
+          <div className="bg-white px-6 py-6 border-t border-gray-200">
+            <div className="space-y-6">
+              {/* Method - Read Only */}
+              <ReadOnlyField
+                label="Method of Cryopreservation *"
+                value={formatMethod(cryoArrangements?.method)}
+                helperText="(Contact Alcor staff to make changes)"
+              />
 
-            {/* CMS Waiver - Read Only */}
-            <ReadOnlyField
-              label="CMS Fee Waiver *"
-              value={cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
-              helperText="(Contact Alcor staff to make changes)"
-            />
+              {/* CMS Waiver - Read Only */}
+              <ReadOnlyField
+                label="CMS Fee Waiver *"
+                value={cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
+                helperText="(Contact Alcor staff to make changes)"
+              />
 
-            {/* Remains Handling */}
-            <FormSelect
-              label="Non-Cryopreserved Remains Handling *"
-              value={cryoArrangements?.remainsHandling || ''}
-              onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
-              disabled={savingSection === 'cryoArrangements'}
-            >
-              <option value="">Select...</option>
-              <option value="return">Return to designated recipient</option>
-              <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
-            </FormSelect>
+              {/* Remains Handling */}
+              <FormSelect
+                label="Non-Cryopreserved Remains Handling *"
+                value={cryoArrangements?.remainsHandling || ''}
+                onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
+                disabled={savingSection === 'cryoArrangements'}
+              >
+                <option value="">Select...</option>
+                <option value="return">Return to designated recipient</option>
+                <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
+              </FormSelect>
 
-            {/* Recipient Information */}
-            {cryoArrangements?.remainsHandling === 'return' && (
-              <>
-                <div>
-                  <h4 className="text-base font-medium text-gray-900 mb-4">Recipient Information</h4>
-                  <div className="space-y-4">
-                    <FormInput
-                      label="Recipient Name *"
-                      value={cryoArrangements?.recipientName || ''}
-                      onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
-                      disabled={savingSection === 'cryoArrangements'}
-                    />
-                    <FormInput
-                      label="Recipient Phone *"
-                      type="tel"
-                      value={cryoArrangements?.recipientPhone || ''}
-                      onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
-                      disabled={savingSection === 'cryoArrangements'}
-                    />
-                    <FormInput
-                      label="Recipient Email *"
-                      type="email"
-                      value={cryoArrangements?.recipientEmail || ''}
-                      onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
-                      disabled={savingSection === 'cryoArrangements'}
-                    />
-                  </div>
-                </div>
-
-                {/* Recipient Address */}
-                <div>
-                  <h4 className="text-base font-medium text-gray-900 mb-4">Recipient Mailing Address</h4>
-                  <div className="space-y-4">
-                    <FormInput
-                      label="Street Address *"
-                      value={cryoArrangements?.recipientMailingStreet || ''}
-                      onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
-                      disabled={savingSection === 'cryoArrangements'}
-                    />
-                    <div className="grid grid-cols-2 gap-3">
+              {/* Recipient Information */}
+              {cryoArrangements?.remainsHandling === 'return' && (
+                <>
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Recipient Information</h4>
+                    <div className="space-y-4">
                       <FormInput
-                        label="City *"
-                        value={cryoArrangements?.recipientMailingCity || ''}
-                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
+                        label="Recipient Name *"
+                        value={cryoArrangements?.recipientName || ''}
+                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
                       />
                       <FormInput
-                        label="State/Province"
-                        value={cryoArrangements?.recipientMailingState || ''}
-                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingState: e.target.value})}
-                        disabled={savingSection === 'cryoArrangements'}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormInput
-                        label="Zip/Postal Code"
-                        value={cryoArrangements?.recipientMailingPostalCode || ''}
-                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingPostalCode: e.target.value})}
+                        label="Recipient Phone *"
+                        type="tel"
+                        value={cryoArrangements?.recipientPhone || ''}
+                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
                       />
                       <FormInput
-                        label="Country"
-                        value={cryoArrangements?.recipientMailingCountry || 'US'}
-                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCountry: e.target.value})}
+                        label="Recipient Email *"
+                        type="email"
+                        value={cryoArrangements?.recipientEmail || ''}
+                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
                       />
                     </div>
                   </div>
-                  {validationError && (
-                    <p className="mt-2 text-sm text-red-600">{validationError}</p>
-                  )}
+
+                  {/* Recipient Address */}
+                  <div>
+                    <h4 className="text-base font-medium text-gray-900 mb-4">Recipient Mailing Address</h4>
+                    <div className="space-y-4">
+                      <FormInput
+                        label="Street Address *"
+                        value={cryoArrangements?.recipientMailingStreet || ''}
+                        onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
+                        disabled={savingSection === 'cryoArrangements'}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormInput
+                          label="City *"
+                          value={cryoArrangements?.recipientMailingCity || ''}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                        <FormInput
+                          label="State/Province"
+                          value={cryoArrangements?.recipientMailingState || ''}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingState: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormInput
+                          label="Zip/Postal Code"
+                          value={cryoArrangements?.recipientMailingPostalCode || ''}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingPostalCode: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                        <FormInput
+                          label="Country"
+                          value={cryoArrangements?.recipientMailingCountry || 'US'}
+                          onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCountry: e.target.value})}
+                          disabled={savingSection === 'cryoArrangements'}
+                        />
+                      </div>
+                    </div>
+                    {validationError && (
+                      <p className="mt-2 text-sm text-red-600">{validationError}</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Disclosure Preferences */}
+              <div>
+                <h4 className="text-base font-medium text-gray-900 mb-4">Disclosure Preferences</h4>
+                <div className="space-y-4">
+                  <FormSelect
+                    label="Cryopreservation Information Disclosure *"
+                    value={cryoArrangements?.cryopreservationDisclosure || ''}
+                    onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
+                    disabled={savingSection === 'cryoArrangements'}
+                  >
+                    <option value="">Select...</option>
+                    <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
+                    <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
+                  </FormSelect>
+
+                  <FormSelect
+                    label="Member Name Disclosure *"
+                    value={cryoArrangements?.memberPublicDisclosure || ''}
+                    onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
+                    disabled={savingSection === 'cryoArrangements'}
+                  >
+                    <option value="">Select...</option>
+                    <option value="freely">I give Alcor permission to freely release my name</option>
+                    <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
+                  </FormSelect>
                 </div>
-              </>
-            )}
-
-            {/* Disclosure Preferences */}
-            <div>
-              <h4 className="text-base font-medium text-gray-900 mb-4">Disclosure Preferences</h4>
-              <div className="space-y-4">
-                <FormSelect
-                  label="Cryopreservation Information Disclosure *"
-                  value={cryoArrangements?.cryopreservationDisclosure || ''}
-                  onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
-                  disabled={savingSection === 'cryoArrangements'}
-                >
-                  <option value="">Select...</option>
-                  <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
-                  <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
-                </FormSelect>
-
-                <FormSelect
-                  label="Member Name Disclosure *"
-                  value={cryoArrangements?.memberPublicDisclosure || ''}
-                  onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
-                  disabled={savingSection === 'cryoArrangements'}
-                >
-                  <option value="">Select...</option>
-                  <option value="freely">I give Alcor permission to freely release my name</option>
-                  <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
-                </FormSelect>
               </div>
             </div>
-          </div>
-          
-          {/* Action buttons */}
-          <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
-            <button
-              onClick={() => cancelEdit && cancelEdit('cryoArrangements')}
-              className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
-              disabled={savingSection === 'cryoArrangements'}
-            >
-              Cancel
-            </button>
-            {validationError && (
+            
+            {/* Action buttons */}
+            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={handleSaveAnyway}
+                onClick={() => cancelEdit && cancelEdit('cryoArrangements')}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'cryoArrangements'}
               >
-                Save Anyway
+                Close
               </button>
-            )}
+              {validationError && (
+                <button
+                  onClick={handleSaveAnyway}
+                  className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+                  disabled={savingSection === 'cryoArrangements'}
+                >
+                  Save Anyway
+                </button>
+              )}
+              <button
+                onClick={handleSaveWithValidation}
+                disabled={savingSection === 'cryoArrangements' || validatingAddress}
+                className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
+              >
+                {validatingAddress ? 'Validating...' : savingSection === 'cryoArrangements' ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* View/Edit button when not in edit mode */}
+        {!editMode.cryoArrangements && canEdit && (
+          <div className="bg-white px-6 pb-6">
             <button
-              onClick={handleSaveWithValidation}
-              disabled={savingSection === 'cryoArrangements' || validatingAddress}
-              className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
+              onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
+              className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
             >
-              {validatingAddress ? 'Validating...' : savingSection === 'cryoArrangements' ? 'Saving...' : 'Save'}
+              View/Edit
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Edit button when not in edit mode */}
-      {!editMode.cryoArrangements && canEdit && (
-        <div className="bg-white px-6 pb-6">
-          <button
-            onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
-            className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
-          >
-            Edit
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
