@@ -54,52 +54,56 @@ const CompletionWheel = ({
   const circumference = normalizedRadius * 2 * Math.PI;
   
   // Calculate completion percentage
-// Calculate completion percentage
-const calculateCompletion = () => {
-  let filledRequired = 0;
-  let filledRecommended = 0;
-  
-  // Check required fields
-  Object.values(fieldConfig.required).forEach(field => {
-    // Check if field has a custom checkValue function
-    if (field.checkValue && typeof field.checkValue === 'function') {
-      if (field.checkValue(data)) {
-        filledRequired++;
+  const calculateCompletion = () => {
+    let filledRequired = 0;
+    let filledRecommended = 0;
+    
+    // Check required fields
+    Object.values(fieldConfig.required).forEach(field => {
+      // Check if field has a custom checkValue function
+      if (field.checkValue && typeof field.checkValue === 'function') {
+        if (field.checkValue(data)) {
+          filledRequired++;
+        }
+      } else {
+        // Default check
+        const value = data[field.source]?.[field.field];
+        if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
+          filledRequired++;
+        }
       }
+    });
+    
+    // Check recommended fields
+    Object.values(fieldConfig.recommended).forEach(field => {
+      // Check if field has a custom checkValue function
+      if (field.checkValue && typeof field.checkValue === 'function') {
+        if (field.checkValue(data)) {
+          filledRecommended++;
+        }
+      } else {
+        // Default check
+        const value = data[field.source]?.[field.field];
+        if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
+          filledRecommended++;
+        }
+      }
+    });
+    
+    const totalRequired = Object.keys(fieldConfig.required).length;
+    const totalRecommended = Object.keys(fieldConfig.recommended).length;
+    
+    // If there are no recommended fields, required fields should be worth 100%
+    if (totalRecommended === 0) {
+      const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 100 : 0;
+      return Math.round(requiredPercentage);
     } else {
-      // Default check
-      const value = data[field.source]?.[field.field];
-      if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
-        filledRequired++;
-      }
+      // Weight: 70% for required fields, 30% for recommended when both exist
+      const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 70 : 0;
+      const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 30 : 0;
+      return Math.round(requiredPercentage + recommendedPercentage);
     }
-  });
-  
-  // Check recommended fields
-  Object.values(fieldConfig.recommended).forEach(field => {
-    // Check if field has a custom checkValue function
-    if (field.checkValue && typeof field.checkValue === 'function') {
-      if (field.checkValue(data)) {
-        filledRecommended++;
-      }
-    } else {
-      // Default check
-      const value = data[field.source]?.[field.field];
-      if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
-        filledRecommended++;
-      }
-    }
-  });
-  
-  const totalRequired = Object.keys(fieldConfig.required).length;
-  const totalRecommended = Object.keys(fieldConfig.recommended).length;
-  
-  // Weight: 70% for required fields, 30% for recommended
-  const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 70 : 0;
-  const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 30 : 0;
-  
-  return Math.round(requiredPercentage + recommendedPercentage);
-};
+  };
   
   const completionPercentage = calculateCompletion();
   const strokeDashoffset = circumference - (completionPercentage / 100) * circumference;

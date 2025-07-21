@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
-import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
-import alcorStar from '../../../assets/images/alcor-star.png';
+import FundingMobile from './FundingMobile';
 import styleConfig2 from '../styleConfig2';
 import { 
   overlayStyles, 
@@ -15,25 +13,58 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
+import { CompletionWheelWithLegend } from './CompletionWheel';
 import { memberCategoryConfig, isSectionEditable } from '../memberCategoryConfig';
 import { findInsuranceCompany } from '../utils/lifeInsuranceCompanyMatcher';
 
-// Overlay Component
-const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, funding, setFunding, saveFunding, canEdit }) => {
+// DEBUG CONFIGURATION - Change these values to test different user states
+const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
+
+// Helper function to get effective member category
+const getEffectiveMemberCategory = (actualCategory) => {
+  if (OVERRIDE_MEMBER_CATEGORY) {
+    console.log(`🔧 DEBUG: Override active - Using ${DEBUG_CATEGORY} instead of ${actualCategory}`);
+    return DEBUG_CATEGORY;
+  }
+  return actualCategory;
+};
+
+// Overlay Component with local state management
+const CardOverlay = ({ 
+  isOpen, 
+  onClose, 
+  section, 
+  data, 
+  onSave,
+  savingSection, 
+  fieldErrors, 
+  canEdit,
+  memberCategory 
+}) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Local state for editing - completely separate from parent
+  const [localFunding, setLocalFunding] = useState({});
 
   useEffect(() => {
     if (isOpen) {
       setEditMode(canEdit);  // Only start in edit mode if user can edit
       setShowSuccess(false);
+      // Reset local state to current data when opening - create copy not reference
+      setLocalFunding({...data.funding} || {});
     }
-  }, [isOpen, canEdit]);
+  }, [isOpen, canEdit, data.funding]);
 
   if (!isOpen) return null;
 
+  const handleEdit = () => {
+    setEditMode(true);
+  };
+
   const handleSave = () => {
-    saveFunding();
+    // Pass the local data back to parent via callback
+    onSave(localFunding);
     setEditMode(false);
     setShowSuccess(true);
     
@@ -44,9 +75,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleCancel = () => {
-    setFunding(data.funding);
+    // Reset to original data - create new copy
+    setLocalFunding({...data.funding} || {});
     setEditMode(false);
-    onClose();
   };
 
   const formatFundingType = (type) => {
@@ -106,18 +137,18 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const renderCompanyName = () => {
-    const companyMatch = findInsuranceCompany(funding?.companyName);
+    const companyMatch = findInsuranceCompany(localFunding?.companyName);
     
     if (companyMatch) {
       return (
         <span className="flex items-center gap-2">
-          {funding.companyName || '—'}
+          {localFunding.companyName || '—'}
           <a 
             href={companyMatch.url} 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-800 inline-flex"
-            title={`Visit ${funding.companyName} website`}
+            title={`Visit ${localFunding.companyName} website`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -127,7 +158,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
       );
     }
     
-    return funding.companyName || '—';
+    return localFunding.companyName || '—';
   };
 
   const getFieldDescriptions = () => {
@@ -221,25 +252,25 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
           <div className={overlayStyles.body.wrapper}>
             {/* Fields */}
             {!editMode || !canEdit ? (
-              /* Display Mode */
+              /* Display Mode - Use local state */
               <div className={overlayStyles.body.content}>
                 {section === 'type' && (
                   <div>
                     <label className={overlayStyles.displayMode.field.label}>Funding Type</label>
                     <p 
                       className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!funding?.fundingType)}
+                      style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.fundingType)}
                     >
-                      {formatFundingType(funding?.fundingType)}
+                      {formatFundingType(localFunding?.fundingType)}
                     </p>
-                    {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
+                    {localFunding?.fundingType && localFunding?.fundingType !== 'Life Insurance' && (
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                         <p className="text-sm text-gray-600">
-                          {funding.fundingType === 'Trust' && 
+                          {localFunding.fundingType === 'Trust' && 
                             "Please ensure Alcor Life Extension Foundation is properly named as beneficiary in your trust documents."}
-                          {funding.fundingType === 'Prepaid' && 
+                          {localFunding.fundingType === 'Prepaid' && 
                             "Prepaid funding arrangement on file."}
-                          {funding.fundingType === 'Other' && 
+                          {localFunding.fundingType === 'Other' && 
                             "Alternative funding arrangement on file."}
                         </p>
                       </div>
@@ -247,7 +278,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </div>
                 )}
 
-                {section === 'insurance' && funding?.fundingType === 'Life Insurance' && (
+                {section === 'insurance' && localFunding?.fundingType === 'Life Insurance' && (
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Company Name</label>
@@ -260,18 +291,18 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         <label className={overlayStyles.displayMode.field.label}>Company Phone</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.companyPhone)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.companyPhone)}
                         >
-                          {formatPhone(funding?.companyPhone)}
+                          {formatPhone(localFunding?.companyPhone)}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Company Fax</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.companyFax)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.companyFax)}
                         >
-                          {formatPhone(funding?.companyFax)}
+                          {formatPhone(localFunding?.companyFax)}
                         </p>
                       </div>
                     </div>
@@ -279,17 +310,17 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <label className={overlayStyles.displayMode.field.label}>Company Address</label>
                       <p 
                         className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!funding?.companyStreet)}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.companyStreet)}
                       >
                         {[
-                          funding?.companyStreet,
-                          funding?.companyCity && funding?.companyState ? 
-                            `${funding.companyCity}, ${funding.companyState} ${funding.companyPostalCode}` : '',
-                          funding?.companyCountry
+                          localFunding?.companyStreet,
+                          localFunding?.companyCity && localFunding?.companyState ? 
+                            `${localFunding.companyCity}, ${localFunding.companyState} ${localFunding.companyPostalCode}` : '',
+                          localFunding?.companyCountry
                         ].filter(Boolean).join(', ') || '—'}
                       </p>
                     </div>
-                    {(funding?.agentName || funding?.agentEmail || funding?.agentPhone) && (
+                    {(localFunding?.agentName || localFunding?.agentEmail || localFunding?.agentPhone) && (
                       <>
                         <div className="border-t pt-6">
                           <h4 className="font-medium text-gray-900 mb-4">Agent Information</h4>
@@ -297,20 +328,20 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             <div>
                               <label className={overlayStyles.displayMode.field.label}>Agent Name</label>
                               <p className={overlayStyles.displayMode.field.value}>
-                                {funding?.agentName || '—'}
+                                {localFunding?.agentName || '—'}
                               </p>
                             </div>
                             <div className="grid grid-cols-2 gap-8">
                               <div>
                                 <label className={overlayStyles.displayMode.field.label}>Agent Email</label>
                                 <p className={overlayStyles.displayMode.field.value}>
-                                  {funding?.agentEmail || '—'}
+                                  {localFunding?.agentEmail || '—'}
                                 </p>
                               </div>
                               <div>
                                 <label className={overlayStyles.displayMode.field.label}>Agent Phone</label>
                                 <p className={overlayStyles.displayMode.field.value}>
-                                  {formatPhone(funding?.agentPhone)}
+                                  {formatPhone(localFunding?.agentPhone)}
                                 </p>
                               </div>
                             </div>
@@ -321,25 +352,25 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </div>
                 )}
 
-                {section === 'policy' && funding?.fundingType === 'Life Insurance' && (
+                {section === 'policy' && localFunding?.fundingType === 'Life Insurance' && (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Policy Number</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.policyNumber)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.policyNumber)}
                         >
-                          {funding?.policyNumber || '—'}
+                          {localFunding?.policyNumber || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Policy Type</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.policyType)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.policyType)}
                         >
-                          {formatPolicyType(funding?.policyType)}
+                          {formatPolicyType(localFunding?.policyType)}
                         </p>
                       </div>
                     </div>
@@ -348,18 +379,18 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         <label className={overlayStyles.displayMode.field.label}>Face Amount</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.faceAmount)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.faceAmount)}
                         >
-                          {formatFaceAmount(funding?.faceAmount)}
+                          {formatFaceAmount(localFunding?.faceAmount)}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Annual Premium</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.annualPremium)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.annualPremium)}
                         >
-                          {formatFaceAmount(funding?.annualPremium)}
+                          {formatFaceAmount(localFunding?.annualPremium)}
                         </p>
                       </div>
                     </div>
@@ -368,16 +399,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                         <label className={overlayStyles.displayMode.field.label}>Date Issued</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!funding?.dateIssued)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFunding?.dateIssued)}
                         >
-                          {formatDate(funding?.dateIssued)}
+                          {formatDate(localFunding?.dateIssued)}
                         </p>
                       </div>
-                      {funding?.policyType === 'Term' && funding?.termLength && (
+                      {localFunding?.policyType === 'Term' && localFunding?.termLength && (
                         <div>
                           <label className={overlayStyles.displayMode.field.label}>Term Length</label>
                           <p className={overlayStyles.displayMode.field.value}>
-                            {funding.termLength} years
+                            {localFunding.termLength} years
                           </p>
                         </div>
                       )}
@@ -386,14 +417,14 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                 )}
               </div>
             ) : (
-              /* Edit Mode */
+              /* Edit Mode - Update local state only */
               <div className={overlayStyles.body.content}>
                 {section === 'type' && (
                   <div>
                     <Select
                       label="Funding Type"
-                      value={funding?.fundingType || ''}
-                      onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
+                      value={localFunding?.fundingType || ''}
+                      onChange={(e) => setLocalFunding({...localFunding, fundingType: e.target.value})}
                       disabled={savingSection === 'funding'}
                     >
                       <option value="">Select...</option>
@@ -402,14 +433,14 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <option value="Prepaid">Prepaid</option>
                       <option value="Other">Other</option>
                     </Select>
-                    {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
+                    {localFunding?.fundingType && localFunding?.fundingType !== 'Life Insurance' && (
                       <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-800">
-                          {funding.fundingType === 'Trust' && 
+                          {localFunding.fundingType === 'Trust' && 
                             "Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary for your cryopreservation funding."}
-                          {funding.fundingType === 'Prepaid' && 
+                          {localFunding.fundingType === 'Prepaid' && 
                             "Thank you for choosing to prepay. An Alcor representative will contact you to complete the funding arrangement."}
-                          {funding.fundingType === 'Other' && 
+                          {localFunding.fundingType === 'Other' && 
                             "An Alcor representative will contact you to discuss your funding arrangement."}
                         </p>
                       </div>
@@ -417,12 +448,12 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </div>
                 )}
 
-                {section === 'insurance' && funding?.fundingType === 'Life Insurance' && (
+                {section === 'insurance' && localFunding?.fundingType === 'Life Insurance' && (
                   <div className="space-y-4">
                     <Input
                       label="Company Name"
-                      value={funding?.companyName || ''}
-                      onChange={(e) => setFunding({...funding, companyName: e.target.value})}
+                      value={localFunding?.companyName || ''}
+                      onChange={(e) => setLocalFunding({...localFunding, companyName: e.target.value})}
                       disabled={savingSection === 'funding'}
                       placeholder="e.g., MetLife, Prudential"
                     />
@@ -430,39 +461,39 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <Input
                         label="Company Phone"
                         type="tel"
-                        value={funding?.companyPhone || ''}
-                        onChange={(e) => setFunding({...funding, companyPhone: e.target.value})}
+                        value={localFunding?.companyPhone || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyPhone: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="(555) 123-4567"
                       />
                       <Input
                         label="Company Fax"
                         type="tel"
-                        value={funding?.companyFax || ''}
-                        onChange={(e) => setFunding({...funding, companyFax: e.target.value})}
+                        value={localFunding?.companyFax || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyFax: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="(555) 123-4568"
                       />
                     </div>
                     <Input
                       label="Company Street Address"
-                      value={funding?.companyStreet || ''}
-                      onChange={(e) => setFunding({...funding, companyStreet: e.target.value})}
+                      value={localFunding?.companyStreet || ''}
+                      onChange={(e) => setLocalFunding({...localFunding, companyStreet: e.target.value})}
                       disabled={savingSection === 'funding'}
                       placeholder="123 Main Street"
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="City"
-                        value={funding?.companyCity || ''}
-                        onChange={(e) => setFunding({...funding, companyCity: e.target.value})}
+                        value={localFunding?.companyCity || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyCity: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="New York"
                       />
                       <Input
                         label="State/Province"
-                        value={funding?.companyState || ''}
-                        onChange={(e) => setFunding({...funding, companyState: e.target.value})}
+                        value={localFunding?.companyState || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyState: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="NY"
                       />
@@ -470,15 +501,15 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Postal Code"
-                        value={funding?.companyPostalCode || ''}
-                        onChange={(e) => setFunding({...funding, companyPostalCode: e.target.value})}
+                        value={localFunding?.companyPostalCode || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyPostalCode: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="10001"
                       />
                       <Input
                         label="Country"
-                        value={funding?.companyCountry || ''}
-                        onChange={(e) => setFunding({...funding, companyCountry: e.target.value})}
+                        value={localFunding?.companyCountry || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, companyCountry: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="USA"
                       />
@@ -489,17 +520,17 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <div className="mb-4">
                         <Checkbox
                           label="I have a life insurance agent"
-                          checked={funding?.hasAgent || false}
-                          onChange={(e) => setFunding({...funding, hasAgent: e.target.checked})}
+                          checked={localFunding?.hasAgent || false}
+                          onChange={(e) => setLocalFunding({...localFunding, hasAgent: e.target.checked})}
                           disabled={savingSection === 'funding'}
                         />
                       </div>
-                      {(funding?.hasAgent || funding?.agentName || funding?.agentEmail || funding?.agentPhone) && (
+                      {(localFunding?.hasAgent || localFunding?.agentName || localFunding?.agentEmail || localFunding?.agentPhone) && (
                         <div className="space-y-4">
                           <Input
                             label="Agent Name"
-                            value={funding?.agentName || ''}
-                            onChange={(e) => setFunding({...funding, agentName: e.target.value})}
+                            value={localFunding?.agentName || ''}
+                            onChange={(e) => setLocalFunding({...localFunding, agentName: e.target.value})}
                             disabled={savingSection === 'funding'}
                             placeholder="John Smith"
                           />
@@ -507,16 +538,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             <Input
                               label="Agent Email"
                               type="email"
-                              value={funding?.agentEmail || ''}
-                              onChange={(e) => setFunding({...funding, agentEmail: e.target.value})}
+                              value={localFunding?.agentEmail || ''}
+                              onChange={(e) => setLocalFunding({...localFunding, agentEmail: e.target.value})}
                               disabled={savingSection === 'funding'}
                               placeholder="agent@example.com"
                             />
                             <Input
                               label="Agent Phone"
                               type="tel"
-                              value={funding?.agentPhone || ''}
-                              onChange={(e) => setFunding({...funding, agentPhone: e.target.value})}
+                              value={localFunding?.agentPhone || ''}
+                              onChange={(e) => setLocalFunding({...localFunding, agentPhone: e.target.value})}
                               disabled={savingSection === 'funding'}
                               placeholder="(555) 123-4567"
                             />
@@ -527,20 +558,20 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </div>
                 )}
 
-                {section === 'policy' && funding?.fundingType === 'Life Insurance' && (
+                {section === 'policy' && localFunding?.fundingType === 'Life Insurance' && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Policy Number"
-                        value={funding?.policyNumber || ''}
-                        onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
+                        value={localFunding?.policyNumber || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, policyNumber: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="Enter policy number"
                       />
                       <Select
                         label="Policy Type"
-                        value={funding?.policyType || ''}
-                        onChange={(e) => setFunding({...funding, policyType: e.target.value})}
+                        value={localFunding?.policyType || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, policyType: e.target.value})}
                         disabled={savingSection === 'funding'}
                       >
                         <option value="">Select...</option>
@@ -553,16 +584,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <Input
                         label="Face Amount"
                         type="number"
-                        value={funding?.faceAmount || ''}
-                        onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
+                        value={localFunding?.faceAmount || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, faceAmount: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="e.g., 200000"
                       />
                       <Input
                         label="Annual Premium"
                         type="number"
-                        value={funding?.annualPremium || ''}
-                        onChange={(e) => setFunding({...funding, annualPremium: e.target.value})}
+                        value={localFunding?.annualPremium || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, annualPremium: e.target.value})}
                         disabled={savingSection === 'funding'}
                         placeholder="e.g., 2400"
                       />
@@ -571,16 +602,16 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <Input
                         label="Date Issued"
                         type="date"
-                        value={funding?.dateIssued || ''}
-                        onChange={(e) => setFunding({...funding, dateIssued: e.target.value})}
+                        value={localFunding?.dateIssued || ''}
+                        onChange={(e) => setLocalFunding({...localFunding, dateIssued: e.target.value})}
                         disabled={savingSection === 'funding'}
                       />
-                      {funding?.policyType === 'Term' && (
+                      {localFunding?.policyType === 'Term' && (
                         <Input
                           label="Term Length (years)"
                           type="number"
-                          value={funding?.termLength || ''}
-                          onChange={(e) => setFunding({...funding, termLength: e.target.value})}
+                          value={localFunding?.termLength || ''}
+                          onChange={(e) => setLocalFunding({...localFunding, termLength: e.target.value})}
                           disabled={savingSection === 'funding'}
                           placeholder="e.g., 20"
                         />
@@ -611,12 +642,21 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                 />
               </>
             ) : (
-              <PurpleButton
-                text="Close"
-                onClick={onClose}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
+              canEdit ? (
+                <PurpleButton
+                  text="Edit"
+                  onClick={handleEdit}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+              ) : (
+                <PurpleButton
+                  text="Close"
+                  onClick={onClose}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+              )
             )}
           </div>
         </div>
@@ -636,7 +676,10 @@ const FundingSection = ({
   savingSection,
   memberCategory,
   sectionImage,
-  sectionLabel
+  sectionLabel,
+  fieldErrors = {},
+  fieldConfig,
+  getFieldError
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -646,12 +689,58 @@ const FundingSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
+  // Add pendingSave flag for triggering save after state update
+  const [pendingSave, setPendingSave] = useState(false);
+  
+  // Get effective member category for debugging
+  const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
   
   // Check if section should be editable based on member category
-  const canEditSection = isSectionEditable(memberCategory, 'funding');
+  const canEditSection = isSectionEditable(effectiveMemberCategory, 'funding');
   
   // Override edit mode if user is not allowed to edit
   const effectiveEditMode = editMode.funding && canEditSection;
+
+  // Field configuration for completion wheel
+  const fieldConfigLocal = fieldConfig || {
+    required: {
+      fundingType: { 
+        field: 'fundingType', 
+        source: 'funding', 
+        label: 'Funding Type',
+        checkValue: (data) => data.funding?.fundingType && data.funding.fundingType !== ''
+      }
+    },
+    recommended: {}
+  };
+
+  // Add conditional required fields based on funding type
+  if (funding?.fundingType === 'Life Insurance') {
+    fieldConfigLocal.required.companyName = { 
+      field: 'companyName', 
+      source: 'funding', 
+      label: 'Company Name',
+      checkValue: (data) => data.funding?.companyName && data.funding.companyName !== ''
+    };
+    fieldConfigLocal.required.policyNumber = { 
+      field: 'policyNumber', 
+      source: 'funding', 
+      label: 'Policy Number',
+      checkValue: (data) => data.funding?.policyNumber && data.funding.policyNumber !== ''
+    };
+    fieldConfigLocal.required.policyType = { 
+      field: 'policyType', 
+      source: 'funding', 
+      label: 'Policy Type',
+      checkValue: (data) => data.funding?.policyType && data.funding.policyType !== ''
+    };
+    fieldConfigLocal.required.faceAmount = { 
+      field: 'faceAmount', 
+      source: 'funding', 
+      label: 'Face Amount',
+      checkValue: (data) => data.funding?.faceAmount && data.funding.faceAmount !== ''
+    };
+  }
 
   useEffect(() => {
     // Inject animation styles
@@ -701,20 +790,31 @@ const FundingSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Trigger save after state update from overlay
+  useEffect(() => {
+    if (pendingSave) {
+      saveFunding();
+      setPendingSave(false);
+    }
+  }, [pendingSave, funding]);
+
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = () => {
-    saveFunding();
+  const handleOverlaySave = (updatedFunding) => {
+    // Update parent state with the new data
+    setFunding(updatedFunding);
+    // Set flag to trigger save after state updates
+    setPendingSave(true);
   };
 
   // Get required fields based on member category
-  const requiredFields = memberCategoryConfig[memberCategory]?.sections.funding?.requiredFields || [];
+  const requiredFields = memberCategoryConfig[effectiveMemberCategory]?.sections.funding?.requiredFields || [];
   const isFieldRequired = (fieldName) => requiredFields.includes(fieldName);
   
-  // Format funding type display
+  // Format functions
   const formatFundingType = (type) => {
     if (!type) return '—';
     const typeMap = {
@@ -726,7 +826,6 @@ const FundingSection = ({
     return typeMap[type] || type;
   };
 
-  // Format policy type display
   const formatPolicyType = (type) => {
     if (!type) return '—';
     const typeMap = {
@@ -739,7 +838,6 @@ const FundingSection = ({
     return typeMap[type] || type;
   };
 
-  // Format face amount display
   const formatFaceAmount = (amount) => {
     if (!amount) return '—';
     return new Intl.NumberFormat('en-US', {
@@ -750,7 +848,6 @@ const FundingSection = ({
     }).format(amount);
   };
   
-  // Format date display
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     try {
@@ -765,33 +862,13 @@ const FundingSection = ({
     }
   };
 
-  // Format phone number display
   const formatPhone = (phone) => {
     if (!phone) return '—';
-    // Remove non-digits
     const cleaned = phone.replace(/\D/g, '');
-    // Format as (xxx) xxx-xxxx
     if (cleaned.length === 10) {
       return `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}`;
     }
     return phone;
-  };
-  
-  // Mobile preview data
-  const getMobilePreview = () => {
-    const previewParts = [];
-    
-    if (funding?.fundingType) {
-      previewParts.push(formatFundingType(funding.fundingType));
-    }
-    if (funding?.fundingType === 'Life Insurance' && funding?.companyName) {
-      previewParts.push(funding.companyName);
-    }
-    if (funding?.fundingType === 'Life Insurance' && funding?.faceAmount) {
-      previewParts.push(formatFaceAmount(funding.faceAmount));
-    }
-    
-    return previewParts.slice(0, 2).join(' • ');
   };
 
   // Render company name with link if matched
@@ -828,420 +905,71 @@ const FundingSection = ({
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
         data={{ funding }}
-        onEdit={() => {}}
         onSave={handleOverlaySave}
         savingSection={savingSection}
-        fieldErrors={{}}
-        funding={funding}
-        setFunding={setFunding}
-        saveFunding={saveFunding}
+        fieldErrors={fieldErrors}
         canEdit={canEditSection}
+        memberCategory={effectiveMemberCategory}
       />
 
       {isMobile ? (
-        <MobileInfoCard
-          iconComponent={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          title="Funding/Life Insurance"
-          backgroundImage={formsHeaderImage}
-          overlayText="Funding Details"
-          subtitle="Your cryopreservation funding arrangements."
-          isEditMode={effectiveEditMode}
-        >
-          {/* Display Mode */}
-          {!effectiveEditMode ? (
-            <>
-              <div className="space-y-4">
-                <DisplayField 
-                  label="Funding Type" 
-                  value={formatFundingType(funding.fundingType)}
-                  required={isFieldRequired('fundingType')}
-                />
-                
-                {/* Only show Life Insurance fields if that's the funding type */}
-                {funding.fundingType === 'Life Insurance' && (
-                  <>
-                    {/* Company Information Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Insurance Company</h4>
-                      <DisplayField 
-                        label="Company Name" 
-                        value={renderCompanyName()}
-                        required={isFieldRequired('companyName')}
-                      />
-                      <DisplayField 
-                        label="Company Phone" 
-                        value={formatPhone(funding.companyPhone)}
-                        required={isFieldRequired('companyPhone')}
-                      />
-                      <DisplayField 
-                        label="Company Fax" 
-                        value={formatPhone(funding.companyFax)}
-                      />
-                      <DisplayField 
-                        label="Company Address" 
-                        value={[
-                          funding.companyStreet,
-                          funding.companyCity && funding.companyState ? 
-                            `${funding.companyCity}, ${funding.companyState} ${funding.companyPostalCode}` : '',
-                          funding.companyCountry
-                        ].filter(Boolean).join('\n')}
-                      />
-                    </div>
-
-                    {/* Policy Information Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <DisplayField 
-                        label="Policy Number" 
-                        value={funding.policyNumber}
-                        required={isFieldRequired('policyNumber')}
-                      />
-                      <DisplayField 
-                        label="Policy Type" 
-                        value={formatPolicyType(funding.policyType)}
-                        required={isFieldRequired('policyType')}
-                      />
-                      <DisplayField 
-                        label="Face Amount" 
-                        value={formatFaceAmount(funding.faceAmount)}
-                        required={isFieldRequired('faceAmount')}
-                      />
-                      <DisplayField 
-                        label="Annual Premium" 
-                        value={formatFaceAmount(funding.annualPremium)}
-                      />
-                      <DisplayField 
-                        label="Date Issued" 
-                        value={formatDate(funding.dateIssued)}
-                      />
-                      {funding.termLength && (
-                        <DisplayField 
-                          label="Term Length" 
-                          value={`${funding.termLength} years`}
-                        />
-                      )}
-                    </div>
-
-                    {/* Agent Information Section - Show if agent data exists */}
-                    {(funding.agentName || funding.agentEmail || funding.agentPhone) && (
-                      <div className="pt-4 border-t border-gray-200">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">Agent Information</h4>
-                        <DisplayField 
-                          label="Agent Name" 
-                          value={funding.agentName}
-                        />
-                        <DisplayField 
-                          label="Agent Email" 
-                          value={funding.agentEmail}
-                        />
-                        <DisplayField 
-                          label="Agent Phone" 
-                          value={formatPhone(funding.agentPhone)}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {/* Show simple info for other funding types */}
-                {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
-                  <div className="pt-4 text-sm text-gray-600">
-                    {funding.fundingType === 'Trust' && (
-                      <p>Funding via trust. Please ensure Alcor Life Extension Foundation is named as beneficiary.</p>
-                    )}
-                    {funding.fundingType === 'Prepaid' && (
-                      <p>Prepaid funding arrangement.</p>
-                    )}
-                    {funding.fundingType === 'Other' && (
-                      <p>Alternative funding arrangement.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              {/* Show edit button only if editable, otherwise show message */}
-              {canEditSection ? (
-                <ActionButtons 
-                  editMode={false}
-                  onEdit={() => toggleEditMode && toggleEditMode('funding')}
-                  hideEditButton={!canEditSection}
-                />
-              ) : (
-                <div className={styleConfig2.nonEditable.mobileWrapper}>
-                  <p className={styleConfig2.nonEditable.mobileText}>
-                    Funding information cannot be edited. Contact membership@alcor.org for changes.
-                  </p>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Edit Mode */
-            <>
-              <div className="space-y-4">
-                <FormSelect
-                  label="Funding Type"
-                  value={funding.fundingType || ''}
-                  onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
-                  required={isFieldRequired('fundingType')}
-                >
-                  <option value="">Select...</option>
-                  <option value="Life Insurance">Life Insurance</option>
-                  <option value="Trust">Trust</option>
-                  <option value="Prepaid">Prepaid</option>
-                  <option value="Other">Other</option>
-                </FormSelect>
-
-                {funding.fundingType === 'Life Insurance' && (
-                  <>
-                    {/* Company Information Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Insurance Company</h4>
-                      <FormInput
-                        label="Company Name"
-                        value={funding.companyName || ''}
-                        onChange={(e) => setFunding({...funding, companyName: e.target.value})}
-                        required={isFieldRequired('companyName')}
-                        placeholder="e.g., MetLife, Prudential"
-                      />
-                      <FormInput
-                        label="Company Phone"
-                        type="tel"
-                        value={funding.companyPhone || ''}
-                        onChange={(e) => setFunding({...funding, companyPhone: e.target.value})}
-                        required={isFieldRequired('companyPhone')}
-                        placeholder="(555) 123-4567"
-                      />
-                      <FormInput
-                        label="Company Fax"
-                        type="tel"
-                        value={funding.companyFax || ''}
-                        onChange={(e) => setFunding({...funding, companyFax: e.target.value})}
-                        placeholder="(555) 123-4568"
-                      />
-                      <FormInput
-                        label="Company Street Address"
-                        value={funding.companyStreet || ''}
-                        onChange={(e) => setFunding({...funding, companyStreet: e.target.value})}
-                        required={isFieldRequired('companyStreet')}
-                        placeholder="123 Main Street"
-                      />
-                      <FormInput
-                        label="City"
-                        value={funding.companyCity || ''}
-                        onChange={(e) => setFunding({...funding, companyCity: e.target.value})}
-                        required={isFieldRequired('companyCity')}
-                        placeholder="New York"
-                      />
-                      <FormInput
-                        label="State/Province"
-                        value={funding.companyState || ''}
-                        onChange={(e) => setFunding({...funding, companyState: e.target.value})}
-                        required={isFieldRequired('companyState')}
-                        placeholder="NY"
-                      />
-                      <FormInput
-                        label="Postal Code"
-                        value={funding.companyPostalCode || ''}
-                        onChange={(e) => setFunding({...funding, companyPostalCode: e.target.value})}
-                        required={isFieldRequired('companyPostalCode')}
-                        placeholder="10001"
-                      />
-                      <FormInput
-                        label="Country"
-                        value={funding.companyCountry || ''}
-                        onChange={(e) => setFunding({...funding, companyCountry: e.target.value})}
-                        required={isFieldRequired('companyCountry')}
-                        placeholder="USA"
-                      />
-                    </div>
-
-                    {/* Policy Information Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <FormInput
-                        label="Policy Number"
-                        value={funding.policyNumber || ''}
-                        onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
-                        required={isFieldRequired('policyNumber')}
-                        placeholder="Enter policy number"
-                      />
-                      <FormSelect
-                        label="Policy Type"
-                        value={funding.policyType || ''}
-                        onChange={(e) => setFunding({...funding, policyType: e.target.value})}
-                        required={isFieldRequired('policyType')}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Term">Term</option>
-                        <option value="Whole Life">Whole Life</option>
-                        <option value="Universal">Universal</option>
-                      </FormSelect>
-                      <FormInput
-                        label="Face Amount"
-                        type="number"
-                        value={funding.faceAmount || ''}
-                        onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
-                        required={isFieldRequired('faceAmount')}
-                        placeholder="e.g., 200000"
-                      />
-                      <FormInput
-                        label="Annual Premium"
-                        type="number"
-                        value={funding.annualPremium || ''}
-                        onChange={(e) => setFunding({...funding, annualPremium: e.target.value})}
-                        placeholder="e.g., 2400"
-                      />
-                      <FormInput
-                        label="Date Issued"
-                        type="date"
-                        value={funding.dateIssued || ''}
-                        onChange={(e) => setFunding({...funding, dateIssued: e.target.value})}
-                      />
-                      {funding.policyType === 'Term' && (
-                        <FormInput
-                          label="Term Length (years)"
-                          type="number"
-                          value={funding.termLength || ''}
-                          onChange={(e) => setFunding({...funding, termLength: e.target.value})}
-                          placeholder="e.g., 20"
-                        />
-                      )}
-                    </div>
-
-                    {/* Agent Information Section */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Agent Information</h4>
-                      <div className="mb-3">
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={funding.hasAgent || false}
-                            onChange={(e) => setFunding({...funding, hasAgent: e.target.checked})}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">I have a life insurance agent</span>
-                        </label>
-                      </div>
-                      {/* Show agent fields if checkbox is checked OR if agent data exists */}
-                      {(funding.hasAgent || funding.agentName || funding.agentEmail || funding.agentPhone) && (
-                        <>
-                          <FormInput
-                            label="Agent Name"
-                            value={funding.agentName || ''}
-                            onChange={(e) => setFunding({...funding, agentName: e.target.value})}
-                            placeholder="John Smith"
-                          />
-                          <FormInput
-                            label="Agent Email"
-                            type="email"
-                            value={funding.agentEmail || ''}
-                            onChange={(e) => setFunding({...funding, agentEmail: e.target.value})}
-                            placeholder="agent@example.com"
-                          />
-                          <FormInput
-                            label="Agent Phone"
-                            type="tel"
-                            value={funding.agentPhone || ''}
-                            onChange={(e) => setFunding({...funding, agentPhone: e.target.value})}
-                            placeholder="(555) 123-4567"
-                          />
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
-                
-                {/* Show helper text for other funding types */}
-                {funding.fundingType && funding.fundingType !== 'Life Insurance' && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      {funding.fundingType === 'Trust' && 
-                        "Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary for your cryopreservation funding."}
-                      {funding.fundingType === 'Prepaid' && 
-                        "Thank you for choosing to prepay. An Alcor representative will contact you to complete the funding arrangement."}
-                      {funding.fundingType === 'Other' && 
-                        "An Alcor representative will contact you to discuss your funding arrangement."}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              <ActionButtons 
-                editMode={true}
-                onSave={saveFunding}
-                onCancel={() => cancelEdit && cancelEdit('funding')}
-                saving={savingSection === 'funding'}
-              />
-            </>
-          )}
-        </MobileInfoCard>
+        <FundingMobile
+          funding={funding}
+          setFunding={setFunding}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveFunding={saveFunding}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfigLocal}
+          canEdit={canEditSection}
+          memberCategory={effectiveMemberCategory}
+          getFieldError={getFieldError}
+          isFieldRequired={isFieldRequired}
+        />
       ) : (
         /* Desktop Version */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
             {/* Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'funding')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Funding/Life Insurance</h2>
-                      <p className={headerStyles.subtitle}>
-                        Your cryopreservation funding arrangements.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'funding')} style={{ backgroundColor: '#512BD9' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                         </div>
-                      )}
+                        <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Funding/Life Insurance</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'funding')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm leading-5 max-w-lg">
+                            Your cryopreservation funding arrangements.
+                          </p>
+                          <p className="text-gray-400 text-sm leading-5 mt-2">
+                            Required: Funding type and details
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  <CompletionWheelWithLegend
+                    data={{ funding }}
+                    fieldConfig={fieldConfigLocal}
+                    sectionColor="#512BD9"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1266,10 +994,13 @@ const FundingSection = ({
                     cardIndex={0}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Type" value={formatFundingType(funding?.fundingType)} />
+                    <InfoField label="Type" value={formatFundingType(funding?.fundingType)} isRequired />
                     {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
                       <InfoField label="Status" value="Arrangement on file" />
                     )}
+                    <div className="opacity-0 pointer-events-none">
+                      <InfoField label="" value="" />
+                    </div>
                   </InfoCard>
 
                   {/* Insurance Details Card - Only show if Life Insurance */}
@@ -1290,10 +1021,14 @@ const FundingSection = ({
                         cardIndex={1}
                         isVisible={cardsVisible}
                       >
-                        <InfoField label="Company" value={funding?.companyName || '—'} />
+                        <InfoField label="Company" value={funding?.companyName || '—'} isRequired />
                         <InfoField label="Phone" value={formatPhone(funding?.companyPhone)} />
-                        {(funding?.agentName || funding?.agentEmail || funding?.agentPhone) && (
+                        {(funding?.agentName || funding?.agentEmail || funding?.agentPhone) ? (
                           <InfoField label="Agent" value={funding?.agentName || 'Has agent info'} />
+                        ) : (
+                          <div className="opacity-0 pointer-events-none">
+                            <InfoField label="" value="" />
+                          </div>
                         )}
                       </InfoCard>
 
@@ -1312,9 +1047,9 @@ const FundingSection = ({
                         cardIndex={2}
                         isVisible={cardsVisible}
                       >
-                        <InfoField label="Policy #" value={funding?.policyNumber || '—'} />
-                        <InfoField label="Type" value={formatPolicyType(funding?.policyType)} />
-                        <InfoField label="Face Amount" value={formatFaceAmount(funding?.faceAmount)} />
+                        <InfoField label="Policy #" value={funding?.policyNumber || '—'} isRequired />
+                        <InfoField label="Type" value={formatPolicyType(funding?.policyType)} isRequired />
+                        <InfoField label="Face Amount" value={formatFaceAmount(funding?.faceAmount)} isRequired />
                       </InfoCard>
                     </>
                   )}

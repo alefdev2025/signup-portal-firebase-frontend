@@ -1,37 +1,32 @@
-import dewarsImage from '../../../assets/images/dewars2.jpg';// ContactInfoMobile.js
+// AddressesMobile.js
 import React from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 
-const ContactInfoMobile = ({ 
-  contactInfo,
-  personalInfo,
-  setContactInfo,
-  setPersonalInfo,
+const AddressesMobile = ({ 
+  addresses,
+  setAddresses,
   editMode,
   toggleEditMode,
   cancelEdit,
-  saveContactInfo,
+  saveAddresses,
   savingSection,
-  fieldErrors,
-  fieldConfig
+  fieldConfig,
+  formatAddress,
+  areAddressesSame
 }) => {
-  const formatDateForDisplay = (dateOfBirth) => {
-    if (!dateOfBirth) return '—';
-    const date = new Date(dateOfBirth);
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  };
-
-  const formatPhone = (phone) => {
-    if (!phone) return '—';
-    if (phone.includes('(')) return phone;
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length === 10) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-    }
-    return phone;
+  const getAddressPreview = () => {
+    const homeCity = addresses.homeCity || '';
+    const homeState = addresses.homeState || '';
+    const mailingCity = addresses.mailingCity || '';
+    const mailingState = addresses.mailingState || '';
+    
+    const homePart = homeCity && homeState ? `${homeCity}, ${homeState}` : 'Not provided';
+    const mailingPart = addresses.sameAsHome ? 'Same as home' : 
+                       (mailingCity && mailingState ? `${mailingCity}, ${mailingState}` : 'Not provided');
+    
+    return `Home: ${homePart} • Mailing: ${mailingPart}`;
   };
 
   // Calculate completion percentage
@@ -40,28 +35,15 @@ const ContactInfoMobile = ({
     let filledRecommended = 0;
     
     Object.values(fieldConfig.required).forEach(field => {
-      if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue({ contactInfo, personalInfo })) {
-          filledRequired++;
-        }
-      } else {
-        const source = field.source === 'personalInfo' ? personalInfo : contactInfo;
-        const value = source?.[field.field];
-        if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
-          filledRequired++;
-        }
+      const value = addresses?.[field.field];
+      if (value && value.trim() !== '') {
+        filledRequired++;
       }
     });
     
     Object.values(fieldConfig.recommended).forEach(field => {
       if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue({ contactInfo, personalInfo })) {
-          filledRecommended++;
-        }
-      } else {
-        const source = field.source === 'personalInfo' ? personalInfo : contactInfo;
-        const value = source?.[field.field];
-        if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
+        if (field.checkValue({ addresses })) {
           filledRecommended++;
         }
       }
@@ -87,10 +69,11 @@ const ContactInfoMobile = ({
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
               <svg className="w-7 h-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-light text-gray-900">Contact Information</h3>
+            <h3 className="text-xl font-light text-gray-900">Addresses</h3>
           </div>
           
           <div className="border-t border-gray-200"></div>
@@ -104,8 +87,8 @@ const ContactInfoMobile = ({
                 {/* Header with completion */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Your Contact Profile</h3>
-                    <p className="text-sm text-gray-600">Keep your details current for important communications</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Your Addresses</h3>
+                    <p className="text-sm text-gray-600">Home and mailing addresses</p>
                   </div>
                   
                   {/* Compact completion indicator */}
@@ -163,7 +146,7 @@ const ContactInfoMobile = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">First Name, Last Name, Date of Birth, Personal Email, Preferred Phone</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Home Address</p>
                     </div>
                   </div>
                   
@@ -174,142 +157,156 @@ const ContactInfoMobile = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold text-gray-900">Recommended Information</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">Middle Name, Work Email, Phone Number</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Mailing Address</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-
+            {/* Display Mode - Address Preview */}
+            {!editMode.addresses && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-600 text-center">{getAddressPreview()}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Edit Form Section */}
-      {editMode.contact && (
+      {editMode.addresses && (
         <div className="bg-white px-6 py-6 border-t border-gray-200">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="First Name *"
-                value={personalInfo?.firstName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, firstName: e.target.value})}
-                error={fieldErrors.firstName}
-                disabled={savingSection === 'contact'}
-              />
-              <FormInput
-                label="Middle Name"
-                value={personalInfo?.middleName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, middleName: e.target.value})}
-                disabled={savingSection === 'contact'}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="Last Name *"
-                value={personalInfo?.lastName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, lastName: e.target.value})}
-                error={fieldErrors.lastName}
-                disabled={savingSection === 'contact'}
-              />
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-1.5">Date of Birth</label>
-                <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm">
-                  {formatDateForDisplay(personalInfo?.dateOfBirth)}
+          <div className="space-y-6">
+            {/* Home Address */}
+            <div>
+              <h4 className="text-base font-medium text-gray-900 mb-4">Home Address</h4>
+              <div className="space-y-4">
+                <FormInput
+                  label="Street Address *"
+                  value={addresses?.homeStreet || ''}
+                  onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
+                  disabled={savingSection === 'addresses'}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput
+                    label="City *"
+                    value={addresses?.homeCity || ''}
+                    onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
+                    disabled={savingSection === 'addresses'}
+                  />
+                  <FormInput
+                    label="State/Province *"
+                    value={addresses?.homeState || ''}
+                    onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
+                    disabled={savingSection === 'addresses'}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput
+                    label="Zip/Postal Code *"
+                    value={addresses?.homePostalCode || ''}
+                    onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
+                    disabled={savingSection === 'addresses'}
+                  />
+                  <FormInput
+                    label="Country"
+                    value={addresses?.homeCountry || 'US'}
+                    onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
+                    disabled={savingSection === 'addresses'}
+                  />
                 </div>
               </div>
             </div>
             
-            <FormInput
-              label="Personal Email *"
-              type="email"
-              value={contactInfo?.personalEmail || ''}
-              onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
-              error={fieldErrors.personalEmail}
-              disabled={savingSection === 'contact'}
-            />
-            
-            <FormInput
-              label="Work Email"
-              type="email"
-              value={contactInfo?.workEmail || ''}
-              onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
-              disabled={savingSection === 'contact'}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormSelect
-                label="Preferred Phone *"
-                value={contactInfo?.preferredPhone || ''}
-                onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
-                error={fieldErrors.preferredPhone}
-                disabled={savingSection === 'contact'}
-              >
-                <option value="">Select...</option>
-                <option value="Mobile">Mobile Phone</option>
-                <option value="Home">Home Phone</option>
-                <option value="Work">Work Phone</option>
-              </FormSelect>
+            {/* Mailing Address */}
+            <div>
+              <div className="mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={addresses?.sameAsHome || false}
+                    onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
+                    disabled={savingSection === 'addresses'}
+                    className="mr-2 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20"
+                  />
+                  <span className="text-sm text-gray-700">Mailing address is the same as home address</span>
+                </label>
+              </div>
               
-              <FormInput
-                label="Mobile Phone"
-                type="tel"
-                value={contactInfo?.mobilePhone || ''}
-                onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
-                placeholder="(555) 123-4567"
-                error={fieldErrors.mobilePhone}
-                disabled={savingSection === 'contact'}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="Home Phone"
-                type="tel"
-                value={contactInfo?.homePhone || ''}
-                onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
-                placeholder="(555) 123-4567"
-                error={fieldErrors.homePhone}
-                disabled={savingSection === 'contact'}
-              />
-              <FormInput
-                label="Work Phone"
-                type="tel"
-                value={contactInfo?.workPhone || ''}
-                onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
-                placeholder="(555) 123-4567"
-                error={fieldErrors.workPhone}
-                disabled={savingSection === 'contact'}
-              />
+              {!addresses?.sameAsHome && (
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-4">Mailing Address</h4>
+                  <div className="space-y-4">
+                    <FormInput
+                      label="Street Address *"
+                      value={addresses?.mailingStreet || ''}
+                      onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
+                      disabled={savingSection === 'addresses'}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        label="City *"
+                        value={addresses?.mailingCity || ''}
+                        onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
+                        disabled={savingSection === 'addresses'}
+                      />
+                      <FormInput
+                        label="State/Province *"
+                        value={addresses?.mailingState || ''}
+                        onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
+                        disabled={savingSection === 'addresses'}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        label="Zip/Postal Code *"
+                        value={addresses?.mailingPostalCode || ''}
+                        onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
+                        disabled={savingSection === 'addresses'}
+                      />
+                      <FormInput
+                        label="Country"
+                        value={addresses?.mailingCountry || 'US'}
+                        onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
+                        disabled={savingSection === 'addresses'}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
           {/* Action buttons */}
           <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
             <button
-              onClick={() => cancelEdit && cancelEdit('contact')}
+              onClick={() => cancelEdit && cancelEdit('addresses')}
               className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+              disabled={savingSection === 'addresses'}
             >
               Cancel
             </button>
             <button
-              onClick={saveContactInfo}
-              disabled={savingSection === 'contact'}
+              onClick={saveAddresses}
+              disabled={savingSection === 'addresses'}
               className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
             >
-              {savingSection === 'contact' ? 'Saving...' : 'Save'}
+              {savingSection === 'addresses' ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
       )}
 
       {/* Edit button when not in edit mode */}
-      {!editMode.contact && (
+      {!editMode.addresses && (
         <div className="bg-white px-6 pb-6">
           <button
-            onClick={() => toggleEditMode && toggleEditMode('contact')}
+            onClick={() => toggleEditMode && toggleEditMode('addresses')}
             className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
           >
             Edit
@@ -320,4 +317,4 @@ const ContactInfoMobile = ({
   );
 };
 
-export default ContactInfoMobile;
+export default AddressesMobile;

@@ -1,0 +1,442 @@
+// FundingMobile.jsx
+import React from 'react';
+import { FormInput, FormSelect } from './MobileInfoCard';
+import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import alcorStar from '../../../assets/images/alcor-star.png';
+import { findInsuranceCompany } from '../utils/lifeInsuranceCompanyMatcher';
+import styleConfig2 from '../styleConfig2';
+
+const FundingMobile = ({ 
+  funding,
+  setFunding,
+  editMode,
+  toggleEditMode,
+  cancelEdit,
+  saveFunding,
+  savingSection,
+  fieldErrors,
+  fieldConfig,
+  canEdit,
+  memberCategory,
+  getFieldError,
+  isFieldRequired
+}) => {
+  // Calculate completion percentage
+  const calculateCompletion = () => {
+    let filledRequired = 0;
+    let filledRecommended = 0;
+    
+    Object.values(fieldConfig.required).forEach(field => {
+      if (field.checkValue && typeof field.checkValue === 'function') {
+        if (field.checkValue({ funding })) {
+          filledRequired++;
+        }
+      }
+    });
+    
+    Object.values(fieldConfig.recommended).forEach(field => {
+      if (field.checkValue && typeof field.checkValue === 'function') {
+        if (field.checkValue({ funding })) {
+          filledRecommended++;
+        }
+      }
+    });
+    
+    const totalRequired = Object.keys(fieldConfig.required).length;
+    const totalRecommended = Object.keys(fieldConfig.recommended).length;
+    
+    const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 100 : 0;
+    const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 0 : 0; // No recommended fields for Funding
+    
+    return Math.round(requiredPercentage + recommendedPercentage);
+  };
+
+  const completionPercentage = calculateCompletion();
+
+  const getPreviewText = () => {
+    const previewParts = [];
+    
+    if (funding?.fundingType) {
+      previewParts.push(funding.fundingType);
+    }
+    if (funding?.fundingType === 'Life Insurance' && funding?.companyName) {
+      previewParts.push(funding.companyName);
+    }
+    
+    return previewParts.join(' • ') || 'No funding information';
+  };
+
+  // Format functions
+  const formatFaceAmount = (amount) => {
+    if (!amount) return '';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const formatPhone = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Render company name with link if matched
+  const renderCompanyName = () => {
+    const companyMatch = findInsuranceCompany(funding?.companyName);
+    
+    if (companyMatch) {
+      return (
+        <span className="flex items-center gap-2">
+          {funding.companyName || '—'}
+          <a 
+            href={companyMatch.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 inline-flex"
+            title={`Visit ${funding.companyName} website`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </span>
+      );
+    }
+    
+    return funding.companyName || '—';
+  };
+
+  // Wrap saveFunding to prevent duplicate calls
+  const handleSaveFunding = async () => {
+    // Prevent multiple simultaneous saves
+    if (savingSection === 'funding') {
+      console.log('⚠️ Save already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    if (saveFunding) {
+      try {
+        await saveFunding();
+      } catch (error) {
+        console.error('Error in handleSaveFunding:', error);
+      }
+    }
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
+      {/* White Header Section */}
+      <div className="bg-white px-6 py-6">
+        <div className="flex flex-col gap-5 w-full">
+          {/* Top row - Icon and Title */}
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
+              <svg className="w-7 h-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-light text-gray-900">Funding/Life Insurance</h3>
+          </div>
+          
+          <div className="border-t border-gray-200"></div>
+          
+          {/* Content area */}
+          <div className="space-y-5">
+            {/* Card with subtle shadow and no harsh lines */}
+            <div className="relative w-full rounded-lg overflow-hidden shadow-sm bg-white">
+              {/* Content section */}
+              <div className="px-6 py-6">
+                {/* Header with completion */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Funding Details</h3>
+                    <p className="text-sm text-gray-600">Your cryopreservation funding arrangements</p>
+                  </div>
+                  
+                  {/* Compact completion indicator */}
+                  <div className="relative">
+                    <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <circle
+                        stroke="#f5f5f5"
+                        fill="transparent"
+                        strokeWidth={4}
+                        r={36}
+                        cx={40}
+                        cy={40}
+                      />
+                      <circle
+                        stroke="url(#gradient)"
+                        fill="transparent"
+                        strokeWidth={4}
+                        strokeDasharray={`${226.19} ${226.19}`}
+                        style={{ 
+                          strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                          transition: 'stroke-dashoffset 0.5s ease',
+                          strokeLinecap: 'round'
+                        }}
+                        r={36}
+                        cx={40}
+                        cy={40}
+                      />
+                      <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#F26430" />
+                          <stop offset="100%" stopColor="#512BD9" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-base font-bold text-gray-900">{completionPercentage}%</div>
+                        <div className="text-[9px] text-gray-500 uppercase tracking-wider">Complete</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="h-px bg-gray-100 mb-5"></div>
+                
+                {/* Progress indicators */}
+                <div className="space-y-3">
+                  {/* Required fields */}
+                  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-[#0a1628] flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Funding type and details (if life insurance)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Display Mode - Funding Preview */}
+            {!editMode.funding && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Form Section */}
+      {editMode.funding && canEdit && (
+        <div className="bg-white px-6 py-6 border-t border-gray-200">
+          <div className="space-y-6">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-4">Funding Information</h4>
+              
+              <div className="space-y-4">
+                <FormSelect
+                  label="Funding Type *"
+                  value={funding?.fundingType || ''}
+                  onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
+                  error={getFieldError('funding', 'fundingType')}
+                  disabled={savingSection === 'funding'}
+                  required={isFieldRequired('fundingType')}
+                >
+                  <option value="">Select...</option>
+                  <option value="Life Insurance">Life Insurance</option>
+                  <option value="Trust">Trust</option>
+                  <option value="Prepaid">Prepaid</option>
+                  <option value="Other">Other</option>
+                </FormSelect>
+
+                {funding?.fundingType === 'Life Insurance' && (
+                  <>
+                    {/* Company Information Section */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Insurance Company</h5>
+                      <FormInput
+                        label="Company Name *"
+                        value={funding?.companyName || ''}
+                        onChange={(e) => setFunding({...funding, companyName: e.target.value})}
+                        error={getFieldError('funding', 'companyName')}
+                        disabled={savingSection === 'funding'}
+                        required={isFieldRequired('companyName')}
+                        placeholder="e.g., MetLife, Prudential"
+                      />
+                      <FormInput
+                        label="Company Phone"
+                        type="tel"
+                        value={funding?.companyPhone || ''}
+                        onChange={(e) => setFunding({...funding, companyPhone: e.target.value})}
+                        disabled={savingSection === 'funding'}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+
+                    {/* Policy Information Section */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Policy Details</h5>
+                      <FormInput
+                        label="Policy Number *"
+                        value={funding?.policyNumber || ''}
+                        onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
+                        error={getFieldError('funding', 'policyNumber')}
+                        disabled={savingSection === 'funding'}
+                        required={isFieldRequired('policyNumber')}
+                        placeholder="Enter policy number"
+                      />
+                      <FormSelect
+                        label="Policy Type *"
+                        value={funding?.policyType || ''}
+                        onChange={(e) => setFunding({...funding, policyType: e.target.value})}
+                        error={getFieldError('funding', 'policyType')}
+                        disabled={savingSection === 'funding'}
+                        required={isFieldRequired('policyType')}
+                      >
+                        <option value="">Select...</option>
+                        <option value="Term">Term</option>
+                        <option value="Whole Life">Whole Life</option>
+                        <option value="Universal">Universal</option>
+                      </FormSelect>
+                      <FormInput
+                        label="Face Amount *"
+                        type="number"
+                        value={funding?.faceAmount || ''}
+                        onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
+                        error={getFieldError('funding', 'faceAmount')}
+                        disabled={savingSection === 'funding'}
+                        required={isFieldRequired('faceAmount')}
+                        placeholder="e.g., 200000"
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {/* Show helper text for other funding types */}
+                {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      {funding.fundingType === 'Trust' && 
+                        "Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary."}
+                      {funding.fundingType === 'Prepaid' && 
+                        "Thank you for choosing to prepay. An Alcor representative will contact you."}
+                      {funding.fundingType === 'Other' && 
+                        "An Alcor representative will contact you to discuss your funding arrangement."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
+            <button
+              onClick={() => cancelEdit && cancelEdit('funding')}
+              className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+              disabled={savingSection === 'funding'}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveFunding}
+              disabled={savingSection === 'funding'}
+              className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
+            >
+              {savingSection === 'funding' ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Display Mode Content when not in edit mode */}
+      {!editMode.funding && (
+        <div className="bg-white px-6 pb-6">
+          <div className="space-y-4 mb-6">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h5 className="font-medium text-gray-900 mb-3">Funding Type</h5>
+              <p className="text-gray-900">{funding?.fundingType || '—'}</p>
+              
+              {funding?.fundingType === 'Life Insurance' && (
+                <>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h5 className="font-medium text-gray-900 mb-3">Insurance Details</h5>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Company:</span>
+                        <div className="text-gray-900">{renderCompanyName()}</div>
+                      </div>
+                      {funding?.policyNumber && (
+                        <div>
+                          <span className="text-gray-500">Policy #:</span>
+                          <p className="text-gray-900">{funding.policyNumber}</p>
+                        </div>
+                      )}
+                      {funding?.faceAmount && (
+                        <div>
+                          <span className="text-gray-500">Face Amount:</span>
+                          <p className="text-gray-900">{formatFaceAmount(funding.faceAmount)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600">
+                    {funding.fundingType === 'Trust' && 
+                      "Trust funding arrangement on file"}
+                    {funding.fundingType === 'Prepaid' && 
+                      "Prepaid funding arrangement on file"}
+                    {funding.fundingType === 'Other' && 
+                      "Alternative funding arrangement on file"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {canEdit ? (
+            <button
+              onClick={() => toggleEditMode && toggleEditMode('funding')}
+              className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+            >
+              Edit
+            </button>
+          ) : (
+            <div className={styleConfig2.nonEditable.mobileWrapper}>
+              <p className={styleConfig2.nonEditable.mobileText}>
+                Funding information cannot be edited. Contact membership@alcor.org for changes.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FundingMobile;

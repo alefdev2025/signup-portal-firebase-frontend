@@ -1,4 +1,4 @@
-// Configuration for different member categories
+// Updated memberCategoryConfig.js
 export const memberCategoryConfig = {
   BasicMember: {
     sections: {
@@ -35,6 +35,11 @@ export const memberCategoryConfig = {
         visible: false, 
         editable: false,
         requiredFields: [] 
+      },
+      fundingAllocations: { 
+        visible: false,
+        editable: false,
+        requiredFields: []
       },
       funding: { 
         visible: false, 
@@ -89,7 +94,12 @@ export const memberCategoryConfig = {
       cryoArrangements: { 
         visible: true, 
         editable: true,
-        requiredFields: ['method'] 
+        requiredFields: ['method', 'cmsWaiver', 'remainsHandling', 'cryopreservationDisclosure', 'memberPublicDisclosure'] 
+      },
+      fundingAllocations: { 
+        visible: true,
+        editable: true,
+        requiredFields: ['customPrimary', 'customOverMinimum']
       },
       funding: { 
         visible: true, 
@@ -144,7 +154,12 @@ export const memberCategoryConfig = {
       cryoArrangements: { 
         visible: true, 
         editable: false,  // CryoMembers cannot edit their cryo arrangements
-        requiredFields: ['method', 'remainsHandling', 'publicDisclosure'] 
+        requiredFields: ['method', 'cmsWaiver', 'remainsHandling', 'cryopreservationDisclosure', 'memberPublicDisclosure'] 
+      },
+      fundingAllocations: { 
+        visible: true,
+        editable: false,  // CryoMembers cannot edit their funding allocations
+        requiredFields: ['customPrimary', 'customOverMinimum']
       },
       funding: { 
         visible: true, 
@@ -160,6 +175,65 @@ export const memberCategoryConfig = {
         visible: true, 
         editable: true,
         requiredFields: ['firstName', 'lastName', 'relationship', 'mobilePhone', 'email'] // Changed from fullName and phone
+      }
+    }
+  },
+  
+  AssociateMember: {
+    sections: {
+      contact: { 
+        visible: true, 
+        editable: true,
+        requiredFields: ['firstName', 'lastName', 'personalEmail'] 
+      },
+      personal: { 
+        visible: true, 
+        editable: true,
+        requiredFields: [] 
+      },
+      addresses: { 
+        visible: true, 
+        editable: true,
+        requiredFields: ['homeStreet', 'homeCity', 'homeState', 'homePostalCode'] 
+      },
+      family: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
+      },
+      occupation: { 
+        visible: false, 
+        editable: false,
+      },
+      medical: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
+      },
+      cryoArrangements: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
+      },
+      fundingAllocations: { 
+        visible: false,
+        editable: false,
+        requiredFields: []
+      },
+      funding: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
+      },
+      legal: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
+      },
+      nextOfKin: { 
+        visible: false, 
+        editable: false,
+        requiredFields: [] 
       }
     }
   }

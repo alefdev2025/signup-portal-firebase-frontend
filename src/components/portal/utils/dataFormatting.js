@@ -659,14 +659,35 @@ switch (dataType) {
       hereditaryIllnesses: cleanString(data.hereditaryIllnesses)
     };
     
-  case 'cryoArrangements':
-    return {
-      ...data,
-      recipientName: formatPersonName(data.recipientName),
-      recipientPhone: formatPhone(data.recipientPhone),
-      recipientEmail: formatEmail(data.recipientEmail),
-      recipientAddress: formatStreetAddress(data.recipientAddress)
-    };
+    case 'cryoArrangements':
+      const recipientCountry = formatCountry(data.recipientMailingCountry || 'US');
+      
+      return {
+        ...data,
+        // Clean recipient contact info
+        recipientName: formatPersonName(data.recipientName),
+        recipientPhone: formatPhone(data.recipientPhone, recipientCountry),
+        recipientEmail: formatEmail(data.recipientEmail),
+        
+        // Clean recipient mailing address fields
+        recipientMailingStreet: formatStreetAddress(data.recipientMailingStreet, recipientCountry),
+        recipientMailingCity: formatCity(data.recipientMailingCity, recipientCountry),
+        recipientMailingState: formatStateProvince(data.recipientMailingState, recipientCountry),
+        recipientMailingPostalCode: formatPostalCode(data.recipientMailingPostalCode, recipientCountry),
+        recipientMailingCountry: recipientCountry,
+        
+        // Clean other fields
+        method: cleanString(data.method),
+        remainsHandling: cleanString(data.remainsHandling),
+        cryopreservationDisclosure: cleanString(data.cryopreservationDisclosure),
+        memberPublicDisclosure: cleanString(data.memberPublicDisclosure),
+        
+        // Keep boolean as-is
+        cmsWaiver: data.cmsWaiver,
+        
+        // Clean the old recipientAddress field if it exists (for backwards compatibility)
+        recipientAddress: data.recipientAddress ? formatStreetAddress(data.recipientAddress, recipientCountry) : undefined
+      };
     
   case 'nextOfKin':
     return {
@@ -676,6 +697,8 @@ switch (dataType) {
       email: formatEmail(data.email),
       address: formatStreetAddress(data.address)
     };
+
+
     
   default:
     return data;

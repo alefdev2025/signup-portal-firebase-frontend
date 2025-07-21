@@ -4,6 +4,7 @@ import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import PersonalInfoMobile from './PersonalInfoMobile';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import { 
@@ -57,12 +58,25 @@ const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = 
       ? value.filter(v => v !== option)
       : [...value, option];
     
-    onChange(newValue);
+    // Remove duplicates
+    const uniqueValue = [...new Set(newValue)];
+    onChange(uniqueValue);
   };
 
   const displayValue = value.length > 0 
-    ? value.join(', ') 
+    ? [...new Set(value)].join(', ') 
     : 'Select...';
+
+  // Sort options to show selected ones first
+  const sortedOptions = React.useMemo(() => {
+    // Normalize values for comparison
+    const normalizedValue = value.map(v => 
+      v === "United States" ? "United States of America" : v
+    );
+    const selected = options.filter(opt => normalizedValue.includes(opt));
+    const unselected = options.filter(opt => !normalizedValue.includes(opt));
+    return [...selected, ...unselected];
+  }, [options, value]);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -79,7 +93,7 @@ const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = 
       
       {isOpen && !disabled && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.map((option) => (
+          {sortedOptions.map((option) => (
             <label
               key={option}
               className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
@@ -87,7 +101,7 @@ const MultiSelectDropdown = ({ label, options, value = [], onChange, disabled = 
             >
               <input
                 type="checkbox"
-                checked={value.includes(option)}
+                checked={value.includes(option) || (option === "United States of America" && value.includes("United States"))}
                 onChange={() => toggleOption(option)}
                 className="mr-2 w-4 h-4 rounded border-gray-300 text-[#734477] focus:ring-2 focus:ring-[#734477]/20 accent-[#734477]"
               />
@@ -154,72 +168,28 @@ const SingleSelectDropdown = ({ label, options, value = '', onChange, disabled =
   );
 };
 
-// Mobile Multi-Select Component
-const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
-  const [showAll, setShowAll] = useState(false);
-  
-  const toggleOption = (option) => {
-    if (disabled) return;
-    
-    const newValue = value.includes(option)
-      ? value.filter(v => v !== option)
-      : [...value, option];
-    
-    onChange(newValue);
-  };
-
-  const isRace = label.includes('Race');
-  const displayOptions = isRace || showAll ? options : options.slice(0, 5);
-
-  return (
-    <div>
-      <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
-      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto">
-        {displayOptions.map((option) => (
-          <label
-            key={option}
-            className="flex items-center py-1.5 cursor-pointer"
-          >
-            <input
-              type="checkbox"
-              checked={value.includes(option)}
-              onChange={() => toggleOption(option)}
-              disabled={disabled}
-              className="mr-2.5 w-4 h-4 rounded border-gray-300 text-[#162740] focus:ring-2 focus:ring-[#162740]/20"
-            />
-            <span className="text-sm text-gray-700">{option}</span>
-          </label>
-        ))}
-        {!isRace && options.length > 5 && !showAll && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="text-sm text-[#162740] mt-2 underline"
-          >
-            Show all {options.length} options
-          </button>
-        )}
-      </div>
-      {value.length > 0 && (
-        <p className="text-xs text-gray-600 mt-1">
-          {value.length} selected
-        </p>
-      )}
-    </div>
-  );
-};
-
 // Overlay Component
-const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, personalInfo, setPersonalInfo, savePersonalInfo }) => {
+const CardOverlay = ({ 
+  isOpen, 
+  onClose, 
+  section, 
+  data, 
+  onSave,
+  savingSection,
+  fieldErrors
+}) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [localPersonalInfo, setLocalPersonalInfo] = useState({});
 
   useEffect(() => {
     if (isOpen) {
       setEditMode(false);
       setShowSuccess(false);
+      // Reset local state to current data when opening
+      setLocalPersonalInfo({...data.personalInfo} || {});
     }
-  }, [isOpen]);
+  }, [isOpen, data.personalInfo]);
 
   if (!isOpen) return null;
 
@@ -235,7 +205,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
   const formatMultipleSelections = (selections) => {
     if (!selections || selections.length === 0) return '—';
-    return selections.join(', ');
+    // Remove duplicates before formatting
+    const uniqueSelections = [...new Set(selections)];
+    return uniqueSelections.join(', ');
   };
 
   const handleEdit = () => {
@@ -243,7 +215,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleSave = () => {
-    savePersonalInfo();
+    // Pass the local data back to parent
+    onSave(localPersonalInfo);
     setEditMode(false);
     setShowSuccess(true);
     
@@ -254,7 +227,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleCancel = () => {
-    setPersonalInfo(data.personalInfo);
+    // Reset to original data
+    setLocalPersonalInfo({...data.personalInfo} || {});
     setEditMode(false);
   };
 
@@ -264,33 +238,19 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
         return {
           title: 'Identity Details',
           description: 'Your personal identification information including birth name, government ID, and gender identity.',
-          fields: {
-            'Birth Name': 'Your name at birth if different from your current legal name.',
-            'SSN/Government ID': 'Your Social Security Number or government-issued identification number.',
-            'Gender': 'Your gender identity.'
-          }
         };
       case 'demographics':
         return {
           title: 'Demographics',
           description: 'Demographic information that helps us better understand our member community and ensure inclusive services.',
-          fields: {
-            'Race': 'Your racial background (you may select multiple options).',
-            'Ethnicity': 'Your ethnic heritage.',
-            'Marital Status': 'Your current marital or relationship status.'
-          }
         };
       case 'origin':
         return {
           title: 'Origin & Citizenship',
           description: 'Information about your place of birth and citizenship status, which may be relevant for legal documentation.',
-          fields: {
-            'Place of Birth': 'The city, state/province, and country where you were born.',
-            'Citizenship': 'Countries where you hold citizenship (you may select multiple).'
-          }
         };
       default:
-        return { title: '', description: '', fields: {} };
+        return { title: '', description: '' };
     }
   };
 
@@ -583,30 +543,21 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Birth Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.birthName || personalInfo?.birthName === 'Same as current')}
-                        >
-                          {personalInfo?.birthName || 'Same as current'}
+                        <p className={overlayStyles.displayMode.field.value}>
+                          {localPersonalInfo?.birthName || 'Same as current'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>SSN/Government ID</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.ssn)}
-                        >
-                          {formatSSN(personalInfo?.ssn)}
+                        <p className={overlayStyles.displayMode.field.value}>
+                          {formatSSN(localPersonalInfo?.ssn)}
                         </p>
                       </div>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Gender</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.gender)}
-                      >
-                        {personalInfo?.gender || '—'}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {localPersonalInfo?.gender || '—'}
                       </p>
                     </div>
                   </>
@@ -616,29 +567,20 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Race</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.race || personalInfo?.race?.length === 0)}
-                      >
-                        {formatMultipleSelections(personalInfo?.race)}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {formatMultipleSelections(localPersonalInfo?.race)}
                       </p>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Ethnicity</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.ethnicity)}
-                      >
-                        {personalInfo?.ethnicity || '—'}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {localPersonalInfo?.ethnicity || '—'}
                       </p>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Marital Status</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.maritalStatus)}
-                      >
-                        {personalInfo?.maritalStatus || '—'}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {localPersonalInfo?.maritalStatus || '—'}
                       </p>
                     </div>
                   </div>
@@ -648,20 +590,14 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Place of Birth</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.placeOfBirth)}
-                      >
-                        {personalInfo?.placeOfBirth || '—'}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {localPersonalInfo?.placeOfBirth || '—'}
                       </p>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Citizenship</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!personalInfo?.citizenship || personalInfo?.citizenship?.length === 0)}
-                      >
-                        {formatMultipleSelections(personalInfo?.citizenship)}
+                      <p className={overlayStyles.displayMode.field.value}>
+                        {formatMultipleSelections(localPersonalInfo?.citizenship)}
                       </p>
                     </div>
                   </div>
@@ -675,15 +611,15 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                       <Input
                         label="Birth Name"
                         type="text"
-                        value={personalInfo?.birthName || ''}
-                        onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
+                        value={localPersonalInfo?.birthName || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, birthName: e.target.value})}
                         disabled={savingSection === 'personal'}
                         placeholder="Same as current"
                       />
                       <StyledSelect
                         label="Gender *"
-                        value={personalInfo?.gender || ''}
-                        onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                        value={localPersonalInfo?.gender || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, gender: e.target.value})}
                         disabled={savingSection === 'personal'}
                       >
                         <option value="">Select...</option>
@@ -700,22 +636,22 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <MultiSelectDropdown
                       label="Race"
                       options={raceOptions}
-                      value={personalInfo?.race || []}
-                      onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
+                      value={localPersonalInfo?.race || []}
+                      onChange={(selected) => setLocalPersonalInfo({...localPersonalInfo, race: selected})}
                       disabled={savingSection === 'personal'}
                     />
                     <SingleSelectDropdown
                       label="Ethnicity"
                       options={ethnicityOptions}
-                      value={personalInfo?.ethnicity || ''}
-                      onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
+                      value={localPersonalInfo?.ethnicity || ''}
+                      onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, ethnicity: e.target.value})}
                       disabled={savingSection === 'personal'}
                     />
                     <SingleSelectDropdown
                       label="Marital Status"
                       options={maritalStatusOptions}
-                      value={personalInfo?.maritalStatus || ''}
-                      onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
+                      value={localPersonalInfo?.maritalStatus || ''}
+                      onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, maritalStatus: e.target.value})}
                       disabled={savingSection === 'personal'}
                     />
                   </>
@@ -726,15 +662,15 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                     <Input
                       label="Place of Birth"
                       type="text"
-                      value={personalInfo?.placeOfBirth || ''}
-                      onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
+                      value={localPersonalInfo?.placeOfBirth || ''}
+                      onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, placeOfBirth: e.target.value})}
                       disabled={savingSection === 'personal'}
                     />
                     <MultiSelectDropdown
                       label="Citizenship"
                       options={citizenshipOptions}
-                      value={personalInfo?.citizenship || []}
-                      onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
+                      value={localPersonalInfo?.citizenship || []}
+                      onChange={(selected) => setLocalPersonalInfo({...localPersonalInfo, citizenship: selected})}
                       disabled={savingSection === 'personal'}
                     />
                   </>
@@ -799,6 +735,7 @@ const PersonalInfoSection = ({
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
   const sectionRef = useRef(null);
+  const [pendingSave, setPendingSave] = useState(false);
 
   // Detect mobile
   useEffect(() => {
@@ -862,6 +799,29 @@ const PersonalInfoSection = ({
     }
   };
 
+  // Clean citizenship data to remove duplicates and normalize "United States"
+  useEffect(() => {
+    if (safePersonalInfo.citizenship && Array.isArray(safePersonalInfo.citizenship)) {
+      // Normalize "United States" to "United States of America"
+      const normalizedCitizenship = safePersonalInfo.citizenship.map(country => 
+        country === "United States" ? "United States of America" : country
+      );
+      const uniqueCitizenship = [...new Set(normalizedCitizenship)];
+      if (uniqueCitizenship.length !== safePersonalInfo.citizenship.length || 
+          normalizedCitizenship.some((c, i) => c !== safePersonalInfo.citizenship[i])) {
+        setPersonalInfo({...safePersonalInfo, citizenship: uniqueCitizenship});
+      }
+    }
+  }, [safePersonalInfo.citizenship]);
+
+  // Trigger save after state update from overlay
+  useEffect(() => {
+    if (pendingSave) {
+      savePersonalInfo();
+      setPendingSave(false);
+    }
+  }, [pendingSave, personalInfo]);
+
   const formatSSN = (ssn) => {
     if (!ssn) return '—';
     if (ssn.includes('*')) return ssn;
@@ -894,7 +854,198 @@ const PersonalInfoSection = ({
     "United States of America",
     "Afghanistan",
     "Albania",
-    // ... (rest of countries)
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Côte d'Ivoire",
+    "Cabo Verde",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Colombia",
+    "Comoros",
+    "Congo (Congo-Brazzaville)",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czechia (Czech Republic)",
+    "Democratic Republic of the Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini (fmr. \"Swaziland\")",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Holy See",
+    "Honduras",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar (formerly Burma)",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine State",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe"
   ];
 
   const ethnicityOptions = [
@@ -919,8 +1070,11 @@ const PersonalInfoSection = ({
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = () => {
-    savePersonalInfo();
+  const handleOverlaySave = (updatedPersonalInfo) => {
+    // Update parent state with the new data
+    setPersonalInfo(updatedPersonalInfo);
+    // Set flag to trigger save after state updates
+    setPendingSave(true);
   };
 
   return (
@@ -930,121 +1084,23 @@ const PersonalInfoSection = ({
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
         data={{ personalInfo: safePersonalInfo }}
-        onEdit={() => {}}
         onSave={handleOverlaySave}
         savingSection={savingSection}
         fieldErrors={fieldErrors}
-        personalInfo={safePersonalInfo}
-        setPersonalInfo={setPersonalInfo}
-        savePersonalInfo={savePersonalInfo}
       />
       
       {isMobile ? (
-        <MobileInfoCard
-          iconComponent={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          title="Personal Information"
-          backgroundImage={formsHeaderImage}
-          overlayText="Personal Details"
-          subtitle="Additional personal details for your member file."
-          isEditMode={editMode.personal}
-        >
-          {!editMode.personal ? (
-            <>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="Birth Name" value={personalInfo.birthName || 'Same as current'} />
-                  <DisplayField label="SSN/Gov ID" value={formatSSN(personalInfo.ssn)} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="Gender" value={personalInfo.gender} />
-                  <DisplayField label="Marital Status" value={personalInfo.maritalStatus} />
-                </div>
-                
-                <DisplayField label="Race" value={formatMultipleSelections(personalInfo.race)} />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <DisplayField label="Ethnicity" value={personalInfo.ethnicity} />
-                  <DisplayField label="Place of Birth" value={personalInfo.placeOfBirth} />
-                </div>
-                
-                <DisplayField label="Citizenship" value={formatMultipleSelections(personalInfo.citizenship)} />
-              </div>
-              
-              <ActionButtons 
-                editMode={false}
-                onEdit={() => toggleEditMode && toggleEditMode('personal')}
-              />
-            </>
-          ) : (
-            <div className="w-full overflow-x-hidden">
-              <FormInput
-                label="Birth Name"
-                value={personalInfo.birthName || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, birthName: e.target.value})}
-                placeholder="Same as current"
-              />
-              
-              <FormSelect
-                label="Gender *"
-                value={personalInfo.gender || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
-              >
-                <option value="">Select...</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </FormSelect>
-              
-              <FormSelect
-                label="Marital Status"
-                value={personalInfo.maritalStatus || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
-              >
-                <option value="">Select...</option>
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Separated">Separated</option>
-                <option value="Widowed">Widowed</option>
-                <option value="Widower">Widower</option>
-                <option value="Domestic Partner">Domestic Partner</option>
-                <option value="Significant Other">Significant Other</option>
-              </FormSelect>
-              
-              <MobileMultiSelect
-                label="Race"
-                options={raceOptions}
-                value={personalInfo.race || []}
-                onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
-              />
-              
-              <FormInput
-                label="Place of Birth"
-                value={personalInfo.placeOfBirth || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
-              />
-              
-              <MobileMultiSelect
-                label="Citizenship"
-                options={citizenshipOptions}
-                value={personalInfo.citizenship || []}
-                onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
-              />
-              
-              <ActionButtons 
-                editMode={true}
-                onSave={savePersonalInfo}
-                onCancel={() => cancelEdit && cancelEdit('personal')}
-                saving={savingSection === 'personal'}
-              />
-            </div>
-          )}
-        </MobileInfoCard>
+        <PersonalInfoMobile
+          personalInfo={safePersonalInfo}
+          setPersonalInfo={setPersonalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          savePersonalInfo={savePersonalInfo}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfig}
+        />
       ) : (
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
@@ -1054,12 +1110,12 @@ const PersonalInfoSection = ({
                   <div>
                     <div>
                       <div className="flex items-center space-x-4 mb-3">
-                        <div className={headerStyles.getIconContainer(styleConfig2, 'personal')} style={{ backgroundColor: '#F26430' }}>
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'personal')} style={{ backgroundColor: '#512BD9' }}>
                           <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <h2 className={headerStyles.title(styleConfig2)}>Personal Information</h2>
+                        <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Personal Information</h2>
                       </div>
                       <div className="flex items-start space-x-4">
                         <div className={headerStyles.getIconContainer(styleConfig2, 'personal')} style={{ visibility: 'hidden' }}>
@@ -1068,13 +1124,13 @@ const PersonalInfoSection = ({
                           </svg>
                         </div>
                         <div>
-                          <p className="text-gray-600 font-normal max-w-lg">
+                          <p className="text-gray-600 text-sm leading-5 max-w-lg">
                             Additional personal details for your member file.
                           </p>
-                          <p className="text-gray-400 text-sm mt-3">
+                          <p className="text-gray-400 text-sm leading-5 mt-2">
                             Required: Gender, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship
                           </p>
-                          <p className="text-gray-400 text-sm mt-2">
+                          <p className="text-gray-400 text-sm leading-5 mt-1">
                             Recommended: Ethnicity
                           </p>
                         </div>
@@ -1085,7 +1141,7 @@ const PersonalInfoSection = ({
                   <CompletionWheelWithLegend
                     data={{ personalInfo: safePersonalInfo }}
                     fieldConfig={fieldConfig}
-                    sectionColor="#F26430"
+                    sectionColor="#512BD9"
                   />
                 </div>
               </div>
@@ -1109,9 +1165,9 @@ const PersonalInfoSection = ({
                     cardIndex={0}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Birth Name" value={personalInfo?.birthName || 'Same as current'} />
-                    <InfoField label="SSN/Government ID" value={formatSSN(personalInfo?.ssn)} />
-                    <InfoField label="Gender" value={personalInfo?.gender || '—'} />
+                    <InfoField label="Birth Name" value={personalInfo?.birthName || 'Same as current'} isRequired />
+                    <InfoField label="SSN/Government ID" value={formatSSN(personalInfo?.ssn)} isRequired />
+                    <InfoField label="Gender" value={personalInfo?.gender || '—'} isRequired />
                   </InfoCard>
 
                   <InfoCard 
@@ -1129,9 +1185,9 @@ const PersonalInfoSection = ({
                     cardIndex={1}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Race" value={formatMultipleSelections(personalInfo?.race)} />
-                    <InfoField label="Ethnicity" value={personalInfo?.ethnicity || '—'} />
-                    <InfoField label="Marital Status" value={personalInfo?.maritalStatus || '—'} />
+                    <InfoField label="Race" value={formatMultipleSelections(personalInfo?.race)} isRequired />
+                    <InfoField label="Ethnicity" value={personalInfo?.ethnicity || '—'} isRecommended />
+                    <InfoField label="Marital Status" value={personalInfo?.maritalStatus || '—'} isRequired />
                   </InfoCard>
 
                   <InfoCard 
@@ -1149,8 +1205,8 @@ const PersonalInfoSection = ({
                     cardIndex={2}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Place of Birth" value={personalInfo?.placeOfBirth || '—'} />
-                    <InfoField label="Citizenship" value={formatMultipleSelections(personalInfo?.citizenship)} />
+                    <InfoField label="Place of Birth" value={personalInfo?.placeOfBirth || '—'} isRequired />
+                    <InfoField label="Citizenship" value={formatMultipleSelections(personalInfo?.citizenship)} isRequired />
                     <div className="opacity-0 pointer-events-none">
                       <InfoField label="" value="" />
                     </div>

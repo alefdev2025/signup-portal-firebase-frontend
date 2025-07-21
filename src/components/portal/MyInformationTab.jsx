@@ -65,6 +65,7 @@ import CryoArrangementsSection from './MyInfoSections/CryoArrangementsSection';
 import FundingSection from './MyInfoSections/FundingSection';
 import LegalSection from './MyInfoSections/LegalSection';
 import NextOfKinSection from './MyInfoSections/NextOfKinSection';
+import FundingAllocationsSection from './MyInfoSections/FundingAllocationsSection';
 
 import { memberCategoryConfig, isFieldRequired, isSectionVisible } from './memberCategoryConfig';
 
@@ -82,7 +83,8 @@ const sectionImages = {
   cryoArrangements: contractsImage,   // Change to: cryoImage when you have it
   funding: fundingImage,              // Change to: fundingImage when you have it
   legal: legalImage,                  // Change to: legalImage when you have it
-  nextOfKin: emergencyContactImage    // Change to: emergencyImage when you have it
+  nextOfKin: emergencyContactImage,    // Change to: emergencyImage when you have it
+  fundingAllocations: emergencyContactImage
 };
 
 const sectionLabels = {
@@ -95,7 +97,8 @@ const sectionLabels = {
   cryoArrangements: "CRYO",
   funding: "FUNDING",
   legal: "LEGAL",
-  nextOfKin: "EMERGENCY"
+  nextOfKin: "EMERGENCY",
+  fundingAllocations: "ALLOCATIONS"
 };
 
 const MyInformationTab = () => {
@@ -126,7 +129,8 @@ const MyInformationTab = () => {
     cryoArrangements: false,
     funding: false,
     legal: false,
-    nextOfKin: false
+    nextOfKin: false,
+    fundingAllocations: false
   });
   
   // Edit mode states for each section
@@ -140,7 +144,8 @@ const MyInformationTab = () => {
     cryoArrangements: false,
     funding: false,
     legal: false,
-    nextOfKin: false
+    nextOfKin: false,
+    fundingAllocations: false
   });
   
   // Data states - current values
@@ -169,6 +174,32 @@ const MyInformationTab = () => {
     onAccept: null
   });
 
+  const [fundingAllocations, setFundingAllocations] = useState({
+    // Control fields
+    customPrimary: false,
+    customOverMinimum: false,
+    
+    // Primary allocation percentages - NO DEFAULTS
+    patientCareTrust: null,
+    generalOperatingFund: null,
+    alcorResearchFund: null,
+    endowmentFund: null,
+    individuals: null,
+    others: null,
+    followingPersons: '',
+    other: '',
+    
+    // Over-minimum allocation percentages - NO DEFAULTS
+    patientCareTrustOM: null,
+    generalOperatingFundOM: null,
+    alcorResearchFundOM: null,
+    endowmentFundOM: null,
+    individualsOM: null,
+    othersOM: null,
+    followingPersonsOM: '',
+    otherOM: ''
+  });
+
   const safeSetState = (setter, newData, originalDataSetter, key) => {
     if (!newData || (typeof newData === 'object' && Object.keys(newData).length === 0)) {
       console.warn(`⚠️ Skipping empty ${key} data update`);
@@ -179,6 +210,15 @@ const MyInformationTab = () => {
     if (originalDataSetter) {
       originalDataSetter(prev => ({ ...prev, [key]: newData }));
     }
+  };
+
+  const formatPhoneDisplay = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
   };
 
   /*const [funding, setFunding] = useState({
@@ -213,7 +253,8 @@ const MyInformationTab = () => {
     cryoArrangements: {},
     funding: {},
     legal: {},
-    nextOfKin: {}
+    nextOfKin: {},
+    fundingAllocations: {}
   });
   
   useEffect(() => {
@@ -499,6 +540,10 @@ const MyInformationTab = () => {
       timers.push(setTimeout(() => {
         setSectionsLoaded(prev => ({ ...prev, cryoArrangements: true }));
       }, 700));
+
+      timers.push(setTimeout(() => {
+        setSectionsLoaded(prev => ({ ...prev, fundingAllocations: true }));
+      }, 750));
       
       timers.push(setTimeout(() => {
         setSectionsLoaded(prev => ({ ...prev, funding: true }));
@@ -813,6 +858,160 @@ const MyInformationTab = () => {
         
         setCryoArrangements(transformedCryo);
         setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+        
+        // NEW: Extract funding allocation fields with detailed logging
+        console.log('💰 === FUNDING ALLOCATIONS EXTRACTION START ===');
+        console.log('📦 Checking cryoData for funding allocation fields...');
+        
+        // Log all fields in cryoData that might be funding-related
+        console.log('🔍 All fields containing "Trust", "Fund", "Individual", or "Other":');
+        Object.keys(cryoData).forEach(key => {
+          if (key.includes('Trust') || key.includes('Fund') || key.includes('Individual') || 
+              key.includes('Other') || key.includes('Following') || key.includes('_OM') || 
+              key.includes('Over_Minimum')) {
+            console.log(`  ${key}: ${cryoData[key] ?? 'undefined/null'}`);
+          }
+        });
+        
+        const fundingAllocationsData = {
+          // Control fields
+          customPrimary: false,
+          customOverMinimum: false,
+          
+          // Primary allocations - log each field
+          patientCareTrust: cryoData.Patient_Care_Trust__c ?? null,
+          generalOperatingFund: cryoData.General_Operating_Fund__c ?? null,
+          alcorResearchFund: cryoData.Alcor_Research_Fund__c ?? null,
+          endowmentFund: cryoData.Endowment_Fund__c ?? null,
+          individuals: cryoData.Individuals__c ?? null,
+          others: cryoData.Others__c ?? null,
+          followingPersons: cryoData.Following_Person_s__c || '',
+          other: cryoData.Other__c || '',
+          
+          // Over-minimum allocations
+          patientCareTrustOM: cryoData.Patient_Care_Trust_Over_Minimum__c ?? null,
+          generalOperatingFundOM: cryoData.General_Operating_Fund_Over_Minimum__c ?? null,
+          alcorResearchFundOM: cryoData.Alcor_Research_Fund_Over_Minimum__c ?? null,
+          endowmentFundOM: cryoData.Endowment_Fund_Over_Minimum__c ?? null,
+          individualsOM: cryoData.Individuals_OM__c ?? null,
+          othersOM: cryoData.Others_OM__c ?? null,
+          followingPersonsOM: cryoData.Following_Person_s_Over_Minimum__c || '',
+          otherOM: cryoData.Other_Over_Minimum__c || ''
+        };
+        
+        // Detailed logging of what we found
+        console.log('📊 Funding Allocation Fields Found:');
+        console.log('  Primary Allocations:');
+        console.log(`    - Patient_Care_Trust__c: ${cryoData.Patient_Care_Trust__c !== undefined ? cryoData.Patient_Care_Trust__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - General_Operating_Fund__c: ${cryoData.General_Operating_Fund__c !== undefined ? cryoData.General_Operating_Fund__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Alcor_Research_Fund__c: ${cryoData.Alcor_Research_Fund__c !== undefined ? cryoData.Alcor_Research_Fund__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Endowment_Fund__c: ${cryoData.Endowment_Fund__c !== undefined ? cryoData.Endowment_Fund__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Individuals__c: ${cryoData.Individuals__c !== undefined ? cryoData.Individuals__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Others__c: ${cryoData.Others__c !== undefined ? cryoData.Others__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Following_Person_s__c: "${cryoData.Following_Person_s__c || 'EMPTY/NOT FOUND'}"`);
+        console.log(`    - Other__c: "${cryoData.Other__c || 'EMPTY/NOT FOUND'}"`);
+        
+        console.log('  Over-Minimum Allocations:');
+        console.log(`    - Patient_Care_Trust_Over_Minimum__c: ${cryoData.Patient_Care_Trust_Over_Minimum__c !== undefined ? cryoData.Patient_Care_Trust_Over_Minimum__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - General_Operating_Fund_Over_Minimum__c: ${cryoData.General_Operating_Fund_Over_Minimum__c !== undefined ? cryoData.General_Operating_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Alcor_Research_Fund_Over_Minimum__c: ${cryoData.Alcor_Research_Fund_Over_Minimum__c !== undefined ? cryoData.Alcor_Research_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Endowment_Fund_Over_Minimum__c: ${cryoData.Endowment_Fund_Over_Minimum__c !== undefined ? cryoData.Endowment_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Individuals_OM__c: ${cryoData.Individuals_OM__c !== undefined ? cryoData.Individuals_OM__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Others_OM__c: ${cryoData.Others_OM__c !== undefined ? cryoData.Others_OM__c + '%' : 'NOT FOUND'}`);
+        console.log(`    - Following_Person_s_Over_Minimum__c: "${cryoData.Following_Person_s_Over_Minimum__c || 'EMPTY/NOT FOUND'}"`);
+        console.log(`    - Other_Over_Minimum__c: "${cryoData.Other_Over_Minimum__c || 'EMPTY/NOT FOUND'}"`);
+        
+        // Check if we have ANY funding allocation data
+        const hasPrimaryData = 
+          cryoData.Patient_Care_Trust__c !== undefined ||
+          cryoData.General_Operating_Fund__c !== undefined ||
+          cryoData.Alcor_Research_Fund__c !== undefined ||
+          cryoData.Endowment_Fund__c !== undefined ||
+          cryoData.Individuals__c !== undefined ||
+          cryoData.Others__c !== undefined;
+        
+        const hasOverMinData = 
+          cryoData.Patient_Care_Trust_Over_Minimum__c !== undefined ||
+          cryoData.General_Operating_Fund_Over_Minimum__c !== undefined ||
+          cryoData.Alcor_Research_Fund_Over_Minimum__c !== undefined ||
+          cryoData.Endowment_Fund_Over_Minimum__c !== undefined ||
+          cryoData.Individuals_OM__c !== undefined ||
+          cryoData.Others_OM__c !== undefined;
+        
+        if (!hasPrimaryData && !hasOverMinData) {
+          console.error('❌ === NO FUNDING ALLOCATION DATA FOUND ===');
+          console.error('❌ This could mean:');
+          console.error('❌ 1. The member has no Agreement__c record');
+          console.error('❌ 2. The Agreement__c record exists but funding fields are not populated');
+          console.error('❌ 3. The API query is not including these fields');
+          console.error('❌ 4. The field names in Salesforce are different than expected');
+          console.error('❌ Check the getMemberCryoArrangements API endpoint and SOQL query');
+        } else {
+          console.log('✅ Found funding allocation data');
+          
+          // Calculate and validate totals
+          if (hasPrimaryData) {
+            const primaryTotal = 
+              (parseFloat(cryoData.Patient_Care_Trust__c) || 0) +
+              (parseFloat(cryoData.General_Operating_Fund__c) || 0) +
+              (parseFloat(cryoData.Alcor_Research_Fund__c) || 0) +
+              (parseFloat(cryoData.Endowment_Fund__c) || 0) +
+              (parseFloat(cryoData.Individuals__c) || 0) +
+              (parseFloat(cryoData.Others__c) || 0);
+            
+            console.log(`  📊 Primary allocation total: ${primaryTotal}%`);
+            if (Math.abs(primaryTotal - 100) > 0.01 && primaryTotal > 0) {
+              console.warn(`  ⚠️ WARNING: Primary allocations total ${primaryTotal}% instead of 100%`);
+            }
+            
+            // Check if it's custom (not the default 50/50 split)
+            if (cryoData.Patient_Care_Trust__c !== 50 || 
+                cryoData.General_Operating_Fund__c !== 50 ||
+                (cryoData.Alcor_Research_Fund__c && cryoData.Alcor_Research_Fund__c > 0) ||
+                (cryoData.Endowment_Fund__c && cryoData.Endowment_Fund__c > 0) ||
+                (cryoData.Individuals__c && cryoData.Individuals__c > 0) ||
+                (cryoData.Others__c && cryoData.Others__c > 0)) {
+              fundingAllocationsData.customPrimary = true;
+              console.log('  ✓ Custom primary allocations detected (not default 50/50)');
+            } else {
+              console.log('  ✓ Default primary allocations (50/50 split)');
+            }
+          }
+          
+          if (hasOverMinData) {
+            const overMinTotal = 
+              (parseFloat(cryoData.Patient_Care_Trust_Over_Minimum__c) || 0) +
+              (parseFloat(cryoData.General_Operating_Fund_Over_Minimum__c) || 0) +
+              (parseFloat(cryoData.Alcor_Research_Fund_Over_Minimum__c) || 0) +
+              (parseFloat(cryoData.Endowment_Fund_Over_Minimum__c) || 0) +
+              (parseFloat(cryoData.Individuals_OM__c) || 0) +
+              (parseFloat(cryoData.Others_OM__c) || 0);
+            
+            console.log(`  📊 Over-minimum allocation total: ${overMinTotal}%`);
+            if (Math.abs(overMinTotal - 100) > 0.01 && overMinTotal > 0) {
+              console.warn(`  ⚠️ WARNING: Over-minimum allocations total ${overMinTotal}% instead of 100%`);
+            }
+            
+            // Check if it's custom
+            if (cryoData.Patient_Care_Trust_Over_Minimum__c !== 50 || 
+                cryoData.General_Operating_Fund_Over_Minimum__c !== 50 ||
+                (cryoData.Alcor_Research_Fund_Over_Minimum__c && cryoData.Alcor_Research_Fund_Over_Minimum__c > 0) ||
+                (cryoData.Endowment_Fund_Over_Minimum__c && cryoData.Endowment_Fund_Over_Minimum__c > 0) ||
+                (cryoData.Individuals_OM__c && cryoData.Individuals_OM__c > 0) ||
+                (cryoData.Others_OM__c && cryoData.Others_OM__c > 0)) {
+              fundingAllocationsData.customOverMinimum = true;
+              console.log('  ✓ Custom over-minimum allocations detected (not default 50/50)');
+            } else {
+              console.log('  ✓ Default over-minimum allocations (50/50 split)');
+            }
+          }
+        }
+        
+        console.log('📦 Final fundingAllocationsData:', fundingAllocationsData);
+        console.log('💰 === FUNDING ALLOCATIONS EXTRACTION END ===\n');
+        
+        setFundingAllocations(fundingAllocationsData);
+        setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
       }
 
       // Process Legal Info
@@ -962,6 +1161,18 @@ const MyInformationTab = () => {
     
     return '';
   }
+
+  const mapCryoCriteria = (criteria) => {
+    if (!criteria) return '';
+    
+    if (criteria.includes('any biological remains')) {
+      return 'any-condition';
+    } else if (criteria.includes('certain conditions')) {
+      return 'limit-damage';
+    }
+    
+    return '';
+  };
 
 function mapRemainsHandlingToSF(value) {
   switch(value) {
@@ -1144,6 +1355,12 @@ const loadMemberCategory = async () => {
         // Next of kin is always an array, so handle it differently
         setNextOfKinList(originalData.nextOfKin || []);
         break;
+
+      case 'fundingAllocations':
+          if (originalData.fundingAllocations) {
+            setFundingAllocations(originalData.fundingAllocations);
+          }
+          break;
         
       default:
         console.warn(`Unknown section in cancelEdit: ${section}`);
@@ -1704,6 +1921,191 @@ const loadMemberCategory = async () => {
       ////console.log('🚀 === SAVE ADDRESSES END ===\n');
     }
   };
+  const saveFundingAllocations = async () => {
+    setSavingSection('cryoArrangements');
+    setSaveMessage({ type: '', text: '' });
+    
+    // Store current state for rollback
+    const previousFundingAllocations = { ...fundingAllocations };
+    
+    try {
+      console.log('🔵 === START saveFundingAllocations ===');
+      console.log('Current funding allocations:', fundingAllocations);
+      
+      // Clean the funding allocations data
+      const cleanedFundingAllocations = cleanDataBeforeSave(fundingAllocations, 'fundingAllocations');
+      
+      // Validate allocations
+      const errors = validateFundingAllocations(cleanedFundingAllocations);
+      if (errors.length > 0) {
+        setSaveMessage({ type: 'error', text: errors.join('. ') });
+        setSavingSection('');
+        return false;
+      }
+      
+      // Build the update object based on customization choices
+      const dataToSend = buildFundingAllocationPayload(cleanedFundingAllocations);
+      
+      console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      
+      // Send to backend
+      const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
+      console.log('📨 Save result:', result);
+      
+      if (!result.success) {
+        // Rollback on failure
+        setFundingAllocations(previousFundingAllocations);
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save funding allocations' });
+        setSavingSection('');
+        return false;
+      }
+      
+      // SUCCESS: Update local state
+      setSaveMessage({ type: 'success', text: 'Funding allocations saved successfully!' });
+      setFundingAllocations(cleanedFundingAllocations);
+      setOriginalData(prev => ({ ...prev, fundingAllocations: cleanedFundingAllocations }));
+      
+      console.log('🔵 Setting editMode.fundingAllocations to false');
+      console.log('🔵 Current editMode before:', editMode);
+      setEditMode(prev => {
+        const newEditMode = { ...prev, fundingAllocations: false };
+        console.log('🔵 New editMode after:', newEditMode);
+        return newEditMode;
+      });
+      
+      // Clear cache and refresh
+      memberDataService.clearCache(salesforceContactId);
+      if (refreshMemberInfo) {
+        setTimeout(() => {
+          console.log('🔄 Refreshing cache after save...');
+          refreshMemberInfo();
+        }, 500);
+      }
+      
+      console.log('🔵 === END saveFundingAllocations (SUCCESS) ===\n');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error saving funding allocations:', error);
+      setFundingAllocations(previousFundingAllocations);
+      setSaveMessage({ 
+        type: 'error', 
+        text: 'Failed to save funding allocations. Please try again or contact support.' 
+      });
+      setSavingSection('');
+      return false;
+      
+    } finally {
+      setSavingSection('');
+      setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
+    }
+  };
+
+  // Helper function to validate allocations
+  const validateFundingAllocations = (allocations) => {
+    const errors = [];
+    
+    // Validate primary allocations if customized
+    if (allocations.customPrimary) {
+      const primaryTotal = 
+        (parseFloat(allocations.patientCareTrust) || 0) +
+        (parseFloat(allocations.generalOperatingFund) || 0) +
+        (parseFloat(allocations.alcorResearchFund) || 0) +
+        (parseFloat(allocations.endowmentFund) || 0) +
+        (parseFloat(allocations.individuals) || 0) +
+        (parseFloat(allocations.others) || 0);
+      
+      if (Math.abs(primaryTotal - 100) > 0.01) {
+        errors.push('Primary allocations must total 100%');
+      }
+      
+      if (allocations.individuals > 0 && !allocations.followingPersons?.trim()) {
+        errors.push('Individual recipients details are required');
+      }
+      
+      if (allocations.others > 0 && !allocations.other?.trim()) {
+        errors.push('Other recipients details are required');
+      }
+    }
+    
+    // Validate over-minimum allocations if customized
+    if (allocations.customOverMinimum) {
+      const overMinTotal = 
+        (parseFloat(allocations.patientCareTrustOM) || 0) +
+        (parseFloat(allocations.generalOperatingFundOM) || 0) +
+        (parseFloat(allocations.alcorResearchFundOM) || 0) +
+        (parseFloat(allocations.endowmentFundOM) || 0) +
+        (parseFloat(allocations.individualsOM) || 0) +
+        (parseFloat(allocations.othersOM) || 0);
+      
+      if (Math.abs(overMinTotal - 100) > 0.01) {
+        errors.push('Over-minimum allocations must total 100%');
+      }
+      
+      if (allocations.individualsOM > 0 && !allocations.followingPersonsOM?.trim()) {
+        errors.push('Over-minimum individual recipients details are required');
+      }
+      
+      if (allocations.othersOM > 0 && !allocations.otherOM?.trim()) {
+        errors.push('Over-minimum other recipients details are required');
+      }
+    }
+    
+    return errors;
+  };
+  
+  // Helper function to build the API payload
+  const buildFundingAllocationPayload = (allocations) => {
+    const payload = {};
+    
+    // Handle primary allocations
+    if (!allocations.customPrimary) {
+      // User chose default 50/50 split - send nulls to indicate default
+      payload.Patient_Care_Trust__c = null;
+      payload.General_Operating_Fund__c = null;
+      payload.Alcor_Research_Fund__c = null;
+      payload.Endowment_Fund__c = null;
+      payload.Individuals__c = null;
+      payload.Others__c = null;
+      payload.Following_Person_s__c = null;
+      payload.Other__c = null;
+    } else {
+      // User customized allocations - send actual values
+      payload.Patient_Care_Trust__c = parseFloat(allocations.patientCareTrust) || 0;
+      payload.General_Operating_Fund__c = parseFloat(allocations.generalOperatingFund) || 0;
+      payload.Alcor_Research_Fund__c = parseFloat(allocations.alcorResearchFund) || 0;
+      payload.Endowment_Fund__c = parseFloat(allocations.endowmentFund) || 0;
+      payload.Individuals__c = parseFloat(allocations.individuals) || 0;
+      payload.Others__c = parseFloat(allocations.others) || 0;
+      payload.Following_Person_s__c = allocations.individuals > 0 ? allocations.followingPersons : null;
+      payload.Other__c = allocations.others > 0 ? allocations.other : null;
+    }
+    
+    // Handle over-minimum allocations
+    if (!allocations.customOverMinimum) {
+      // User chose default 50/50 split - send nulls to indicate default
+      payload.Patient_Care_Trust_Over_Minimum__c = null;
+      payload.General_Operating_Fund_Over_Minimum__c = null;
+      payload.Alcor_Research_Fund_Over_Minimum__c = null;
+      payload.Endowment_Fund_Over_Minimum__c = null;
+      payload.Individuals_OM__c = null;
+      payload.Others_OM__c = null;
+      payload.Following_Person_s_Over_Minimum__c = null;
+      payload.Other_Over_Minimum__c = null;
+    } else {
+      // User customized allocations - send actual values
+      payload.Patient_Care_Trust_Over_Minimum__c = parseFloat(allocations.patientCareTrustOM) || 0;
+      payload.General_Operating_Fund_Over_Minimum__c = parseFloat(allocations.generalOperatingFundOM) || 0;
+      payload.Alcor_Research_Fund_Over_Minimum__c = parseFloat(allocations.alcorResearchFundOM) || 0;
+      payload.Endowment_Fund_Over_Minimum__c = parseFloat(allocations.endowmentFundOM) || 0;
+      payload.Individuals_OM__c = parseFloat(allocations.individualsOM) || 0;
+      payload.Others_OM__c = parseFloat(allocations.othersOM) || 0;
+      payload.Following_Person_s_Over_Minimum__c = allocations.individualsOM > 0 ? allocations.followingPersonsOM : null;
+      payload.Other_Over_Minimum__c = allocations.othersOM > 0 ? allocations.otherOM : null;
+    }
+    
+    return payload;
+  };
   
   const saveFamilyInfo = async () => {
     ////console.log('🎯 saveFamilyInfo function called!');
@@ -2193,105 +2595,187 @@ const loadMemberCategory = async () => {
     }
   };
   
-// Update the saveCryoArrangements function:
-const saveCryoArrangements = async () => {
-  setSavingSection('cryoArrangements');
-  setSaveMessage({ type: '', text: '' });
-  
-  try {
-    console.log('🔵 === START saveCryoArrangements ===');
-    console.log('Current cryo arrangements:', cryoArrangements);
+  const saveCryoArrangements = async () => {
+    setSavingSection('cryoArrangements');
+    setSaveMessage({ type: '', text: '' });
     
-    // Clean the cryo arrangements data
-    const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
-    console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
+    // Store current state for rollback
+    const previousCryoArrangements = { ...cryoArrangements };
     
-    // Build the update object
-    const dataToSend = {};
-    
-    // Handle the remains handling
-    if (cleanedCryoArrangements.remainsHandling) {
-      dataToSend.nonCryoRemainArrangements = cleanedCryoArrangements.remainsHandling;
-    }
-    
-    // Handle the disclosures
-    if (cleanedCryoArrangements.cryopreservationDisclosure) {
-      dataToSend.cryopreservationDisclosure = cleanedCryoArrangements.cryopreservationDisclosure;
-    }
-    
-    if (cleanedCryoArrangements.memberPublicDisclosure) {
-      dataToSend.memberPublicDisclosure = cleanedCryoArrangements.memberPublicDisclosure;
-    }
-    
-    // Add recipient fields
-    if (cleanedCryoArrangements.recipientName !== undefined) {
-      dataToSend.recipientName = cleanedCryoArrangements.recipientName;
-    }
-    if (cleanedCryoArrangements.recipientPhone !== undefined) {
-      dataToSend.recipientPhone = cleanedCryoArrangements.recipientPhone;
-    }
-    if (cleanedCryoArrangements.recipientEmail !== undefined) {
-      dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
-    }
-    
-    // NEW: Add recipient mailing address fields
-    if (cleanedCryoArrangements.recipientMailingStreet !== undefined) {
-      dataToSend.recipientMailingStreet = cleanedCryoArrangements.recipientMailingStreet;
-    }
-    if (cleanedCryoArrangements.recipientMailingCity !== undefined) {
-      dataToSend.recipientMailingCity = cleanedCryoArrangements.recipientMailingCity;
-    }
-    if (cleanedCryoArrangements.recipientMailingState !== undefined) {
-      dataToSend.recipientMailingState = cleanedCryoArrangements.recipientMailingState;
-    }
-    if (cleanedCryoArrangements.recipientMailingPostalCode !== undefined) {
-      dataToSend.recipientMailingPostalCode = cleanedCryoArrangements.recipientMailingPostalCode;
-    }
-    if (cleanedCryoArrangements.recipientMailingCountry !== undefined) {
-      dataToSend.recipientMailingCountry = cleanedCryoArrangements.recipientMailingCountry;
-    }
-    
-    console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
-    
-    const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
-    console.log('📨 Save result:', result);
-    
-    if (result.success) {
-      setSaveMessage({ 
-        type: 'success', 
-        text: 'Cryopreservation arrangements saved successfully!' 
-      });
+    try {
+      console.log('🔵 === START saveCryoArrangements ===');
+      console.log('Current cryo arrangements:', cryoArrangements);
+      
+      // Clean the cryo arrangements data
+      const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
+      console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
+      
+      // Build the update object
+      const dataToSend = {};
+      
+      // Handle preservation method (NEW)
+      if (cleanedCryoArrangements.method !== undefined) {
+        if (cleanedCryoArrangements.method === 'WholeBody') {
+          dataToSend.methodOfPreservation = 'whole-body';
+        } else if (cleanedCryoArrangements.method === 'Neuro') {
+          dataToSend.methodOfPreservation = 'neuro';
+        } else {
+          dataToSend.methodOfPreservation = '';
+        }
+      }
+      
+      // Handle CMS waiver (NEW)
+      if (cleanedCryoArrangements.cmsWaiver !== undefined) {
+        dataToSend.cmsWaiver = cleanedCryoArrangements.cmsWaiver;
+      }
+      
+      // Handle cryopreservation criteria if present (NEW - OPTIONAL)
+      if (cleanedCryoArrangements.cryopreservationCriteria !== undefined) {
+        dataToSend.cryopreservationCriteria = cleanedCryoArrangements.cryopreservationCriteria;
+      }
+      
+      // Handle the remains handling
+      if (cleanedCryoArrangements.remainsHandling !== undefined) {
+        dataToSend.nonCryoRemainArrangements = cleanedCryoArrangements.remainsHandling;
+      }
+      
+      // Handle the disclosures
+      if (cleanedCryoArrangements.cryopreservationDisclosure !== undefined) {
+        dataToSend.cryopreservationDisclosure = cleanedCryoArrangements.cryopreservationDisclosure;
+      }
+      
+      if (cleanedCryoArrangements.memberPublicDisclosure !== undefined) {
+        dataToSend.memberPublicDisclosure = cleanedCryoArrangements.memberPublicDisclosure;
+      }
+      
+      // Add recipient fields
+      if (cleanedCryoArrangements.recipientName !== undefined) {
+        dataToSend.recipientName = cleanedCryoArrangements.recipientName;
+      }
+      if (cleanedCryoArrangements.recipientPhone !== undefined) {
+        dataToSend.recipientPhone = cleanedCryoArrangements.recipientPhone;
+      }
+      if (cleanedCryoArrangements.recipientEmail !== undefined) {
+        dataToSend.recipientEmail = cleanedCryoArrangements.recipientEmail;
+      }
+      
+      // Add recipient mailing address fields
+      if (cleanedCryoArrangements.recipientMailingStreet !== undefined) {
+        dataToSend.recipientMailingStreet = cleanedCryoArrangements.recipientMailingStreet;
+      }
+      if (cleanedCryoArrangements.recipientMailingCity !== undefined) {
+        dataToSend.recipientMailingCity = cleanedCryoArrangements.recipientMailingCity;
+      }
+      if (cleanedCryoArrangements.recipientMailingState !== undefined) {
+        dataToSend.recipientMailingState = cleanedCryoArrangements.recipientMailingState;
+      }
+      if (cleanedCryoArrangements.recipientMailingPostalCode !== undefined) {
+        dataToSend.recipientMailingPostalCode = cleanedCryoArrangements.recipientMailingPostalCode;
+      }
+      if (cleanedCryoArrangements.recipientMailingCountry !== undefined) {
+        dataToSend.recipientMailingCountry = cleanedCryoArrangements.recipientMailingCountry;
+      }
+      
+      console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      
+      const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
+      console.log('📨 Save result:', result);
+      
+      if (!result.success) {
+        // Complete failure - rollback
+        setCryoArrangements(previousCryoArrangements);
+        setSaveMessage({ type: 'error', text: result.error || 'Failed to save cryopreservation arrangements' });
+        setSavingSection('');
+        console.log('🔵 === END saveCryoArrangements (FAILURE) ===\n');
+        return false; // Return false on failure
+      }
+      
+      // SUCCESS PATH
+      setSaveMessage({ type: 'success', text: 'Cryopreservation arrangements saved successfully!' });
+      
+      // Update state with cleaned data
       setCryoArrangements(cleanedCryoArrangements);
       setOriginalData(prev => ({ ...prev, cryoArrangements: cleanedCryoArrangements }));
+      
+      // Close edit mode
       setEditMode(prev => ({ ...prev, cryoArrangements: false }));
+      
+      // Clear cache after successful save
       memberDataService.clearCache(salesforceContactId);
       
-      // Refresh the cache
+      // Fetch fresh data to ensure sync
+      try {
+        const freshData = await memberDataService.getCryoArrangements(salesforceContactId);
+        if (freshData.success && freshData.data) {
+          const cryoData = freshData.data.data || freshData.data;
+          console.log('🔍 Fresh cryo data from backend:', cryoData);
+          
+          const transformedCryo = {
+            // Map preservation method from backend
+            method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
+                    cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
+            // Map CMS waiver from backend
+            cmsWaiver: cryoData.cmsWaiver === 'Yes',
+            // Map cryopreservation criteria if present
+            cryopreservationCriteria: mapCryoCriteria(cryoData.cryopreservationCriteria),
+            // Existing mappings
+            remainsHandling: mapRemainsHandling(cryoData.nonCryoRemainArrangements),
+            recipientName: formatPersonName(cryoData.recipientName),
+            recipientPhone: formatPhone(cryoData.recipientPhone),
+            recipientEmail: formatEmail(cryoData.recipientEmail),
+            recipientMailingStreet: formatStreetAddress(cryoData.recipientMailingStreet),
+            recipientMailingCity: formatCity(cryoData.recipientMailingCity),
+            recipientMailingState: formatStateProvince(cryoData.recipientMailingState),
+            recipientMailingPostalCode: formatPostalCode(cryoData.recipientMailingPostalCode),
+            recipientMailingCountry: formatCountry(cryoData.recipientMailingCountry),
+            cryopreservationDisclosure: mapPublicDisclosure(cryoData.cryopreservationDisclosure),
+            memberPublicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure),
+            fundingStatus: cryoData.fundingStatus,
+            contractDate: cryoData.contractDate,
+            memberJoinDate: cryoData.memberJoinDate,
+            contractComplete: cryoData.contractComplete,
+            isPatient: cryoData.isPatient,
+            recipientAddress: cryoData.recipientAddress
+          };
+          
+          setCryoArrangements(transformedCryo);
+          setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing cryo data:', refreshError);
+        // Non-critical error - data was saved successfully
+      }
+      
+      // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
           console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
-    } else {
-      console.error('❌ Save failed:', result.error);
+      
+      console.log('🔵 === END saveCryoArrangements (SUCCESS) ===\n');
+      return true; // Return true on success
+      
+    } catch (error) {
+      console.error('❌ Error saving cryo arrangements:', error);
+      
+      // Rollback on error
+      setCryoArrangements(previousCryoArrangements);
+      
       setSaveMessage({ 
         type: 'error', 
-        text: result.error || 'Failed to save cryopreservation arrangements' 
+        text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
       });
+      
+      console.log('🔵 === END saveCryoArrangements (ERROR) ===\n');
+      return false; // Return false on error
+      
+    } finally {
+      setSavingSection('');
+      setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
     }
-  } catch (error) {
-    console.error('❌ Error saving cryo arrangements:', error);
-    setSaveMessage({ 
-      type: 'error', 
-      text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
-    });
-  } finally {
-    setSavingSection('');
-    setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-    console.log('🔵 === END saveCryoArrangements ===\n');
-  }
-};
+  };
   
 const saveFunding = async () => {
   setSavingSection('funding');
@@ -3044,10 +3528,31 @@ const saveFunding = async () => {
                     toggleEditMode={toggleEditMode}
                     cancelEdit={cancelEdit}
                     saveNextOfKin={saveNextOfKin}
+                    formatPhoneDisplay={formatPhoneDisplay}
                     savingSection={savingSection}
                     memberCategory={memberCategory}
                     salesforceContactId={salesforceContactId}
                     fieldErrors={fieldErrors}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Funding Allocations */}
+            {isSectionVisible(memberCategory, 'fundingAllocations') && (
+              <>
+                {!sectionsLoaded.fundingAllocations ? (
+                  <SectionSkeleton />
+                ) : (
+                  <FundingAllocationsSection
+                    fundingAllocations={fundingAllocations || {}}
+                    setFundingAllocations={setFundingAllocations}
+                    editMode={editMode}
+                    toggleEditMode={toggleEditMode}
+                    cancelEdit={cancelEdit}
+                    saveFundingAllocations={saveFundingAllocations}
+                    savingSection={savingSection}
+                    memberCategory={memberCategory}
                   />
                 )}
               </>
@@ -3283,10 +3788,34 @@ const saveFunding = async () => {
                 saveNextOfKin={saveNextOfKin}
                 savingSection={savingSection}
                 memberCategory={memberCategory}
+                formatPhoneDisplay={formatPhoneDisplay}
                 salesforceContactId={salesforceContactId}
                 fieldErrors={fieldErrors}
                 sectionImage={sectionImages.nextOfKin}
                 sectionLabel={sectionLabels.nextOfKin}
+              />
+            )}
+            {sectionSeparator()}
+          </>
+        )}
+
+        {/* Funding Allocations */}
+        {isSectionVisible(memberCategory, 'fundingAllocations') && (
+          <>
+            {!sectionsLoaded.fundingAllocations ? (
+              <SectionSkeleton />
+            ) : (
+              <FundingAllocationsSection
+                fundingAllocations={fundingAllocations || {}}
+                setFundingAllocations={setFundingAllocations}
+                editMode={editMode}
+                toggleEditMode={toggleEditMode}
+                cancelEdit={cancelEdit}
+                saveFundingAllocations={saveFundingAllocations}
+                savingSection={savingSection}
+                memberCategory={memberCategory}
+                sectionImage={sectionImages.fundingAllocations}
+                sectionLabel={sectionLabels.fundingAllocations}
               />
             )}
             {sectionSeparator()}

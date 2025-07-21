@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
+import FamilyInfoMobile from './FamilyInfoMobile';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
@@ -18,27 +19,84 @@ import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
 import { HelpCircle } from 'lucide-react';
 
-// Overlay Component
-const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, familyInfo, setFamilyInfo, personalInfo, saveFamilyInfo }) => {
+// Overlay Component - Updated to use local state like other sections
+const CardOverlay = ({ 
+  isOpen, 
+  onClose, 
+  section, 
+  data, 
+  onSave,
+  savingSection,
+  fieldErrors = {}
+}) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  // Local state for editing - completely separate from parent
+  const [localFamilyInfo, setLocalFamilyInfo] = useState({});
+  // Local validation errors
+  const [localErrors, setLocalErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(false);  // Start in display mode
+      setEditMode(false);  // Start in view mode
       setShowSuccess(false);
+      // Reset local state to current data when opening - create copy not reference
+      setLocalFamilyInfo({...data.familyInfo} || {});
+      setLocalErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, data.familyInfo]);
 
   if (!isOpen) return null;
+
+  // Validation function for birthplace
+  const validateBirthplace = (value) => {
+    if (!value || !value.trim()) return null;
+    
+    const trimmedValue = value.trim().toLowerCase();
+    
+    // Check if it's "unknown"
+    if (trimmedValue === 'unknown') return null;
+    
+    // Check if it has at least 2 commas (city, state, country format)
+    const commaCount = (value.match(/,/g) || []).length;
+    if (commaCount >= 2) return null;
+    
+    // Return error message
+    return 'Please include city, state/province, and country (or enter "Unknown")';
+  };
 
   const handleEdit = () => {
     setEditMode(true);
   };
 
   const handleSave = () => {
-    saveFamilyInfo();
+    const errors = {};
+    
+    // Validate father's birthplace if editing father section
+    if (section === 'father' && localFamilyInfo?.fathersBirthplace) {
+      const error = validateBirthplace(localFamilyInfo.fathersBirthplace);
+      if (error) {
+        errors.fathersBirthplace = error;
+        setLocalErrors(errors);
+        return;
+      }
+    }
+    
+    // Validate mother's birthplace if editing mother section
+    if (section === 'mother' && localFamilyInfo?.mothersBirthplace) {
+      const error = validateBirthplace(localFamilyInfo.mothersBirthplace);
+      if (error) {
+        errors.mothersBirthplace = error;
+        setLocalErrors(errors);
+        return;
+      }
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    // Pass the local data back to parent via callback
+    onSave(localFamilyInfo);
     setEditMode(false);
     setShowSuccess(true);
     
@@ -49,8 +107,10 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const handleCancel = () => {
-    setFamilyInfo(data.familyInfo);
+    // Reset to original data - create new copy
+    setLocalFamilyInfo({...data.familyInfo} || {});
     setEditMode(false);
+    setLocalErrors({});
   };
 
   const getFieldDescriptions = () => {
@@ -59,47 +119,23 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
         return {
           title: 'Father Information',
           description: 'Information about your father including his full name and birthplace. This information is required for legal documentation.',
-          fields: {
-            'Father\'s Name': 'Your father\'s full legal name.',
-            'Father\'s Birthplace': 'City, state/province, and country where your father was born.'
-          }
         };
       case 'mother':
         return {
           title: 'Mother Information',
           description: 'Information about your mother including her full maiden name and birthplace. This information is required for legal documentation.',
-          fields: {
-            'Mother\'s Maiden Name': 'Your mother\'s full maiden name (birth name before marriage).',
-            'Mother\'s Birthplace': 'City, state/province, and country where your mother was born.'
-          }
         };
       case 'spouse':
         return {
           title: 'Spouse Information',
           description: 'Information about your spouse. This section is required if your marital status is "Married".',
-          fields: {
-            'Spouse\'s Name': 'Your spouse\'s full legal name or maiden name.'
-          }
         };
       default:
-        return { title: '', description: '', fields: {} };
+        return { title: '', description: '' };
     }
   };
 
   const fieldInfo = getFieldDescriptions();
-
-  // Validation function
-  const validateBirthplaceFormat = (birthplace) => {
-    if (!birthplace) return false;
-    const trimmed = birthplace.trim().toLowerCase();
-    
-    if (trimmed === 'unknown') return true;
-    
-    const commaCount = (birthplace.match(/,/g) || []).length;
-    const parts = birthplace.split(/[,\s]+/).filter(part => part.length > 0);
-    
-    return commaCount >= 2 || parts.length >= 3;
-  };
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
@@ -133,9 +169,9 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <h3 className={overlayStyles.header.title}>
+                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
                     {fieldInfo.title}
-                  </h3>
+                  </span>
                   <p className={overlayStyles.header.description}>
                     {fieldInfo.description}
                   </p>
@@ -158,136 +194,142 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
             {/* Fields */}
             {!editMode ? (
-              /* Display Mode */
-              <div className="space-y-6">
+              /* Display Mode - Use local state */
+              <div className={overlayStyles.body.content}>
                 {section === 'father' && (
-                  <>
+                  <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Father's Full Name</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersName)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.fathersName)}
                         >
-                          {familyInfo?.fathersName || '—'}
+                          {localFamilyInfo?.fathersName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Father's Birthplace</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.fathersBirthplace)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.fathersBirthplace)}
                         >
-                          {familyInfo?.fathersBirthplace || '—'}
+                          {localFamilyInfo?.fathersBirthplace || '—'}
                         </p>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {section === 'mother' && (
-                  <>
+                  <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Mother's Full Maiden Name</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersMaidenName)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.mothersMaidenName)}
                         >
-                          {familyInfo?.mothersMaidenName || '—'}
+                          {localFamilyInfo?.mothersMaidenName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Mother's Birthplace</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.mothersBirthplace)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.mothersBirthplace)}
                         >
-                          {familyInfo?.mothersBirthplace || '—'}
+                          {localFamilyInfo?.mothersBirthplace || '—'}
                         </p>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {section === 'spouse' && (
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>
-                      {personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
-                    </label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!familyInfo?.spousesName)}
-                    >
-                      {familyInfo?.spousesName || '—'}
-                    </p>
+                  <div className="space-y-6">
+                    <div>
+                      <label className={overlayStyles.displayMode.field.label}>
+                        {data.personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
+                      </label>
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.spousesName)}
+                      >
+                        {localFamilyInfo?.spousesName || '—'}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
-              /* Edit Mode */
-              <div className="space-y-6">
+              /* Edit Mode - Update local state only */
+              <div className={overlayStyles.body.content}>
                 {section === 'father' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Father's Full Name *"
-                        type="text"
-                        value={familyInfo?.fathersName || ''}
-                        onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
-                        disabled={savingSection === 'family'}
-                        error={fieldErrors.fathersName}
-                      />
-                      <Input
-                        label="Father's Birthplace *"
-                        type="text"
-                        placeholder="City, State/Province, Country"
-                        value={familyInfo?.fathersBirthplace || ''}
-                        onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
-                        disabled={savingSection === 'family'}
-                        error={fieldErrors.fathersBirthplace}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 -mt-4">
+                  <div className="space-y-4">
+                    <Input
+                      label="Father's Full Name *"
+                      type="text"
+                      value={localFamilyInfo?.fathersName || ''}
+                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, fathersName: e.target.value})}
+                      disabled={savingSection === 'family'}
+                      error={fieldErrors.fathersName}
+                    />
+                    <Input
+                      label="Father's Birthplace *"
+                      type="text"
+                      placeholder="City, State/Province, Country"
+                      value={localFamilyInfo?.fathersBirthplace || ''}
+                      onChange={(e) => {
+                        setLocalFamilyInfo({...localFamilyInfo, fathersBirthplace: e.target.value});
+                        // Clear error on change
+                        setLocalErrors({});
+                      }}
+                      disabled={savingSection === 'family'}
+                      error={fieldErrors.fathersBirthplace || localErrors.fathersBirthplace}
+                    />
+                    <p className="text-xs text-gray-500 -mt-2">
                       Enter "Unknown" if not known
                     </p>
-                  </>
+                  </div>
                 )}
 
                 {section === 'mother' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Mother's Full Maiden Name *"
-                        type="text"
-                        value={familyInfo?.mothersMaidenName || ''}
-                        onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
-                        disabled={savingSection === 'family'}
-                        error={fieldErrors.mothersMaidenName}
-                      />
-                      <Input
-                        label="Mother's Birthplace *"
-                        type="text"
-                        placeholder="City, State/Province, Country"
-                        value={familyInfo?.mothersBirthplace || ''}
-                        onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
-                        disabled={savingSection === 'family'}
-                        error={fieldErrors.mothersBirthplace}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 -mt-4">
+                  <div className="space-y-4">
+                    <Input
+                      label="Mother's Full Maiden Name *"
+                      type="text"
+                      value={localFamilyInfo?.mothersMaidenName || ''}
+                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, mothersMaidenName: e.target.value})}
+                      disabled={savingSection === 'family'}
+                      error={fieldErrors.mothersMaidenName}
+                    />
+                    <Input
+                      label="Mother's Birthplace *"
+                      type="text"
+                      placeholder="City, State/Province, Country"
+                      value={localFamilyInfo?.mothersBirthplace || ''}
+                      onChange={(e) => {
+                        setLocalFamilyInfo({...localFamilyInfo, mothersBirthplace: e.target.value});
+                        // Clear error on change
+                        setLocalErrors({});
+                      }}
+                      disabled={savingSection === 'family'}
+                      error={fieldErrors.mothersBirthplace || localErrors.mothersBirthplace}
+                    />
+                    <p className="text-xs text-gray-500 -mt-2">
                       Enter "Unknown" if not known
                     </p>
-                  </>
+                  </div>
                 )}
 
                 {section === 'spouse' && (
-                  <div>
+                  <div className="space-y-4">
                     <Input
-                      label={`${personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                      label={`${data.personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
                       type="text"
-                      value={familyInfo?.spousesName || ''}
-                      onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
+                      value={localFamilyInfo?.spousesName || ''}
+                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, spousesName: e.target.value})}
                       disabled={savingSection === 'family'}
                       error={fieldErrors.spousesName}
                     />
@@ -342,8 +384,12 @@ const FamilyInfoSection = ({
   savingSection,
   memberCategory,
   sectionImage,
-  sectionLabel
+  sectionLabel,
+  fieldErrors = {}
 }) => {
+  // Ensure familyInfo is always an object
+  const safeFamilyInfo = familyInfo || {};
+  const safePersonalInfo = personalInfo || {};
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
@@ -352,8 +398,11 @@ const FamilyInfoSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
   const [cardsVisible, setCardsVisible] = useState(false);
+  // Add pendingSave flag for triggering save after state update
+  const [pendingSave, setPendingSave] = useState(false);
+  // Local validation errors for main form
+  const [localErrors, setLocalErrors] = useState({});
 
   useEffect(() => {
     // Inject animation styles
@@ -370,10 +419,8 @@ const FamilyInfoSection = ({
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          // Delay to create smooth entrance
           setTimeout(() => {
             setHasLoaded(true);
-            // Stagger card animations after section fades in
             setTimeout(() => setCardsVisible(true), 200);
           }, 100);
         }
@@ -403,12 +450,13 @@ const FamilyInfoSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Clear errors when canceling edit
+  // Trigger save after state update from overlay
   useEffect(() => {
-    if (!editMode.family) {
-      setFieldErrors({});
+    if (pendingSave) {
+      saveFamilyInfo();
+      setPendingSave(false);
     }
-  }, [editMode.family]);
+  }, [pendingSave, familyInfo]);
 
   // Field configuration for completion wheel
   const fieldConfig = {
@@ -422,7 +470,7 @@ const FamilyInfoSection = ({
   };
 
   // Add spouse fields if married
-  if (personalInfo.maritalStatus === 'Married') {
+  if (safePersonalInfo.maritalStatus === 'Married') {
     fieldConfig.required.spousesName = { field: 'spousesName', source: 'familyInfo', label: "Spouse's Name" };
   }
 
@@ -431,8 +479,11 @@ const FamilyInfoSection = ({
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = () => {
-    saveFamilyInfo();
+  const handleOverlaySave = (updatedFamilyInfo) => {
+    // Update parent state with the new data
+    setFamilyInfo(updatedFamilyInfo);
+    // Set flag to trigger save after state updates
+    setPendingSave(true);
   };
 
   // Validation helpers
@@ -448,9 +499,25 @@ const FamilyInfoSection = ({
     return commaCount >= 2 || parts.length >= 3;
   };
 
+  const validateBirthplace = (value) => {
+    if (!value || !value.trim()) return null;
+    
+    const trimmedValue = value.trim().toLowerCase();
+    
+    // Check if it's "unknown"
+    if (trimmedValue === 'unknown') return null;
+    
+    // Check if it has at least 2 commas (city, state, country format)
+    const commaCount = (value.match(/,/g) || []).length;
+    if (commaCount >= 2) return null;
+    
+    // Return error message
+    return 'Please include city, state/province, and country (or enter "Unknown")';
+  };
+
   const needsBirthplaceUpdate = () => {
-    const fatherBirthplace = familyInfo.fathersBirthplace || '';
-    const motherBirthplace = familyInfo.mothersBirthplace || '';
+    const fatherBirthplace = safeFamilyInfo.fathersBirthplace || '';
+    const motherBirthplace = safeFamilyInfo.mothersBirthplace || '';
     
     const fatherIncomplete = !fatherBirthplace || 
                            (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10 && fatherBirthplace.toLowerCase() !== 'unknown');
@@ -458,6 +525,37 @@ const FamilyInfoSection = ({
                            (!motherBirthplace.includes(',') && motherBirthplace.length < 10 && motherBirthplace.toLowerCase() !== 'unknown');
     
     return fatherIncomplete || motherIncomplete;
+  };
+
+  // Handle save with validation for main form
+  const handleSaveWithValidation = () => {
+    const errors = {};
+    
+    // Validate father's birthplace
+    if (safeFamilyInfo?.fathersBirthplace) {
+      const fatherError = validateBirthplace(safeFamilyInfo.fathersBirthplace);
+      if (fatherError) {
+        errors.fathersBirthplace = fatherError;
+      }
+    }
+    
+    // Validate mother's birthplace
+    if (safeFamilyInfo?.mothersBirthplace) {
+      const motherError = validateBirthplace(safeFamilyInfo.mothersBirthplace);
+      if (motherError) {
+        errors.mothersBirthplace = motherError;
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    saveFamilyInfo();
   };
 
   // Profile improvement notice component
@@ -519,119 +617,27 @@ const FamilyInfoSection = ({
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        data={{ familyInfo }}
-        onEdit={() => {}}
+        data={{ familyInfo: safeFamilyInfo, personalInfo: safePersonalInfo }}
         onSave={handleOverlaySave}
         savingSection={savingSection}
         fieldErrors={fieldErrors}
-        familyInfo={familyInfo}
-        setFamilyInfo={setFamilyInfo}
-        personalInfo={personalInfo}
-        saveFamilyInfo={saveFamilyInfo}
       />
 
       {isMobile ? (
-        /* Mobile Version */
-        <MobileInfoCard
-          iconComponent={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          }
-          title="Family Information"
-          backgroundImage={formsHeaderImage}
-          overlayText="Family Details"
-          subtitle="Information about your immediate family members."
-          isEditMode={editMode.family}
-        >
-          {/* Display Mode */}
-          {!editMode.family ? (
-            <>
-              <div className={`space-y-4 ${hasLoaded && isVisible ? 'family-section-stagger-in' : ''}`}>
-                <DisplayField 
-                  label="Father's Full Name" 
-                  value={familyInfo.fathersName} 
-                />
-                <DisplayField 
-                  label="Father's Birthplace" 
-                  value={familyInfo.fathersBirthplace} 
-                />
-                <DisplayField 
-                  label="Mother's Full Maiden Name" 
-                  value={familyInfo.mothersMaidenName} 
-                />
-                <DisplayField 
-                  label="Mother's Birthplace" 
-                  value={familyInfo.mothersBirthplace} 
-                />
-                {personalInfo.maritalStatus === 'Married' && (
-                  <DisplayField 
-                    label={personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
-                    value={familyInfo.spousesName}
-                  />
-                )}
-              </div>
-              
-              {needsBirthplaceUpdate() && (
-                <div className="mt-4">
-                  <ProfileImprovementNotice />
-                </div>
-              )}
-              
-              <ActionButtons 
-                editMode={false}
-                onEdit={() => toggleEditMode && toggleEditMode('family')}
-              />
-            </>
-          ) : (
-            /* Edit Mode */
-            <>
-              <div className="space-y-4">
-                <FormInput
-                  label="Father's Full Name *"
-                  value={familyInfo.fathersName || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
-                  error={fieldErrors.fathersName}
-                />
-                <FormInput
-                  label="Father's Birthplace *"
-                  placeholder="City, State/Province, Country (or 'Unknown')"
-                  value={familyInfo.fathersBirthplace || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
-                  error={fieldErrors.fathersBirthplace}
-                />
-                <FormInput
-                  label="Mother's Full Maiden Name *"
-                  value={familyInfo.mothersMaidenName || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
-                  error={fieldErrors.mothersMaidenName}
-                />
-                <FormInput
-                  label="Mother's Birthplace *"
-                  placeholder="City, State/Province, Country (or 'Unknown')"
-                  value={familyInfo.mothersBirthplace || ''}
-                  onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
-                  error={fieldErrors.mothersBirthplace}
-                />
-                {personalInfo.maritalStatus === 'Married' && (
-                  <FormInput
-                    label={`${personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
-                    value={familyInfo.spousesName || ''}
-                    onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
-                    error={fieldErrors.spousesName}
-                  />
-                )}
-              </div>
-              
-              <ActionButtons 
-                editMode={true}
-                onSave={saveFamilyInfo}
-                onCancel={() => cancelEdit && cancelEdit('family')}
-                saving={savingSection === 'family'}
-              />
-            </>
-          )}
-        </MobileInfoCard>
+        <FamilyInfoMobile
+          familyInfo={safeFamilyInfo}
+          setFamilyInfo={setFamilyInfo}
+          personalInfo={safePersonalInfo}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveFamilyInfo={saveFamilyInfo}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfig}
+          needsBirthplaceUpdate={needsBirthplaceUpdate}
+          ProfileImprovementNotice={ProfileImprovementNotice}
+        />
       ) : (
         /* Desktop Version */
         <div className={styleConfig2.section.wrapperEnhanced}>
@@ -643,12 +649,12 @@ const FamilyInfoSection = ({
                   <div>
                     <div>
                       <div className="flex items-center space-x-4 mb-3">
-                        <div className={headerStyles.getIconContainer(styleConfig2, 'family')} style={{ backgroundColor: '#862633' }}>
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'family')} style={{ backgroundColor: '#512BD9' }}>
                           <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </div>
-                        <h2 className={headerStyles.title(styleConfig2)}>Family Information</h2>
+                        <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Family Information</h2>
                       </div>
                       <div className="flex items-start space-x-4">
                         <div className={headerStyles.getIconContainer(styleConfig2, 'family')} style={{ visibility: 'hidden' }}>
@@ -657,14 +663,14 @@ const FamilyInfoSection = ({
                           </svg>
                         </div>
                         <div>
-                          <p className="text-gray-600 font-normal max-w-lg">
+                          <p className="text-gray-600 text-sm leading-5 max-w-lg">
                             Information about your immediate family members.
                           </p>
-                          <p className="text-gray-400 text-sm mt-3">
+                          <p className="text-gray-400 text-sm leading-5 mt-2">
                             Required: Father's Name & Birthplace, Mother's Name & Birthplace
                           </p>
-                          {personalInfo.maritalStatus === 'Married' && (
-                            <p className="text-gray-400 text-sm mt-2">
+                          {safePersonalInfo.maritalStatus === 'Married' && (
+                            <p className="text-gray-400 text-sm leading-5 mt-1">
                               Required: Spouse's Name
                             </p>
                           )}
@@ -673,11 +679,10 @@ const FamilyInfoSection = ({
                     </div>
                   </div>
                   
-                  {/* Completion Section */}
                   <CompletionWheelWithLegend
-                    data={{ familyInfo }}
+                    data={{ familyInfo: safeFamilyInfo }}
                     fieldConfig={fieldConfig}
-                    sectionColor="#862633"
+                    sectionColor="#512BD9"
                   />
                 </div>
               </div>
@@ -687,84 +692,85 @@ const FamilyInfoSection = ({
             <div className="bg-white">
               {!editMode.family ? (
                 /* Display Mode with Cards */
-                <div>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    {/* Father Card */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Father Card */}
+                  <InfoCard 
+                    title="Father Information" 
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    }
+                    sectionKey="father"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('father')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('father')}
+                    cardIndex={0}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Full Name" value={safeFamilyInfo?.fathersName || '—'} isRequired />
+                    <InfoField label="Birthplace" value={safeFamilyInfo?.fathersBirthplace || '—'} isRequired />
+                    <div className="opacity-0 pointer-events-none">
+                      <InfoField label="" value="" />
+                    </div>
+                  </InfoCard>
+
+                  {/* Mother Card */}
+                  <InfoCard 
+                    title="Mother Information" 
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    }
+                    sectionKey="mother"
+                    hoveredSection={hoveredSection}
+                    onMouseEnter={() => setHoveredSection('mother')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => handleCardClick('mother')}
+                    cardIndex={1}
+                    isVisible={cardsVisible}
+                  >
+                    <InfoField label="Full Maiden Name" value={safeFamilyInfo?.mothersMaidenName || '—'} isRequired />
+                    <InfoField label="Birthplace" value={safeFamilyInfo?.mothersBirthplace || '—'} isRequired />
+                    <div className="opacity-0 pointer-events-none">
+                      <InfoField label="" value="" />
+                    </div>
+                  </InfoCard>
+
+                  {/* Spouse Card - Only show if married */}
+                  {safePersonalInfo.maritalStatus === 'Married' ? (
                     <InfoCard 
-                      title="Father Information" 
+                      title="Spouse Information" 
                       icon={
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                       }
-                      sectionKey="father"
+                      sectionKey="spouse"
                       hoveredSection={hoveredSection}
-                      onMouseEnter={() => setHoveredSection('father')}
+                      onMouseEnter={() => setHoveredSection('spouse')}
                       onMouseLeave={() => setHoveredSection(null)}
-                      onClick={() => handleCardClick('father')}
-                      cardIndex={0}
+                      onClick={() => handleCardClick('spouse')}
+                      cardIndex={2}
                       isVisible={cardsVisible}
                     >
-                      <InfoField label="Full Name" value={familyInfo?.fathersName || '—'} />
-                      <InfoField label="Birthplace" value={familyInfo?.fathersBirthplace || '—'} />
+                      <InfoField 
+                        label={safePersonalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} 
+                        value={safeFamilyInfo?.spousesName || '—'} 
+                        isRequired
+                      />
+                      <div className="opacity-0 pointer-events-none">
+                        <InfoField label="" value="" />
+                      </div>
                       <div className="opacity-0 pointer-events-none">
                         <InfoField label="" value="" />
                       </div>
                     </InfoCard>
-
-                    {/* Mother Card */}
-                    <InfoCard 
-                      title="Mother Information" 
-                      icon={
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      }
-                      sectionKey="mother"
-                      hoveredSection={hoveredSection}
-                      onMouseEnter={() => setHoveredSection('mother')}
-                      onMouseLeave={() => setHoveredSection(null)}
-                      onClick={() => handleCardClick('mother')}
-                      cardIndex={1}
-                      isVisible={cardsVisible}
-                    >
-                      <InfoField label="Full Maiden Name" value={familyInfo?.mothersMaidenName || '—'} />
-                      <InfoField label="Birthplace" value={familyInfo?.mothersBirthplace || '—'} />
-                      <div className="opacity-0 pointer-events-none">
-                        <InfoField label="" value="" />
-                      </div>
-                    </InfoCard>
-
-                    {/* Spouse Card - Only show if married */}
-                    {personalInfo.maritalStatus === 'Married' && (
-                      <InfoCard 
-                        title="Spouse Information" 
-                        icon={
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        }
-                        sectionKey="spouse"
-                        hoveredSection={hoveredSection}
-                        onMouseEnter={() => setHoveredSection('spouse')}
-                        onMouseLeave={() => setHoveredSection(null)}
-                        onClick={() => handleCardClick('spouse')}
-                        cardIndex={2}
-                        isVisible={cardsVisible}
-                      >
-                        <InfoField 
-                          label={personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} 
-                          value={familyInfo?.spousesName || '—'} 
-                        />
-                        <div className="opacity-0 pointer-events-none">
-                          <InfoField label="" value="" />
-                        </div>
-                        <div className="opacity-0 pointer-events-none">
-                          <InfoField label="" value="" />
-                        </div>
-                      </InfoCard>
-                    )}
-                  </div>
+                  ) : (
+                    <div></div>
+                  )}
                 </div>
               ) : (
                 /* Edit Mode */
@@ -773,8 +779,8 @@ const FamilyInfoSection = ({
                     <Input
                       label="Father's Full Name *"
                       type="text"
-                      value={familyInfo.fathersName || ''}
-                      onChange={(e) => setFamilyInfo({...familyInfo, fathersName: e.target.value})}
+                      value={safeFamilyInfo.fathersName || ''}
+                      onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersName: e.target.value})}
                       disabled={savingSection === 'family'}
                       error={fieldErrors.fathersName}
                     />
@@ -782,16 +788,20 @@ const FamilyInfoSection = ({
                       label="Father's Birthplace *"
                       type="text"
                       placeholder="City, State/Province, Country"
-                      value={familyInfo.fathersBirthplace || ''}
-                      onChange={(e) => setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value})}
+                      value={safeFamilyInfo.fathersBirthplace || ''}
+                      onChange={(e) => {
+                        setFamilyInfo({...safeFamilyInfo, fathersBirthplace: e.target.value});
+                        // Clear error on change
+                        setLocalErrors(prev => ({ ...prev, fathersBirthplace: null }));
+                      }}
                       disabled={savingSection === 'family'}
-                      error={fieldErrors.fathersBirthplace}
+                      error={fieldErrors.fathersBirthplace || localErrors.fathersBirthplace}
                     />
                     <Input
                       label="Mother's Full Maiden Name *"
                       type="text"
-                      value={familyInfo.mothersMaidenName || ''}
-                      onChange={(e) => setFamilyInfo({...familyInfo, mothersMaidenName: e.target.value})}
+                      value={safeFamilyInfo.mothersMaidenName || ''}
+                      onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersMaidenName: e.target.value})}
                       disabled={savingSection === 'family'}
                       error={fieldErrors.mothersMaidenName}
                     />
@@ -799,18 +809,22 @@ const FamilyInfoSection = ({
                       label="Mother's Birthplace *"
                       type="text"
                       placeholder="City, State/Province, Country"
-                      value={familyInfo.mothersBirthplace || ''}
-                      onChange={(e) => setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value})}
+                      value={safeFamilyInfo.mothersBirthplace || ''}
+                      onChange={(e) => {
+                        setFamilyInfo({...safeFamilyInfo, mothersBirthplace: e.target.value});
+                        // Clear error on change
+                        setLocalErrors(prev => ({ ...prev, mothersBirthplace: null }));
+                      }}
                       disabled={savingSection === 'family'}
-                      error={fieldErrors.mothersBirthplace}
+                      error={fieldErrors.mothersBirthplace || localErrors.mothersBirthplace}
                     />
-                    {personalInfo.maritalStatus === 'Married' && (
+                    {safePersonalInfo.maritalStatus === 'Married' && (
                       <div className="col-span-2">
                         <Input
-                          label={`${personalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                          label={`${safePersonalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
                           type="text"
-                          value={familyInfo.spousesName || ''}
-                          onChange={(e) => setFamilyInfo({...familyInfo, spousesName: e.target.value})}
+                          value={safeFamilyInfo.spousesName || ''}
+                          onChange={(e) => setFamilyInfo({...safeFamilyInfo, spousesName: e.target.value})}
                           disabled={savingSection === 'family'}
                           error={fieldErrors.spousesName}
                         />
@@ -835,9 +849,10 @@ const FamilyInfoSection = ({
                     />
                     <PurpleButton
                       text={buttonStyles.getSaveButtonText(savingSection)}
-                      onClick={saveFamilyInfo}
+                      onClick={handleSaveWithValidation}
                       className={buttonStyles.purpleButton.base}
                       spinStar={buttonStyles.starConfig.enabled}
+                      disabled={savingSection === 'family'}
                     />
                   </div>
                 </div>
@@ -845,10 +860,7 @@ const FamilyInfoSection = ({
                 <>
                   {needsBirthplaceUpdate() ? (
                     <div className="flex items-center justify-between mt-8 pt-6">
-                      {/* Profile Improvement Notice - Left side */}
                       <ProfileImprovementNotice />
-                      
-                      {/* Edit button - Right side */}
                       <WhiteButton
                         text="Edit"
                         onClick={() => toggleEditMode && toggleEditMode('family')}

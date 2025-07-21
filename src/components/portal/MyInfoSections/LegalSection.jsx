@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Section, Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
+import LegalMobile from './LegalMobile';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { HelpCircle } from 'lucide-react';
-import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import fieldStyles from './desktopCardStyles/fieldStyles';
 import alcorStar from '../../../assets/images/alcor-star.png';
@@ -17,6 +17,7 @@ import {
   animationStyles 
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
+import { CompletionWheelWithLegend } from './CompletionWheel';
 
 // Overlay Component
 const CardOverlay = ({ 
@@ -25,8 +26,7 @@ const CardOverlay = ({
   section, 
   data, 
   legal,
-  setLegal,
-  saveLegal,
+  onSave,
   savingSection,
   memberCategory
 }) => {
@@ -70,13 +70,9 @@ const CardOverlay = ({
     setEditMode(true);
   };
 
-  const handleSave = async () => {
-    // Update parent state
-    setLegal(localLegal);
-    
-    // Save to backend
-    await saveLegal();
-    
+  const handleSave = () => {
+    // Pass the local data back to parent via callback
+    onSave(localLegal);
     setEditMode(false);
     setShowSuccess(true);
     setTimeout(() => {
@@ -304,11 +300,7 @@ const CardOverlay = ({
                 />
                 <PurpleButton
                   text={savingSection === 'legal' ? 'Saving...' : 'Save'}
-                  onClick={() => {
-                    // Update parent legal with local changes before saving
-                    setLegal(localLegal);
-                    handleSave();
-                  }}
+                  onClick={handleSave}
                   className={buttonStyles.overlayButtons.save}
                   spinStar={buttonStyles.starConfig.enabled}
                   disabled={savingSection === 'legal'}
@@ -333,7 +325,10 @@ const LegalSection = ({
   savingSection,
   memberCategory,
   sectionImage,
-  sectionLabel
+  sectionLabel,
+  fieldErrors,
+  fieldConfig,
+  getFieldError
 }) => {
   // Add state for mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -346,6 +341,8 @@ const LegalSection = ({
   const [cardsVisible, setCardsVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef(null);
+  // Add pendingSave flag for triggering save after state update
+  const [pendingSave, setPendingSave] = useState(false);
   
   // Detect mobile
   useEffect(() => {
@@ -412,52 +409,56 @@ const LegalSection = ({
     };
   }, [isVisible]);
   
+  // Trigger save after state update from overlay
+  useEffect(() => {
+    if (pendingSave) {
+      saveLegal();
+      setPendingSave(false);
+    }
+  }, [pendingSave, legal]);
+
   // Helper to check if will is "Yes"
   const hasWillYes = () => {
     const value = legal?.hasWill;
     return value === 'Yes' || value === true || value === 'true';
   };
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 Legal Section Data:', {
-      hasWill: legal?.hasWill,
-      hasWillType: typeof legal?.hasWill,
-      willContraryToCryonics: legal?.willContraryToCryonics,
-      willContraryType: typeof legal?.willContraryToCryonics,
-      hasWillYesResult: hasWillYes(),
-      fullLegalObject: legal
-    });
-  }, [legal]);
-
-  // Mobile preview data
-  const getMobilePreview = () => {
-    const previewParts = [];
-    
-    if (legal?.hasWill) {
-      previewParts.push(`Will: ${legal.hasWill}`);
-    }
-    if ((legal?.hasWill === 'Yes' || legal?.hasWill === true) && legal?.willContraryToCryonics) {
-      previewParts.push(`Contrary provisions: ${legal.willContraryToCryonics}`);
-    }
-    
-    return previewParts.join(' • ') || 'No information provided';
-  };
-
   // Check if fields are required based on member category
   const isRequired = memberCategory === 'CryoApplicant' || memberCategory === 'CryoMember';
 
-  // Info notice component (used in both mobile and desktop)
-  const LegalInfoNotice = () => null; // Remove the old component since we're integrating it differently
+  // Field configuration for completion wheel
+  const fieldConfigLocal = fieldConfig || {
+    required: {
+      hasWill: { 
+        field: 'hasWill', 
+        source: 'legal', 
+        label: 'Do you have a will?',
+        checkValue: (data) => data.legal?.hasWill && data.legal.hasWill !== ''
+      },
+      willContraryToCryonics: { 
+        field: 'willContraryToCryonics', 
+        source: 'legal', 
+        label: 'Contains contrary provisions?',
+        checkValue: (data) => {
+          // Only check this field if hasWill is "Yes"
+          if (data.legal?.hasWill !== 'Yes') return true; // Not applicable, so considered complete
+          return data.legal?.willContraryToCryonics && data.legal.willContraryToCryonics !== '';
+        }
+      }
+    },
+    recommended: {}
+  };
 
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = async () => {
-    await saveLegal();
-    setOverlayOpen(false);
+  const handleOverlaySave = (updatedLegal) => {
+    // Update parent state with the new data
+    setLegal(updatedLegal);
+    // Set flag to trigger save after state updates
+    setPendingSave(true);
   };
 
   return (
@@ -469,237 +470,67 @@ const LegalSection = ({
         section={overlaySection}
         data={{ legal }}
         legal={legal}
-        setLegal={setLegal}
-        saveLegal={saveLegal}
+        onSave={handleOverlaySave}
         savingSection={savingSection}
         memberCategory={memberCategory}
       />
 
       {isMobile ? (
-        <MobileInfoCard
-          iconComponent={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-            </svg>
-          }
-          title="Legal/Will Information"
-          backgroundImage={formsHeaderImage}
-          overlayText="Legal Details"
-          subtitle="Information about your will and cryonics-related provisions."
-          isEditMode={editMode.legal}
-        >
-          {/* Display Mode */}
-          {!editMode.legal ? (
-            <>
-              <div className={`space-y-4 ${hasLoaded && isVisible ? 'legal-section-stagger-in' : ''}`}>
-                <DisplayField 
-                  label="Do you have a will?" 
-                  value={legal.hasWill || 'Not specified'} 
-                />
-                {hasWillYes() && (
-                  <DisplayField 
-                    label="Does your will contain any provisions contrary to cryonics?" 
-                    value={legal.willContraryToCryonics || 'Not specified'} 
-                  />
-                )}
-              </div>
-              
-              {/* Info notice placed at bottom in mobile view */}
-              <div className="mt-4 mb-4 flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                <svg className="w-8 h-8 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-white/90">
-                      Have Questions About Wills?
-                    </p>
-                    <div className="relative" ref={tooltipRef}>
-                      <button
-                        type="button"
-                        className="p-1 rounded-full hover:bg-white/10 transition-colors"
-                        onClick={() => setShowTooltip(!showTooltip)}
-                      >
-                        <HelpCircle 
-                          className="w-4 h-4 text-white/60 hover:text-white/80" 
-                          strokeWidth={2}
-                        />
-                      </button>
-                      {showTooltip && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-80">
-                          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-semibold text-gray-900">
-                                Why Does Alcor Need This?
-                              </h3>
-                              <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                              </svg>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowTooltip(false)}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          <div className="px-4 py-3 overflow-y-auto max-h-64">
-                            <div className="space-y-3">
-                              <p className="text-sm text-gray-700">
-                                Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <em className="font-semibold">these provisions may invalidate your Cryopreservation Agreement.</em>
-                              </p>
-                              <p className="text-sm text-gray-900 font-semibold">
-                                If you have a will, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
-                              </p>
-                              <p className="text-sm text-gray-600 pt-2 border-t border-gray-100">
-                                Both will-related fields are mandatory in the application process, and you must answer whether you have a will and whether it contains any provisions that might conflict with cryopreservation arrangements.
-                              </p>
-                            </div>
-                          </div>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                            <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm text-white/70 font-light">
-                    Learn about will requirements and cryonics provisions
-                  </p>
-                </div>
-              </div>
-              
-              <ActionButtons 
-                editMode={false}
-                onEdit={() => toggleEditMode && toggleEditMode('legal')}
-              />
-            </>
-          ) : (
-            /* Edit Mode */
-            <>
-              <div className="space-y-4">
-                <FormSelect
-                  label="Do you have a will?"
-                  value={legal.hasWill || ''}
-                  onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
-                  required={isRequired}
-                >
-                  <option value="">Select...</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </FormSelect>
-                
-                {legal.hasWill === 'Yes' && (
-                  <>
-                    <FormSelect
-                      label="Does your will contain any provisions contrary to cryonics?"
-                      value={legal.willContraryToCryonics || ''}
-                      onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
-                      required={isRequired}
-                    >
-                      <option value="">Select...</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </FormSelect>
-                  </>
-                )}
-                
-                {/* Add helpful text for users */}
-                {legal.hasWill === 'Yes' && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="font-medium text-gray-900 mb-1">Important:</p>
-                    <p>Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <strong>these provisions may invalidate your Cryopreservation Agreement.</strong></p>
-                    {legal.willContraryToCryonics === 'Yes' && (
-                      <p className="mt-2 text-red-700 font-medium">
-                        If you have a will with contrary provisions, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <ActionButtons 
-                editMode={true}
-                onSave={saveLegal}
-                onCancel={() => cancelEdit && cancelEdit('legal')}
-                saving={savingSection === 'legal'}
-              />
-            </>
-          )}
-        </MobileInfoCard>
+        <LegalMobile
+          legal={legal}
+          setLegal={setLegal}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveLegal={saveLegal}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfig}
+          memberCategory={memberCategory}
+          getFieldError={getFieldError}
+        />
       ) : (
         /* Desktop view */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
             {/* Desktop Header Section */}
             <div className={headerStyles.container}>
-              <div className={headerStyles.contentWrapper}>
-                <div className={headerStyles.leftContent}>
-                  <div className={headerStyles.iconTextWrapper(styleConfig2)}>
-                    <div className={headerStyles.getIconContainer(styleConfig2, 'legal')}>
-                      <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                      </svg>
-                    </div>
-                    <div className={headerStyles.textContainer(styleConfig2)}>
-                      <h2 className={headerStyles.title(styleConfig2)}>Legal/Will Information</h2>
-                      <p className={headerStyles.subtitle}>
-                        Information about your will and cryonics-related provisions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image on right side */}
-                {sectionImage && (
-                  <div className={sectionImageStyles.wrapper}>
-                    <div className={sectionImageStyles.imageBox}>
-                      <img 
-                        src={sectionImage} 
-                        alt="" 
-                        className={sectionImageStyles.image}
-                      />
-                      {/* Dark purple/blue overlay base */}
-                      <div 
-                        className={sectionImageStyles.overlays.darkBase.className} 
-                        style={sectionImageStyles.overlays.darkBase.style}
-                      ></div>
-                      {/* Radial yellow glow from bottom */}
-                      <div 
-                        className={sectionImageStyles.overlays.yellowGlow.className} 
-                        style={sectionImageStyles.overlays.yellowGlow.style}
-                      ></div>
-                      {/* Purple/pink glow overlay */}
-                      <div 
-                        className={sectionImageStyles.overlays.purpleGlow.className} 
-                        style={sectionImageStyles.overlays.purpleGlow.style}
-                      ></div>
-                      {/* Large star positioned lower */}
-                      <div className={sectionImageStyles.star.wrapper}>
-                        <img 
-                          src={alcorStar} 
-                          alt="" 
-                          className={sectionImageStyles.star.image}
-                          style={sectionImageStyles.star.imageStyle}
-                        />
-                      </div>
-                      {sectionLabel && (
-                        <div className={sectionImageStyles.label.wrapper}>
-                          <div className={sectionImageStyles.label.container}>
-                            <p className={sectionImageStyles.label.text}>
-                              {sectionLabel}
-                              <img src={alcorStar} alt="" className={sectionImageStyles.label.starIcon} />
-                            </p>
-                          </div>
+              <div className="w-full">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'legal')} style={{ backgroundColor: '#512BD9' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={headerStyles.getIcon(styleConfig2).strokeWidth}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                          </svg>
                         </div>
-                      )}
+                        <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Legal/Will Information</h2>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className={headerStyles.getIconContainer(styleConfig2, 'legal')} style={{ visibility: 'hidden' }}>
+                          <svg className={headerStyles.getIcon(styleConfig2).className}>
+                            <path d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm leading-5 max-w-lg">
+                            Information about your will and cryonics-related provisions.
+                          </p>
+                          <p className="text-gray-400 text-sm leading-5 mt-2">
+                            Required: Will status and any contrary provisions if applicable
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  <CompletionWheelWithLegend
+                    data={{ legal }}
+                    fieldConfig={fieldConfigLocal}
+                    sectionColor="#512BD9"
+                  />
+                </div>
               </div>
             </div>
 

@@ -35,28 +35,31 @@ const StyledSelect = ({ label, value, onChange, disabled, children, error }) => 
   );
 };
 
-// Simple Overlay Component
+// Overlay Component - Fixed with local state
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   section, 
-  contactInfo,
-  personalInfo,
-  setContactInfo,
-  setPersonalInfo,
-  saveContactInfo,
+  data,
+  onSave,
   savingSection,
   fieldErrors
 }) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Local state for editing - completely separate from parent
+  const [localContactInfo, setLocalContactInfo] = useState({});
+  const [localPersonalInfo, setLocalPersonalInfo] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(false);
+      setEditMode(false);  // Start in view mode
       setShowSuccess(false);
+      // Reset local state to current data when opening - create copies not references
+      setLocalContactInfo({...data.contactInfo} || {});
+      setLocalPersonalInfo({...data.personalInfo} || {});
     }
-  }, [isOpen]);
+  }, [isOpen, data.contactInfo, data.personalInfo]);
 
   if (!isOpen) return null;
 
@@ -82,7 +85,8 @@ const CardOverlay = ({
   };
 
   const handleSave = () => {
-    saveContactInfo();
+    // Pass the local data back to parent via callback
+    onSave(localContactInfo, localPersonalInfo);
     setEditMode(false);
     setShowSuccess(true);
     
@@ -93,6 +97,9 @@ const CardOverlay = ({
   };
 
   const handleCancel = () => {
+    // Reset to original data - create new copies
+    setLocalContactInfo({...data.contactInfo} || {});
+    setLocalPersonalInfo({...data.personalInfo} || {});
     setEditMode(false);
   };
 
@@ -152,9 +159,9 @@ const CardOverlay = ({
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <h3 className={overlayStyles.header.title}>
+                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
                     {fieldInfo.title}
-                  </h3>
+                  </span>
                   <p className={overlayStyles.header.description}>
                     {fieldInfo.description}
                   </p>
@@ -177,53 +184,71 @@ const CardOverlay = ({
 
             {/* Fields */}
             {!editMode ? (
-              /* Display Mode */
-              <div className="space-y-6">
+              /* Display Mode - Use local state */
+              <div className={overlayStyles.body.content}>
                 {section === 'personal' && (
-                  <>
+                  <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>First Name</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {personalInfo?.firstName || '—'}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localPersonalInfo?.firstName)}
+                        >
+                          {localPersonalInfo?.firstName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Middle Name</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {personalInfo?.middleName || '—'}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localPersonalInfo?.middleName)}
+                        >
+                          {localPersonalInfo?.middleName || '—'}
                         </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Last Name</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {personalInfo?.lastName || '—'}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localPersonalInfo?.lastName)}
+                        >
+                          {localPersonalInfo?.lastName || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Date of Birth</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {formatDateForDisplay(personalInfo?.dateOfBirth)}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localPersonalInfo?.dateOfBirth)}
+                        >
+                          {formatDateForDisplay(localPersonalInfo?.dateOfBirth)}
                         </p>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {section === 'email' && (
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Personal Email</label>
-                      <p className={overlayStyles.displayMode.field.value}>
-                        {contactInfo?.personalEmail || '—'}
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.personalEmail)}
+                      >
+                        {localContactInfo?.personalEmail || '—'}
                       </p>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Work Email</label>
-                      <p className={overlayStyles.displayMode.field.value}>
-                        {contactInfo?.workEmail || '—'}
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.workEmail)}
+                      >
+                        {localContactInfo?.workEmail || '—'}
                       </p>
                     </div>
                   </div>
@@ -233,52 +258,64 @@ const CardOverlay = ({
                   <div className="space-y-6">
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Preferred Phone</label>
-                      <p className={overlayStyles.displayMode.field.value}>
-                        {contactInfo?.preferredPhone ? `${contactInfo.preferredPhone} Phone` : '—'}
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.preferredPhone)}
+                      >
+                        {localContactInfo?.preferredPhone ? `${localContactInfo.preferredPhone} Phone` : '—'}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Mobile Phone</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {formatPhone(contactInfo?.mobilePhone)}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.mobilePhone)}
+                        >
+                          {formatPhone(localContactInfo?.mobilePhone)}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Home Phone</label>
-                        <p className={overlayStyles.displayMode.field.value}>
-                          {formatPhone(contactInfo?.homePhone)}
+                        <p 
+                          className={overlayStyles.displayMode.field.value}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.homePhone)}
+                        >
+                          {formatPhone(localContactInfo?.homePhone)}
                         </p>
                       </div>
                     </div>
                     <div>
                       <label className={overlayStyles.displayMode.field.label}>Work Phone</label>
-                      <p className={overlayStyles.displayMode.field.value}>
-                        {formatPhone(contactInfo?.workPhone)}
+                      <p 
+                        className={overlayStyles.displayMode.field.value}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!localContactInfo?.workPhone)}
+                      >
+                        {formatPhone(localContactInfo?.workPhone)}
                       </p>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              /* Edit Mode */
-              <div className="space-y-6">
+              /* Edit Mode - Update local state only */
+              <div className={overlayStyles.body.content}>
                 {section === 'personal' && (
-                  <>
+                  <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="First Name *"
                         type="text"
-                        value={personalInfo?.firstName || ''}
-                        onChange={(e) => setPersonalInfo({...personalInfo, firstName: e.target.value})}
+                        value={localPersonalInfo?.firstName || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, firstName: e.target.value})}
                         disabled={savingSection === 'contact'}
                         error={fieldErrors.firstName}
                       />
                       <Input
                         label="Middle Name"
                         type="text"
-                        value={personalInfo?.middleName || ''}
-                        onChange={(e) => setPersonalInfo({...personalInfo, middleName: e.target.value})}
+                        value={localPersonalInfo?.middleName || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, middleName: e.target.value})}
                         disabled={savingSection === 'contact'}
                       />
                     </div>
@@ -286,47 +323,47 @@ const CardOverlay = ({
                       <Input
                         label="Last Name *"
                         type="text"
-                        value={personalInfo?.lastName || ''}
-                        onChange={(e) => setPersonalInfo({...personalInfo, lastName: e.target.value})}
+                        value={localPersonalInfo?.lastName || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, lastName: e.target.value})}
                         disabled={savingSection === 'contact'}
                         error={fieldErrors.lastName}
                       />
                       <div>
                         <label className={styleConfig2.form.label}>Date of Birth</label>
                         <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-gray-600">
-                          {formatDateForDisplay(personalInfo?.dateOfBirth)}
+                          {formatDateForDisplay(localPersonalInfo?.dateOfBirth)}
                         </div>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {section === 'email' && (
-                  <>
+                  <div className="space-y-4">
                     <Input
                       label="Personal Email *"
                       type="email"
-                      value={contactInfo?.personalEmail || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
+                      value={localContactInfo?.personalEmail || ''}
+                      onChange={(e) => setLocalContactInfo({...localContactInfo, personalEmail: e.target.value})}
                       disabled={savingSection === 'contact'}
                       error={fieldErrors.personalEmail}
                     />
                     <Input
                       label="Work Email"
                       type="email"
-                      value={contactInfo?.workEmail || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
+                      value={localContactInfo?.workEmail || ''}
+                      onChange={(e) => setLocalContactInfo({...localContactInfo, workEmail: e.target.value})}
                       disabled={savingSection === 'contact'}
                     />
-                  </>
+                  </div>
                 )}
 
                 {section === 'phone' && (
-                  <>
+                  <div className="space-y-4">
                     <StyledSelect
                       label="Preferred Phone *"
-                      value={contactInfo?.preferredPhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
+                      value={localContactInfo?.preferredPhone || ''}
+                      onChange={(e) => setLocalContactInfo({...localContactInfo, preferredPhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       error={fieldErrors.preferredPhone}
                     >
@@ -339,8 +376,8 @@ const CardOverlay = ({
                       <Input
                         label="Mobile Phone"
                         type="tel"
-                        value={contactInfo?.mobilePhone || ''}
-                        onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
+                        value={localContactInfo?.mobilePhone || ''}
+                        onChange={(e) => setLocalContactInfo({...localContactInfo, mobilePhone: e.target.value})}
                         disabled={savingSection === 'contact'}
                         placeholder="(555) 123-4567"
                         error={fieldErrors.mobilePhone}
@@ -348,8 +385,8 @@ const CardOverlay = ({
                       <Input
                         label="Home Phone"
                         type="tel"
-                        value={contactInfo?.homePhone || ''}
-                        onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
+                        value={localContactInfo?.homePhone || ''}
+                        onChange={(e) => setLocalContactInfo({...localContactInfo, homePhone: e.target.value})}
                         disabled={savingSection === 'contact'}
                         placeholder="(555) 123-4567"
                         error={fieldErrors.homePhone}
@@ -358,13 +395,13 @@ const CardOverlay = ({
                     <Input
                       label="Work Phone"
                       type="tel"
-                      value={contactInfo?.workPhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
+                      value={localContactInfo?.workPhone || ''}
+                      onChange={(e) => setLocalContactInfo({...localContactInfo, workPhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       placeholder="(555) 123-4567"
                       error={fieldErrors.workPhone}
                     />
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -418,6 +455,8 @@ const ContactInfoSection = ({
   sectionImage,
   sectionLabel
 }) => {
+  // Ensure contactInfo and personalInfo are always objects
+  const safeContactInfo = contactInfo || {};
   const safePersonalInfo = personalInfo || {};
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -427,6 +466,8 @@ const ContactInfoSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
+  // Add pendingSave flag for triggering save after state update
+  const [pendingSave, setPendingSave] = useState(false);
 
   // Detect mobile
   useEffect(() => {
@@ -451,10 +492,8 @@ const ContactInfoSection = ({
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          // Delay to create smooth entrance
           setTimeout(() => {
             setHasLoaded(true);
-            // Stagger card animations after section fades in
             setTimeout(() => setCardsVisible(true), 200);
           }, 100);
         }
@@ -476,34 +515,40 @@ const ContactInfoSection = ({
     };
   }, [isVisible]);
 
+  // Trigger save after state update from overlay
+  useEffect(() => {
+    if (pendingSave) {
+      saveContactInfo();
+      setPendingSave(false);
+    }
+  }, [pendingSave, contactInfo, personalInfo]);
+
   // Field configuration
-// Field configuration
-const fieldConfig = {
-  required: {
-    firstName: { field: 'firstName', source: 'personalInfo', label: 'First Name' },
-    lastName: { field: 'lastName', source: 'personalInfo', label: 'Last Name' },
-    dateOfBirth: { field: 'dateOfBirth', source: 'personalInfo', label: 'Date of Birth' },
-    personalEmail: { field: 'personalEmail', source: 'contactInfo', label: 'Personal Email' },
-    preferredPhone: { field: 'preferredPhone', source: 'contactInfo', label: 'Preferred Phone' }
-  },
-  recommended: {
-    middleName: { field: 'middleName', source: 'personalInfo', label: 'Middle Name' },
-    workEmail: { field: 'workEmail', source: 'contactInfo', label: 'Work Email' },
-    anyPhone: { 
-      field: 'anyPhone', 
-      source: 'contactInfo', 
-      label: 'Phone Number',
-      // Custom check function for completion
-      checkValue: (data) => {
-        return !!(
-          (data.contactInfo?.mobilePhone && data.contactInfo.mobilePhone.trim() !== '') ||
-          (data.contactInfo?.homePhone && data.contactInfo.homePhone.trim() !== '') ||
-          (data.contactInfo?.workPhone && data.contactInfo.workPhone.trim() !== '')
-        );
+  const fieldConfig = {
+    required: {
+      firstName: { field: 'firstName', source: 'personalInfo', label: 'First Name' },
+      lastName: { field: 'lastName', source: 'personalInfo', label: 'Last Name' },
+      dateOfBirth: { field: 'dateOfBirth', source: 'personalInfo', label: 'Date of Birth' },
+      personalEmail: { field: 'personalEmail', source: 'contactInfo', label: 'Personal Email' },
+      preferredPhone: { field: 'preferredPhone', source: 'contactInfo', label: 'Preferred Phone' }
+    },
+    recommended: {
+      middleName: { field: 'middleName', source: 'personalInfo', label: 'Middle Name' },
+      workEmail: { field: 'workEmail', source: 'contactInfo', label: 'Work Email' },
+      anyPhone: { 
+        field: 'anyPhone', 
+        source: 'contactInfo', 
+        label: 'Phone Number',
+        checkValue: (data) => {
+          return !!(
+            (data.contactInfo?.mobilePhone && data.contactInfo.mobilePhone.trim() !== '') ||
+            (data.contactInfo?.homePhone && data.contactInfo.homePhone.trim() !== '') ||
+            (data.contactInfo?.workPhone && data.contactInfo.workPhone.trim() !== '')
+          );
+        }
       }
     }
-  }
-};
+  };
 
   const formatDateForDisplay = (dateOfBirth) => {
     if (!dateOfBirth) return '—';
@@ -527,25 +572,30 @@ const fieldConfig = {
     setOverlayOpen(true);
   };
 
+  const handleOverlaySave = (updatedContactInfo, updatedPersonalInfo) => {
+    // Update parent state with the new data
+    setContactInfo(updatedContactInfo);
+    setPersonalInfo(updatedPersonalInfo);
+    // Set flag to trigger save after state updates
+    setPendingSave(true);
+  };
+
   return (
     <div ref={sectionRef} className={`contact-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
-      {/* Overlay with direct prop passing */}
+      {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        contactInfo={contactInfo}
-        personalInfo={safePersonalInfo}
-        setContactInfo={setContactInfo}
-        setPersonalInfo={setPersonalInfo}
-        saveContactInfo={saveContactInfo}
+        data={{ contactInfo: safeContactInfo, personalInfo: safePersonalInfo }}
+        onSave={handleOverlaySave}
         savingSection={savingSection}
         fieldErrors={fieldErrors}
       />
 
       {isMobile ? (
         <ContactInfoMobile
-          contactInfo={contactInfo}
+          contactInfo={safeContactInfo}
           personalInfo={safePersonalInfo}
           setContactInfo={setContactInfo}
           setPersonalInfo={setPersonalInfo}
@@ -558,7 +608,7 @@ const fieldConfig = {
           fieldConfig={fieldConfig}
         />
       ) : (
-        /* Desktop Version - With completion wheel */
+        /* Desktop Version */
         <div className={styleConfig2.section.wrapperEnhanced}>
           <div className={styleConfig2.section.innerPadding}>
             {/* Header Section */}
@@ -573,7 +623,6 @@ const fieldConfig = {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
-
                         <h2 className={`${headerStyles.title(styleConfig2)} font-medium`}>Contact Information</h2>
                       </div>
                       <div className="flex items-start space-x-4">
@@ -583,24 +632,22 @@ const fieldConfig = {
                           </svg>
                         </div>
                         <div>
-                        <p className="text-gray-600 text-sm leading-5 max-w-lg">
+                          <p className="text-gray-600 text-sm leading-5 max-w-lg">
                             Keep your contact details current for important member communications.
-                        </p>
-                        <p className="text-gray-400 text-sm leading-5 mt-2">
+                          </p>
+                          <p className="text-gray-400 text-sm leading-5 mt-2">
                             Required: First Name, Last Name, Date of Birth, Personal Email, Preferred Phone
-                        </p>
-                        <p className="text-gray-400 text-sm leading-5 mt-1">
+                          </p>
+                          <p className="text-gray-400 text-sm leading-5 mt-1">
                             Recommended: Middle Name
-                        </p>
-
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Completion Section - Using reusable component */}
                   <CompletionWheelWithLegend
-                    data={{ contactInfo, personalInfo: safePersonalInfo }}
+                    data={{ contactInfo: safeContactInfo, personalInfo: safePersonalInfo }}
                     fieldConfig={fieldConfig}
                     sectionColor="#512BD9"
                   />
@@ -634,7 +681,7 @@ const fieldConfig = {
                     <InfoField label="Last Name" value={safePersonalInfo?.lastName || '—'} isRequired />
                   </InfoCard>
 
-                  {/* Phone Card - MOVED TO MIDDLE */}
+                  {/* Phone Card */}
                   <InfoCard 
                     title="Phone Numbers" 
                     icon={
@@ -650,12 +697,12 @@ const fieldConfig = {
                     cardIndex={1}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Mobile Phone" value={formatPhone(contactInfo?.mobilePhone)} isRecommended />
-                    <InfoField label="Home Phone" value={formatPhone(contactInfo?.homePhone)} isRecommended />
-                    <InfoField label="Work Phone" value={formatPhone(contactInfo?.workPhone)} isRecommended />
+                    <InfoField label="Mobile Phone" value={formatPhone(safeContactInfo?.mobilePhone)} isRecommended />
+                    <InfoField label="Home Phone" value={formatPhone(safeContactInfo?.homePhone)} isRecommended />
+                    <InfoField label="Work Phone" value={formatPhone(safeContactInfo?.workPhone)} isRecommended />
                   </InfoCard>
 
-                  {/* Email Card - MOVED TO END */}
+                  {/* Email Card */}
                   <InfoCard 
                     title="Email Addresses" 
                     icon={
@@ -671,12 +718,12 @@ const fieldConfig = {
                     cardIndex={2}
                     isVisible={cardsVisible}
                   >
-                    <InfoField label="Personal Email" value={contactInfo?.personalEmail || '—'} isRequired />
-                    <InfoField label="Work Email" value={contactInfo?.workEmail || '—'} isRecommended />
+                    <InfoField label="Personal Email" value={safeContactInfo?.personalEmail || '—'} isRequired />
+                    <InfoField label="Work Email" value={safeContactInfo?.workEmail || '—'} isRecommended />
                   </InfoCard>
                 </div>
               ) : (
-                /* Edit Mode - Using same style as PersonalInfoSection */
+                /* Edit Mode */
                 <div className="max-w-2xl">
                   <div className="grid grid-cols-2 gap-4">
                     <Input
@@ -715,8 +762,8 @@ const fieldConfig = {
                     <Input
                       label="Personal Email *"
                       type="email"
-                      value={contactInfo?.personalEmail || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, personalEmail: e.target.value})}
+                      value={safeContactInfo?.personalEmail || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, personalEmail: e.target.value})}
                       disabled={savingSection === 'contact'}
                       error={fieldErrors.personalEmail}
                     />
@@ -724,16 +771,16 @@ const fieldConfig = {
                     <Input
                       label="Work Email"
                       type="email"
-                      value={contactInfo?.workEmail || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, workEmail: e.target.value})}
+                      value={safeContactInfo?.workEmail || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, workEmail: e.target.value})}
                       disabled={savingSection === 'contact'}
                       error={fieldErrors.workEmail}
                     />
                     
                     <StyledSelect
                       label="Preferred Phone *"
-                      value={contactInfo?.preferredPhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, preferredPhone: e.target.value})}
+                      value={safeContactInfo?.preferredPhone || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, preferredPhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       error={fieldErrors.preferredPhone}
                     >
@@ -746,8 +793,8 @@ const fieldConfig = {
                     <Input
                       label="Mobile Phone"
                       type="tel"
-                      value={contactInfo?.mobilePhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, mobilePhone: e.target.value})}
+                      value={safeContactInfo?.mobilePhone || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, mobilePhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       placeholder="(555) 123-4567"
                       error={fieldErrors.mobilePhone}
@@ -756,8 +803,8 @@ const fieldConfig = {
                     <Input
                       label="Home Phone"
                       type="tel"
-                      value={contactInfo?.homePhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, homePhone: e.target.value})}
+                      value={safeContactInfo?.homePhone || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, homePhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       placeholder="(555) 123-4567"
                       error={fieldErrors.homePhone}
@@ -766,8 +813,8 @@ const fieldConfig = {
                     <Input
                       label="Work Phone"
                       type="tel"
-                      value={contactInfo?.workPhone || ''}
-                      onChange={(e) => setContactInfo({...contactInfo, workPhone: e.target.value})}
+                      value={safeContactInfo?.workPhone || ''}
+                      onChange={(e) => setContactInfo({...safeContactInfo, workPhone: e.target.value})}
                       disabled={savingSection === 'contact'}
                       placeholder="(555) 123-4567"
                       error={fieldErrors.workPhone}
