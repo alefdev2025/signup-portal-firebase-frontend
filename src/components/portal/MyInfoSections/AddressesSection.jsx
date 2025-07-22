@@ -9,6 +9,7 @@ import AddressesMobile from './AddressesMobile';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import fieldStyles from './desktopCardStyles/fieldStyles';
 import alcorStar from '../../../assets/images/alcor-star.png';
+import { normalizeAddressCountries } from './CountryMapper';
 import { 
   overlayStyles, 
   infoCardStyles, 
@@ -40,7 +41,15 @@ const CardOverlay = ({
       setEditMode(false);  // Start in view mode
       setShowSuccess(false);
       // Reset local state to current data when opening - create copy not reference
-      setLocalAddresses({...data.addresses} || {});
+      const addressData = {...data.addresses} || {};
+      // Set defaults only for truly empty fields
+      if (!addressData.homeCountry) {
+        addressData.homeCountry = 'United States';
+      }
+      if (!addressData.mailingCountry && !addressData.sameAsHome) {
+        addressData.mailingCountry = 'United States';
+      }
+      setLocalAddresses(addressData);
     }
   }, [isOpen, data.addresses]);
 
@@ -51,8 +60,10 @@ const CardOverlay = ({
   };
 
   const handleSave = () => {
-    // Pass the local data back to parent via callback
-    onSave(localAddresses);
+    // Normalize country codes before passing back to parent
+    const normalizedAddresses = normalizeAddressCountries(localAddresses);
+    // Pass the normalized data back to parent via callback
+    onSave(normalizedAddresses);
     setEditMode(false);
     // Don't show success here - let the parent handle it after actual save
     onClose();
@@ -183,7 +194,7 @@ const CardOverlay = ({
                         className={overlayStyles.displayMode.field.value}
                         style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homeCountry)}
                       >
-                        {localAddresses?.homeCountry || 'US'}
+                        {localAddresses?.homeCountry || 'United States'}
                       </p>
                     </div>
                   </div>
@@ -246,7 +257,7 @@ const CardOverlay = ({
                             className={overlayStyles.displayMode.field.value}
                             style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingCountry)}
                           >
-                            {localAddresses?.mailingCountry || 'US'}
+                            {localAddresses?.mailingCountry || 'United States'}
                           </p>
                         </div>
                       </>
@@ -291,9 +302,10 @@ const CardOverlay = ({
                         disabled={savingSection === 'addresses'}
                       />
                       <Input
-                        label="Country"
+                        label="Country *"
                         type="text"
-                        value={localAddresses?.homeCountry || 'US'}
+                        value={localAddresses?.homeCountry || ''}
+                        placeholder="United States"
                         onChange={(e) => setLocalAddresses({...localAddresses, homeCountry: e.target.value})}
                         disabled={savingSection === 'addresses'}
                       />
@@ -344,9 +356,10 @@ const CardOverlay = ({
                             disabled={savingSection === 'addresses'}
                           />
                           <Input
-                            label="Country"
+                            label="Country *"
                             type="text"
-                            value={localAddresses?.mailingCountry || 'US'}
+                            value={localAddresses?.mailingCountry || ''}
+                            placeholder="United States"
                             onChange={(e) => setLocalAddresses({...localAddresses, mailingCountry: e.target.value})}
                             disabled={savingSection === 'addresses'}
                           />
@@ -468,6 +481,7 @@ const AddressesSection = ({
   // Trigger save after state update from overlay
   useEffect(() => {
     if (pendingSave) {
+      // Call parent's save function which should handle the API call
       saveAddresses();
       setPendingSave(false);
     }
@@ -479,10 +493,20 @@ const AddressesSection = ({
   };
 
   const handleOverlaySave = (updatedAddresses) => {
-    // Update parent state with the new data
+    // The updatedAddresses are already normalized by the overlay
+    // Update parent state with the normalized data
     setAddresses(updatedAddresses);
     // Set flag to trigger save after state updates
     setPendingSave(true);
+  };
+
+  // Custom save handler that normalizes countries
+  const handleSaveWithNormalization = () => {
+    // Normalize country codes before saving
+    const normalizedAddresses = normalizeAddressCountries(safeAddresses);
+    setAddresses(normalizedAddresses);
+    // Call the parent's save function
+    saveAddresses();
   };
 
   // Field configuration for completion wheel
@@ -491,7 +515,8 @@ const AddressesSection = ({
       homeStreet: { field: 'homeStreet', source: 'addresses', label: 'Home Street' },
       homeCity: { field: 'homeCity', source: 'addresses', label: 'Home City' },
       homeState: { field: 'homeState', source: 'addresses', label: 'Home State' },
-      homePostalCode: { field: 'homePostalCode', source: 'addresses', label: 'Home Postal Code' }
+      homePostalCode: { field: 'homePostalCode', source: 'addresses', label: 'Home Postal Code' },
+      homeCountry: { field: 'homeCountry', source: 'addresses', label: 'Home Country' }
     },
     recommended: {
       mailingAddress: { 
@@ -501,7 +526,7 @@ const AddressesSection = ({
         checkValue: (data) => {
           const addr = data.addresses;
           return addr?.sameAsHome || (
-            !!(addr?.mailingStreet && addr?.mailingCity && addr?.mailingState && addr?.mailingPostalCode)
+            !!(addr?.mailingStreet && addr?.mailingCity && addr?.mailingState && addr?.mailingPostalCode && addr?.mailingCountry)
           );
         }
       }
@@ -528,7 +553,7 @@ const AddressesSection = ({
                        safeAddresses.homeCity === safeAddresses.mailingCity &&
                        safeAddresses.homeState === safeAddresses.mailingState &&
                        safeAddresses.homePostalCode === safeAddresses.mailingPostalCode &&
-                       (safeAddresses.homeCountry || 'US') === (safeAddresses.mailingCountry || 'US');
+                       (safeAddresses.homeCountry || 'United States') === (safeAddresses.mailingCountry || 'United States');
     
     return fieldsMatch;
   };
@@ -552,7 +577,7 @@ const AddressesSection = ({
           editMode={editMode}
           toggleEditMode={toggleEditMode}
           cancelEdit={cancelEdit}
-          saveAddresses={saveAddresses}
+          saveAddresses={handleSaveWithNormalization}
           savingSection={savingSection}
           fieldConfig={fieldConfig}
           formatAddress={formatAddress}
@@ -588,7 +613,7 @@ const AddressesSection = ({
                             Your home and mailing addresses.
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-2">
-                            Required: Home Address
+                            Required: Home Address (including Country)
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-1">
                             Recommended: Mailing Address
@@ -629,9 +654,12 @@ const AddressesSection = ({
                     isVisible={cardsVisible}
                   >
                     <InfoField label="Street Address" value={safeAddresses?.homeStreet || '—'} isRequired />
-                    <InfoField label="City" value={safeAddresses?.homeCity || '—'} isRequired />
-                    <InfoField label="State/Province" value={safeAddresses?.homeState || '—'} isRequired />
-                    <InfoField label="Zip/Postal Code" value={safeAddresses?.homePostalCode || '—'} isRequired />
+                    <InfoField label="City, State" value={
+                      safeAddresses?.homeCity && safeAddresses?.homeState 
+                        ? `${safeAddresses.homeCity}, ${safeAddresses.homeState}` 
+                        : '—'
+                    } isRequired />
+                    <InfoField label="Country" value={safeAddresses?.homeCountry || 'United States'} isRequired />
                   </InfoCard>
 
                   {/* Mailing Address Card */}
@@ -663,9 +691,12 @@ const AddressesSection = ({
                     ) : (
                       <>
                         <InfoField label="Street Address" value={safeAddresses?.mailingStreet || '—'} isRecommended />
-                        <InfoField label="City" value={safeAddresses?.mailingCity || '—'} isRecommended />
-                        <InfoField label="State/Province" value={safeAddresses?.mailingState || '—'} isRecommended />
-                        <InfoField label="Zip/Postal Code" value={safeAddresses?.mailingPostalCode || '—'} isRecommended />
+                        <InfoField label="City, State" value={
+                          safeAddresses?.mailingCity && safeAddresses?.mailingState 
+                            ? `${safeAddresses.mailingCity}, ${safeAddresses.mailingState}` 
+                            : '—'
+                        } isRecommended />
+                        <InfoField label="Country" value={safeAddresses?.mailingCountry || 'United States'} isRecommended />
                       </>
                     )}
                   </InfoCard>
@@ -708,9 +739,10 @@ const AddressesSection = ({
                         disabled={savingSection === 'addresses'}
                       />
                       <Input
-                        label="Country"
+                        label="Country *"
                         type="text"
-                        value={safeAddresses.homeCountry || 'US'}
+                        value={safeAddresses.homeCountry || ''}
+                        placeholder="United States"
                         onChange={(e) => setAddresses({...safeAddresses, homeCountry: e.target.value})}
                         disabled={savingSection === 'addresses'}
                       />
@@ -759,9 +791,10 @@ const AddressesSection = ({
                             disabled={savingSection === 'addresses'}
                           />
                           <Input
-                            label="Country"
+                            label="Country *"
                             type="text"
-                            value={safeAddresses.mailingCountry || 'US'}
+                            value={safeAddresses.mailingCountry || ''}
+                            placeholder="United States"
                             onChange={(e) => setAddresses({...safeAddresses, mailingCountry: e.target.value})}
                             disabled={savingSection === 'addresses'}
                           />
@@ -784,7 +817,7 @@ const AddressesSection = ({
                     />
                     <PurpleButton
                       text={buttonStyles.getSaveButtonText(savingSection)}
-                      onClick={saveAddresses}
+                      onClick={handleSaveWithNormalization}
                       className={buttonStyles.purpleButton.base}
                       spinStar={buttonStyles.starConfig.enabled}
                       disabled={savingSection === 'addresses'}

@@ -11,7 +11,7 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 // ============================================
 // DEMO CONFIGURATION - TOGGLE HERE
 // ============================================
-const DEMO_MODE = true;  // <-- TOGGLE THIS ON/OFF
+const DEMO_MODE = false;  // <-- TOGGLE THIS ON/OFF
 
 // Set this to 'nicole' or 'anthony'
 const DEMO_PERSON = 'anthony'; // 'nicole' or 'anthony'

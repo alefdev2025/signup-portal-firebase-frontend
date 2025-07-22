@@ -808,56 +808,59 @@ const MedicalInfoSection = ({
   };
 
   // Profile improvement notice component
-  const ProfileImprovementNotice = () => (
-    <div className={isMobile ? "mt-4 mb-4" : "flex items-center gap-4"}>
-      <svg className={isMobile ? "w-8 h-8 text-orange-500 flex-shrink-0 mb-2" : "w-10 h-10 text-orange-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <p className={isMobile ? "text-sm font-semibold text-white/90" : "text-sm font-semibold text-gray-900"}>
-            Improve Your Member Profile
-          </p>
-          <div className="relative">
-            <HelpCircle 
-              className={isMobile ? "w-4 h-4 text-white/60 hover:text-white/80 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"} 
-              strokeWidth={2}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(!showTooltip)}
-            />
-            {showTooltip && (
-              <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
-                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Why Does Alcor Need This?
-                    </h3>
-                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-sm text-gray-700">
-                    Complete medical information helps Alcor provide better care in emergency situations and ensures your physician can be contacted quickly if needed.
-                  </p>
-                </div>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+// Profile improvement notice component
+const ProfileImprovementNotice = () => (
+  <div className={isMobile ? "flex items-center gap-2" : "flex items-center gap-4"}>
+    <svg className={isMobile ? "w-5 h-5 text-orange-500 flex-shrink-0" : "w-10 h-10 text-orange-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    
+    <div className="flex-1">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold text-gray-900">
+          Improve Your Member Profile
+        </p>
+        <div className="relative">
+          <HelpCircle 
+            className={isMobile ? "w-4 h-4 text-gray-600 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"}
+            strokeWidth={2}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+          />
+          {showTooltip && (
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Why Does Alcor Need This?
+                  </h3>
+                  <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                  </svg>
                 </div>
               </div>
-            )}
-          </div>
+              <div className="px-4 py-3">
+                <p className="text-sm text-gray-700">
+                  Complete medical information helps Alcor provide better care in emergency situations and ensures your physician can be contacted quickly if needed.
+                </p>
+              </div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+              </div>
+            </div>
+          )}
         </div>
-        <p className={isMobile ? "text-sm text-white/70 font-light" : "text-sm text-gray-600 font-light"}>
+      </div>
+      {!isMobile && (
+        <p className="text-sm text-gray-600 font-light">
           {getMissingFieldsMessage()}
         </p>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 
   return (
     <div ref={sectionRef} className={`medical-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>

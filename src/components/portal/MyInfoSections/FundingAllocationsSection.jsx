@@ -17,7 +17,7 @@ import { CompletionWheelWithLegend } from './CompletionWheel';
 import { isSectionEditable } from '../memberCategoryConfig';
 
 // DEBUG CONFIGURATION - Change these values to test different user states
-const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const OVERRIDE_MEMBER_CATEGORY = false;  // Set to true to use debug category, false to use actual
 const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
 
 // Helper function to get effective member category
@@ -857,8 +857,8 @@ const FundingAllocationsSection = ({
             {/* Content */}
             <div className="bg-white">
               {!editMode.fundingAllocations ? (
-                /* Display Mode with Cards */
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                /* Display Mode with Cards - Using 3-column grid to match contact info card widths */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Primary Allocation Card */}
                   <InfoCard
                     title="Primary Fund Allocation"

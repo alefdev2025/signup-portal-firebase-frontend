@@ -183,21 +183,44 @@ const ContactInfoMobile = ({
               </div>
             </div>
             
-            {/* Display Mode - Contact Preview */}
-            {!editMode.contact && (
+{/* Display Mode - Contact Preview */}
+{!editMode.contact && (
               <div className="bg-blue-50/30 rounded-lg p-4">
-                <p className="text-sm text-gray-600 text-center break-words px-2">
-                  {personalInfo?.firstName && personalInfo?.lastName ? 
-                    `${personalInfo.firstName} ${personalInfo.lastName}` : 
-                    'No name provided'} 
-                  {contactInfo?.personalEmail ? ` • ${contactInfo.personalEmail}` : ''}
-                  {contactInfo?.preferredPhone && (contactInfo?.mobilePhone || contactInfo?.homePhone || contactInfo?.workPhone) ? 
-                    ` • ${formatPhone(
-                      contactInfo.preferredPhone === 'Mobile' ? contactInfo.mobilePhone :
-                      contactInfo.preferredPhone === 'Home' ? contactInfo.homePhone :
-                      contactInfo.workPhone
-                    )}` : ''}
-                </p>
+                <div className="text-sm text-gray-600 text-center break-words px-2">
+                  <style jsx>{`
+                    .contact-preview a {
+                      color: inherit !important;
+                      text-decoration: none !important;
+                      pointer-events: none !important;
+                      cursor: text !important;
+                    }
+                  `}</style>
+                  <div className="contact-preview">
+                    <span data-email="false" data-phone="false">
+                      {personalInfo?.firstName && personalInfo?.lastName ? 
+                        `${personalInfo.firstName} ${personalInfo.lastName}` : 
+                        'No name provided'}
+                    </span>
+                    {personalInfo?.dateOfBirth ? (
+                      <>
+                        <span> • </span>
+                        <span>{formatDateForDisplay(personalInfo.dateOfBirth)}</span>
+                      </>
+                    ) : ''}
+                    {contactInfo?.preferredPhone && (contactInfo?.mobilePhone || contactInfo?.homePhone || contactInfo?.workPhone) ? (
+                      <>
+                        <span> • </span>
+                        <span data-phone="false">
+                          {formatPhone(
+                            contactInfo.preferredPhone === 'Mobile' ? contactInfo.mobilePhone :
+                            contactInfo.preferredPhone === 'Home' ? contactInfo.homePhone :
+                            contactInfo.workPhone
+                          ).replace(/(\d)/g, '$1\u200B')}
+                        </span>
+                      </>
+                    ) : ''}
+                  </div>
+                </div>
               </div>
             )}
           </div>

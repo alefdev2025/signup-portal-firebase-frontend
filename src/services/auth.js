@@ -423,6 +423,57 @@ export const resetPassword = async (email) => {
     }
   };
 
+  /**
+ * Request email verification for portal signup
+ * @param {object} data - Contains email, name, alcorId, salesforceContactId
+ * @returns {Promise<object>} Verification result
+ */
+export const requestPortalEmailVerification = async (data) => {
+  try {
+    const { email, name, alcorId, salesforceContactId } = data;
+    
+    console.log('Requesting portal email verification:', { email, alcorId });
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'createPortalEmailVerification',
+      email,
+      name,
+      alcorId,
+      salesforceContactId
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('Portal verification result:', result.data);
+    
+    if (result.data.success) {
+      // Save verification state for the next step
+      saveVerificationState({
+        email,
+        name,
+        alcorId,
+        salesforceContactId,
+        verificationId: result.data.verificationId,
+        isPortalVerification: true,
+        timestamp: Date.now()
+      });
+    }
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error requesting portal verification:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send verification email'
+    };
+  }
+};
+
 export async function requestEmailVerification(email, name) {
     // console.log("========== START: requestEmailVerification ==========");
     // console.log(`Email: ${email}, Name: ${name}`);
@@ -1965,6 +2016,429 @@ export const sendProcedureNotificationEmail = async (data) => {
       error: error.message || 'Failed to send email notification'
     };
   }
+};
+
+// create portal account
+// Add these functions to your existing auth.js file
+
+/**
+ * Check authentication method and Salesforce account status
+ * Used in portal signup/login to handle multiple accounts
+ */
+ export const checkAuthMethod = async ({ email, alcorId }) => {
+  try {
+    console.log(`Checking auth method for email: ${email}, alcorId: ${alcorId || 'none'}`);
+    
+    // Use the existing authCore function pattern
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'checkAuthMethod',
+      email,
+      alcorId
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('checkAuthMethod result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error checking auth method:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to check authentication method'
+    };
+  }
+};
+
+/**
+ * Send verification email for portal signup
+ * Uses the existing verification system
+ */
+export const sendPortalVerificationEmail = async (email, name) => {
+  try {
+    console.log(`Sending portal verification email to: ${email}`);
+    
+    // Use your existing requestEmailVerification function
+    const result = await requestEmailVerification(email, name);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Error sending portal verification email:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send verification email'
+    };
+  }
+};
+
+/**
+ * Verify portal signup code
+ * Uses the existing verification system
+ */
+export const verifyPortalCode = async (email, code) => {
+  try {
+    console.log(`Verifying portal code for: ${email}`);
+    
+    // Get verification state from localStorage
+    const verificationState = getVerificationState();
+    
+    if (!verificationState || !verificationState.verificationId) {
+      throw new Error('No verification session found');
+    }
+    
+    // Use your existing verifyEmailCodeOnly function
+    const result = await verifyEmailCodeOnly(verificationState.verificationId, code);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Error verifying portal code:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to verify code'
+    };
+  }
+};
+
+export const checkMemberAccount = async (email, alcorId = null) => {
+  try {
+    const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+    
+    let endpoint, body;
+    
+    if (alcorId) {
+      // Use the Alcor ID search endpoint
+      endpoint = '/api/salesforce/customers/search-by-alcor-id';
+      body = { alcorId, email };
+    } else {
+      // Use the email search endpoint
+      endpoint = '/api/salesforce/customers/search-by-email';
+      body = { email };
+    }
+    
+    console.log('[checkMemberAccount] Calling:', endpoint, body);
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    });
+    
+    const result = await response.json();
+    console.log('[checkMemberAccount] Result:', result);
+    
+    // The response should already be in the right format from your backend
+    return result;
+    
+  } catch (error) {
+    console.error('[checkMemberAccount] Error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to check member account'
+    };
+  }
+};
+
+/**
+ * Create portal account after verification
+ * @param {object} data - Contains email, password, verificationId, etc.
+ * @returns {Promise<object>} Account creation result
+ */
+ export const createPortalAccountWithPassword = async (data) => {
+  try {
+    const { email, password, verificationId, alcorId, firstName, lastName, salesforceContactId } = data;
+    
+    console.log('Creating portal account with password');
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'createPortalAccount',
+      email,
+      password,
+      verificationId,
+      alcorId,
+      firstName,
+      lastName,
+      salesforceContactId
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    if (result.data.success) {
+      // Clear verification state
+      clearVerificationState();
+    }
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error creating portal account:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create portal account'
+    };
+  }
+};
+
+// NEED THIS?
+/**
+ * Create portal account for existing Alcor member
+ */
+export const createPortalAccount = async (data) => {
+  try {
+    const { email, alcorId, firstName, lastName, salesforceContactId } = data;
+    
+    console.log('Creating portal account:', { email, alcorId, salesforceContactId });
+    
+    // Validate required fields
+    if (!email || !alcorId || !firstName || !lastName || !salesforceContactId) {
+      throw new Error('Missing required fields for portal account creation');
+    }
+    
+    // Use the authCore function pattern
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'createPortalAccount',
+      email,
+      alcorId,
+      firstName,
+      lastName,
+      salesforceContactId
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('createPortalAccount result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error creating portal account:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create portal account'
+    };
+  }
+};
+
+/**
+ * Complete portal 2FA setup
+ */
+export const completePortal2FASetup = async ({ userId, token }) => {
+  try {
+    console.log('Completing portal 2FA setup for user:', userId);
+    
+    if (!userId || !token) {
+      throw new Error('User ID and verification token are required');
+    }
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'completePortal2FASetup',
+      userId,
+      token
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('completePortal2FASetup result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error completing 2FA setup:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to complete 2FA setup'
+    };
+  }
+};
+
+/**
+ * Send portal welcome email
+ * Used after portal account creation
+ */
+export const sendPortalWelcomeEmail = async (email, data) => {
+  try {
+    console.log('Sending portal welcome email to:', email);
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'sendPortalWelcomeEmail',
+      email,
+      ...data
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error sending portal welcome email:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send welcome email'
+    };
+  }
+};
+
+/**
+ * Check if user has portal access
+ * Used to determine if user should see portal features
+ */
+export const checkPortalAccess = async (userId) => {
+  try {
+    if (!userId) {
+      console.log('No userId provided for portal access check');
+      return { hasPortalAccess: false };
+    }
+    
+    console.log('Checking portal access for user:', userId);
+    
+    // Check the user document in Firestore
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.log('User document not found');
+      return { hasPortalAccess: false };
+    }
+    
+    const userData = userDoc.data();
+    const hasPortalAccess = userData.isPortalUser === true;
+    
+    console.log('Portal access check result:', hasPortalAccess);
+    
+    return {
+      hasPortalAccess,
+      alcorId: userData.alcorId,
+      salesforceContactId: userData.salesforceContactId
+    };
+    
+  } catch (error) {
+    console.error('Error checking portal access:', error);
+    return { hasPortalAccess: false };
+  }
+};
+
+// Add this function to your auth.js file
+
+export const verify2FACode = async (userId, code) => {
+  try {
+    console.log('Verifying 2FA code for user:', userId);
+    
+    if (!userId || !code) {
+      throw new Error('User ID and verification code are required');
+    }
+    
+    if (code.length !== 6) {
+      throw new Error('Invalid code format. Please enter a 6-digit code.');
+    }
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'verify2FACode',
+      userId,
+      code
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('verify2FACode result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error verifying 2FA code:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to verify 2FA code'
+    };
+  }
+};
+
+/**
+ * Validate Alcor ID format
+ * Client-side validation before sending to backend
+ */
+export const validateAlcorId = (alcorId) => {
+  if (!alcorId || typeof alcorId !== 'string') {
+    return {
+      isValid: false,
+      error: 'Alcor ID is required'
+    };
+  }
+  
+  // Remove whitespace and convert to uppercase
+  const cleaned = alcorId.trim().toUpperCase().replace(/\s/g, '');
+  
+  // Match patterns: A-1234, A1234, 1234
+  const match = cleaned.match(/^[A]?[-]?(\d+)$/);
+  
+  if (!match) {
+    return {
+      isValid: false,
+      error: 'Invalid format. Expected: A-1234'
+    };
+  }
+  
+  const numericId = match[1];
+  
+  if (numericId.length < 1 || numericId.length > 6) {
+    return {
+      isValid: false,
+      error: 'ID must be 1-6 digits'
+    };
+  }
+  
+  return {
+    isValid: true,
+    normalizedId: `A-${numericId}`,
+    numericId: numericId
+  };
+};
+
+/**
+ * Format Alcor ID for display
+ * Ensures consistent A-#### format
+ */
+export const formatAlcorId = (value) => {
+  if (!value) return '';
+  
+  // Remove non-alphanumeric characters except dash
+  let cleaned = value.replace(/[^A-Za-z0-9-]/g, '');
+  
+  // If it starts with a number, add A-
+  if (cleaned && /^\d/.test(cleaned)) {
+    cleaned = 'A-' + cleaned;
+  }
+  
+  // Convert to uppercase
+  return cleaned.toUpperCase();
 };
 
 export { 

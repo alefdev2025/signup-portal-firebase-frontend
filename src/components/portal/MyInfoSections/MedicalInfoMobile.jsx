@@ -222,7 +222,7 @@ const MedicalInfoMobile = ({
                   </div>
                   
                   {needsProfileImprovement() && (
-                    <div className="bg-orange-50 rounded-lg p-4">
+                    <div className="bg-orange-50 rounded-lg p-4 text-black">
                       <ProfileImprovementNotice />
                     </div>
                   )}

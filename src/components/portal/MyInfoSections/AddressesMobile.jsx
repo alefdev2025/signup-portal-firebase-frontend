@@ -4,6 +4,7 @@ import { FormInput, FormSelect } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
+import { normalizeAddressCountries } from './CountryMapper';
 
 const AddressesMobile = ({ 
   addresses,
@@ -60,6 +61,15 @@ const AddressesMobile = ({
   };
 
   const completionPercentage = calculateCompletion();
+
+  // Handle save with country normalization
+  const handleSaveWithNormalization = () => {
+    // Normalize country codes before saving
+    const normalizedAddresses = normalizeAddressCountries(addresses);
+    setAddresses(normalizedAddresses);
+    // Call the parent's save function
+    saveAddresses();
+  };
 
   return (
     <div className="-mx-2">
@@ -148,7 +158,7 @@ const AddressesMobile = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">Home Address</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Home Address (including Country)</p>
                       </div>
                     </div>
                     
@@ -214,8 +224,9 @@ const AddressesMobile = ({
                       disabled={savingSection === 'addresses'}
                     />
                     <FormInput
-                      label="Country"
-                      value={addresses?.homeCountry || 'US'}
+                      label="Country *"
+                      value={addresses?.homeCountry || ''}
+                      placeholder="United States"
                       onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
                       disabled={savingSection === 'addresses'}
                     />
@@ -272,8 +283,9 @@ const AddressesMobile = ({
                           disabled={savingSection === 'addresses'}
                         />
                         <FormInput
-                          label="Country"
-                          value={addresses?.mailingCountry || 'US'}
+                          label="Country *"
+                          value={addresses?.mailingCountry || ''}
+                          placeholder="United States"
                           onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
                           disabled={savingSection === 'addresses'}
                         />
@@ -294,7 +306,7 @@ const AddressesMobile = ({
                 Close
               </button>
               <button
-                onClick={saveAddresses}
+                onClick={handleSaveWithNormalization}
                 disabled={savingSection === 'addresses'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >

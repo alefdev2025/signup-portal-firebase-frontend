@@ -17,6 +17,20 @@ import {
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
+import { isSectionEditable } from '../memberCategoryConfig';
+
+// DEBUG CONFIGURATION - Change these values to test different user states
+const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
+
+// Helper function to get effective member category
+const getEffectiveMemberCategory = (actualCategory) => {
+  if (OVERRIDE_MEMBER_CATEGORY) {
+    console.log(`🔧 DEBUG: Override active - Using ${DEBUG_CATEGORY} instead of ${actualCategory}`);
+    return DEBUG_CATEGORY;
+  }
+  return actualCategory;
+};
 
 // Custom Select component that uses styleConfig2
 const StyledSelect = ({ label, value, onChange, disabled, children, error }) => {
@@ -176,11 +190,16 @@ const CardOverlay = ({
   data, 
   onSave,
   savingSection,
-  fieldErrors
+  fieldErrors,
+  memberCategory
 }) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [localPersonalInfo, setLocalPersonalInfo] = useState({});
+
+  // Get effective member category for debugging
+  const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
 
   useEffect(() => {
     if (isOpen) {
@@ -237,7 +256,7 @@ const CardOverlay = ({
       case 'identity':
         return {
           title: 'Identity Details',
-          description: 'Your personal identification information including birth name, government ID, and gender identity.',
+          description: 'Your personal identification information including birth name, government ID, and sex.',
         };
       case 'demographics':
         return {
@@ -555,7 +574,7 @@ const CardOverlay = ({
                       </div>
                     </div>
                     <div>
-                      <label className={overlayStyles.displayMode.field.label}>Gender</label>
+                      <label className={overlayStyles.displayMode.field.label}>Sex</label>
                       <p className={overlayStyles.displayMode.field.value}>
                         {localPersonalInfo?.gender || '—'}
                       </p>
@@ -617,7 +636,7 @@ const CardOverlay = ({
                         placeholder="Same as current"
                       />
                       <StyledSelect
-                        label="Gender *"
+                        label="Sex *"
                         value={localPersonalInfo?.gender || ''}
                         onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, gender: e.target.value})}
                         disabled={savingSection === 'personal'}
@@ -628,6 +647,24 @@ const CardOverlay = ({
                         <option value="Other">Other</option>
                       </StyledSelect>
                     </div>
+                    {canEditSSN ? (
+                      <Input
+                        label="SSN/Government ID *"
+                        type="text"
+                        value={localPersonalInfo?.ssn || ''}
+                        onChange={(e) => setLocalPersonalInfo({...localPersonalInfo, ssn: e.target.value})}
+                        disabled={savingSection === 'personal'}
+                        error={fieldErrors.ssn}
+                      />
+                    ) : (
+                      <div>
+                        <label className={styleConfig2.form.label}>SSN/Government ID *</label>
+                        <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600">
+                          {formatSSN(localPersonalInfo?.ssn)}
+                        </div>
+                        <p className="mt-1 text-sm text-gray-500">Contact Alcor to update SSN</p>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -737,6 +774,10 @@ const PersonalInfoSection = ({
   const sectionRef = useRef(null);
   const [pendingSave, setPendingSave] = useState(false);
 
+  // Get effective member category for debugging
+  const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
+
   // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -786,7 +827,7 @@ const PersonalInfoSection = ({
   // Field configuration for completion wheel
   const fieldConfig = {
     required: {
-      gender: { field: 'gender', source: 'personalInfo', label: 'Gender' },
+      gender: { field: 'gender', source: 'personalInfo', label: 'Sex' },
       birthName: { field: 'birthName', source: 'personalInfo', label: 'Birth Name' },
       ssn: { field: 'ssn', source: 'personalInfo', label: 'SSN/Government ID' },
       race: { field: 'race', source: 'personalInfo', label: 'Race' },
@@ -1087,6 +1128,7 @@ const PersonalInfoSection = ({
         onSave={handleOverlaySave}
         savingSection={savingSection}
         fieldErrors={fieldErrors}
+        memberCategory={memberCategory}
       />
       
       {isMobile ? (
@@ -1100,6 +1142,7 @@ const PersonalInfoSection = ({
           savingSection={savingSection}
           fieldErrors={fieldErrors}
           fieldConfig={fieldConfig}
+          memberCategory={memberCategory}
         />
       ) : (
         <div className={styleConfig2.section.wrapperEnhanced}>
@@ -1128,7 +1171,7 @@ const PersonalInfoSection = ({
                             Additional personal details for your member file.
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-2">
-                            Required: Gender, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship
+                            Required: Sex, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-1">
                             Recommended: Ethnicity
@@ -1167,7 +1210,7 @@ const PersonalInfoSection = ({
                   >
                     <InfoField label="Birth Name" value={personalInfo?.birthName || 'Same as current'} isRequired />
                     <InfoField label="SSN/Government ID" value={formatSSN(personalInfo?.ssn)} isRequired />
-                    <InfoField label="Gender" value={personalInfo?.gender || '—'} isRequired />
+                    <InfoField label="Sex" value={personalInfo?.gender || '—'} isRequired />
                   </InfoCard>
 
                   <InfoCard 
@@ -1225,7 +1268,7 @@ const PersonalInfoSection = ({
                     />
                     
                     <StyledSelect
-                      label="Gender *"
+                      label="Sex *"
                       value={personalInfo.gender || ''}
                       onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
                       disabled={savingSection === 'personal'}
@@ -1235,6 +1278,26 @@ const PersonalInfoSection = ({
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
                     </StyledSelect>
+                    
+                    {canEditSSN ? (
+                      <Input
+                        containerClassName="col-span-2"
+                        label="SSN/Government ID *"
+                        type="text"
+                        value={personalInfo.ssn || ''}
+                        onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
+                        disabled={savingSection === 'personal'}
+                        error={fieldErrors.ssn}
+                      />
+                    ) : (
+                      <div className="col-span-2">
+                        <label className={styleConfig2.form.label}>SSN/Government ID *</label>
+                        <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600">
+                          {formatSSN(personalInfo.ssn)}
+                        </div>
+                        <p className="mt-1 text-sm text-gray-500">Contact Alcor to update SSN</p>
+                      </div>
+                    )}
                     
                     <MultiSelectDropdown
                       label="Race"

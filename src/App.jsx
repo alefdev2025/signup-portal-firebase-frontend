@@ -16,6 +16,7 @@ import DemoPasswordPage from './pages/DemoPasswordPage';
 import PortalHome from './pages/PortalHome';
 import StaffPage from './pages/StaffPage'; // Add this import
 import StaffPasswordReset from './pages/StaffPasswordReset';
+import PortalSetupPage from './pages/PortalSetupPage';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -115,6 +116,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/__/auth/action" element={<ResetPasswordPage />} />
+          <Route path="/portal-setup" element={<PortalSetupPage />} />
 
           {/* Payment page (used in signup flow) */}
           <Route path="/payment" element={<StandalonePaymentPage />} />

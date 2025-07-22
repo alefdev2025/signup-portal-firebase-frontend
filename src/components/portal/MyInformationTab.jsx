@@ -3061,11 +3061,11 @@ const saveFunding = async () => {
       
       // Find NOKs that need to be deleted
       const currentNokIds = nextOfKinList
-        .filter(nok => nok.id && !nok.id.startsWith('temp-'))
+        .filter(nok => nok.id && !nok.id.startsWith('temp-') && !nok.id.startsWith('nok_'))
         .map(nok => nok.id);
       
       const originalNokIds = (originalData.nextOfKin || [])
-        .filter(nok => nok.id && !nok.id.startsWith('temp-'))
+        .filter(nok => nok.id && !nok.id.startsWith('temp-') && !nok.id.startsWith('nok_'))
         .map(nok => nok.id);
       
       const noksToDelete = originalNokIds.filter(id => !currentNokIds.includes(id));
@@ -3109,6 +3109,8 @@ const saveFunding = async () => {
       // Then add create/update promises
       nextOfKinList.forEach((nok, idx) => {
         console.log(`[${callId}] 15. Preparing NOK ${idx + 1} for API`);
+        console.log(`[${callId}]     ID: ${nok.id}`);
+        console.log(`[${callId}]     ID type: ${typeof nok.id}`);
         
         // Ensure we have the computed fields for backend compatibility
         const fullName = `${nok.firstName || ''} ${nok.lastName || ''}`.trim();
@@ -3139,11 +3141,21 @@ const saveFunding = async () => {
         
         console.log(`[${callId}] 16. NOK ${idx + 1} data prepared:`, nokData);
         
-        if (nok.id && !nok.id.startsWith('temp-')) {
-          console.log(`[${callId}] 17. Updating existing NOK ${idx + 1} with ID: ${nok.id}`);
+        // FIX: Check if it's a valid Salesforce ID
+        // Salesforce IDs are 15 or 18 characters, alphanumeric
+        // They typically start with specific prefixes like 'a0w' for custom objects
+        const isSalesforceId = nok.id && 
+                              /^[a-zA-Z0-9]{15,18}$/.test(nok.id) && 
+                              !nok.id.startsWith('temp-') && 
+                              !nok.id.startsWith('nok_');
+        
+        console.log(`[${callId}]     Is Salesforce ID? ${isSalesforceId}`);
+        
+        if (isSalesforceId) {
+          console.log(`[${callId}] 17. Updating existing NOK ${idx + 1} with Salesforce ID: ${nok.id}`);
           promises.push(updateMemberEmergencyContact(salesforceContactId, nok.id, nokData));
         } else {
-          console.log(`[${callId}] 17. Creating new NOK ${idx + 1}`);
+          console.log(`[${callId}] 17. Creating new NOK ${idx + 1} (temporary ID: ${nok.id || 'none'})`);
           promises.push(createMemberEmergencyContact(salesforceContactId, nokData));
         }
       });

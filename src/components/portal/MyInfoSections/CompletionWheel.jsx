@@ -167,7 +167,7 @@ const CompletionWheel = ({
  * @param {string} [props.legendColors.recommended] - Color for recommended indicator
  * @param {string} [props.sectionColor] - Override color for legend dots (both will use this color)
  */
-export const CompletionWheelWithLegend = ({ 
+ export const CompletionWheelWithLegend = ({ 
   title = 'Profile Completion',
   legendColors = {
     required: '#512BD9',
@@ -176,8 +176,9 @@ export const CompletionWheelWithLegend = ({
   sectionColor,
   ...wheelProps 
 }) => {
+  // Change this logic - only use sectionColor for required, always use orange for recommended
   const requiredColor = sectionColor || legendColors.required;
-  const recommendedColor = sectionColor || legendColors.recommended;
+  const recommendedColor = legendColors.recommended; // Always use orange, ignore sectionColor
 
   return (
     <div className="flex flex-col items-center">

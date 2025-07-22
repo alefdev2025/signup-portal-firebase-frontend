@@ -34,8 +34,53 @@ const UserProvider = ({ children }) => {
   
   LOG_TO_TERMINAL("UserProvider initialized");
   
-  // NEW: Fetch Salesforce customer data
+  // In UserContext.jsx, update the fetchSalesforceCustomer function:
+
   const fetchSalesforceCustomer = async (email) => {
+    LOG_TO_TERMINAL(`Fetching Salesforce customer for email: ${email}`);
+    
+    try {
+      // First check localStorage for Alcor ID (set during portal login)
+      const storedAlcorId = localStorage.getItem('portal_alcor_id');
+      
+      // Search for customer by email (and Alcor ID if available)
+      const searchResult = await searchCustomerByEmail(email, storedAlcorId);
+      console.log('[UserContext] Salesforce search result:', searchResult);
+      
+      if (searchResult.success && searchResult.data && searchResult.data.length > 0) {
+        const customer = searchResult.data[0];
+        LOG_TO_TERMINAL(`Found Salesforce customer: ${customer.id}`);
+        LOG_TO_TERMINAL(`NetSuite Customer ID: ${customer.netsuiteCustomerId || 'Not found'}`);
+        LOG_TO_TERMINAL(`Alcor ID: ${customer.alcorId || 'Not found'}`);
+        
+        setSalesforceCustomer(customer);
+        setNetsuiteCustomerId(customer.netsuiteCustomerId);
+        
+        // Store Alcor ID for future use
+        if (customer.alcorId) {
+          localStorage.setItem('portal_alcor_id', customer.alcorId);
+        }
+        
+        return {
+          salesforceId: customer.id,
+          netsuiteId: customer.netsuiteCustomerId,
+          alcorId: customer.alcorId,
+          customer: customer
+        };
+      } else {
+        LOG_TO_TERMINAL("No Salesforce customer found for this email");
+      }
+    } catch (error) {
+      LOG_TO_TERMINAL(`Error fetching Salesforce customer: ${error.message}`);
+      console.error('Salesforce customer fetch error:', error);
+    }
+    
+    return null;
+  };
+
+
+  // NEW: Fetch Salesforce customer data
+  /*const fetchSalesforceCustomer = async (email) => {
     LOG_TO_TERMINAL(`Fetching Salesforce customer for email: ${email}`);
     
     try {
@@ -65,7 +110,7 @@ const UserProvider = ({ children }) => {
     }
     
     return null;
-  };
+  };*/
   
   const refreshUserProgress = async (user) => {
     if (!user) return null;

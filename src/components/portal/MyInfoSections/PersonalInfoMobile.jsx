@@ -5,6 +5,19 @@ import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 
+// DEBUG CONFIGURATION - Change these values to test different user states
+const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
+
+// Helper function to get effective member category
+const getEffectiveMemberCategory = (actualCategory) => {
+  if (OVERRIDE_MEMBER_CATEGORY) {
+    console.log(`🔧 DEBUG: Override active - Using ${DEBUG_CATEGORY} instead of ${actualCategory}`);
+    return DEBUG_CATEGORY;
+  }
+  return actualCategory;
+};
+
 // Mobile Multi-Select Component
 const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
   const [showAll, setShowAll] = useState(false);
@@ -83,16 +96,25 @@ const PersonalInfoMobile = ({
   savePersonalInfo,
   savingSection,
   fieldErrors,
-  fieldConfig
+  fieldConfig,
+  memberCategory
 }) => {
+  // Get effective member category for debugging
+  const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
+
   const formatSSN = (ssn) => {
     if (!ssn) return '—';
+    // If already formatted with asterisks, return as is
     if (ssn.includes('*')) return ssn;
+    // Remove all non-digits
     const cleaned = ssn.replace(/\D/g, '');
+    // If we have at least 4 digits, show masked format
     if (cleaned.length >= 4) {
       return `***-**-${cleaned.slice(-4)}`;
     }
-    return '—';
+    // If less than 4 digits, just return what we have
+    return cleaned || '—';
   };
 
   const formatMultipleSelections = (selections) => {
@@ -492,11 +514,13 @@ const PersonalInfoMobile = ({
               
               {/* Display Mode - Personal Info Preview */}
               {!editMode.personal && (
-                <div className="bg-blue-50/30 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 text-center break-words px-2">
-                    {getPreviewText()}
-                  </p>
-                </div>
+                <>
+                  <div className="bg-blue-50/30 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 text-center break-words px-2">
+                      {getPreviewText()}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -528,13 +552,15 @@ const PersonalInfoMobile = ({
                 </FormSelect>
               </div>
               
-              <FormInput
-                label="SSN/Government ID *"
-                value={personalInfo?.ssn || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
-                error={fieldErrors.ssn}
-                disabled={savingSection === 'personal'}
-              />
+              {canEditSSN && (
+                <FormInput
+                  label="SSN/Government ID *"
+                  value={personalInfo?.ssn || ''}
+                  onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
+                  error={fieldErrors.ssn}
+                  disabled={savingSection === 'personal'}
+                />
+              )}
               
               <MobileMultiSelect
                 label="Race *"
