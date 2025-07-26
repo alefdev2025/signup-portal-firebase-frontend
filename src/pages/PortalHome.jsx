@@ -1,6 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import PortalHome1 from './PortalHome1';
-import PortalHome2 from './PortalHome2';
 
 // Global configuration for version toggle
 const SHOW_VERSION_TOGGLE = false; // Set to true to show the version toggle button

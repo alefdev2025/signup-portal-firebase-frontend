@@ -21,14 +21,11 @@ import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
+import ActivityLogTab from '../components/portal/ActivityLogTab';
 
 // Import all overview tab versions
 import OverviewTab from '../components/portal/OverviewTab';
-import OverviewTabStandard from '../components/portal/OverviewTabStandard';
-import OverviewTabPurpleGradient from '../components/portal/OverviewTabPurpleGradient';
-import OverviewTabDarkBackground from '../components/portal/OverviewTabDarkBackground';
-import OverviewTabCorrnerSideImage from '../components/portal/OverviewTabCorrnerSideImage';
-import OverviewTabPinkPurple from '../components/portal/OverviewTabPinkPurple';
+
 
 import ProcedureTab from '../components/portal/ProcedureTab';
 
@@ -341,12 +338,7 @@ const PortalHome = () => {
 
   // Overview tab versions configuration
   const overviewTabVersions = [
-    { name: 'Default', component: OverviewTab },
-    { name: 'Standard', component: OverviewTabStandard },
-    { name: 'Purple Gradient', component: OverviewTabPurpleGradient },
-    { name: 'Dark Background', component: OverviewTabDarkBackground },
-    { name: 'Corner Side Image', component: OverviewTabCorrnerSideImage },
-    { name: 'Pink Purple', component: OverviewTabPinkPurple }
+    { name: 'Default', component: OverviewTab }
   ];
 
   // Add state for overview tab version
@@ -493,6 +485,10 @@ const PortalHome = () => {
         return <AccountSettingsTab />;
       case 'account-notifications':
         return <NotificationsTab />;
+      
+      // Activity Log Tab
+      case 'activity-log':
+        return <ActivityLogTab setActiveTab={handleTabChange} />;
       
       // Membership subtabs
       case 'membership':

@@ -1778,16 +1778,60 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      ////console.log('🚀 === SAVE ADDRESSES START ===');
-      ////console.log('Member category:', memberCategory);
-      ////console.log('📤 Current addresses state before save:', addresses);
+      console.log('🚀 === SAVE ADDRESSES START ===');
+      console.log('Member category:', memberCategory);
+      console.log('📤 Current addresses state before save:', addresses);
+      console.log('📤 Original addresses state:', originalData.addresses);
       
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.addresses?.requiredFields || [];
-      ////console.log('Required fields for addresses section:', requiredFields);
+      console.log('Required fields for addresses section:', requiredFields);
       
       // Clean the addresses data
       const cleanedAddresses = cleanDataBeforeSave(addresses, 'addresses');
+      console.log('🧹 Cleaned addresses:', cleanedAddresses);
+      
+      // Check if anything has actually changed
+      const hasChanges = 
+        cleanedAddresses.homeStreet !== originalData.addresses?.homeStreet ||
+        cleanedAddresses.homeCity !== originalData.addresses?.homeCity ||
+        cleanedAddresses.homeState !== originalData.addresses?.homeState ||
+        cleanedAddresses.homePostalCode !== originalData.addresses?.homePostalCode ||
+        cleanedAddresses.homeCountry !== originalData.addresses?.homeCountry ||
+        cleanedAddresses.mailingStreet !== originalData.addresses?.mailingStreet ||
+        cleanedAddresses.mailingCity !== originalData.addresses?.mailingCity ||
+        cleanedAddresses.mailingState !== originalData.addresses?.mailingState ||
+        cleanedAddresses.mailingPostalCode !== originalData.addresses?.mailingPostalCode ||
+        cleanedAddresses.mailingCountry !== originalData.addresses?.mailingCountry ||
+        cleanedAddresses.sameAsHome !== originalData.addresses?.sameAsHome;
+      
+      console.log('🔍 Change detection:', {
+        hasChanges,
+        homeChanged: {
+          street: cleanedAddresses.homeStreet !== originalData.addresses?.homeStreet,
+          city: cleanedAddresses.homeCity !== originalData.addresses?.homeCity,
+          state: cleanedAddresses.homeState !== originalData.addresses?.homeState,
+          postalCode: cleanedAddresses.homePostalCode !== originalData.addresses?.homePostalCode,
+          country: cleanedAddresses.homeCountry !== originalData.addresses?.homeCountry
+        },
+        mailingChanged: {
+          street: cleanedAddresses.mailingStreet !== originalData.addresses?.mailingStreet,
+          city: cleanedAddresses.mailingCity !== originalData.addresses?.mailingCity,
+          state: cleanedAddresses.mailingState !== originalData.addresses?.mailingState,
+          postalCode: cleanedAddresses.mailingPostalCode !== originalData.addresses?.mailingPostalCode,
+          country: cleanedAddresses.mailingCountry !== originalData.addresses?.mailingCountry,
+          sameAsHome: cleanedAddresses.sameAsHome !== originalData.addresses?.sameAsHome
+        }
+      });
+      
+      if (!hasChanges) {
+        console.log('No address changes detected, skipping save');
+        setSaveMessage({ type: 'info', text: 'No changes to save' });
+        setEditMode(prev => ({ ...prev, addresses: false }));
+        setSavingSection('');
+        setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
+        return;
+      }
       
       // Validate required fields
       const errors = {};
@@ -1833,28 +1877,37 @@ const loadMemberCategory = async () => {
       }
       
       // Transform data to match backend expectations
+      // When sameAsHome is true, explicitly send null values for mailing address
       const dataToSend = {
         homeAddress: {
-          street: cleanedAddresses.homeStreet,
-          city: cleanedAddresses.homeCity,
-          state: cleanedAddresses.homeState,
-          postalCode: cleanedAddresses.homePostalCode,
-          country: cleanedAddresses.homeCountry
+          street: cleanedAddresses.homeStreet || null,
+          city: cleanedAddresses.homeCity || null,
+          state: cleanedAddresses.homeState || null,
+          postalCode: cleanedAddresses.homePostalCode || null,
+          country: cleanedAddresses.homeCountry || null
         },
-        mailingAddress: {
-          street: cleanedAddresses.mailingStreet,
-          city: cleanedAddresses.mailingCity,
-          state: cleanedAddresses.mailingState,
-          postalCode: cleanedAddresses.mailingPostalCode,
-          country: cleanedAddresses.mailingCountry
+        mailingAddress: cleanedAddresses.sameAsHome ? {
+          // When same as home, send null values to clear any existing mailing address
+          street: null,
+          city: null,
+          state: null,
+          postalCode: null,
+          country: null
+        } : {
+          // Otherwise send the actual mailing address values
+          street: cleanedAddresses.mailingStreet || null,
+          city: cleanedAddresses.mailingCity || null,
+          state: cleanedAddresses.mailingState || null,
+          postalCode: cleanedAddresses.mailingPostalCode || null,
+          country: cleanedAddresses.mailingCountry || null
         },
         sameAsHome: cleanedAddresses.sameAsHome
       };
       
-      ////console.log('📦 Data being sent to backend:', dataToSend);
+      console.log('📦 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
       
       const result = await updateMemberAddresses(salesforceContactId, dataToSend);
-      ////console.log('📨 Save result:', result);
+      console.log('📨 Save result:', result);
       
       if (!result.success) {
         // Rollback on failure
@@ -1871,7 +1924,7 @@ const loadMemberCategory = async () => {
       setEditMode(prev => ({ ...prev, addresses: false }));
       
       // Clear cache after successful save
-      ////console.log('🗑️ Clearing cache...');
+      console.log('🗑️ Clearing cache...');
       memberDataService.clearCache(salesforceContactId);
       
       // Fetch fresh data to ensure sync
@@ -1879,6 +1932,27 @@ const loadMemberCategory = async () => {
         const freshData = await memberDataService.getAddresses(salesforceContactId);
         if (freshData.success && freshData.data) {
           const addressData = freshData.data.data || freshData.data;
+          console.log('📥 Fresh data from backend:', addressData);
+          
+          // Check if addresses are effectively the same
+          const areAddressesSame = () => {
+            const home = addressData.homeAddress || {};
+            const mailing = addressData.mailingAddress || {};
+            
+            // If mailing address is empty, consider them the same
+            const mailingEmpty = !mailing.street && !mailing.city && 
+                                !mailing.state && !mailing.postalCode;
+            
+            if (mailingEmpty) return true;
+            
+            // Check if all fields match
+            return home.street === mailing.street &&
+                   home.city === mailing.city &&
+                   home.state === mailing.state &&
+                   home.postalCode === mailing.postalCode &&
+                   home.country === mailing.country;
+          };
+          
           const transformedAddresses = {
             homeStreet: addressData.homeAddress?.street || '',
             homeCity: addressData.homeAddress?.city || '',
@@ -1890,21 +1964,26 @@ const loadMemberCategory = async () => {
             mailingState: addressData.mailingAddress?.state || '',
             mailingPostalCode: addressData.mailingAddress?.postalCode || '',
             mailingCountry: addressData.mailingAddress?.country || '',
-            sameAsHome: false
+            // Intelligently set sameAsHome based on the data
+            sameAsHome: cleanedAddresses.sameAsHome || areAddressesSame()
           };
-          const cleanedAddresses = cleanAddressData(transformedAddresses);
-          setAddresses(cleanedAddresses);
-          setOriginalData(prev => ({ ...prev, addresses: cleanedAddresses }));
+          
+          const finalCleanedAddresses = cleanAddressData(transformedAddresses);
+          console.log('✨ Final cleaned addresses:', finalCleanedAddresses);
+          
+          setAddresses(finalCleanedAddresses);
+          setOriginalData(prev => ({ ...prev, addresses: finalCleanedAddresses }));
         }
       } catch (refreshError) {
         console.error('Error refreshing address data:', refreshError);
         // Non-critical error - data was saved successfully
+        // Keep the local state as is since the save was successful
       }
       
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          ////console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
@@ -1918,9 +1997,10 @@ const loadMemberCategory = async () => {
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      ////console.log('🚀 === SAVE ADDRESSES END ===\n');
+      console.log('🚀 === SAVE ADDRESSES END ===\n');
     }
   };
+
   const saveFundingAllocations = async () => {
     setSavingSection('cryoArrangements');
     setSaveMessage({ type: '', text: '' });

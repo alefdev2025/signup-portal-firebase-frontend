@@ -344,14 +344,19 @@ const PortalSetupPage = () => {
           setStep('2fa');
           setSuccessMessage('Account created! Now set up two-factor authentication.');
           
-          // Immediate scroll to top for 2FA step
+          // Force scroll with multiple attempts
+          forceScrollToTop();
+          
+          // Try again after state updates
           setTimeout(() => {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-            // Force focus to top of page
-            document.body.focus();
-          }, 0);
+            forceScrollToTop();
+            // Also try focusing on a specific element
+            const heading = document.querySelector('h2');
+            if (heading) {
+              heading.focus();
+              heading.scrollIntoView({ behavior: 'instant', block: 'start' });
+            }
+          }, 100);
         } else {
           // Success - redirect to login
           setSuccessMessage('Portal account created successfully! Redirecting to login...');
@@ -682,8 +687,8 @@ const PortalSetupPage = () => {
 
       case '2fa':
         return (
-          <div className="p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+          <div className="p-8" tabIndex={-1} ref={el => el && el.focus()}>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2" tabIndex={-1}>
               Optional: Set Up Two-Factor Authentication
             </h2>
             
@@ -1091,6 +1096,9 @@ const PortalSetupPage = () => {
 
   return (
     <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
+      {/* Hidden anchor for scroll targeting */}
+      <div ref={pageTopRef} style={{ position: 'absolute', top: 0 }} />
+      
       <ResponsiveBanner 
         logo={darkLogo}
         heading="Create Portal Account"

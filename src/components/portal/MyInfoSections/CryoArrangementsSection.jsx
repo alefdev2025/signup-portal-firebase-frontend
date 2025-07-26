@@ -24,7 +24,7 @@ const MELISSA_API_KEY = 'AVUaS6bp3WJyyFKHjjwqgj**nSAcwXpxhQ0PC2lXxuDAZ-**';
 const MELISSA_API_URL = 'https://address.melissadata.net/v3/WEB/GlobalAddress/doGlobalAddress';
 
 // DEBUG CONFIGURATION - Change these values to test different user states
-const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const OVERRIDE_MEMBER_CATEGORY = false;  // Set to true to use debug category, false to use actual
 const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
 
 // Helper function to get effective member category

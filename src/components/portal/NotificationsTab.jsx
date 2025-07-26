@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/notifications';
-import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
+//import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { X, Clock, User, Bell, AlertCircle, Mic, FileText, MapPin, RefreshCw, Info, Mail, Check } from 'lucide-react';
@@ -237,11 +237,6 @@ const NotificationsTab = () => {
   useEffect(() => {
     refreshNotifications();
     
-    // Report viewing notifications
-    if (salesforceContactId) {
-      reportActivity(salesforceContactId, ACTIVITY_TYPES.VIEWED_NOTIFICATIONS)
-        .catch(error => console.error('Failed to report activity:', error));
-    }
   }, [salesforceContactId]);
 
   // Add click outside handler for dropdown menus

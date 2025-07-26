@@ -1,5 +1,5 @@
 // FundingMobile.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
 import formsHeaderImage from '../../../assets/images/forms-image.jpg';
 import alcorStar from '../../../assets/images/alcor-star.png';
@@ -20,6 +20,8 @@ const FundingMobile = ({
   memberCategory,
   isFieldRequired
 }) => {
+  const [viewMode, setViewMode] = useState(false);
+
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
@@ -67,7 +69,7 @@ const FundingMobile = ({
 
   // Format functions
   const formatFaceAmount = (amount) => {
-    if (!amount) return '';
+    if (!amount) return '—';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -77,7 +79,7 @@ const FundingMobile = ({
   };
 
   const formatPhone = (phone) => {
-    if (!phone) return '';
+    if (!phone) return '—';
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 10) {
       return `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}`;
@@ -86,7 +88,7 @@ const FundingMobile = ({
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '';
+    if (!dateString) return '—';
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
@@ -98,6 +100,35 @@ const FundingMobile = ({
       return dateString;
     }
   };
+
+  // Display field component for view mode
+  const DisplayField = ({ label, value, isEmpty = false, isLink = false, linkData = null }) => (
+    <div className="py-3 border-b border-gray-100 last:border-b-0">
+      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 block">
+        {label}
+      </label>
+      <div className={`text-sm ${isEmpty ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+        {isLink && linkData ? (
+          <span className="flex items-center gap-2">
+            <span>{value}</span>
+            <a 
+              href={linkData.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 inline-flex"
+              title={linkData.title}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </span>
+        ) : (
+          value || '—'
+        )}
+      </div>
+    </div>
+  );
 
   // Render company name with link if matched
   const renderCompanyName = () => {
@@ -123,6 +154,18 @@ const FundingMobile = ({
     }
     
     return funding.companyName || '—';
+  };
+
+  // Get company match for view mode
+  const getCompanyLinkData = () => {
+    const companyMatch = findInsuranceCompany(funding?.companyName);
+    if (companyMatch) {
+      return {
+        url: companyMatch.url,
+        title: `Visit ${funding.companyName} website`
+      };
+    }
+    return null;
   };
 
   // Wrap saveFunding to prevent duplicate calls
@@ -237,15 +280,122 @@ const FundingMobile = ({
                 </div>
               </div>
               
-              {/* Display Mode - Funding Preview */}
-              {!editMode.funding && (
+              {/* Display Mode - Funding Preview (when not in view or edit mode) */}
+              {!editMode.funding && !viewMode && (
                 <div className="bg-blue-50/30 rounded-lg p-4">
                   <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
+                </div>
+              )}
+              
+              {/* Note for non-editable users */}
+              {!canEdit && !editMode.funding && !viewMode && (
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 text-center">
+                    Funding information cannot be edited. Contact info@alcor.org for changes.
+                  </p>
                 </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* View Mode Section - Shows all details */}
+        {viewMode && !editMode.funding && (
+          <div className="bg-white px-6 py-6 border-t border-gray-200">
+            <div className="space-y-6">
+              {/* Funding Type */}
+              <div>
+                <h4 className="text-base font-semibold text-gray-900 mb-4">Funding Information</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <DisplayField 
+                    label="Funding Type" 
+                    value={funding?.fundingType}
+                    isEmpty={!funding?.fundingType}
+                  />
+                </div>
+              </div>
+
+              {/* Life Insurance Details */}
+              {funding?.fundingType === 'Life Insurance' && (
+                <>
+                  {/* Company Information */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900 mb-4">Insurance Company</h4>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                      <DisplayField 
+                        label="Company Name" 
+                        value={funding?.companyName}
+                        isEmpty={!funding?.companyName}
+                        isLink={!!getCompanyLinkData()}
+                        linkData={getCompanyLinkData()}
+                      />
+                      <DisplayField 
+                        label="Company Phone" 
+                        value={formatPhone(funding?.companyPhone)}
+                        isEmpty={!funding?.companyPhone}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Policy Information */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900 mb-4">Policy Details</h4>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                      <DisplayField 
+                        label="Policy Number" 
+                        value={funding?.policyNumber}
+                        isEmpty={!funding?.policyNumber}
+                      />
+                      <DisplayField 
+                        label="Policy Type" 
+                        value={funding?.policyType}
+                        isEmpty={!funding?.policyType}
+                      />
+                      <DisplayField 
+                        label="Face Amount" 
+                        value={formatFaceAmount(funding?.faceAmount)}
+                        isEmpty={!funding?.faceAmount}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Other Funding Types */}
+              {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    {funding.fundingType === 'Trust' && 
+                      "Trust funding arrangement on file. Please ensure your trust documents properly name Alcor Life Extension Foundation as the beneficiary."}
+                    {funding.fundingType === 'Prepaid' && 
+                      "Prepaid funding arrangement on file. Thank you for choosing to prepay."}
+                    {funding.fundingType === 'Other' && 
+                      "Alternative funding arrangement on file. An Alcor representative will contact you to discuss your funding arrangement."}
+                  </p>
+                </div>
+              )}
+
+              {/* Note for non-editable users */}
+              {!canEdit && (
+                <div className="bg-yellow-50 rounded-lg p-4 mt-6">
+                  <p className="text-sm text-yellow-800 text-center">
+                    Funding information cannot be edited. Contact info@alcor.org for changes.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Close button */}
+            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setViewMode(false)}
+                className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Edit Form Section */}
         {editMode.funding && canEdit && (
@@ -370,69 +520,15 @@ const FundingMobile = ({
           </div>
         )}
 
-        {/* Display Mode Content when not in edit mode */}
-        {!editMode.funding && (
+        {/* View/Edit button when not in edit mode or view mode */}
+        {!editMode.funding && !viewMode && (
           <div className="bg-white px-6 pb-6">
-            <div className="space-y-4 mb-6">
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h5 className="font-medium text-gray-900 mb-3">Funding Type</h5>
-                <p className="text-gray-900">{funding?.fundingType || '—'}</p>
-                
-                {funding?.fundingType === 'Life Insurance' && (
-                  <>
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h5 className="font-medium text-gray-900 mb-3">Insurance Details</h5>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="text-gray-500">Company:</span>
-                          <div className="text-gray-900">{renderCompanyName()}</div>
-                        </div>
-                        {funding?.policyNumber && (
-                          <div>
-                            <span className="text-gray-500">Policy #:</span>
-                            <p className="text-gray-900">{funding.policyNumber}</p>
-                          </div>
-                        )}
-                        {funding?.faceAmount && (
-                          <div>
-                            <span className="text-gray-500">Face Amount:</span>
-                            <p className="text-gray-900">{formatFaceAmount(funding.faceAmount)}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-                
-                {funding?.fundingType && funding?.fundingType !== 'Life Insurance' && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-600">
-                      {funding.fundingType === 'Trust' && 
-                        "Trust funding arrangement on file"}
-                      {funding.fundingType === 'Prepaid' && 
-                        "Prepaid funding arrangement on file"}
-                      {funding.fundingType === 'Other' && 
-                        "Alternative funding arrangement on file"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {canEdit ? (
-              <button
-                onClick={() => toggleEditMode && toggleEditMode('funding')}
-                className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
-              >
-                View/Edit
-              </button>
-            ) : (
-              <div className={styleConfig2.nonEditable.mobileWrapper}>
-                <p className={styleConfig2.nonEditable.mobileText}>
-                  Funding information cannot be edited. Contact membership@alcor.org for changes.
-                </p>
-              </div>
-            )}
+            <button
+              onClick={() => canEdit ? (toggleEditMode && toggleEditMode('funding')) : setViewMode(true)}
+              className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+            >
+              {canEdit ? 'View/Edit' : 'View Details'}
+            </button>
           </div>
         )}
       </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Check, Sparkles, AlertCircle } from 'lucide-react';
 import Switch from 'react-switch';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
-import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
 import { settingsApi } from '../../services/settingsApi';
 import alcorStar from '../../assets/images/alcor-yellow-star.png';
 import FloatingFooter from './FloatingFooter'; 
@@ -315,11 +314,6 @@ const SettingsTab = () => {
    // Remove the scroll to top functionality that might be interfering
    fetchUserSettings();
    
-   // Report viewing settings
-   if (salesforceContactId) {
-     reportActivity(salesforceContactId, ACTIVITY_TYPES.VIEWED_SETTINGS)
-       .catch(error => console.error('Failed to report activity:', error));
-   }
  }, [salesforceContactId]);
 
  const fetchUserSettings = async () => {
@@ -356,62 +350,6 @@ const SettingsTab = () => {
        setAnimatingStars(prev => ({ ...prev, [settingName]: false }));
      }, 900);
    }
-   
-   try {
-     // Update setting via API
-     await settingsApi.updateSetting(settingName, newValue);
-     
-     // Make backend API call based on the setting being toggled
-     let backendResult;
-     switch (settingName) {
-       case 'receiveMediaNotifications':
-         backendResult = await backendApi.updateMediaNotifications(newValue);
-         break;
-       case 'receiveStaffMessages':
-         backendResult = await backendApi.updateStaffMessages(newValue);
-         break;
-       case 'twoFactorEnabled':
-         backendResult = await backendApi.updateTwoFactorAuth(newValue);
-         break;
-     }
-     
-     // Check if backend call was successful
-     if (!backendResult?.success) {
-       throw new Error('Backend update failed');
-     }
-     
-     // Report the activity based on what was toggled
-     if (salesforceContactId) {
-       let activityType;
-       
-       switch (settingName) {
-         case 'receiveMediaNotifications':
-           activityType = newValue 
-             ? ACTIVITY_TYPES.ENABLED_MEDIA_NOTIFICATIONS 
-             : ACTIVITY_TYPES.DISABLED_MEDIA_NOTIFICATIONS;
-           break;
-         case 'receiveStaffMessages':
-           activityType = newValue 
-             ? ACTIVITY_TYPES.ENABLED_STAFF_MESSAGES 
-             : ACTIVITY_TYPES.DISABLED_STAFF_MESSAGES;
-           break;
-         case 'twoFactorEnabled':
-           activityType = newValue 
-             ? ACTIVITY_TYPES.ENABLED_TWO_FACTOR 
-             : ACTIVITY_TYPES.DISABLED_TWO_FACTOR;
-           break;
-       }
-       
-       if (activityType) {
-         await reportActivity(salesforceContactId, activityType);
-       }
-     }
-   } catch (error) {
-     console.error('Failed to update setting:', error);
-     // Revert on error
-     setSettings(settings);
-     alert('Failed to update setting. Please try again.');
-   }
  };
 
  const handleRestoreDefaults = async () => {
@@ -423,30 +361,6 @@ const SettingsTab = () => {
    
    setSaving(true);
    
-   try {
-     // Update all settings at once via API
-     await settingsApi.updateSettings(defaultSettings);
-     
-     // Make backend call to restore defaults
-     const backendResult = await backendApi.restoreDefaultSettings();
-     
-     if (!backendResult?.success) {
-       throw new Error('Backend restore defaults failed');
-     }
-     
-     // Update local state
-     setSettings(defaultSettings);
-
-     // Report activity for restoring defaults
-     if (salesforceContactId) {
-       await reportActivity(salesforceContactId, ACTIVITY_TYPES.RESTORED_DEFAULT_SETTINGS);
-     }
-   } catch (error) {
-     console.error('Error restoring defaults:', error);
-     alert('Failed to restore defaults. Please try again.');
-   } finally {
-     setSaving(false);
-   }
  };
 
  // Custom Switch component with pulse animation

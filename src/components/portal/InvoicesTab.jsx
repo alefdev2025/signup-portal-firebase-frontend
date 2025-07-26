@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useInvoices, useCustomerData, usePayments } from './contexts/CustomerDataContext';
 import { getInvoiceDetails } from './services/netsuite';
 import { getMemberProfile } from './services/salesforce/memberInfo';
@@ -64,6 +64,11 @@ const InvoicesTab = ({ customerId = '4666' }) => {
   const [loadingInvoiceId, setLoadingInvoiceId] = useState(null);
   const [mostRecentBillingAddress, setMostRecentBillingAddress] = useState(null);
   const [customerInfo, setCustomerInfo] = useState(null);
+  
+  // Cache for invoice details to prevent duplicate API calls
+  const invoiceDetailsCache = useRef(new Map());
+  const billingAddressFetchedRef = useRef(false);
+  const fetchingInvoicesRef = useRef(new Set());
   
   // Payment page states
   const [showPaymentPage, setShowPaymentPage] = useState(false);
@@ -285,27 +290,44 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     });
   }, [invoicesData, paymentsData]);
 
-  // Fetch billing address from most recent invoice
+  // Fetch billing address from most recent invoice - FIXED to prevent duplicate calls
   useEffect(() => {
-    if (invoices.length > 0 && !mostRecentBillingAddress) {
+    if (invoices.length > 0 && !mostRecentBillingAddress && !billingAddressFetchedRef.current) {
+      billingAddressFetchedRef.current = true;
+      
       // Sort by date to get most recent
       const sortedByDate = [...invoices].sort((a, b) => 
         new Date(b.date) - new Date(a.date)
       );
       
-      // Try to fetch billing address from the most recent invoice
+      // Try to use billing address from the invoice list first
       const mostRecent = sortedByDate[0];
-      if (mostRecent.internalId) {
-        getInvoiceDetails(mostRecent.internalId)
+      if (mostRecent.billingAddress) {
+        setMostRecentBillingAddress(mostRecent.billingAddress);
+        console.log('Using billing address from invoice list');
+      } else if (mostRecent.internalId) {
+        // Only fetch if we don't have the billing address
+        console.log('Fetching billing address for invoice:', mostRecent.id);
+        
+        // Use a separate endpoint or flag to avoid tracking
+        // For now, we'll skip this to prevent duplicate tracking
+        // You should create a separate endpoint that doesn't track activities
+        /*
+        fetch(`/api/netsuite/invoices/${mostRecent.internalId}?fieldsOnly=billingAddress`, {
+          method: 'GET',
+          credentials: 'include'
+        })
+          .then(res => res.json())
           .then(details => {
             if (details.invoice && details.invoice.billingAddress) {
               setMostRecentBillingAddress(details.invoice.billingAddress);
-              console.log('Fetched billing address from invoice:', mostRecent.id);
+              console.log('Fetched billing address from API');
             }
           })
           .catch(err => {
-            console.warn('Could not fetch billing address from most recent invoice:', err.message);
+            console.warn('Could not fetch billing address:', err.message);
           });
+        */
       }
     }
   }, [invoices, mostRecentBillingAddress]);
@@ -336,8 +358,16 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     }
   }, [salesforceContactId, customerInfo, invoices]);
 
-  // Handle viewing invoice details
-  const handleViewInvoice = async (invoice) => {
+  // Handle viewing invoice details - FIXED with caching and deduplication
+  const handleViewInvoice = useCallback(async (invoice) => {
+    const invoiceKey = `${invoice.internalId}-${invoice.id}`;
+    
+    // Prevent duplicate fetches
+    if (fetchingInvoicesRef.current.has(invoiceKey)) {
+      console.log('Already fetching this invoice, skipping...');
+      return;
+    }
+    
     setLoadingInvoiceId(invoice.id);
     window.scrollTo(0, 0);
     
@@ -349,14 +379,35 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     );
     
     try {
+      fetchingInvoicesRef.current.add(invoiceKey);
+      
       // If we have an internal ID, try to fetch more details
       if (invoice.internalId) {
-        const details = await getInvoiceDetails(invoice.internalId);
+        let details;
+        
+        // Check cache first
+        if (invoiceDetailsCache.current.has(invoiceKey)) {
+          console.log('Using cached invoice details for:', invoice.id);
+          details = invoiceDetailsCache.current.get(invoiceKey);
+        } else {
+          console.log('Fetching fresh invoice details for:', invoice.id);
+          details = await getInvoiceDetails(invoice.internalId);
+          
+          // Cache the result
+          invoiceDetailsCache.current.set(invoiceKey, details);
+          
+          // Clean cache if it gets too large
+          if (invoiceDetailsCache.current.size > 50) {
+            const firstKey = invoiceDetailsCache.current.keys().next().value;
+            invoiceDetailsCache.current.delete(firstKey);
+          }
+        }
+        
         setSelectedInvoice({
           ...invoice,
           ...details.invoice,
           detailedInfo: details.invoice,
-          billingAddress: details.invoice.billingAddress || invoice.billingAddress,
+          billingAddress: details.invoice.billingAddress || invoice.billingAddress || mostRecentBillingAddress,
           // Preserve the payment pending status from the list
           status: invoice.status,
           hasUnapprovedPayment: invoice.hasUnapprovedPayment,
@@ -372,8 +423,9 @@ const InvoicesTab = ({ customerId = '4666' }) => {
       setSelectedInvoice(invoice);
     } finally {
       setLoadingInvoiceId(null);
+      fetchingInvoicesRef.current.delete(invoiceKey);
     }
-  };
+  }, [mostRecentBillingAddress]);
 
   // Handle print invoice
   const handlePrintInvoice = async (invoice) => {
@@ -692,298 +744,298 @@ const InvoicesTab = ({ customerId = '4666' }) => {
     }
   };
 
-// Then replace the handleDownloadInvoice function with this:
-const handleDownloadInvoice = async (invoice) => {
-  try {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;  // Reduced from 25 to start content more to the left
-    const rightMargin = pageWidth - margin;
-    const contentWidth = pageWidth - (margin * 2);
-    
-    // Get current date/time for timestamp
-    const downloadDate = new Date();
-    const timestamp = downloadDate.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    // Add timestamp at top right
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${timestamp}`, rightMargin, 10, { align: 'right' });
-    
-    // Add ALCOR header info - START HIGHER
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('ALCOR LIFE EXTENSION FOUNDATION', rightMargin, 20, { align: 'right' });
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', rightMargin, 25, { align: 'right' });
-    doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', rightMargin, 30, { align: 'right' });
-    
-    // Invoice Title and Status - MOVED UP
-    doc.setFontSize(20);  // Smaller font size
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Invoice ${invoice.id}`, margin, 45);  // Moved down for more space
-    
-    // Status Badge
-    const statusText = invoice.status === 'Paid' ? 'Paid' : 
-                      invoice.status === 'Payment Pending' ? 'Payment Pending' :
-                      'Payment Due';
-    const statusWidth = invoice.status === 'Payment Pending' ? 55 : 45;  // Wider for Payment Pending
-    const statusHeight = 10;
-    const statusX = rightMargin - statusWidth;
-    const statusY = 37;  // Adjusted position
-    
-    // Status background
-    if (invoice.status === 'Paid') {
-      doc.setFillColor(229, 212, 241); // Light purple
-      doc.setTextColor(107, 91, 126); // Purple text
-    } else if (invoice.status === 'Payment Pending') {
-      doc.setFillColor(219, 234, 254); // Light blue
-      doc.setTextColor(30, 64, 175); // Blue text
-    } else {
-      doc.setFillColor(254, 243, 226); // Light orange
-      doc.setTextColor(208, 145, 99); // Orange text
-    }
-    
-    // Draw rectangle (jsPDF doesn't have built-in rounded corners for basic version)
-    doc.rect(statusX, statusY, statusWidth, statusHeight, 'F');
-    
-    // Add subtle border for rounded corner effect
-    if (invoice.status === 'Paid') {
-      doc.setDrawColor(229, 212, 241);
-    } else if (invoice.status === 'Payment Pending') {
-      doc.setDrawColor(219, 234, 254);
-    } else {
-      doc.setDrawColor(254, 243, 226);
-    }
-    doc.setLineWidth(0.5);
-    doc.rect(statusX - 0.5, statusY - 0.5, statusWidth + 1, statusHeight + 1);
-    
-    // Status text - properly centered
-    doc.setFontSize(10);
-    doc.text(statusText, statusX + (statusWidth / 2), statusY + (statusHeight / 2) + 1.5, { align: 'center' });
-    
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
-    
-    // Invoice metadata - COMPACT SPACING
-    let yPos = 57;  // More space below header
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    
-    // Invoice Date
-    doc.setFont('helvetica', 'bold');
-    doc.text('Invoice Date:', margin, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date(invoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), margin + 35, yPos);
-    
-    // Due Date - same line
-    doc.setFont('helvetica', 'bold');
-    doc.text('Due Date:', margin + 90, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), margin + 120, yPos);
-    
-    // Customer Information Section
-    yPos = 72;  // Adjusted for more space
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Customer Information', margin, yPos);
-    
-    // Customer info box
-    yPos += 10;
-    doc.setFillColor(249, 250, 251);
-    doc.rect(margin, yPos, contentWidth, 32, 'F');
-    
-    // Customer details
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.text(customerInfo?.name || 'Customer Name', margin + 5, yPos + 10);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Alcor ID: ${customerInfo?.alcorId || invoice.id}`, margin + 5, yPos + 18);
-    doc.text(customerInfo?.subsidiary || invoice.subsidiary || 'Alcor Life Extension Foundation', margin + 5, yPos + 26);
-    
-    // Billing Address Section
-    if (invoice.billingAddress) {
-      yPos += 40;
+  // Handle download invoice
+  const handleDownloadInvoice = async (invoice) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;  // Reduced from 25 to start content more to the left
+      const rightMargin = pageWidth - margin;
+      const contentWidth = pageWidth - (margin * 2);
+      
+      // Get current date/time for timestamp
+      const downloadDate = new Date();
+      const timestamp = downloadDate.toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      // Add timestamp at top right
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated: ${timestamp}`, rightMargin, 10, { align: 'right' });
+      
+      // Add ALCOR header info - START HIGHER
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('ALCOR LIFE EXTENSION FOUNDATION', rightMargin, 20, { align: 'right' });
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', rightMargin, 25, { align: 'right' });
+      doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', rightMargin, 30, { align: 'right' });
+      
+      // Invoice Title and Status - MOVED UP
+      doc.setFontSize(20);  // Smaller font size
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Invoice ${invoice.id}`, margin, 45);  // Moved down for more space
+      
+      // Status Badge
+      const statusText = invoice.status === 'Paid' ? 'Paid' : 
+                        invoice.status === 'Payment Pending' ? 'Payment Pending' :
+                        'Payment Due';
+      const statusWidth = invoice.status === 'Payment Pending' ? 55 : 45;  // Wider for Payment Pending
+      const statusHeight = 10;
+      const statusX = rightMargin - statusWidth;
+      const statusY = 37;  // Adjusted position
+      
+      // Status background
+      if (invoice.status === 'Paid') {
+        doc.setFillColor(229, 212, 241); // Light purple
+        doc.setTextColor(107, 91, 126); // Purple text
+      } else if (invoice.status === 'Payment Pending') {
+        doc.setFillColor(219, 234, 254); // Light blue
+        doc.setTextColor(30, 64, 175); // Blue text
+      } else {
+        doc.setFillColor(254, 243, 226); // Light orange
+        doc.setTextColor(208, 145, 99); // Orange text
+      }
+      
+      // Draw rectangle (jsPDF doesn't have built-in rounded corners for basic version)
+      doc.rect(statusX, statusY, statusWidth, statusHeight, 'F');
+      
+      // Add subtle border for rounded corner effect
+      if (invoice.status === 'Paid') {
+        doc.setDrawColor(229, 212, 241);
+      } else if (invoice.status === 'Payment Pending') {
+        doc.setDrawColor(219, 234, 254);
+      } else {
+        doc.setDrawColor(254, 243, 226);
+      }
+      doc.setLineWidth(0.5);
+      doc.rect(statusX - 0.5, statusY - 0.5, statusWidth + 1, statusHeight + 1);
+      
+      // Status text - properly centered
+      doc.setFontSize(10);
+      doc.text(statusText, statusX + (statusWidth / 2), statusY + (statusHeight / 2) + 1.5, { align: 'center' });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      
+      // Invoice metadata - COMPACT SPACING
+      let yPos = 57;  // More space below header
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      
+      // Invoice Date
+      doc.setFont('helvetica', 'bold');
+      doc.text('Invoice Date:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(invoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), margin + 35, yPos);
+      
+      // Due Date - same line
+      doc.setFont('helvetica', 'bold');
+      doc.text('Due Date:', margin + 90, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), margin + 120, yPos);
+      
+      // Customer Information Section
+      yPos = 72;  // Adjusted for more space
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text('Billing Address', margin, yPos);
+      doc.text('Customer Information', margin, yPos);
       
+      // Customer info box
       yPos += 10;
       doc.setFillColor(249, 250, 251);
-      const addressLines = 3 + (invoice.billingAddress.addr2 ? 1 : 0);
-      const addressHeight = 15 + (addressLines * 6);
-      doc.rect(margin, yPos, contentWidth, addressHeight, 'F');
+      doc.rect(margin, yPos, contentWidth, 32, 'F');
       
+      // Customer details
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
-      doc.text(invoice.billingAddress.addressee, margin + 5, yPos + 10);
+      doc.text(customerInfo?.name || 'Customer Name', margin + 5, yPos + 10);
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
-      let addressY = yPos + 18;
-      doc.text(invoice.billingAddress.addr1, margin + 5, addressY);
-      if (invoice.billingAddress.addr2) {
+      doc.text(`Alcor ID: ${customerInfo?.alcorId || invoice.id}`, margin + 5, yPos + 18);
+      doc.text(customerInfo?.subsidiary || invoice.subsidiary || 'Alcor Life Extension Foundation', margin + 5, yPos + 26);
+      
+      // Billing Address Section
+      if (invoice.billingAddress) {
+        yPos += 40;
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Billing Address', margin, yPos);
+        
+        yPos += 10;
+        doc.setFillColor(249, 250, 251);
+        const addressLines = 3 + (invoice.billingAddress.addr2 ? 1 : 0);
+        const addressHeight = 15 + (addressLines * 6);
+        doc.rect(margin, yPos, contentWidth, addressHeight, 'F');
+        
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text(invoice.billingAddress.addressee, margin + 5, yPos + 10);
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        let addressY = yPos + 18;
+        doc.text(invoice.billingAddress.addr1, margin + 5, addressY);
+        if (invoice.billingAddress.addr2) {
+          addressY += 6;
+          doc.text(invoice.billingAddress.addr2, margin + 5, addressY);
+        }
         addressY += 6;
-        doc.text(invoice.billingAddress.addr2, margin + 5, addressY);
+        doc.text(`${invoice.billingAddress.city}, ${invoice.billingAddress.state} ${invoice.billingAddress.zip}`, margin + 5, addressY);
+        addressY += 6;
+        doc.text(invoice.billingAddress.country || 'United States', margin + 5, addressY);
+        
+        yPos += addressHeight;
       }
-      addressY += 6;
-      doc.text(`${invoice.billingAddress.city}, ${invoice.billingAddress.state} ${invoice.billingAddress.zip}`, margin + 5, addressY);
-      addressY += 6;
-      doc.text(invoice.billingAddress.country || 'United States', margin + 5, addressY);
       
-      yPos += addressHeight;
-    }
-    
-    // Invoice Items Section
-    yPos += 15;
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Invoice Items', margin, yPos);
-    
-    // Table
-    yPos += 10;
-    
-    // Table header
-    doc.setFillColor(249, 250, 251);
-    doc.rect(margin, yPos, contentWidth, 10, 'F');
-    
-    // Draw table border
-    doc.setDrawColor(229, 231, 235);
-    doc.setLineWidth(0.5);
-    doc.rect(margin, yPos, contentWidth, 10);
-    
-    // Table headers
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(107, 114, 128);
-    doc.text('DESCRIPTION', margin + 5, yPos + 7);
-    doc.text('QUANTITY', margin + 90, yPos + 7, { align: 'center' });
-    doc.text('RATE', rightMargin - 50, yPos + 7, { align: 'right' });
-    doc.text('AMOUNT', rightMargin - 5, yPos + 7, { align: 'right' });
-    
-    // Table rows
-    yPos += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    
-    const items = invoice.items && invoice.items.length > 0 ? invoice.items : [{
-      description: invoice.description || 'Dues : Dues Associate Member',
-      quantity: 1,
-      rate: invoice.amount,
-      amount: invoice.amount
-    }];
-    
-    items.forEach((item) => {
-      // Draw row border
-      doc.setDrawColor(229, 231, 235);
-      doc.rect(margin, yPos, contentWidth, 12);
-      
-      yPos += 8;
-      doc.text(item.description || invoice.description, margin + 5, yPos);
-      doc.text((item.quantity || 1).toString(), margin + 90, yPos, { align: 'center' });
-      doc.text(`${(item.rate || invoice.amount).toFixed(2)}`, rightMargin - 50, yPos, { align: 'right' });
+      // Invoice Items Section
+      yPos += 15;
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${(item.amount || invoice.amount).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      doc.text('Invoice Items', margin, yPos);
+      
+      // Table
+      yPos += 10;
+      
+      // Table header
+      doc.setFillColor(249, 250, 251);
+      doc.rect(margin, yPos, contentWidth, 10, 'F');
+      
+      // Draw table border
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, yPos, contentWidth, 10);
+      
+      // Table headers
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(107, 114, 128);
+      doc.text('DESCRIPTION', margin + 5, yPos + 7);
+      doc.text('QUANTITY', margin + 90, yPos + 7, { align: 'center' });
+      doc.text('RATE', rightMargin - 50, yPos + 7, { align: 'right' });
+      doc.text('AMOUNT', rightMargin - 5, yPos + 7, { align: 'right' });
+      
+      // Table rows
+      yPos += 10;
       doc.setFont('helvetica', 'normal');
-      yPos += 4;
-    });
-    
-    // Check if we need a new page for summary
-    if (yPos > pageHeight - 80) {
-      doc.addPage();
-      yPos = 30;
-    }
-    
-    // Summary Section
-    yPos += 15;
-    const summaryX = rightMargin - 80;
-    
-    // Summary items
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    
-    // Subtotal
-    doc.text('Subtotal', summaryX, yPos);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`${invoice.subtotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
-    
-    // Discount (if any)
-    if (invoice.discountTotal > 0) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      
+      const items = invoice.items && invoice.items.length > 0 ? invoice.items : [{
+        description: invoice.description || 'Dues : Dues Associate Member',
+        quantity: 1,
+        rate: invoice.amount,
+        amount: invoice.amount
+      }];
+      
+      items.forEach((item) => {
+        // Draw row border
+        doc.setDrawColor(229, 231, 235);
+        doc.rect(margin, yPos, contentWidth, 12);
+        
+        yPos += 8;
+        doc.text(item.description || invoice.description, margin + 5, yPos);
+        doc.text((item.quantity || 1).toString(), margin + 90, yPos, { align: 'center' });
+        doc.text(`${(item.rate || invoice.amount).toFixed(2)}`, rightMargin - 50, yPos, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${(item.amount || invoice.amount).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        yPos += 4;
+      });
+      
+      // Check if we need a new page for summary
+      if (yPos > pageHeight - 80) {
+        doc.addPage();
+        yPos = 30;
+      }
+      
+      // Summary Section
+      yPos += 15;
+      const summaryX = rightMargin - 80;
+      
+      // Summary items
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      
+      // Subtotal
+      doc.text('Subtotal', summaryX, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${invoice.subtotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      
+      // Discount (if any)
+      if (invoice.discountTotal > 0) {
+        yPos += 8;
+        doc.setTextColor(100, 100, 100);
+        doc.text('Discount', summaryX, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`-${invoice.discountTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      }
+      
+      // Tax
       yPos += 8;
       doc.setTextColor(100, 100, 100);
-      doc.text('Discount', summaryX, yPos);
+      doc.text('Tax', summaryX, yPos);
       doc.setTextColor(0, 0, 0);
-      doc.text(`-${invoice.discountTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
-    }
-    
-    // Tax
-    yPos += 8;
-    doc.setTextColor(100, 100, 100);
-    doc.text('Tax', summaryX, yPos);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`${invoice.taxTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
-    
-    // Total line
-    yPos += 6;
-    doc.setDrawColor(229, 231, 235);
-    doc.setLineWidth(0.5);
-    doc.line(summaryX - 10, yPos, rightMargin - 5, yPos);
-    
-    // Total
-    yPos += 10;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total', summaryX, yPos);
-    doc.text(`${invoice.amount.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
-    
-    // Amount Due - only show if not paid
-    if (invoice.status !== 'Paid') {
+      doc.text(`${invoice.taxTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      
+      // Total line
+      yPos += 6;
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.5);
+      doc.line(summaryX - 10, yPos, rightMargin - 5, yPos);
+      
+      // Total
       yPos += 10;
-      doc.setFontSize(12);
-      doc.setTextColor(208, 145, 99); // Orange
-      doc.text('Amount Due', summaryX, yPos);
-      doc.text(`${invoice.amountRemaining.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total', summaryX, yPos);
+      doc.text(`${invoice.amount.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      
+      // Amount Due - only show if not paid
+      if (invoice.status !== 'Paid') {
+        yPos += 10;
+        doc.setFontSize(12);
+        doc.setTextColor(208, 145, 99); // Orange
+        doc.text('Amount Due', summaryX, yPos);
+        doc.text(`${invoice.amountRemaining.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      }
+      
+      // Footer - only add if there's space
+      if (yPos < pageHeight - 50) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(150, 150, 150);
+        doc.text('Thank you for your membership!', pageWidth / 2, pageHeight - 35, { align: 'center' });
+        doc.text('Alcor Life Extension Foundation', pageWidth / 2, pageHeight - 28, { align: 'center' });
+      }
+      
+      // Save the PDF with timestamp in filename
+      const dateStr = downloadDate.toISOString().split('T')[0];
+      doc.save(`Invoice_${invoice.id}_${dateStr}.pdf`);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again later.');
     }
-    
-    // Footer - only add if there's space
-    if (yPos < pageHeight - 50) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(150, 150, 150);
-      doc.text('Thank you for your membership!', pageWidth / 2, pageHeight - 35, { align: 'center' });
-      doc.text('Alcor Life Extension Foundation', pageWidth / 2, pageHeight - 28, { align: 'center' });
-    }
-    
-    // Save the PDF with timestamp in filename
-    const dateStr = downloadDate.toISOString().split('T')[0];
-    doc.save(`Invoice_${invoice.id}_${dateStr}.pdf`);
-    
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    alert('Error generating PDF. Please try again later.');
-  }
-};
+  };
 
   // Handle closing invoice detail view
   const handleCloseInvoice = () => {

@@ -65,8 +65,12 @@ const CardOverlay = ({
     // Pass the normalized data back to parent via callback
     onSave(normalizedAddresses);
     setEditMode(false);
-    // Don't show success here - let the parent handle it after actual save
-    onClose();
+    setShowSuccess(true);
+    
+    setTimeout(() => {
+      setShowSuccess(false);
+      onClose();
+    }, 2000);
   };
 
   const handleCancel = () => {
@@ -431,6 +435,8 @@ const AddressesSection = ({
   const [cardsVisible, setCardsVisible] = useState(false);
   // Add pendingSave flag for triggering save after state update
   const [pendingSave, setPendingSave] = useState(false);
+  // Add flag to track if we're saving from regular edit mode
+  const [saveFromEdit, setSaveFromEdit] = useState(false);
 
   // Inject animation styles
   useEffect(() => {
@@ -478,14 +484,34 @@ const AddressesSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Trigger save after state update from overlay
+  // Trigger save after state update - WITH addresses in dependencies like ContactInfoSection
   useEffect(() => {
+    // Only proceed if pendingSave is true
     if (pendingSave) {
-      // Call parent's save function which should handle the API call
+      console.log('🔵 AddressesSection useEffect: pendingSave is true, calling saveAddresses');
+      console.log('🔵 Current addresses state:', addresses);
+      
+      // Call the parent's save function
       saveAddresses();
+      
+      // Reset the flag
       setPendingSave(false);
     }
-  }, [pendingSave, addresses]);
+  }, [pendingSave, addresses]); // Include addresses in dependencies like ContactInfoSection does!
+
+  // Handle save from regular edit mode
+  useEffect(() => {
+    if (saveFromEdit) {
+      console.log('🔵 AddressesSection useEffect: saveFromEdit is true, calling saveAddresses');
+      console.log('🔵 Current addresses state:', addresses);
+      
+      // Call the parent's save function
+      saveAddresses();
+      
+      // Reset the flag
+      setSaveFromEdit(false);
+    }
+  }, [saveFromEdit]); // Removed addresses and saveAddresses from dependencies
 
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
@@ -493,20 +519,29 @@ const AddressesSection = ({
   };
 
   const handleOverlaySave = (updatedAddresses) => {
+    console.log('🔵 handleOverlaySave called with:', updatedAddresses);
+    
     // The updatedAddresses are already normalized by the overlay
     // Update parent state with the normalized data
     setAddresses(updatedAddresses);
+    
     // Set flag to trigger save after state updates
     setPendingSave(true);
   };
 
   // Custom save handler that normalizes countries
   const handleSaveWithNormalization = () => {
+    console.log('🔵 handleSaveWithNormalization called');
+    
     // Normalize country codes before saving
     const normalizedAddresses = normalizeAddressCountries(safeAddresses);
+    console.log('🔵 Normalized addresses:', normalizedAddresses);
+    
+    // Update state first
     setAddresses(normalizedAddresses);
-    // Call the parent's save function
-    saveAddresses();
+    
+    // Set flag to trigger save after state updates
+    setSaveFromEdit(true);
   };
 
   // Field configuration for completion wheel

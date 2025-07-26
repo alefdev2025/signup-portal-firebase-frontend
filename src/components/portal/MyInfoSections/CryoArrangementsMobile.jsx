@@ -1,5 +1,5 @@
 // CryoArrangementsMobile.js
-import React from 'react';
+import React, { useState } from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
 import styleConfig2 from '../styleConfig2';
 
@@ -20,6 +20,8 @@ const CryoArrangementsMobile = ({
   validatingAddress,
   fieldConfig
 }) => {
+  const [viewMode, setViewMode] = useState(false);
+
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
@@ -70,6 +72,13 @@ const CryoArrangementsMobile = ({
     return method;
   };
 
+  const formatMethod = (method) => {
+    if (!method) return '—';
+    if (method === 'WholeBody') return 'Whole Body Cryopreservation ($220,000 US / $230,000 International)';
+    if (method === 'Neuro') return 'Neurocryopreservation ($80,000 US / $90,000 International)';
+    return method;
+  };
+
   const formatDisclosureShort = (cryoDisclosure, memberDisclosure) => {
     if (!cryoDisclosure && !memberDisclosure) return '';
     
@@ -81,6 +90,33 @@ const CryoArrangementsMobile = ({
     }
     
     return parts.join(' • ');
+  };
+
+  const formatCryoDisclosure = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'Alcor is authorized to freely release Cryopreservation Member information at its discretion';
+    if (disclosure === 'confidential') return 'Alcor will make reasonable efforts to maintain confidentiality of Cryopreservation Member information';
+    return disclosure;
+  };
+
+  const formatMemberDisclosure = (disclosure) => {
+    if (!disclosure) return '—';
+    if (disclosure === 'freely') return 'I give Alcor permission to freely release my name and related Alcor membership status at its discretion';
+    if (disclosure === 'confidential') return 'Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor\'s General Terms and Conditions';
+    return disclosure;
+  };
+
+  const formatRemainsHandling = (handling) => {
+    if (!handling) return '—';
+    if (handling === 'return') return 'Return to designated recipient';
+    if (handling === 'donate') return 'Donate to medical research or dispose at Alcor\'s discretion';
+    return handling;
+  };
+
+  const formatAddress = (street, city, state, postalCode, country) => {
+    const parts = [street, city, state, postalCode, country].filter(Boolean);
+    if (parts.length === 0) return '—';
+    return parts.join(', ');
   };
 
   const getPreviewText = () => {
@@ -99,7 +135,7 @@ const CryoArrangementsMobile = ({
     return parts.length > 0 ? parts.slice(0, 2).join(' • ') : 'No arrangements specified';
   };
 
-  // Read-only field component
+  // Read-only field component for edit mode
   const ReadOnlyField = ({ label, value, helperText }) => (
     <div>
       <label className="text-gray-700 text-sm font-medium mb-1.5 block">
@@ -116,12 +152,17 @@ const CryoArrangementsMobile = ({
     </div>
   );
 
-  const formatMethod = (method) => {
-    if (!method) return '—';
-    if (method === 'WholeBody') return 'Whole Body Cryopreservation ($220,000 US / $230,000 International)';
-    if (method === 'Neuro') return 'Neurocryopreservation ($80,000 US / $90,000 International)';
-    return method;
-  };
+  // Display field component for view mode
+  const DisplayField = ({ label, value, isEmpty = false }) => (
+    <div className="py-3 border-b border-gray-100 last:border-b-0">
+      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 block">
+        {label}
+      </label>
+      <p className={`text-sm ${isEmpty ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+        {value || '—'}
+      </p>
+    </div>
+  );
 
   return (
     <div className="-mx-2">
@@ -219,15 +260,15 @@ const CryoArrangementsMobile = ({
                 </div>
               </div>
               
-              {/* Display Mode - Preview */}
-              {!editMode.cryoArrangements && (
+              {/* Display Mode - Preview (when not in view or edit mode) */}
+              {!editMode.cryoArrangements && !viewMode && (
                 <div className="bg-blue-50/30 rounded-lg p-4">
                   <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
                 </div>
               )}
               
               {/* Note for non-editable users */}
-              {!canEdit && !editMode.cryoArrangements && (
+              {!canEdit && !editMode.cryoArrangements && !viewMode && (
                 <div className="bg-yellow-50 rounded-lg p-4">
                   <p className="text-sm text-yellow-800 text-center">
                     Contact Alcor staff to make changes to these selections
@@ -237,6 +278,110 @@ const CryoArrangementsMobile = ({
             </div>
           </div>
         </div>
+
+        {/* View Mode Section - Shows all details */}
+        {viewMode && !editMode.cryoArrangements && (
+          <div className="bg-white px-6 py-6 border-t border-gray-200">
+            <div className="space-y-6">
+              {/* Method and CMS Waiver */}
+              <div>
+                <h4 className="text-base font-semibold text-gray-900 mb-4">Cryopreservation Method</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <DisplayField 
+                    label="Method" 
+                    value={formatMethod(cryoArrangements?.method)}
+                    isEmpty={!cryoArrangements?.method}
+                  />
+                  <DisplayField 
+                    label="CMS Fee Waiver" 
+                    value={cryoArrangements?.cmsWaiver !== undefined ? 
+                      (cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No') : '—'}
+                    isEmpty={cryoArrangements?.cmsWaiver === undefined}
+                  />
+                </div>
+              </div>
+
+              {/* Remains Handling */}
+              <div>
+                <h4 className="text-base font-semibold text-gray-900 mb-4">Remains Handling</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <DisplayField 
+                    label="Non-Cryopreserved Remains" 
+                    value={formatRemainsHandling(cryoArrangements?.remainsHandling)}
+                    isEmpty={!cryoArrangements?.remainsHandling}
+                  />
+                  
+                  {cryoArrangements?.remainsHandling === 'return' && (
+                    <>
+                      <DisplayField 
+                        label="Recipient Name" 
+                        value={cryoArrangements?.recipientName}
+                        isEmpty={!cryoArrangements?.recipientName}
+                      />
+                      <DisplayField 
+                        label="Recipient Phone" 
+                        value={cryoArrangements?.recipientPhone}
+                        isEmpty={!cryoArrangements?.recipientPhone}
+                      />
+                      <DisplayField 
+                        label="Recipient Email" 
+                        value={cryoArrangements?.recipientEmail}
+                        isEmpty={!cryoArrangements?.recipientEmail}
+                      />
+                      <DisplayField 
+                        label="Recipient Mailing Address" 
+                        value={formatAddress(
+                          cryoArrangements?.recipientMailingStreet,
+                          cryoArrangements?.recipientMailingCity,
+                          cryoArrangements?.recipientMailingState,
+                          cryoArrangements?.recipientMailingPostalCode,
+                          cryoArrangements?.recipientMailingCountry
+                        )}
+                        isEmpty={!cryoArrangements?.recipientMailingStreet}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Privacy & Disclosure */}
+              <div>
+                <h4 className="text-base font-semibold text-gray-900 mb-4">Privacy & Disclosure</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <DisplayField 
+                    label="Cryopreservation Information Disclosure" 
+                    value={formatCryoDisclosure(cryoArrangements?.cryopreservationDisclosure)}
+                    isEmpty={!cryoArrangements?.cryopreservationDisclosure}
+                  />
+                  <DisplayField 
+                    label="Member Name Disclosure" 
+                    value={formatMemberDisclosure(cryoArrangements?.memberPublicDisclosure)}
+                    isEmpty={!cryoArrangements?.memberPublicDisclosure}
+                  />
+                </div>
+              </div>
+
+              {/* Note for non-editable users */}
+              {!canEdit && (
+                <div className="bg-yellow-50 rounded-lg p-4 mt-6">
+                  <p className="text-sm text-yellow-800 text-center">
+                    Contact Alcor staff to make changes to these selections
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Close button */}
+            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setViewMode(false)}
+                className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Edit Form Section */}
         {editMode.cryoArrangements && (
@@ -401,14 +546,14 @@ const CryoArrangementsMobile = ({
           </div>
         )}
 
-        {/* View/Edit button when not in edit mode */}
-        {!editMode.cryoArrangements && canEdit && (
+        {/* View/Edit button when not in edit mode or view mode */}
+        {!editMode.cryoArrangements && !viewMode && (
           <div className="bg-white px-6 pb-6">
             <button
-              onClick={() => toggleEditMode && toggleEditMode('cryoArrangements')}
+              onClick={() => canEdit ? (toggleEditMode && toggleEditMode('cryoArrangements')) : setViewMode(true)}
               className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
             >
-              View/Edit
+              {canEdit ? 'View/Edit' : 'View Details'}
             </button>
           </div>
         )}
