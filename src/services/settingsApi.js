@@ -3,151 +3,180 @@ import { auth } from './firebase';
 
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 
-// Get auth token
+// Helper function to get auth token
 const getAuthToken = async () => {
-  const user = auth.currentUser;
-  if (!user) throw new Error('User not authenticated');
-  return await user.getIdToken();
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('[SettingsAPI] No current user');
+      return null;
+    }
+    const token = await user.getIdToken();
+    console.log('[SettingsAPI] Got auth token:', token ? 'Yes' : 'No');
+    return token;
+  } catch (error) {
+    console.error('[SettingsAPI] Error getting auth token:', error);
+    return null;
+  }
 };
 
-// Settings API service
+// Helper function to make requests
+const makeRequest = async (endpoint, options = {}) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('No authentication token available');
+  }
+
+  const url = `${API_BASE_URL}${endpoint}`;
+  console.log(`[SettingsAPI] Making request to: ${url}`);
+  console.log('[SettingsAPI] Method:', options.method || 'GET');
+  if (options.body) {
+    console.log('[SettingsAPI] Body:', options.body);
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+
+    console.log(`[SettingsAPI] Response status: ${response.status}`);
+    console.log(`[SettingsAPI] Response statusText: ${response.statusText}`);
+
+    const responseText = await response.text();
+    console.log('[SettingsAPI] Response body:', responseText);
+    
+    let responseData = null;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : null;
+    } catch (e) {
+      console.log('[SettingsAPI] Response is not JSON');
+    }
+
+    if (!response.ok) {
+      const errorMessage = responseData?.error || responseData?.message || `Request failed with status ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return responseData || { success: true };
+  } catch (error) {
+    console.error('[SettingsAPI] Request error:', error);
+    throw error;
+  }
+};
+
+// Create the settingsApi object with all methods
 export const settingsApi = {
-  // Get all user settings
   async getSettings() {
-    console.log('⚙️ [Settings] Fetching user settings...');
-    
+    console.log('[SettingsAPI] Getting settings...');
     try {
-      const token = await getAuthToken();
-      const url = `${API_BASE_URL}/api/member/settings`;
-      
-      console.log('🌐 [Settings] Fetching from:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('📥 [Settings] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [Settings] Error response:', errorText);
-        throw new Error(`Failed to fetch settings: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ [Settings] Success! Settings received:', data.settings);
-      
-      return data.settings;
+      const data = await makeRequest('/api/settings');
+      console.log('[SettingsAPI] Settings received:', data);
+      return data;
     } catch (error) {
-      console.error('❌ [Settings] Error in getSettings:', error);
-      console.error('❌ [Settings] Error stack:', error.stack);
-      throw error;
+      console.error('[SettingsAPI] Error getting settings:', error);
+      return {
+        success: false,
+        receiveMediaNotifications: false,
+        receiveStaffMessages: true,
+        twoFactorEnabled: false,
+        error: error.message
+      };
+    }
+  },
+  
+  async updateSettings(updates) {
+    console.log('[SettingsAPI] Updating settings:', updates);
+    try {
+      const data = await makeRequest('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+      console.log('[SettingsAPI] Settings updated:', data);
+      return data;
+    } catch (error) {
+      console.error('[SettingsAPI] Error updating settings:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+  
+  async setup2FA() {
+    console.log('[SettingsAPI] Setting up 2FA...');
+    try {
+      const data = await makeRequest('/api/settings/2fa/setup', {
+        method: 'POST'
+      });
+      console.log('[SettingsAPI] 2FA setup response:', data);
+      return data;
+    } catch (error) {
+      console.error('[SettingsAPI] Error setting up 2FA:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   },
 
-  // Update all settings at once
-  async updateSettings(settings) {
-    console.log('⚙️ [Settings] Updating all settings...', settings);
-    
+  async enable2FA(code) {
+    console.log('[SettingsAPI] Enabling 2FA with code:', code);
     try {
-      const token = await getAuthToken();
-      const url = `${API_BASE_URL}/api/member/settings`;
-      
-      console.log('🌐 [Settings] Updating at:', url);
-      console.log('📤 [Settings] Request body:', settings);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
+      const data = await makeRequest('/api/settings/2fa/enable', {
+        method: 'POST',
+        body: JSON.stringify({ code: code.trim() })
       });
-      
-      console.log('📥 [Settings] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [Settings] Error response:', errorText);
-        console.error('❌ [Settings] Full error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: url,
-          errorBody: errorText
-        });
-        throw new Error(`Failed to update settings: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ [Settings] Success! Settings updated:', {
-        success: data.success,
-        message: data.message,
-        settings: data.settings
-      });
-      
+      console.log('[SettingsAPI] 2FA enabled:', data);
       return data;
     } catch (error) {
-      console.error('❌ [Settings] Error in updateSettings:', error);
-      console.error('❌ [Settings] Error stack:', error.stack);
-      throw error;
+      console.error('[SettingsAPI] Error enabling 2FA:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+  
+  async disable2FA(code) {
+    console.log('[SettingsAPI] Disabling 2FA with code:', code);
+    try {
+      const data = await makeRequest('/api/settings/2fa/disable', {
+        method: 'POST',
+        body: JSON.stringify({ code: code.trim() })
+      });
+      console.log('[SettingsAPI] 2FA disabled:', data);
+      return data;
+    } catch (error) {
+      console.error('[SettingsAPI] Error disabling 2FA:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   },
 
-  // Update a single setting
-  async updateSetting(settingName, value) {
-    console.log('⚙️ [Settings] Updating single setting...', { settingName, value });
-    
+  async cancel2FASetup() {
+    console.log('[SettingsAPI] Cancelling 2FA setup...');
     try {
-      const token = await getAuthToken();
-      // Using PUT instead of PATCH to avoid CORS issue
-      const url = `${API_BASE_URL}/api/member/settings`;
-      
-      console.log('🌐 [Settings] Updating at:', url);
-      console.log('📤 [Settings] Request body:', { [settingName]: value });
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ [settingName]: value })
+      const data = await makeRequest('/api/settings/2fa/cancel', {
+        method: 'POST'
       });
-      
-      console.log('📥 [Settings] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [Settings] Error response:', errorText);
-        console.error('❌ [Settings] Full error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: url,
-          errorBody: errorText,
-          setting: settingName,
-          value: value
-        });
-        throw new Error(`Failed to update setting: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ [Settings] Success! Setting updated:', {
-        success: data.success,
-        message: data.message,
-        setting: settingName,
-        value: value
-      });
-      
+      console.log('[SettingsAPI] 2FA setup cancelled:', data);
       return data;
     } catch (error) {
-      console.error('❌ [Settings] Error in updateSetting:', error);
-      console.error('❌ [Settings] Error stack:', error.stack);
-      throw error;
+      console.error('[SettingsAPI] Error cancelling 2FA setup:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 };
+
+// IMPORTANT: Default export as well for compatibility
+export default settingsApi;

@@ -58,8 +58,10 @@ const StaffMessages = () => {
       }
       
       const data = await response.json();
+      console.log('USERS RECEIVED:', data); // ADD THIS
       if (data.success) {
         setUsers(data.users);
+        console.log('NH3 USER IN LIST?', data.users.find(u => u.email === 'nh3olson@gmail.com')); // ADD THIS
       }
     } catch (error) {
       console.error('Error fetching users:', error);

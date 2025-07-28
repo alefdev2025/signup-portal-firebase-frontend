@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { usePayments, usePaymentSummary, useCustomerData } from './contexts/CustomerDataContext';
-import { useMemberPortal } from '../../contexts/MemberPortalProvider'; // ADD THIS IMPORT
+import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 
-// Global testing flag - set this to false in production
+// Global testing flags
 const USE_TEST_CUSTOMER_ID = false; // Set to false when ready for production
 const TEST_CUSTOMER_ID = '4527';
+const ENABLE_AUTOPAY_FEATURE = false; // Toggle this to enable/disable autopay functionality
 
 const PaymentHistoryTab = () => {
   // Get the customer ID from MemberPortal context
@@ -17,7 +18,16 @@ const PaymentHistoryTab = () => {
   const { data: summaryData } = usePaymentSummary();
   const { fetchPaymentsWithDetails } = useCustomerData();
   
+  // Only import and use autopay hook if feature is enabled
+  const autopayHook = ENABLE_AUTOPAY_FEATURE ? require('./contexts/CustomerDataContext').useAutopay() : null;
+  const autopayStatus = autopayHook?.data || null;
+  const autopayLoading = autopayHook?.isLoading || false;
+  const autopayError = autopayHook?.error || null;
+  const updateAutopay = autopayHook?.updateAutopay || (() => {});
+  
   const [selectedYear, setSelectedYear] = useState('All');
+  const [showAutopayModal, setShowAutopayModal] = useState(false);
+  const [updatingAutopay, setUpdatingAutopay] = useState(false);
   const [stats, setStats] = useState({
     totalSpent: 0,
     averagePayment: 0,
@@ -69,9 +79,35 @@ const PaymentHistoryTab = () => {
     console.log('[PaymentHistoryTab] Using customer ID:', customerId, {
       isTestMode: USE_TEST_CUSTOMER_ID,
       contextCustomerId,
-      actualId: customerId
+      actualId: customerId,
+      autopayEnabled: ENABLE_AUTOPAY_FEATURE
     });
   }, [customerId, contextCustomerId]);
+
+  // Handle autopay toggle (only if feature is enabled)
+  const handleAutopayToggle = async () => {
+    if (!ENABLE_AUTOPAY_FEATURE) return;
+    
+    setUpdatingAutopay(true);
+    try {
+      const result = await updateAutopay(!autopayStatus.autopayEnabled);
+      
+      if (result.success) {
+        // Close modal
+        setShowAutopayModal(false);
+        
+        // Show success message (you might want to use a toast library)
+        alert(`Autopay has been ${result.currentStatus ? 'enabled' : 'disabled'} successfully`);
+      } else {
+        throw new Error(result.error || 'Failed to update autopay status');
+      }
+    } catch (error) {
+      console.error('Error updating autopay:', error);
+      alert('Failed to update autopay status. Please try again.');
+    } finally {
+      setUpdatingAutopay(false);
+    }
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -266,6 +302,104 @@ const PaymentHistoryTab = () => {
             <strong>Test Mode:</strong> Showing data for test customer {TEST_CUSTOMER_ID}. 
             Set USE_TEST_CUSTOMER_ID to false to use actual customer data.
           </p>
+        </div>
+      )}
+
+      {/* Show autopay disabled banner if feature flag is off */}
+      {!ENABLE_AUTOPAY_FEATURE && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 mx-4 md:mx-0">
+          <p className="text-sm text-gray-600">
+            <strong>Note:</strong> Autopay feature is currently disabled. Set ENABLE_AUTOPAY_FEATURE to true to enable.
+          </p>
+        </div>
+      )}
+
+      {/* Autopay Status Banner - Only show if feature is enabled */}
+      {ENABLE_AUTOPAY_FEATURE && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 mx-4 md:mx-0 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-lg ${autopayStatus?.autopayEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <svg className={`w-5 h-5 ${autopayStatus?.autopayEnabled ? 'text-green-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Automatic Payments</h3>
+                <p className="text-sm text-gray-600">
+                  {autopayLoading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Checking status...
+                    </span>
+                  ) : autopayError ? (
+                    <span className="text-red-600">Unable to load autopay status</span>
+                  ) : autopayStatus?.autopayEnabled ? (
+                    <span className="text-green-600 font-medium">Enabled - Your card will be charged automatically</span>
+                  ) : (
+                    <span className="text-gray-600">Disabled - Manual payment required</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            
+            {!autopayLoading && !autopayError && autopayStatus && (
+              <button
+                onClick={() => setShowAutopayModal(true)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                  autopayStatus.autopayEnabled
+                    ? 'text-red-600 hover:bg-red-50 border border-red-200'
+                    : 'text-green-600 hover:bg-green-50 border border-green-200'
+                }`}
+              >
+                {autopayStatus.autopayEnabled ? 'Disable Autopay' : 'Enable Autopay'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Autopay Confirmation Modal - Only show if feature is enabled */}
+      {ENABLE_AUTOPAY_FEATURE && showAutopayModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {autopayStatus?.autopayEnabled ? 'Disable Automatic Payments?' : 'Enable Automatic Payments?'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {autopayStatus?.autopayEnabled
+                ? 'You will need to manually pay your invoices when they are due. Are you sure you want to disable automatic payments?'
+                : 'Your payment method on file will be automatically charged when invoices are due. Would you like to enable automatic payments?'}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowAutopayModal(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAutopayToggle}
+                disabled={updatingAutopay}
+                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  autopayStatus?.autopayEnabled
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {updatingAutopay && (
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {autopayStatus?.autopayEnabled ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

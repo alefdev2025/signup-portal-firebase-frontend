@@ -1,47 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Check, Sparkles, AlertCircle } from 'lucide-react';
 import Switch from 'react-switch';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { settingsApi } from '../../services/settingsApi';
+import { httpsCallable } from 'firebase/functions';
+import { functions, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-yellow-star.png';
 import FloatingFooter from './FloatingFooter'; 
+import analytics from '../../services/analytics';
 // Import the new icon components
 import { IconWrapper, BellIcon, ShieldIcon, iconStyle } from './iconStyle';
-
-// Backend API call stubs - to be implemented later
-const backendApi = {
- // Called when media notifications are toggled
- updateMediaNotifications: async (enabled) => {
-   console.log(`Backend stub: updateMediaNotifications called with enabled=${enabled}`);
-   // TODO: Implement actual backend call
-   // Example: return await fetch('/api/settings/media-notifications', { method: 'PUT', body: JSON.stringify({ enabled }) });
-   return Promise.resolve({ success: true });
- },
-
- // Called when staff messages are toggled
- updateStaffMessages: async (enabled) => {
-   console.log(`Backend stub: updateStaffMessages called with enabled=${enabled}`);
-   // TODO: Implement actual backend call
-   // Example: return await fetch('/api/settings/staff-messages', { method: 'PUT', body: JSON.stringify({ enabled }) });
-   return Promise.resolve({ success: true });
- },
-
- // Called when two-factor authentication is toggled
- updateTwoFactorAuth: async (enabled) => {
-   console.log(`Backend stub: updateTwoFactorAuth called with enabled=${enabled}`);
-   // TODO: Implement actual backend call
-   // Example: return await fetch('/api/settings/2fa', { method: 'PUT', body: JSON.stringify({ enabled }) });
-   return Promise.resolve({ success: true });
- },
-
- // Called when settings are restored to defaults
- restoreDefaultSettings: async () => {
-   console.log('Backend stub: restoreDefaultSettings called');
-   // TODO: Implement actual backend call
-   // Example: return await fetch('/api/settings/restore-defaults', { method: 'POST' });
-   return Promise.resolve({ success: true });
- }
-};
 
 const SettingsTab = () => {
  const { salesforceContactId } = useMemberPortal();
@@ -53,6 +22,15 @@ const SettingsTab = () => {
    twoFactorEnabled: false
  });
  const [animatingStars, setAnimatingStars] = useState({});
+ 
+ // 2FA states
+ const [show2FASetup, setShow2FASetup] = useState(false);
+ const [twoFactorData, setTwoFactorData] = useState(null);
+ const [twoFactorCode, setTwoFactorCode] = useState('');
+ const [show2FADisable, setShow2FADisable] = useState(false);
+ const [disableCode, setDisableCode] = useState('');
+ const [error, setError] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
 
  // GLOBAL STYLE SETTING - Set to false for original style (different widths, square, thin outline)
  const USE_PILL_STYLE = true;
@@ -311,9 +289,7 @@ const SettingsTab = () => {
  }, []);
 
  useEffect(() => {
-   // Remove the scroll to top functionality that might be interfering
    fetchUserSettings();
-   
  }, [salesforceContactId]);
 
  const fetchUserSettings = async () => {
@@ -334,6 +310,18 @@ const SettingsTab = () => {
  };
 
  const handleToggle = async (settingName) => {
+   // Special handling for 2FA
+   if (settingName === 'twoFactorEnabled') {
+     if (!settings.twoFactorEnabled) {
+       // Enable 2FA - show setup
+       handle2FAEnable();
+     } else {
+       // Disable 2FA - show confirmation
+       setShow2FADisable(true);
+     }
+     return;
+   }
+
    const newValue = !settings[settingName];
    const newSettings = {
      ...settings,
@@ -350,17 +338,187 @@ const SettingsTab = () => {
        setAnimatingStars(prev => ({ ...prev, [settingName]: false }));
      }, 900);
    }
+
+   // Save to backend
+   try {
+     const result = await settingsApi.updateSettings({ [settingName]: newValue });
+     if (!result.success) {
+       // Revert if failed
+       setSettings(prev => ({ ...prev, [settingName]: !newValue }));
+       setError('Failed to update settings. Please try again.');
+       setTimeout(() => setError(''), 3000);
+     } else {
+       // Track analytics
+       if (salesforceContactId) {
+         analytics.logUserAction('settings_updated', {
+           setting: settingName,
+           value: newValue
+         });
+       }
+     }
+   } catch (error) {
+     console.error('Error updating setting:', error);
+     // Revert on error
+     setSettings(prev => ({ ...prev, [settingName]: !newValue }));
+     setError('Failed to update settings. Please try again.');
+     setTimeout(() => setError(''), 3000);
+   }
+ };
+
+ // Enhanced 2FA Enable handler with better messaging
+ const handle2FAEnable = async () => {
+   setSaving(true);
+   setError('');
+   
+   // Check if this is a re-enable situation
+   const wasEnabledBefore = localStorage.getItem(`2fa_was_enabled_${auth.currentUser?.uid}`) === 'true';
+   
+   try {
+     // Call settings API to setup 2FA
+     const result = await settingsApi.setup2FA();
+     
+     if (result.success && result.qrCode && result.secret) {
+       setTwoFactorData({
+         qrCode: result.qrCode,
+         secret: result.secret,
+         wasEnabledBefore
+       });
+       setShow2FASetup(true);
+       
+       // Track that they've had 2FA before
+       localStorage.setItem(`2fa_was_enabled_${auth.currentUser?.uid}`, 'true');
+     } else {
+       setError(result.error || 'Failed to setup 2FA');
+       setTimeout(() => setError(''), 3000);
+     }
+   } catch (error) {
+     console.error('2FA setup error:', error);
+     setError('Failed to setup two-factor authentication');
+     setTimeout(() => setError(''), 3000);
+   } finally {
+     setSaving(false);
+   }
+ };
+
+// Replace your current handle2FAVerification with this:
+const handle2FAVerification = async (e) => {
+  e.preventDefault();
+  
+  if (twoFactorCode.length !== 6) {
+    setError('Please enter a 6-digit code');
+    return;
+  }
+  
+  setSaving(true);
+  setError('');
+  
+  try {
+    // Use the settings API enable2FA method - NOT authCore
+    const result = await settingsApi.enable2FA(twoFactorCode);
+    
+    if (result.success) {
+      // Update local state
+      setSettings(prev => ({ ...prev, twoFactorEnabled: true }));
+      setShow2FASetup(false);
+      setTwoFactorCode('');
+      setTwoFactorData(null);
+      setSuccessMessage('Two-factor authentication enabled successfully!');
+      
+      // Track analytics
+      if (salesforceContactId) {
+        analytics.logUserAction('2fa_enabled', {});
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setError(result.error || 'Invalid code. Please try again.');
+      setTwoFactorCode('');
+    }
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    setError('Failed to verify code. Please try again.');
+    setTwoFactorCode('');
+  } finally {
+    setSaving(false);
+  }
+};
+
+ // 2FA disable handler - Using settings API
+ const handle2FADisable = async (e) => {
+   e.preventDefault();
+   
+   if (disableCode.length !== 6) {
+     setError('Please enter a 6-digit code');
+     return;
+   }
+   
+   setSaving(true);
+   setError('');
+   
+   try {
+     // Call settings API to disable 2FA
+     const result = await settingsApi.disable2FA(disableCode);
+     
+     if (result.success) {
+       setSettings(prev => ({ ...prev, twoFactorEnabled: false }));
+       setShow2FADisable(false);
+       setDisableCode('');
+       setSuccessMessage('Two-factor authentication disabled');
+       
+       // Track analytics
+       if (salesforceContactId) {
+         analytics.logUserAction('2fa_disabled', {});
+       }
+       
+       // Clear success message after 3 seconds
+       setTimeout(() => setSuccessMessage(''), 3000);
+     } else {
+       setError(result.error || 'Invalid code. Please try again.');
+       setDisableCode('');
+     }
+   } catch (error) {
+     console.error('2FA disable error:', error);
+     setError('Failed to verify code. Please try again.');
+     setDisableCode('');
+   } finally {
+     setSaving(false);
+   }
  };
 
  const handleRestoreDefaults = async () => {
    const defaultSettings = {
      receiveMediaNotifications: false,
      receiveStaffMessages: true,
-     twoFactorEnabled: false
+     twoFactorEnabled: settings.twoFactorEnabled // Don't change 2FA on restore
    };
    
    setSaving(true);
+   setError('');
    
+   try {
+     const result = await settingsApi.updateSettings(defaultSettings);
+     if (result.success) {
+       setSettings(defaultSettings);
+       setSuccessMessage('Settings restored to defaults');
+       
+       // Track analytics
+       if (salesforceContactId) {
+         analytics.logUserAction('settings_restored_to_defaults', {});
+       }
+       
+       setTimeout(() => setSuccessMessage(''), 3000);
+     } else {
+       setError('Failed to restore defaults');
+       setTimeout(() => setError(''), 3000);
+     }
+   } catch (error) {
+     console.error('Error restoring defaults:', error);
+     setError('Failed to restore defaults');
+     setTimeout(() => setError(''), 3000);
+   } finally {
+     setSaving(false);
+   }
  };
 
  // Custom Switch component with pulse animation
@@ -427,6 +585,26 @@ const SettingsTab = () => {
        <h1 className="text-[1.375rem] md:text-[1.325rem] font-medium text-gray-900 mb-2 leading-tight animate-gentleSlideIn">Account Settings</h1>
        <p className="text-gray-400 text-xs md:text-sm tracking-wide uppercase section-subtitle animate-gentleSlideIn" style={{ animationDelay: '0.1s' }}>Manage your preferences and security</p>
      </div>
+
+     {/* Success/Error Messages */}
+     {successMessage && (
+       <div className="mb-6 px-4 md:px-0">
+         <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4">
+           <div className="flex items-center">
+             <Check className="w-5 h-5 mr-2" />
+             {successMessage}
+           </div>
+         </div>
+       </div>
+     )}
+     
+     {error && (
+       <div className="mb-6 px-4 md:px-0">
+         <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4">
+           {error}
+         </div>
+       </div>
+     )}
 
      {/* Settings Grid */}
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 md:px-0">
@@ -580,6 +758,195 @@ const SettingsTab = () => {
          </button>
        </div>
      </div>
+
+     {/* 2FA Setup Modal - Using Portal */}
+     {show2FASetup && ReactDOM.createPortal(
+       <div className="fixed inset-0 z-[100] overflow-y-auto">
+         <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => {
+           setShow2FASetup(false);
+           setTwoFactorCode('');
+           setError('');
+         }}></div>
+         
+         <div className="flex min-h-full items-center justify-center p-4">
+           <div className="relative bg-white rounded-2xl max-w-md w-full shadow-2xl">
+             <div className="p-6">
+               <h3 className="text-lg font-semibold text-gray-800 mb-4">Set Up Two-Factor Authentication</h3>
+               
+               {/* Add notice if re-enabling */}
+               {twoFactorData?.wasEnabledBefore && (
+                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                   <p className="text-sm text-blue-800">
+                     <strong>Note:</strong> Since you're re-enabling 2FA, you'll need to {window.innerWidth < 640 ? 'add' : 'scan'} a new {window.innerWidth < 640 ? 'setup key' : 'QR code'}. 
+                     Your previous 2FA configuration has been removed for security.
+                   </p>
+                 </div>
+               )}
+               
+               {twoFactorData && (
+                 <>
+                   <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                     <h4 className="font-medium text-gray-800 mb-4 text-center">Step 1: Add to Authenticator App</h4>
+                     
+                     {/* Desktop: Show QR Code */}
+                     <div className="hidden sm:block text-center">
+                       <img 
+                         src={twoFactorData.qrCode} 
+                         alt="2FA QR Code" 
+                         className="mx-auto mb-4 border-2 border-gray-300 rounded-lg"
+                         style={{ maxWidth: '200px', height: 'auto' }}
+                       />
+                       <p className="text-sm text-gray-600 mb-2">
+                         Scan this QR code with your authenticator app
+                       </p>
+                     </div>
+                     
+                     {/* Mobile: Show setup key */}
+                     <div className="sm:hidden">
+                       <p className="text-sm text-gray-700 mb-2">Add this account to your authenticator app:</p>
+                       <p className="text-sm font-medium text-gray-900 mb-1">Account: Alcor Portal</p>
+                       <p className="text-xs text-gray-600 mb-2">Setup key:</p>
+                       <p className="font-mono text-xs break-all bg-gray-100 p-2 rounded select-all mb-3">
+                         {twoFactorData.secret}
+                       </p>
+                       <button
+                         type="button"
+                         onClick={() => {
+                           navigator.clipboard.writeText(twoFactorData.secret);
+                           alert('Setup key copied to clipboard!');
+                         }}
+                         className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded text-sm hover:bg-gray-300"
+                       >
+                         Copy Setup Key
+                       </button>
+                     </div>
+                   </div>
+                   
+                   <form onSubmit={handle2FAVerification}>
+                     <label className="block text-gray-700 text-sm font-medium mb-2">
+                       Step 2: Enter Verification Code
+                     </label>
+                     <input 
+                       type="text" 
+                       value={twoFactorCode}
+                       onChange={(e) => {
+                         const value = e.target.value.replace(/\D/g, '');
+                         if (value.length <= 6) setTwoFactorCode(value);
+                       }}
+                       placeholder="000000" 
+                       maxLength="6"
+                       className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md text-center text-xl tracking-widest font-mono"
+                       autoFocus
+                       required
+                     />
+                     
+                     <div className="flex gap-3">
+                       <button
+                         type="submit"
+                         disabled={saving || twoFactorCode.length !== 6}
+                         className="flex-1 bg-purple-600 text-white py-3 rounded-md font-medium hover:bg-purple-700 disabled:opacity-50"
+                       >
+                         {saving ? 'Verifying...' : 'Enable 2FA'}
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => {
+                           setShow2FASetup(false);
+                           setTwoFactorCode('');
+                           setError('');
+                         }}
+                         className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-md font-medium hover:bg-gray-300"
+                       >
+                         Cancel
+                       </button>
+                     </div>
+                   </form>
+                   
+                   {error && (
+                     <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+                       {error}
+                     </div>
+                   )}
+                 </>
+               )}
+             </div>
+           </div>
+         </div>
+       </div>,
+       document.body
+     )}
+
+     {/* 2FA Disable Modal - Using Portal */}
+     {show2FADisable && ReactDOM.createPortal(
+       <div className="fixed inset-0 z-[100] overflow-y-auto">
+         <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => {
+           setShow2FADisable(false);
+           setDisableCode('');
+           setError('');
+         }}></div>
+         
+         <div className="flex min-h-full items-center justify-center p-4">
+           <div className="relative bg-white rounded-2xl max-w-md w-full shadow-2xl">
+             <div className="p-6">
+               <h3 className="text-lg font-semibold text-gray-800 mb-4">Disable Two-Factor Authentication</h3>
+               
+               <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+                 <p className="text-sm text-yellow-800">
+                   <strong>Warning:</strong> Disabling 2FA will make your account less secure. Enter your current 2FA code to confirm.
+                 </p>
+               </div>
+               
+               <form onSubmit={handle2FADisable}>
+                 <label className="block text-gray-700 text-sm font-medium mb-2">
+                   Enter your 6-digit authentication code
+                 </label>
+                 <input 
+                   type="text" 
+                   value={disableCode}
+                   onChange={(e) => {
+                     const value = e.target.value.replace(/\D/g, '');
+                     if (value.length <= 6) setDisableCode(value);
+                   }}
+                   placeholder="000000" 
+                   maxLength="6"
+                   className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md text-center text-xl tracking-widest font-mono"
+                   autoFocus
+                   required
+                 />
+                 
+                 <div className="flex gap-3">
+                   <button
+                     type="submit"
+                     disabled={saving || disableCode.length !== 6}
+                     className="flex-1 bg-red-600 text-white py-3 rounded-md font-medium hover:bg-red-700 disabled:opacity-50"
+                   >
+                     {saving ? 'Verifying...' : 'Disable 2FA'}
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => {
+                       setShow2FADisable(false);
+                       setDisableCode('');
+                       setError('');
+                     }}
+                     className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-md font-medium hover:bg-gray-300"
+                   >
+                     Cancel
+                   </button>
+                 </div>
+               </form>
+               
+               {error && (
+                 <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+                   {error}
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+       </div>,
+       document.body
+     )}
    </div>
  );
 };

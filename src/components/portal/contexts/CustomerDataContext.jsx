@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getCustomerPayments, getPaymentSummary } from '../services/netsuite/payments';
 import { getCustomerInvoices, getInvoiceDetails } from '../services/netsuite/invoices';
 import { getSalesOrders } from '../services/netsuite/salesOrders';
+import { getCustomerAutopayStatus, updateCustomerAutopayStatus } from '../services/netsuite/autopay';
 
 const CustomerDataContext = createContext();
 
@@ -15,23 +16,27 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     invoices: null,
     salesOrders: null,
     paymentSummary: null,
+    autopayStatus: null,
     isLoading: {
       payments: false,
       invoices: false,
       salesOrders: false,
-      paymentSummary: false
+      paymentSummary: false,
+      autopayStatus: false
     },
     errors: {
       payments: null,
       invoices: null,
       salesOrders: null,
-      paymentSummary: null
+      paymentSummary: null,
+      autopayStatus: null
     },
     lastFetch: {
       payments: null,
       invoices: null,
       salesOrders: null,
-      paymentSummary: null
+      paymentSummary: null,
+      autopayStatus: null
     }
   });
 
@@ -142,6 +147,53 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     }, options);
   }, [customerId, fetchData]);
 
+  // Fetch autopay status
+  const fetchAutopayStatus = useCallback(async (options = {}) => {
+    return fetchData('autopayStatus', async () => {
+      return await getCustomerAutopayStatus(customerId);
+    }, options);
+  }, [customerId, fetchData]);
+
+  // Update autopay status (no caching for mutations)
+  const updateAutopay = useCallback(async (enabled) => {
+    // Set loading state
+    setData(prev => ({
+      ...prev,
+      isLoading: { ...prev.isLoading, autopayStatus: true },
+      errors: { ...prev.errors, autopayStatus: null }
+    }));
+
+    try {
+      const result = await updateCustomerAutopayStatus(customerId, enabled);
+      
+      if (result.success) {
+        // Update the cached autopay status
+        setData(prev => ({
+          ...prev,
+          autopayStatus: {
+            ...prev.autopayStatus,
+            autopayEnabled: result.currentStatus,
+            lastChecked: new Date().toISOString()
+          },
+          lastFetch: { ...prev.lastFetch, autopayStatus: Date.now() },
+          isLoading: { ...prev.isLoading, autopayStatus: false }
+        }));
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error updating autopay:', error);
+      
+      setData(prev => ({
+        ...prev,
+        errors: { ...prev.errors, autopayStatus: error.message },
+        isLoading: { ...prev.isLoading, autopayStatus: false }
+      }));
+      
+      throw error;
+    }
+  }, [customerId]);
+
   // Prefetch all data on mount
   useEffect(() => {
     if (customerId) {
@@ -150,10 +202,12 @@ export const CustomerDataProvider = ({ children, customerId }) => {
         fetchPaymentsWithDetails().catch(err => console.error('Failed to prefetch payments:', err)),
         fetchInvoices().catch(err => console.error('Failed to prefetch invoices:', err)),
         //fetchSalesOrders().catch(err => console.error('Failed to prefetch sales orders:', err)),
-        fetchPaymentSummary().catch(err => console.error('Failed to prefetch payment summary:', err))
+        fetchPaymentSummary().catch(err => console.error('Failed to prefetch payment summary:', err)),
+        //fetchAutopayStatus().catch(err => console.error('Failed to prefetch autopay status:', err))
       ]);
     }
   }, [customerId]);
+  
 
   // Refresh all data
   const refreshAllData = useCallback(async () => {
@@ -163,9 +217,10 @@ export const CustomerDataProvider = ({ children, customerId }) => {
       fetchPaymentsWithDetails(options),
       fetchInvoices(options),
       //fetchSalesOrders(options),
-      fetchPaymentSummary(options)
+      fetchPaymentSummary(options),
+      fetchAutopayStatus(options)
     ]);
-  }, [fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary]);
+  }, [fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, fetchAutopayStatus]);
 
   // Get specific data type with automatic refresh if stale
   const getData = useCallback((dataType) => {
@@ -184,6 +239,9 @@ export const CustomerDataProvider = ({ children, customerId }) => {
         case 'paymentSummary':
           fetchPaymentSummary();
           break;
+        case 'autopayStatus':
+          fetchAutopayStatus();
+          break;
       }
     }
     
@@ -192,7 +250,7 @@ export const CustomerDataProvider = ({ children, customerId }) => {
       isLoading: data.isLoading[dataType],
       error: data.errors[dataType]
     };
-  }, [data, fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary]);
+  }, [data, fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, fetchAutopayStatus]);
 
   const value = {
     // Direct data access
@@ -200,6 +258,7 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     invoices: data.invoices,
     salesOrders: data.salesOrders,
     paymentSummary: data.paymentSummary,
+    autopayStatus: data.autopayStatus,
     
     // Loading states
     isLoading: data.isLoading,
@@ -214,6 +273,8 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     fetchInvoices,
     //fetchSalesOrders,
     fetchPaymentSummary,
+    fetchAutopayStatus,
+    updateAutopay,
     
     // Utility
     isDataStale
@@ -254,4 +315,15 @@ export const useSalesOrders = () => {
 export const usePaymentSummary = () => {
   const { getData } = useCustomerData();
   return getData('paymentSummary');
+};
+
+// New autopay hook
+export const useAutopay = () => {
+  const { getData, updateAutopay } = useCustomerData();
+  const autopayData = getData('autopayStatus');
+  
+  return {
+    ...autopayData,
+    updateAutopay
+  };
 };

@@ -7,6 +7,7 @@ import { CustomerDataProvider } from '../components/portal/contexts/CustomerData
 import { getAnnouncements, getMediaItems } from '../services/content';
 import { getNotifications } from '../services/notifications';
 import { getMemberCategory } from '../components/portal/services/salesforce/memberInfo';
+import { auth } from '../services/firebase';
 
 // ============================================
 // DEMO CONFIGURATION - TOGGLE HERE
@@ -136,6 +137,28 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
   
   // Refs for intervals
   const refreshIntervalRef = useRef(null);
+
+  // NEW: Store Salesforce ID for analytics when it becomes available
+  useEffect(() => {
+    if (salesforceCustomer?.id) {
+      // Store for analytics service
+      localStorage.setItem('salesforceContactId', salesforceCustomer.id);
+      sessionStorage.setItem('salesforceContactId', salesforceCustomer.id);
+      
+      // Also set on window for immediate access
+      window.__memberPortalData = {
+        ...window.__memberPortalData,
+        salesforceContactId: salesforceCustomer.id
+      };
+      
+      // Let analytics service know if it exists
+      if (window.analytics?.setSalesforceId) {
+        window.analytics.setSalesforceId(salesforceCustomer.id);
+      }
+      
+      console.log('✅ [MemberPortal] Stored Salesforce ID for analytics:', salesforceCustomer.id);
+    }
+  }, [salesforceCustomer]);
 
   const preloadMemberInfo = async (forceRefresh = false) => {
     if (!salesforceCustomer?.id) {
@@ -401,20 +424,92 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     return fetchFreshContent(true, true);
   };
 
-  // Function to refresh just notifications
-  const refreshNotifications = async () => {
-    console.log('🔄 [MemberPortal] Refreshing notifications...');
-    try {
-      const notificationsData = await fetchWithRetry(() => getNotifications()) || [];
-      setNotifications(notificationsData);
-      setNotificationsLoaded(true);
-      console.log('✅ [MemberPortal] Notifications refreshed:', notificationsData?.length || 0);
-      return notificationsData;
-    } catch (error) {
-      console.error('❌ [MemberPortal] Notifications refresh failed:', error);
-      return [];
+
+// Then use this refreshNotifications function:
+const refreshNotifications = async () => {
+  console.log('🔄 [MemberPortal] Starting refreshNotifications...');
+  console.log('📅 [MemberPortal] Timestamp:', new Date().toISOString());
+  
+  // Log current auth state - NOW auth WILL BE DEFINED
+  try {
+    const currentUser = auth?.currentUser;
+    console.log('👤 [MemberPortal] Current auth state:', {
+      isAuthenticated: !!currentUser,
+      uid: currentUser?.uid || 'NO_UID',
+      email: currentUser?.email || 'NO_EMAIL',
+      emailVerified: currentUser?.emailVerified,
+      providerId: currentUser?.providerId
+    });
+  } catch (authError) {
+    console.log('⚠️ [MemberPortal] Could not get auth state:', authError.message);
+  }
+  
+  try {
+    console.log('📡 [MemberPortal] Calling fetchWithRetry...');
+    
+    const notificationsData = await fetchWithRetry(() => {
+      console.log('🔁 [MemberPortal] Inside fetchWithRetry - calling getNotifications()');
+      return getNotifications();
+    }) || [];
+    
+    console.log('📦 [MemberPortal] Raw response from getNotifications:', {
+      type: typeof notificationsData,
+      isArray: Array.isArray(notificationsData),
+      isNull: notificationsData === null,
+      isUndefined: notificationsData === undefined,
+      count: Array.isArray(notificationsData) ? notificationsData.length : 'N/A'
+    });
+    
+    // Log first few notifications for debugging
+    if (Array.isArray(notificationsData) && notificationsData.length > 0) {
+      console.log('📋 [MemberPortal] First 3 notifications:');
+      notificationsData.slice(0, 3).forEach((notif, index) => {
+        console.log(`  ${index + 1}.`, {
+          id: notif?.id,
+          userId: notif?.userId,
+          type: notif?.type,
+          title: notif?.title,
+          read: notif?.read,
+          createdAt: notif?.createdAt
+        });
+      });
+    } else {
+      console.log('⚠️ [MemberPortal] No notifications in response or invalid format');
     }
-  };
+    
+    console.log('💾 [MemberPortal] Setting notifications state...');
+    setNotifications(notificationsData);
+    
+    console.log('✅ [MemberPortal] Setting notificationsLoaded to true');
+    setNotificationsLoaded(true);
+    
+    console.log('✅ [MemberPortal] Notifications refresh completed:', {
+      finalCount: notificationsData?.length || 0,
+      stateUpdated: true
+    });
+    
+    return notificationsData;
+    
+  } catch (error) {
+    console.error('❌ [MemberPortal] Notifications refresh failed');
+    console.error('❌ [MemberPortal] Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      response: error.response,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      responseData: error.response?.data
+    });
+    
+    // Still set loaded to true on error
+    console.log('⚠️ [MemberPortal] Setting empty notifications due to error');
+    setNotifications([]);
+    setNotificationsLoaded(true);
+    
+    return [];
+  }
+};
 
   // Function to refresh just documents
   const refreshDocuments = async () => {
@@ -458,6 +553,7 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer })
     customerName: salesforceCustomer ? `${salesforceCustomer.firstName} ${salesforceCustomer.lastName}` : '',
     customerEmail: salesforceCustomer?.email || '',
     salesforceContactId: salesforceCustomer?.id || null,
+    customerFirstName: salesforceCustomer?.firstName || '', // NEW: Add this line
     isDemoMode: DEMO_MODE,
     
     // Content values

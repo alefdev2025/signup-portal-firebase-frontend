@@ -238,7 +238,24 @@ const UserProvider = ({ children }) => {
       return defaultState;
     }
   };
-  
+
+  // When auth state changes to null, clear everything
+  useEffect(() => {
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Clear all state
+        setCurrentUser(null);
+        setNetsuiteCustomerId(null);
+        setSalesforceCustomer(null);
+        // Clear any cached data
+        localStorage.clear();
+        sessionStorage.clear();
+        // Redirect to login
+        window.location.href = '/login'; // or wherever your login page is
+      }
+    });
+  }, []);
+    
   // SIMPLIFIED auth state listener without complex blocking
   useEffect(() => {
     LOG_TO_TERMINAL("Setting up auth state change listener");

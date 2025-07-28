@@ -9,6 +9,7 @@ import alcorStar from '../../assets/images/alcor-star.png';
 import dewarsImage from '../../assets/images/dewars2.jpg';
 import podcastImage from '../../assets/images/podcast-image2.png';
 import { getContactActivities, formatActivity, filterDuplicateInvoiceActivities } from '../../services/activity';
+import analytics from '../../services/analytics';
 
 // Global toggle for Quick Actions colors
 const USE_GRADIENT_COLORS = true;
@@ -16,7 +17,8 @@ const USE_GRADIENT_COLORS = true;
 const OverviewTab = ({ setActiveTab }) => {
  const { currentUser } = useUser();
  const { 
-   salesforceContactId, 
+   salesforceContactId,
+   customerFirstName, 
    isPreloading, 
    announcements = [], 
    mediaItems = [], 
@@ -25,7 +27,7 @@ const OverviewTab = ({ setActiveTab }) => {
    lastRefresh,
    salesforceCustomer
  } = useMemberPortal();
- const [userName, setUserName] = useState('');
+ const [userName, setUserName] = useState(customerFirstName || '');
  const [loading, setLoading] = useState(true);
  const [visibleSections, setVisibleSections] = useState(new Set());
  const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,6 +48,15 @@ const OverviewTab = ({ setActiveTab }) => {
  const recentActivityRef = useRef(null);
 
  const [showWelcome, setShowWelcome] = useState(false);
+
+ // Track page view when salesforceContactId is available
+ useEffect(() => {
+   if (salesforceContactId) {
+     analytics.logUserAction('overview_tab_viewed', {
+       timestamp: new Date().toISOString()
+     });
+   }
+ }, [salesforceContactId]);
 
  // Helper function to format notification time
  const formatNotificationTime = (dateString) => {
@@ -87,7 +98,7 @@ const OverviewTab = ({ setActiveTab }) => {
  };
 
  useEffect(() => {
-   if (salesforceContactId && !profileLoading && userName && userName !== '0031I00000tRcNZ') {
+   if (salesforceContactId && !profileLoading && userName) {
      // Delay showing the welcome message
      const timer = setTimeout(() => {
        setShowWelcome(true);
@@ -97,11 +108,17 @@ const OverviewTab = ({ setActiveTab }) => {
    }
  }, [salesforceContactId, profileLoading, userName]);
 
+ useEffect(() => {
+  if (customerFirstName) {
+    setUserName(customerFirstName);
+  }
+}, [customerFirstName]);
+
  // Fetch user name - now using profile data as primary source
  useEffect(() => {
    const fetchUserName = async () => {
      // If we already have a valid userName, skip
-     if (userName && userName !== '0031I00000tRcNZ') {
+     if (userName) {
        return;
      }
 
@@ -153,7 +170,7 @@ const OverviewTab = ({ setActiveTab }) => {
            setProfileData(profileInfo);
            
            // Set userName from profile data if not already set
-           if ((!userName || userName === '0031I00000tRcNZ') && profileInfo.personalInfo?.firstName) {
+           if (!userName && profileInfo.personalInfo?.firstName) {
              console.log('🔄 [OverviewTab] Setting userName from profile data:', profileInfo.personalInfo.firstName);
              setUserName(profileInfo.personalInfo.firstName);
            }
@@ -187,7 +204,7 @@ const OverviewTab = ({ setActiveTab }) => {
        console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
        
        // Fetch more activities to account for filtering
-       const activities = await getContactActivities(20, null, salesforceContactId);
+       const activities = await getContactActivities(100, null, salesforceContactId);
        
        // Format activities for display
        const formattedActivities = activities.map(formatActivity);
@@ -415,7 +432,7 @@ const OverviewTab = ({ setActiveTab }) => {
  };
 
  return (
-   <div className="overview-tab -mt-4 pt-6 px-6 md:px-8 lg:px-12">
+   <div className="overview-tab -mt-4 pt-6 px-2 sm:px-6 md:px-8 lg:px-12">
      {/* Hero Banner - Updated with gradient overlays and reduced height */}
      <div 
        className="relative rounded-xl overflow-hidden mb-12 animate-fadeIn"
@@ -479,7 +496,7 @@ const OverviewTab = ({ setActiveTab }) => {
                style={{ 
                  fontSize: '1.5rem',
                  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif !important",
-                 opacity: (!salesforceContactId || profileLoading || !userName || userName === '0031I00000tRcNZ') ? 0 : 1,
+                 opacity: (!salesforceContactId || profileLoading || !userName) ? 0 : 1,
                  transition: 'opacity 0.5s ease-in-out',
                  transitionDelay: '0.3s'
                }}
@@ -493,6 +510,14 @@ const OverviewTab = ({ setActiveTab }) => {
              <GradientButton 
                onClick={() => {
                  console.log('🔄 [OverviewTab] Navigating to membership status tab');
+                 
+                 // Only track analytics if we have Salesforce ID
+                 if (salesforceContactId) {
+                   analytics.logUserAction('membership_status_button_clicked', {
+                     from: 'overview_tab'
+                   });
+                 }
+                 
                  if (setActiveTab) {
                    setActiveTab('membership-status');
                  } else {
@@ -581,6 +606,14 @@ const OverviewTab = ({ setActiveTab }) => {
                className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-1000 cursor-pointer border-2 border-purple-200 ${visibleSections.has('announcements') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                style={{ transitionDelay: `${200 + (index * 200)}ms` }}
                onClick={() => {
+                 // Track analytics if we have Salesforce ID
+                 if (salesforceContactId) {
+                   analytics.logUserAction('announcement_clicked', {
+                     announcementId: announcement.id,
+                     announcementTitle: announcement.title
+                   });
+                 }
+                 
                  if (announcement.link) {
                    window.open(announcement.link, '_blank');
                  }
@@ -692,6 +725,14 @@ const OverviewTab = ({ setActiveTab }) => {
                  className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 cursor-pointer ${visibleSections.has('newsletters') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                  style={{ transitionDelay: `${(index + 1) * 100}ms` }}
                  onClick={() => {
+                   // Track analytics if we have Salesforce ID
+                   if (salesforceContactId) {
+                     analytics.logUserAction('newsletter_clicked', {
+                       newsletterId: newsletter.id,
+                       newsletterTitle: newsletter.title
+                     });
+                   }
+                   
                    if (newsletter.link) {
                      window.open(newsletter.link, '_blank');
                    }
