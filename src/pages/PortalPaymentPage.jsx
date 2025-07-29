@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -7,12 +6,17 @@ import {
   useStripe,
   useElements
 } from '@stripe/react-stripe-js';
-import { createInvoicePaymentIntent, confirmInvoicePayment } from '../services/payment';
+import { createInvoicePaymentIntent, confirmInvoicePayment, updateStripeAutopay } from '../services/payment';
+import { getStripeIntegrationStatus } from '../components/portal/services/netsuite/payments';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
 
 // Import logos
 import alcorStar from '../assets/images/alcor-star.png';
 import whiteALogoNoText from '../assets/images/alcor-white-logo-no-text.png';
+
+// Feature flags
+const ENABLE_STRIPE_MIGRATION = true; // Toggle to enable/disable migration prompts
+const ENABLE_AUTOPAY_ENROLLMENT = true; // Toggle to enable/disable autopay enrollment during payment
 
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
@@ -25,7 +29,6 @@ const CARD_ELEMENT_OPTIONS = {
       '::placeholder': { 
         color: '#9ca3af' 
       },
-      // Remove lineHeight to avoid Stripe warning
     },
     invalid: { 
       color: '#ef4444',
@@ -42,8 +45,7 @@ const CARD_ELEMENT_OPTIONS = {
 function InvoicePaymentForm({ invoice, onBack }) {
   const stripe = useStripe();
   const elements = useElements();
-  const navigate = useNavigate();
-  const { salesforceCustomer } = useMemberPortal();
+  const { salesforceCustomer, netsuiteCustomerId } = useMemberPortal();
   
   // Refs
   const paymentElementRef = useRef(null);
@@ -54,7 +56,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('ready');
   
-  // Additional form fields - Initialize with default values
+  // Additional form fields
   const [cardholderName, setCardholderName] = useState(
     salesforceCustomer?.name || invoice.billingAddress?.addressee || ''
   );
@@ -62,6 +64,52 @@ function InvoicePaymentForm({ invoice, onBack }) {
     invoice.billingAddress?.zip || ''
   );
   const [saveCard, setSaveCard] = useState(false);
+  
+  // Autopay enrollment
+  const [enrollInAutopay, setEnrollInAutopay] = useState(false);
+  const [showAutopayOption, setShowAutopayOption] = useState(false);
+  
+  // Customer autopay status
+  const [customerAutopayStatus, setCustomerAutopayStatus] = useState(null);
+  const [loadingAutopayStatus, setLoadingAutopayStatus] = useState(true);
+  const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
+  
+  // Check customer's current autopay status
+  useEffect(() => {
+    const checkAutopayStatus = async () => {
+      if (!netsuiteCustomerId || !ENABLE_STRIPE_MIGRATION) {
+        setLoadingAutopayStatus(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/netsuite/customers/${netsuiteCustomerId}/stripe`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setCustomerAutopayStatus(data);
+          
+          // Check if customer is on legacy autopay but not on Stripe autopay
+          if (data.legacy?.autopayEnabled && !data.stripe?.autopayEnabled) {
+            setShowMigrationPrompt(true);
+            setSaveCard(true); // Pre-check save card option
+            setEnrollInAutopay(true); // Pre-check autopay enrollment
+          }
+          
+          // Show autopay option if not already enrolled in Stripe autopay
+          setShowAutopayOption(ENABLE_AUTOPAY_ENROLLMENT && !data.stripe?.autopayEnabled);
+        }
+      } catch (error) {
+        console.error('Error checking autopay status:', error);
+      } finally {
+        setLoadingAutopayStatus(false);
+      }
+    };
+    
+    checkAutopayStatus();
+  }, [netsuiteCustomerId]);
   
   // Store element reference when ready
   const handleCardReady = useCallback(() => {
@@ -153,7 +201,9 @@ function InvoicePaymentForm({ invoice, onBack }) {
           email: salesforceCustomer?.email || '',
           name: salesforceCustomer?.name || invoice.billingAddress?.addressee || '',
         },
-        savePaymentMethod: saveCard
+        savePaymentMethod: saveCard || enrollInAutopay, // Save card if enrolling in autopay
+        netsuiteCustomerId: netsuiteCustomerId,
+        setupFutureUsage: enrollInAutopay ? 'off_session' : null
       };
       
       console.log('Creating invoice payment intent with data:', paymentData);
@@ -171,6 +221,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
       // Handle 3D Secure or immediate confirmation
       let finalPaymentIntentId;
+      let savedPaymentMethodId = null;
       
       if (intentResult.requiresAction && intentResult.clientSecret) {
         console.log('3D Secure authentication required...');
@@ -183,11 +234,13 @@ function InvoicePaymentForm({ invoice, onBack }) {
         }
         
         finalPaymentIntentId = confirmedIntent.id;
+        savedPaymentMethodId = confirmedIntent.payment_method;
         console.log('3D Secure authentication completed:', finalPaymentIntentId);
         
       } else if (intentResult.status === 'succeeded') {
         // Payment succeeded immediately
         finalPaymentIntentId = intentResult.paymentIntentId;
+        savedPaymentMethodId = intentResult.paymentMethodId || pm.id;
         console.log('Payment succeeded immediately:', finalPaymentIntentId);
         
       } else if (intentResult.clientSecret) {
@@ -203,10 +256,12 @@ function InvoicePaymentForm({ invoice, onBack }) {
         }
         
         finalPaymentIntentId = confirmedIntent.id;
+        savedPaymentMethodId = confirmedIntent.payment_method;
         console.log('Payment confirmed:', finalPaymentIntentId);
       } else {
         // Fallback - use the payment intent ID from the response
         finalPaymentIntentId = intentResult.paymentIntentId;
+        savedPaymentMethodId = intentResult.paymentMethodId || pm.id;
         console.log('Using payment intent ID from response:', finalPaymentIntentId);
       }
 
@@ -217,16 +272,43 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
       // Confirm invoice payment on backend
       console.log('Confirming invoice payment on backend...');
-      const confirmResult = await confirmInvoicePayment({
-        paymentIntentId: finalPaymentIntentId,
-        invoiceId: invoice.internalId,
-        amount: invoice.amountRemaining,
-        paymentDate: new Date().toISOString()
-      });
+      try {
+        const confirmResult = await confirmInvoicePayment({
+          paymentIntentId: finalPaymentIntentId,
+          invoiceId: invoice.internalId,
+          amount: invoice.amountRemaining,
+          paymentDate: new Date().toISOString()
+        });
 
-      if (!confirmResult.success) {
-        console.error('Warning: Payment succeeded but NetSuite record failed');
+        if (!confirmResult.success) {
+          console.error('Warning: Payment succeeded but NetSuite record failed');
+          // Don't throw error here - payment was successful even if NetSuite update failed
+        }
+      } catch (confirmError) {
+        console.error('Warning: Payment succeeded but NetSuite confirmation failed:', confirmError);
         // Don't throw error here - payment was successful even if NetSuite update failed
+        // The payment went through on Stripe, we just couldn't record it in NetSuite
+      }
+
+      // Handle autopay enrollment if selected
+      if (enrollInAutopay && savedPaymentMethodId && netsuiteCustomerId) {
+        console.log('Enrolling in autopay...');
+        try {
+          const autopayResult = await updateStripeAutopay(netsuiteCustomerId, true, {
+            paymentMethodId: savedPaymentMethodId,
+            syncLegacy: showMigrationPrompt // Sync to legacy if migrating
+          });
+          
+          if (autopayResult.success) {
+            console.log('Successfully enrolled in autopay');
+          } else {
+            console.error('Failed to enroll in autopay:', autopayResult.error);
+            // Don't fail the payment for this
+          }
+        } catch (autopayError) {
+          console.error('Error enrolling in autopay:', autopayError);
+          // Don't fail the payment for this
+        }
       }
 
       console.log('Payment process completed successfully');
@@ -244,7 +326,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
-  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard]);
+  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -268,6 +350,11 @@ function InvoicePaymentForm({ invoice, onBack }) {
           <p className="text-base text-gray-600 mb-4">
             Your payment of {formatCurrency(invoice.amountRemaining)} for invoice {invoice.id} has been processed.
           </p>
+          {enrollInAutopay && (
+            <p className="text-sm text-green-600 mb-4">
+              ✓ Automatic payments have been enabled for future invoices
+            </p>
+          )}
           <div className="animate-pulse text-sm text-gray-500">
             Returning to invoices...
           </div>
@@ -290,6 +377,33 @@ function InvoicePaymentForm({ invoice, onBack }) {
             </svg>
             Back to Invoice
           </button>
+
+          {/* Migration Banner */}
+          {showMigrationPrompt && ENABLE_STRIPE_MIGRATION && (
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-purple-900 mb-1">
+                    Upgrade to Enhanced Autopay
+                  </h3>
+                  <p className="text-xs text-purple-700 mb-2">
+                    You're currently using our legacy autopay system. Complete this payment to automatically upgrade to our new, more secure autopay with additional features:
+                  </p>
+                  <ul className="text-xs text-purple-700 space-y-1 ml-4">
+                    <li>• Better payment security with Stripe</li>
+                    <li>• Instant payment confirmations</li>
+                    <li>• Easy payment method management</li>
+                    <li>• Support for 3D Secure authentication</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
@@ -370,6 +484,33 @@ function InvoicePaymentForm({ invoice, onBack }) {
                         </span>
                       </div>
                     </div>
+
+                    {/* Current Autopay Status */}
+                    {!loadingAutopayStatus && customerAutopayStatus && (
+                      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                        <h4 className="text-xs font-semibold text-white mb-2">Current Status</h4>
+                        <div className="space-y-1">
+                          {customerAutopayStatus.legacy?.autopayEnabled && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                              <span className="text-xs text-white/80">Legacy Autopay Active</span>
+                            </div>
+                          )}
+                          {customerAutopayStatus.stripe?.autopayEnabled && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              <span className="text-xs text-white/80">Enhanced Autopay Active</span>
+                            </div>
+                          )}
+                          {!customerAutopayStatus.legacy?.autopayEnabled && !customerAutopayStatus.stripe?.autopayEnabled && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                              <span className="text-xs text-white/80">No Autopay Active</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Security Info at Bottom */}
@@ -395,7 +536,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                   <div className="max-w-md mx-auto w-full">
                     <h2 className="text-lg font-bold text-gray-900 mb-5">Payment Information</h2>
 
-                    <form onSubmit={handleSubmit} className="space-y-6 pb-8 lg:pb-12">
+                    <div onSubmit={handleSubmit} className="space-y-6 pb-8 lg:pb-12">
                       {/* Billing Address Display */}
                       {invoice.billingAddress && (
                         <div className="bg-gray-50 rounded-lg p-4">
@@ -457,20 +598,77 @@ function InvoicePaymentForm({ invoice, onBack }) {
                         </div>
                       </div>
 
-                      {/* Save Card Option */}
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      {/* Save Card Option - Enhanced */}
+                      <div className={`border rounded-lg p-4 ${showMigrationPrompt ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
                         <label className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
                             checked={saveCard}
-                            onChange={(e) => setSaveCard(e.target.checked)}
+                            onChange={(e) => {
+                              setSaveCard(e.target.checked);
+                              // If unchecking save card, also uncheck autopay
+                              if (!e.target.checked) {
+                                setEnrollInAutopay(false);
+                              }
+                            }}
                             className="w-4 h-4 text-[#13273f] border-gray-300 rounded focus:ring-[#13273f]"
                           />
                           <span className="ml-3 text-gray-700 font-medium text-sm">
                             Save this card for future payments
                           </span>
                         </label>
+                        {showMigrationPrompt && (
+                          <p className="mt-2 text-xs text-purple-700 ml-7">
+                            Required to upgrade from legacy autopay
+                          </p>
+                        )}
                       </div>
+
+                      {/* Autopay Enrollment Option */}
+                      {showAutopayOption && saveCard && (
+                        <div className={`border rounded-lg p-4 ${enrollInAutopay ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'} transition-colors`}>
+                          <label className="flex items-start cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={enrollInAutopay}
+                              onChange={(e) => setEnrollInAutopay(e.target.checked)}
+                              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
+                            />
+                            <div className="ml-3">
+                              <span className="text-gray-700 font-medium text-sm block">
+                                Enable automatic payments
+                              </span>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {showMigrationPrompt 
+                                  ? "Upgrade to our enhanced autopay system with better security and features"
+                                  : "Future invoices will be automatically charged to this card"}
+                              </p>
+                              {enrollInAutopay && (
+                                <div className="mt-2 space-y-1">
+                                  <div className="flex items-center gap-2 text-xs text-green-700">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Never miss a payment deadline
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-green-700">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Manage payment methods anytime
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-green-700">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Cancel anytime from your account
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      )}
 
                       {/* Error Message */}
                       {error && (
@@ -486,7 +684,8 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
                       {/* Submit Button */}
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={isLoading || !cardComplete || !cardholderName}
                         className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
                       >
@@ -501,7 +700,10 @@ function InvoicePaymentForm({ invoice, onBack }) {
                         ) : (
                           <span className="flex items-center">
                             <img src={alcorStar} alt="" className="h-4 mr-1" />
-                            {`Complete Payment • ${formatCurrency(invoice.amountRemaining)}`}
+                            {enrollInAutopay 
+                              ? `Pay ${formatCurrency(invoice.amountRemaining)} & Enable Autopay`
+                              : `Complete Payment • ${formatCurrency(invoice.amountRemaining)}`
+                            }
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                             </svg>
@@ -531,7 +733,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           Stripe Verified
                         </div>
                       </div>
-                    </form>
+                    </div>
                   </div>
                 </div>
               </div>

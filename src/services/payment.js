@@ -125,7 +125,10 @@ export const createInvoicePaymentIntent = async (invoicePaymentData) => {
     console.log('  - Invoice ID:', invoicePaymentData.invoiceId);
     console.log('  - Invoice Number:', invoicePaymentData.invoiceNumber);
     console.log('  - Customer ID:', invoicePaymentData.customerId);
+    console.log('  - NetSuite Customer ID:', invoicePaymentData.netsuiteCustomerId);
     console.log('  - Payment Method ID:', invoicePaymentData.paymentMethodId);
+    console.log('  - Save Payment Method:', invoicePaymentData.savePaymentMethod);
+    console.log('  - Setup Future Usage:', invoicePaymentData.setupFutureUsage);
     console.log('  - Customer Info:');
     console.log('    - Email:', invoicePaymentData.customerInfo?.email);
     console.log('    - Name:', invoicePaymentData.customerInfo?.name);
@@ -145,9 +148,25 @@ export const createInvoicePaymentIntent = async (invoicePaymentData) => {
         type: 'invoice_payment',
         invoiceId: invoicePaymentData.invoiceId,
         invoiceNumber: invoicePaymentData.invoiceNumber,
-        customerId: invoicePaymentData.customerId
+        customerId: invoicePaymentData.customerId,
+        netsuiteCustomerId: invoicePaymentData.netsuiteCustomerId || ''
       }
     };
+    
+    // Add NetSuite customer ID if provided
+    if (invoicePaymentData.netsuiteCustomerId) {
+      requestBody.netsuiteCustomerId = invoicePaymentData.netsuiteCustomerId;
+    }
+    
+    // Add save payment method flag if provided
+    if (typeof invoicePaymentData.savePaymentMethod === 'boolean') {
+      requestBody.savePaymentMethod = invoicePaymentData.savePaymentMethod;
+    }
+    
+    // Add setup future usage if provided (for autopay enrollment)
+    if (invoicePaymentData.setupFutureUsage) {
+      requestBody.setupFutureUsage = invoicePaymentData.setupFutureUsage;
+    }
     
     console.log('📦 DEBUG - Request body being sent:', JSON.stringify(requestBody, null, 2));
     
@@ -194,6 +213,13 @@ export const createInvoicePaymentIntent = async (invoicePaymentData) => {
     
     const result = await response.json();
     
+    console.log('✅ Payment intent created successfully:', {
+      paymentIntentId: result.paymentIntentId,
+      status: result.status,
+      requiresAction: result.requiresAction,
+      paymentMethodId: result.paymentMethodId
+    });
+    
     if (!result.success) {
       throw new Error(result.error || 'Failed to create invoice payment intent');
     }
@@ -202,7 +228,9 @@ export const createInvoicePaymentIntent = async (invoicePaymentData) => {
       success: true,
       clientSecret: result.clientSecret,
       paymentIntentId: result.paymentIntentId,
-      requiresAction: result.requiresAction
+      requiresAction: result.requiresAction,
+      status: result.status,
+      paymentMethodId: result.paymentMethodId || invoicePaymentData.paymentMethodId
     };
   } catch (error) {
     console.error("Error creating invoice payment intent:", error);
@@ -376,10 +404,79 @@ export const setupSepaDebit = async (sepaData) => {
   }
 };
 
+/**
+ * Update Stripe autopay settings for a customer
+ * @param {string} netsuiteCustomerId - NetSuite customer ID
+ * @param {boolean} enabled - Enable/disable autopay
+ * @param {object} options - Additional options
+ * @returns {Promise<object>} Update result
+ */
+export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options = {}) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated to update autopay settings");
+    }
+    
+    const token = await user.getIdToken();
+    
+    console.log("Updating Stripe autopay:", { netsuiteCustomerId, enabled, options });
+    
+    const requestBody = {
+      enabled,
+      updateLegacy: options.syncLegacy || false
+    };
+    
+    if (options.paymentMethodId) {
+      requestBody.paymentMethodId = options.paymentMethodId;
+    }
+    
+    const fetchPromise = fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe/autopay`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
+      )
+    ]);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+      throw new Error(errorData.error || `Failed to update autopay: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log('✅ Autopay update response:', result);
+    
+    return {
+      success: result.success,
+      stripeAutopay: result.stripeAutopay,
+      legacyUpdated: result.legacyUpdated,
+      message: result.message,
+      error: result.error
+    };
+  } catch (error) {
+    console.error("Error updating Stripe autopay:", error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 export default {
   createPaymentIntent,
   createInvoicePaymentIntent,
   confirmPayment,
   confirmInvoicePayment,
-  setupSepaDebit
+  setupSepaDebit,
+  updateStripeAutopay
 };

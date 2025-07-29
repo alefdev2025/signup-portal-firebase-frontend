@@ -240,7 +240,7 @@ const UserProvider = ({ children }) => {
   };
 
   // When auth state changes to null, clear everything
-  useEffect(() => {
+  /*useEffect(() => {
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         // Clear all state
@@ -254,7 +254,7 @@ const UserProvider = ({ children }) => {
         window.location.href = '/login'; // or wherever your login page is
       }
     });
-  }, []);
+  }, []);*/ // TEMP
     
   // SIMPLIFIED auth state listener without complex blocking
   useEffect(() => {

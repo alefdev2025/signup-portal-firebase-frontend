@@ -1,4 +1,4 @@
-// services/netsuite/payments.js
+// File: src/components/portal/services/netsuite/payments.js
 import { NETSUITE_API_BASE, REQUEST_TIMEOUT } from './config';
 
 /**
@@ -28,10 +28,8 @@ export const getCustomerPayments = async (customerId, options = {}) => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // Add authorization header if you have a token
-        // 'Authorization': `Bearer ${getAuthToken()}`
       },
-      credentials: 'include' // Include cookies if needed
+      credentials: 'include'
     });
     
     // Apply timeout
@@ -343,6 +341,108 @@ export const getCustomerPaymentMethods = async (customerId) => {
     };
   } catch (error) {
     console.error('Error fetching payment methods:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get customer autopay status (legacy)
+ * @param {string} customerId - NetSuite customer ID
+ * @returns {Promise<object>} Autopay status
+ */
+export const getCustomerAutopayStatus = async (customerId) => {
+  try {
+    console.log(`Fetching autopay status for customer ${customerId}`);
+    
+    const response = await fetch(`${NETSUITE_API_BASE}/customers/${customerId}/autopay`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    return {
+      success: true,
+      customerId: result.customerId,
+      customerName: result.companyName || result.entityId,
+      autopayEnabled: result.automaticPayment,
+      autopayField: 'custentity_ale_autopayment',
+      lastChecked: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error fetching autopay status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update customer autopay status (legacy)
+ * @param {string} customerId - NetSuite customer ID
+ * @param {boolean} enabled - Enable/disable autopay
+ * @returns {Promise<object>} Update result
+ */
+export const updateCustomerAutopayStatus = async (customerId, enabled) => {
+  try {
+    console.log(`Updating autopay status for customer ${customerId} to ${enabled}`);
+    
+    const response = await fetch(`${NETSUITE_API_BASE}/customers/${customerId}/autopay`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ enabled })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    console.error('Error updating autopay status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get Stripe integration status
+ * @param {string} customerId - NetSuite customer ID
+ * @returns {Promise<object>} Stripe integration status
+ */
+export const getStripeIntegrationStatus = async (customerId) => {
+  try {
+    console.log(`Fetching Stripe integration status for customer ${customerId}`);
+    
+    const response = await fetch(`${NETSUITE_API_BASE}/customers/${customerId}/stripe`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching Stripe status:', error);
     throw error;
   }
 };

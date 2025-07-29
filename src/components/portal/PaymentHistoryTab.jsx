@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { usePayments, usePaymentSummary, useCustomerData } from './contexts/CustomerDataContext';
+import { usePayments, usePaymentSummary, useCustomerData, useAutopay } from './contexts/CustomerDataContext';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 
 // Global testing flags
 const USE_TEST_CUSTOMER_ID = false; // Set to false when ready for production
 const TEST_CUSTOMER_ID = '4527';
-const ENABLE_AUTOPAY_FEATURE = false; // Toggle this to enable/disable autopay functionality
+const ENABLE_AUTOPAY_FEATURE = true; // Toggle this to enable/disable autopay functionality
+const ENABLE_DISABLE_AUTOPAY_OPTION = true; // Toggle this to enable/disable the "Disable Autopay" option
 
 const PaymentHistoryTab = () => {
   // Get the customer ID from MemberPortal context
@@ -18,16 +19,23 @@ const PaymentHistoryTab = () => {
   const { data: summaryData } = usePaymentSummary();
   const { fetchPaymentsWithDetails } = useCustomerData();
   
-  // Only import and use autopay hook if feature is enabled
-  const autopayHook = ENABLE_AUTOPAY_FEATURE ? require('./contexts/CustomerDataContext').useAutopay() : null;
-  const autopayStatus = autopayHook?.data || null;
-  const autopayLoading = autopayHook?.isLoading || false;
-  const autopayError = autopayHook?.error || null;
-  const updateAutopay = autopayHook?.updateAutopay || (() => {});
+  // Always call the hook, but only use it if feature is enabled
+  const { 
+    data: autopayStatus, 
+    isLoading: autopayLoading, 
+    error: autopayError, 
+    updateAutopay 
+  } = ENABLE_AUTOPAY_FEATURE ? useAutopay() : { 
+    data: null, 
+    isLoading: false, 
+    error: null, 
+    updateAutopay: () => {} 
+  };
   
   const [selectedYear, setSelectedYear] = useState('All');
   const [showAutopayModal, setShowAutopayModal] = useState(false);
   const [updatingAutopay, setUpdatingAutopay] = useState(false);
+  const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
   const [stats, setStats] = useState({
     totalSpent: 0,
     averagePayment: 0,
@@ -74,15 +82,25 @@ const PaymentHistoryTab = () => {
     };
   }, []);
 
-  // Log which customer ID we're using (helpful for debugging)
+  // Add click outside handler for dropdown
   useEffect(() => {
-    console.log('[PaymentHistoryTab] Using customer ID:', customerId, {
-      isTestMode: USE_TEST_CUSTOMER_ID,
-      contextCustomerId,
-      actualId: customerId,
-      autopayEnabled: ENABLE_AUTOPAY_FEATURE
-    });
-  }, [customerId, contextCustomerId]);
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.autopay-options-dropdown')) {
+        setShowOptionsDropdown(false);
+      }
+    };
+
+    if (showOptionsDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showOptionsDropdown]);
+
+  // Handle navigation to payment methods
+  const handleNavigateToPaymentMethods = () => {
+    // Use the same navigation method that's used in the portal
+    window.location.hash = 'payments-methods';
+  };
 
   // Handle autopay toggle (only if feature is enabled)
   const handleAutopayToggle = async () => {
@@ -314,14 +332,14 @@ const PaymentHistoryTab = () => {
         </div>
       )}
 
-      {/* Autopay Status Banner - Only show if feature is enabled */}
-      {ENABLE_AUTOPAY_FEATURE && (
+      {/* Autopay Status Banner - Only show if feature is enabled AND autopay is enabled */}
+      {ENABLE_AUTOPAY_FEATURE && autopayStatus?.autopayEnabled && (
         <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 mx-4 md:mx-0 animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${autopayStatus?.autopayEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
-                <svg className={`w-5 h-5 ${autopayStatus?.autopayEnabled ? 'text-green-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] border-2 border-[#3B82F6] shadow-lg hover:shadow-xl">
+                <svg className="w-6 h-6 text-white stroke-[0.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="0.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
               <div>
@@ -337,26 +355,50 @@ const PaymentHistoryTab = () => {
                     </span>
                   ) : autopayError ? (
                     <span className="text-red-600">Unable to load autopay status</span>
-                  ) : autopayStatus?.autopayEnabled ? (
-                    <span className="text-green-600 font-medium">Enabled - Your card will be charged automatically</span>
                   ) : (
-                    <span className="text-gray-600">Disabled - Manual payment required</span>
+                    <span className="text-green-600 font-medium">Enabled - Your card will be charged automatically</span>
                   )}
                 </p>
               </div>
             </div>
             
             {!autopayLoading && !autopayError && autopayStatus && (
-              <button
-                onClick={() => setShowAutopayModal(true)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-                  autopayStatus.autopayEnabled
-                    ? 'text-red-600 hover:bg-red-50 border border-red-200'
-                    : 'text-green-600 hover:bg-green-50 border border-green-200'
-                }`}
-              >
-                {autopayStatus.autopayEnabled ? 'Disable Autopay' : 'Enable Autopay'}
-              </button>
+              <div className="relative autopay-options-dropdown">
+                <button
+                  onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
+                  className="px-4 py-2 rounded-lg font-medium transition-all text-sm text-gray-700 hover:bg-gray-50 border border-gray-300 flex items-center gap-2"
+                >
+                  Options
+                  <svg className={`w-5 h-5 transition-transform ${showOptionsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showOptionsDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                    {ENABLE_DISABLE_AUTOPAY_OPTION && (
+                      <button
+                        onClick={() => {
+                          setShowOptionsDropdown(false);
+                          setShowAutopayModal(true);
+                        }}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                      >
+                        Disable Autopay
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowOptionsDropdown(false);
+                        handleNavigateToPaymentMethods();
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Update Payment Method
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -391,7 +433,7 @@ const PaymentHistoryTab = () => {
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {updatingAutopay && (
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -434,7 +476,7 @@ const PaymentHistoryTab = () => {
                 onClick={handleExportPayments}
                 className="px-4 py-2 text-[#6b5b7e] hover:bg-[#6b5b7e] hover:text-white border-2 border-[#6b5b7e] rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 <span>Export</span>
@@ -581,14 +623,10 @@ const PaymentHistoryTab = () => {
           {/* Annual Summary Box */}
           <div className="w-full bg-white rounded-2xl border border-gray-200 p-5 md:p-8 animate-fadeIn animation-delay-200 relative" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-lg relative overflow-hidden" style={{ 
-                background: 'linear-gradient(135deg, #4a5578 0%, #3e466d 50%, #485387 100%)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)'
-              }}>
-                <svg className="w-5 h-5 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] border-2 border-[#C084FC] shadow-lg hover:shadow-xl">
+                <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white opacity-10"></div>
               </div>
               <h3 className="text-lg md:text-xl font-semibold text-gray-900">Annual Summary</h3>
             </div>
@@ -621,7 +659,7 @@ const PaymentHistoryTab = () => {
               disabled={isLoading}
               className="absolute bottom-6 right-6 flex items-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-[#3e466d] bg-white hover:bg-gray-50 border border-[#3e466d] rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               {isLoading ? 'Refreshing...' : 'Refresh'}
@@ -631,14 +669,10 @@ const PaymentHistoryTab = () => {
           {/* Payment Records Box */}
           <div className="w-full bg-white rounded-2xl border border-gray-200 p-5 md:p-8 animate-fadeIn animation-delay-300" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-lg relative overflow-hidden" style={{ 
-                background: 'linear-gradient(135deg, #4a5578 0%, #3e466d 50%, #485387 100%)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)'
-              }}>
-                <svg className="w-5 h-5 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] border-2 border-[#E879F9] shadow-lg hover:shadow-xl">
+                <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white opacity-10"></div>
               </div>
               <h3 className="text-lg md:text-xl font-semibold text-gray-900">Payment Records</h3>
             </div>

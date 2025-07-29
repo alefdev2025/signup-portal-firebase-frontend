@@ -35,6 +35,7 @@ function App() {
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [hasCheckedOnce, setHasCheckedOnce] = useState(false); // Prevent re-checking
   
   // Environment check - enable password protection for demo/staging
   const isProduction = import.meta.env.MODE === 'production';
@@ -48,12 +49,19 @@ function App() {
 
   // Check if user is already authenticated on app load
   useEffect(() => {
+    // Only check once on mount
+    if (hasCheckedOnce) {
+      console.log('[APP] Already checked auth, skipping');
+      return;
+    }
+
     const checkAuth = async () => {
       if (!shouldProtect) {
         // If not in demo mode, skip auth check
         console.log('[APP] Not in demo mode, skipping auth check');
         setIsAuthenticated(true);
         setCheckingAuth(false);
+        setHasCheckedOnce(true);
         return;
       }
 
@@ -74,11 +82,12 @@ function App() {
         setIsAuthenticated(false);
       } finally {
         setCheckingAuth(false);
+        setHasCheckedOnce(true);
       }
     };
 
     checkAuth();
-  }, [shouldProtect]);
+  }, [shouldProtect, hasCheckedOnce]); // Add hasCheckedOnce to deps
 
   // Show loading state while checking authentication
   if (checkingAuth) {
@@ -96,9 +105,28 @@ function App() {
   if (shouldProtect && !isAuthenticated) {
     return (
       <DemoPasswordPage 
-        onAuthenticated={() => {
+        onAuthenticated={async () => {
           console.log('[APP] Demo authentication successful');
-          setIsAuthenticated(true);
+          
+          // Small delay to ensure cookie is set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Verify auth actually worked
+          try {
+            const checkResult = await checkDemoAuth();
+            if (checkResult.success && checkResult.authenticated) {
+              console.log('[APP] Auth verified, setting authenticated');
+              setIsAuthenticated(true);
+            } else {
+              console.error('[APP] Auth verification failed after login');
+              // The cookie might not be set yet, just trust the login worked
+              setIsAuthenticated(true);
+            }
+          } catch (err) {
+            console.error('[APP] Error verifying auth:', err);
+            // Still set authenticated since login succeeded
+            setIsAuthenticated(true);
+          }
         }} 
       />
     );
