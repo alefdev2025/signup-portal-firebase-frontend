@@ -110,7 +110,7 @@ const GoogleSignInButton = ({
       type="button"
       onClick={handleGoogleSignIn}
       disabled={disabled || isLoading}
-      className={`w-full bg-white border ${highlight ? 'border-blue-500 ring-2 ring-blue-200 animate-pulse' : 'border-gray-300'} text-gray-700 py-4 px-6 rounded-full font-medium text-lg flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70`}
+      className={`w-full bg-white border ${highlight ? 'border-blue-500 ring-2 ring-blue-200 animate-pulse' : 'border-gray-300'} text-gray-700 py-3 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70`}
     >
       {isLoading ? (
         <>
