@@ -6,6 +6,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { resetPassword, verify2FACode } from '../services/auth';
+import { clearVerificationState } from '../services/storage';
 import { useUser } from '../contexts/UserContext';
 import ResponsiveBanner from '../components/ResponsiveBanner';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
@@ -39,6 +40,19 @@ const LoginPage = () => {
   const { currentUser, signupState, isLoading: userLoading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Clear auth state on component mount (unless in 2FA flow)
+  useEffect(() => {
+    // If user navigated to login page, sign out any existing session
+    // unless they're in the middle of 2FA
+    if (!show2FAForm && !tempAuthData) {
+      auth.signOut().catch(console.error);
+      // Clear storage
+      clearVerificationState();
+      localStorage.removeItem('signupState');
+      localStorage.removeItem('fresh_signup');
+    }
+  }, []); // Run once on mount
 
   // Process URL parameters
   useEffect(() => {
@@ -99,6 +113,19 @@ const LoginPage = () => {
       setError('');
       
       console.log('Attempting login...');
+      
+      // Clear ALL auth state before login
+      try {
+        await auth.signOut();
+        // Clear storage
+        clearVerificationState();
+        localStorage.removeItem('signupState');
+        localStorage.removeItem('fresh_signup');
+        console.log('Cleared all auth state before login');
+      } catch (clearError) {
+        console.error('Error clearing auth state:', clearError);
+        // Continue anyway
+      }
       
       // First, try to sign in with Firebase Auth
       try {

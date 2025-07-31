@@ -61,7 +61,7 @@ export const PackageContentDesktopOriginal = ({
           {/* Add subtext for all options */}
           {(option === "neuro" || option === "wholebody") && (
             <div className="flex justify-end mt-1">
-              <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Typically $25-$250/month with life insurance</span>
+              <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Preservation is typically $25-$250/month with life insurance</span>
             </div>
           )}
           {option === "basic" && (
@@ -75,7 +75,7 @@ export const PackageContentDesktopOriginal = ({
         <div className="flex justify-between items-center mt-6 md:mt-5 mb-6">
           <span style={{ fontSize: '16px', fontWeight: '500' }} className="text-gray-500">Membership:</span>
           <span style={{ fontSize: '16px' }} className="font-normal text-gray-900">
-            ${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month
+            {getPackagePrice("standard") ? `$${parseFloat(getPackagePrice("standard")).toLocaleString()}/year` : "—"}
           </span>
         </div>
       </div>

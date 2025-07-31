@@ -119,26 +119,19 @@ export const getMembershipInfo = async () => {
   }
 };
 
-/**
- * Validate ICE discount code
- * @param {string} iceCode The ICE code to validate
- * @returns {Promise<object>} Validation result
- */
 export const validateIceCode = async (iceCode) => {
   try {
     const user = auth.currentUser;
     if (!user) {
       console.error("No authenticated user found");
-      throw new Error("User must be authenticated");
+      throw new Error("User must be authenticated to validate ICE code");
     }
     
-    // Get the Firebase ID token for authentication
     const token = await user.getIdToken();
     
     console.log("Validating ICE code:", iceCode);
     
-    // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/membership/validate-ice-code`, {
+    const fetchPromise = fetch(`${API_BASE_URL}/salesforce/validate-ice-code`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -147,7 +140,6 @@ export const validateIceCode = async (iceCode) => {
       body: JSON.stringify({ iceCode })
     });
     
-    // Apply timeout
     const response = await Promise.race([
       fetchPromise,
       new Promise((_, reject) => 
@@ -157,28 +149,39 @@ export const validateIceCode = async (iceCode) => {
     
     if (!response.ok) {
       const errorData = await response.json();
-      return {
-        valid: false,
-        error: errorData.error || `Server error: ${response.status}`
-      };
+      throw new Error(errorData.error || `Server error: ${response.status}`);
     }
     
     const result = await response.json();
     
+    if (!result.success || !result.isValid) {
+      return {
+        valid: false,
+        error: result.error || 'Invalid ICE code'
+      };
+    }
+    
+    // Return the validation result in the format the component expects
     return {
-      valid: result.valid,
-      discountAmount: result.discountAmount || 0,
-      discountPercent: result.discountPercent || 0,
-      educatorName: result.educatorName || null
+      valid: result.isValid || result.valid,
+      educatorName: result.educatorName,
+      discountPercent: result.discountLevel, // Backend now returns percentage directly
+      // These fields aren't returned by backend anymore, set defaults:
+      educatorType: null,
+      discountAmount: null,
+      iceCompensationPercent: null,
+      iceCompensationAmount: null,
+      error: result.error
     };
   } catch (error) {
     console.error("Error validating ICE code:", error);
-    return { 
-      valid: false, 
-      error: error.message 
+    return {
+      valid: false,
+      error: error.message || 'Failed to validate ICE code'
     };
   }
 };
+
 
 /**
  * Get membership costs and options
@@ -298,10 +301,126 @@ export const validateMembershipData = async (membershipData) => {
   }
 };
 
+// In services/membership.js, update all the new methods to remove the extra /api:
+
+const checkMembershipCompletionStatus = async () => {
+  try {
+    console.log("Checking membership completion status...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/completion-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to check completion status');
+    }
+    
+    console.log("Completion status response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error checking completion status:", error);
+    throw error;
+  }
+};
+
+const initiateDocuSign = async (docusignData) => {
+  try {
+    console.log("Initiating DocuSign process with data:", docusignData);
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/initiate-docusign`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(docusignData)  // Pass the phone number and other data
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to initiate DocuSign');
+    }
+    
+    console.log("DocuSign initiation response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error initiating DocuSign:", error);
+    throw error;
+  }
+};
+
+const checkDocuSignStatus = async () => {
+  try {
+    console.log("Checking DocuSign status...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/docusign-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to check DocuSign status');
+    }
+    
+    console.log("DocuSign status response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error checking DocuSign status:", error);
+    throw error;
+  }
+};
+
+const initiatePayment = async (paymentData) => {
+  try {
+    console.log("Initiating payment process with data:", paymentData);
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/initiate-payment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to initiate payment');
+    }
+    
+    console.log("Payment initiation response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error initiating payment:", error);
+    throw error;
+  }
+};
+
 export default {
   saveMembershipSelection,
   getMembershipInfo,
   validateIceCode,
   getMembershipCosts,
-  validateMembershipData
+  validateMembershipData,
+  checkMembershipCompletionStatus,
+  initiateDocuSign,
+  checkDocuSignStatus,
+  initiatePayment
 };

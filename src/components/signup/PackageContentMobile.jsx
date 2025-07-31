@@ -82,7 +82,7 @@ export const PackageContentMobile = ({
               <div className="flex justify-between items-center mt-2">
                 <span className="text-gray-300 text-lg">Membership:</span>
                 <span className="font-bold text-white text-xl">
-                  ${Math.ceil(parseFloat(getPackagePrice("standard")) / 12)}/month
+                  {getPackagePrice("standard") ? `$${parseFloat(getPackagePrice("standard")).toLocaleString()}/year` : "—"}
                 </span>
               </div>
             </>
@@ -99,7 +99,7 @@ export const PackageContentMobile = ({
               <div className="flex justify-between items-center mt-3 mb-6">
                 <span className="text-gray-400 text-base">Membership:</span>
                 <span className="font-bold text-lg">
-                  ${Math.ceil(parseFloat(getPackagePrice("standard")) / 12)}/month
+                  {getPackagePrice("standard") ? `$${parseFloat(getPackagePrice("standard")).toLocaleString()}/year` : "—"}
                 </span>
               </div>
             </>
@@ -119,7 +119,7 @@ export const PackageContentMobile = ({
             <div className="flex justify-between items-center mt-2">
               <span className="text-gray-700 text-lg">Membership:</span>
               <span className="font-bold text-gray-900 text-xl">
-                ${Math.ceil(parseInt(getPackagePrice("standard").replace(/[$,]/g, '')) / 12)}/month
+                {getPackagePrice("standard") ? `$${parseFloat(getPackagePrice("standard")).toLocaleString()}/year` : "—"}
               </span>
             </div>
           </div>

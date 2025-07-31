@@ -43,13 +43,17 @@ import {
 const isDevelopment = import.meta.env.MODE === 'development';
 
 // Define step mappings to match backend structure
+// Define step mappings to match backend structure
 export const SIGNUP_STEPS = {
-  ACCOUNT: 0,        // Initial account creation - /signup
-  SUCCESS: 1,        // Account success page - /signup/success
-  CONTACT_INFO: 2,   // Contact information - /signup/contact
-  PACKAGE: 3,        // Package selection - /signup/package
-  FUNDING: 4,        // Funding information - /signup/funding
-  MEMBERSHIP: 5      // Membership details - /signup/membership
+  ACCOUNT: 0,
+  SUCCESS: 1,
+  CONTACT_INFO: 2,
+  PACKAGE: 3,
+  FUNDING: 4,
+  MEMBERSHIP: 5,
+  COMPLETION: 6,    // NEW
+  PAYMENT: 7,       // NEW
+  WELCOME: 8        // NEW
 };
 
 export const STEP_NAMES = {
@@ -58,7 +62,10 @@ export const STEP_NAMES = {
   2: "contact_info",
   3: "package",
   4: "funding",
-  5: "membership"
+  5: "membership",
+  6: "completion",  // NEW
+  7: "payment",     // NEW
+  8: "welcome"      // NEW
 };
 
 let pendingLinkingEmail = null;
@@ -592,6 +599,11 @@ export async function requestEmailVerification(email, name) {
                 }, 15000)
             )
         ]);
+
+        console.log("[DEBUG] Raw Firebase function response:", result);
+        console.log("[DEBUG] result.data:", result.data);
+        console.log("[DEBUG] result.data type:", typeof result.data);
+        console.log("[DEBUG] result.data keys:", Object.keys(result.data || {}));
         
         // Log the full result for debugging
         // console.log("createEmailVerification raw result:", result);
@@ -613,6 +625,33 @@ export async function requestEmailVerification(email, name) {
         // Check if this is an existing user
         if (result.data.isExistingUser) {
             // console.log("DETECTED: Email belongs to an existing user:", email);
+              // Check if this is a portal user
+
+            // NEW TO REDIRECT TO PORTAL
+            if (result.data.isPortalUser) {
+              console.log("DETECTED: Portal user account");
+              
+              // Save state indicating this is a portal user
+              saveVerificationState({
+                email,
+                name,
+                verificationId: result.data.verificationId,
+                isExistingUser: true,
+                isPortalUser: true,  // <-- Add this flag
+                authProvider: result.data.authProvider || 'password',
+                timestamp: Date.now()
+              });
+              
+              // Return portal user indicator
+              return {
+                success: true,
+                verificationId: result.data.verificationId,
+                isExistingUser: true,
+                isPortalUser: true,  // <-- Add this flag
+                authProvider: result.data.authProvider || 'password',
+                redirectToPortal: true  // <-- Signal to redirect
+              };
+            }
             
             // Call checkAuthMethod again to get detailed auth info
             // This is now our second check, but we need it to get complete auth details
@@ -995,59 +1034,106 @@ export const checkUserStep = async (data) => {
 
 // Add this function to auth.js
 
-// In services/auth.js
 export const updateSignupProgressAPI = async (step, progress) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        console.error("No authenticated user found when updating progress");
-        throw new Error("User must be authenticated to update progress");
-      }
-      
-      // Get the Firebase ID token for authentication
-      const token = await user.getIdToken();
-      
-      console.log(`Calling VM API to update progress: step=${step}, progress=${progress}`);
-      
-      // Call the VM endpoint with a timeout
-      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          step, 
-          progress 
-        })
-      });
-      
-      // Apply timeout
-      const response = await Promise.race([
-        fetchPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timed out')), 15000)
-        )
-      ]);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      // Check for success in the response
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update signup progress');
-      }
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Error updating signup progress via API:", error);
-      return { success: false, error };
+  try {
+    console.log("🔄 === updateSignupProgressAPI START ===");
+    console.log("Parameters:", { step, progress });
+    console.log("Parameters type check - step:", typeof step, "progress:", typeof progress);
+    
+    const user = auth.currentUser;
+    console.log("Current user:", user?.uid);
+    console.log("Current user email:", user?.email);
+    
+    if (!user) {
+      console.error("❌ No authenticated user found when updating progress");
+      console.error("auth.currentUser is:", auth.currentUser);
+      throw new Error("User must be authenticated to update progress");
     }
-  };
+    
+    // Get the Firebase ID token for authentication
+    console.log("🔑 Getting ID token...");
+    const token = await user.getIdToken();
+    console.log("✅ Got token (first 20 chars):", token.substring(0, 20) + "...");
+    
+    const payload = { step, progress };
+    console.log("📤 Sending to API:", payload);
+    console.log("📤 JSON stringified payload:", JSON.stringify(payload));
+    
+    const apiUrl = `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`;
+    console.log("📤 API URL:", apiUrl);
+    
+    // Call the VM endpoint with a timeout
+    const fetchPromise = fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    console.log("⏱️ Waiting for response...");
+    
+    // Apply timeout
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => {
+          console.error("❌ Request timed out after 15 seconds");
+          reject(new Error('Request timed out'));
+        }, 15000)
+      )
+    ]);
+    
+    console.log("📥 Response received");
+    console.log("📥 Response status:", response.status);
+    console.log("📥 Response ok:", response.ok);
+    console.log("📥 Response headers:", Object.fromEntries(response.headers.entries()));
+    
+    const responseText = await response.text();
+    console.log("📥 Raw response text:", responseText);
+    console.log("📥 Raw response length:", responseText.length);
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+      console.log("📥 Successfully parsed JSON");
+    } catch (e) {
+      console.error("❌ Failed to parse response as JSON");
+      console.error("Parse error:", e);
+      console.error("Response text that failed to parse:", responseText);
+      throw new Error("Invalid response format from server");
+    }
+    
+    console.log("📥 Parsed response:", result);
+    console.log("📥 Response type:", typeof result);
+    console.log("📥 Response keys:", Object.keys(result || {}));
+    
+    if (!response.ok) {
+      console.error("❌ Response not OK, status:", response.status);
+      console.error("Error from server:", result.error);
+      throw new Error(result.error || `Server error: ${response.status}`);
+    }
+    
+    // Check for success in the response
+    if (!result.success) {
+      console.error("❌ API returned success: false");
+      console.error("Error message:", result.error);
+      throw new Error(result.error || 'Failed to update signup progress');
+    }
+    
+    console.log("✅ === updateSignupProgressAPI SUCCESS ===");
+    console.log("Final result:", result);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ === updateSignupProgressAPI ERROR ===");
+    console.error("Error type:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Full error object:", error);
+    return { success: false, error: error.message };
+  }
+};
 
 
 // Updated to call VM directly instead of Firebase Function
@@ -1515,6 +1601,301 @@ export async function signInWithGoogle(options) {
     console.log(`Successfully authenticated with Google. Email: ${email}, UID: ${user.uid}`);
     console.log(`User providers:`, user.providerData.map(p => p.providerId));
     
+    // Check for existing accounts using backend instead of direct Firestore query
+    try {
+      console.log(`Checking for existing accounts with email: ${email}`);
+      const authCoreFn = httpsCallable(functions, 'authCore');
+      const checkResult = await authCoreFn({ 
+        action: 'checkAuthMethod',
+        email: email 
+      });
+      
+      console.log('Auth method check result:', checkResult.data);
+      
+      // Check for portal user
+      if (checkResult.data?.isPortalUser) {
+        console.log('Portal user detected');
+        await auth.signOut();
+        
+        return {
+          success: false,
+          isPortalUser: true,
+          email: email,
+          message: "This email belongs to a portal account. Please use the portal login."
+        };
+      }
+      
+      // Check for password auth conflict
+      if (checkResult.data?.hasPasswordAuth) {
+        console.log('Password account detected');
+        await auth.signOut();
+        
+        return {
+          success: false,
+          error: 'auth/account-exists-with-different-credential',
+          accountConflict: true,
+          email: email,
+          message: "This email is already registered with a password. Please sign in with your password first to link your accounts."
+        };
+      }
+    } catch (error) {
+      console.error('Error checking auth method:', error);
+      // Continue anyway - don't block sign-in if check fails
+    }
+    
+    // Double check with fetchSignInMethodsForEmail after successful sign-in
+    try {
+      console.log("Double-checking sign-in methods after successful Google sign-in");
+      const confirmedMethods = await fetchSignInMethodsForEmail(auth, email);
+      console.log(`Confirmed sign-in methods for ${email}:`, confirmedMethods);
+      
+      if (confirmedMethods.includes('password')) {
+        console.log("ALERT: Even after successful Google sign-in, this email has a password account!");
+        
+        // This is a critical condition - we should have detected this earlier
+        console.error("CRITICAL: Account conflict was not detected earlier but exists now!");
+        
+        // Sign out and return conflict
+        await auth.signOut();
+        
+        return {
+          success: false,
+          error: 'auth/account-exists-with-different-credential',
+          accountConflict: true,
+          email,
+          message: "This email is already registered with a password. Please sign in with your password first to link your accounts."
+        };
+      }
+    } catch (methodCheckError) {
+      console.error("Error checking sign-in methods after successful sign-in:", methodCheckError);
+      // Continue anyway
+    }
+    
+    // User can safely continue with Google sign-in
+    console.log(`Email ${email} can safely use Google sign-in`);
+    
+    // Check if this user already exists in Firestore
+    try {
+      console.log(`Checking if user document exists for UID: ${user.uid}`);
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      // Determine if this is a new user based on document existence
+      const isNewUser = !userDoc.exists();
+      console.log(`Is new user in Firestore: ${isNewUser}`);
+      
+      if (isNewUser) {
+        console.log(`Creating new user document for ${user.uid} in Firestore`);
+        await setDoc(userRef, {
+          email: user.email,
+          name: user.displayName || "New Member",
+          signupProgress: SIGNUP_STEPS.SUCCESS,
+          signupStep: "success",
+          createdAt: new Date(),
+          authProvider: "google",
+          hasGoogleAuth: true,
+          authProviders: ["google.com"],
+          lastSignIn: new Date()
+        });
+        console.log("User document created successfully");
+      } else {
+        console.log(`Updating existing user document for ${user.uid} in Firestore`);
+        await updateDoc(userRef, {
+          lastSignIn: new Date(),
+          hasGoogleAuth: true
+        });
+        console.log("User document updated successfully");
+      }
+      
+      // Get updated user document for accurate progress info
+      const updatedUserDoc = isNewUser ? null : await getDoc(userRef);
+      const userData = updatedUserDoc ? updatedUserDoc.data() : null;
+      console.log("Updated user data:", userData);
+      
+      // Update local storage
+      const signupState = {
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        isExistingUser: !isNewUser,
+        signupProgress: userData ? (userData.signupProgress || SIGNUP_STEPS.SUCCESS) : SIGNUP_STEPS.SUCCESS,
+        signupStep: userData ? (userData.signupStep || "success") : "success",
+        timestamp: Date.now()
+      };
+      saveSignupState(signupState);
+      console.log("Saved signup state to localStorage:", signupState);
+      
+      // Clear any verification state
+      clearVerificationState();
+      console.log("Cleared verification state");
+      
+      // Return with correct isNewUser flag
+      console.log("===== SIGN IN WITH GOOGLE COMPLETED SUCCESSFULLY =====");
+      return {
+        success: true,
+        isNewUser: isNewUser,
+        user,
+        additionalUserInfo: tempResult.additionalUserInfo
+      };
+    } catch (firestoreError) {
+      console.error("Error with Firestore:", firestoreError);
+      
+      // Even with Firestore errors, we need to determine if this is actually a new user
+      // For safety, we'll use Firebase's additionalUserInfo
+      const isNewUser = tempResult.additionalUserInfo?.isNewUser || false;
+      console.log(`Falling back to Firebase isNewUser flag: ${isNewUser}`);
+      
+      // Update local storage with best-effort information
+      saveSignupState({
+        userId: user.uid,
+        email: user.email,
+        displayName: user.displayName || "New Member",
+        isExistingUser: !isNewUser,
+        signupProgress: SIGNUP_STEPS.SUCCESS,
+        signupStep: "success",
+        timestamp: Date.now()
+      });
+      console.log("Saved fallback signup state to localStorage");
+      
+      // Clear any verification state
+      clearVerificationState();
+      
+      console.log("===== SIGN IN WITH GOOGLE COMPLETED WITH FIRESTORE ERROR =====");
+      return {
+        success: true,
+        isNewUser: isNewUser,
+        user,
+        firestoreError: true
+      };
+    }
+  } catch (error) {
+    console.error("===== ERROR IN GOOGLE SIGN-IN =====");
+    console.error("Error object:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    
+    if (error.stack) {
+      console.error("Stack trace:", error.stack);
+    }
+    
+    if (error.customData) {
+      console.error("Custom data:", error.customData);
+    }
+    
+    // Handle specific errors
+    if (error.code === 'auth/popup-closed-by-user') {
+      console.log("User closed the popup without completing sign-in");
+      return {
+        success: false,
+        error: error.code,
+        message: "Google sign-in was cancelled."
+      };
+    }
+    
+    // Check for auth conflict error
+    if (error.code === 'auth/account-exists-with-different-credential') {
+      console.log("DETECTED: Account exists with different credential");
+      
+      const conflictEmail = error.customData?.email || error.email || 'unknown';
+      console.log("Conflicting email:", conflictEmail);
+      
+      return {
+        success: false,
+        error: error.code,
+        accountConflict: true,
+        existingEmail: conflictEmail,
+        message: "This email is already registered with a different method."
+      };
+    }
+    
+    console.log("===== GOOGLE SIGN-IN FAILED =====");
+    // For any other errors, rethrow
+    throw error;
+  }
+}
+
+
+// prior to extra security changes July 30th
+/*export async function signInWithGoogle(options) {
+  // Handle options in a backward-compatible way
+  const keepExistingUser = options && options.maintainSession === true;
+  
+  console.log("===== SIGN IN WITH GOOGLE STARTED =====");
+  console.log("Options:", options);
+  console.log("keepExistingUser:", keepExistingUser);
+  
+  // REMOVED: Pre-check for specific email
+  
+  try {
+    // Only sign out if not keeping the existing user
+    if (!keepExistingUser) {
+      console.log("Signing out any current user before Google sign-in");
+      try {
+        await auth.signOut();
+        console.log("Successfully signed out current user (or none was signed in)");
+      } catch (signOutError) {
+        console.error("Error during sign out:", signOutError);
+        // Continue anyway
+      }
+    } else {
+      console.log("Maintaining current session, not signing out");
+    }
+    
+    // Create Google auth provider
+    const googleProvider = new GoogleAuthProvider();
+    console.log("Created Google auth provider");
+    
+    // Set custom parameters - REMOVED login_hint restriction
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'  // Only keep the prompt, remove login_hint
+    });
+    console.log("Set custom parameters for Google provider");
+    
+    // Log before authentication
+    console.log("About to call signInWithPopup - this should trigger a popup...");
+    
+    // Authenticate with Google
+    let tempResult;
+    try {
+      tempResult = await signInWithPopup(auth, googleProvider);
+      console.log("Successfully completed signInWithPopup");
+    } catch (popupError) {
+      console.error("===== ERROR DURING GOOGLE POPUP SIGN-IN =====");
+      console.error("Error object:", popupError);
+      console.error("Error code:", popupError.code);
+      console.error("Error message:", popupError.message);
+      
+      if (popupError.customData) {
+        console.error("Custom data:", popupError.customData);
+      }
+      
+      // Check for the specific credential conflict error
+      if (popupError.code === 'auth/account-exists-with-different-credential') {
+        console.log("DETECTED: auth/account-exists-with-different-credential ERROR!");
+        
+        // Get conflicting email
+        const conflictEmail = popupError.customData?.email || 'unknown';
+        console.log("Conflicting email:", conflictEmail);
+        
+        // Return special error format
+        return {
+          success: false,
+          error: popupError.code,
+          accountConflict: true,
+          existingEmail: conflictEmail,
+          message: "This email is already registered with a different method."
+        };
+      }
+      
+      // Re-throw for other processing
+      throw popupError;
+    }
+    
+    const user = tempResult.user;
+    const email = user.email;
+    console.log(`Successfully authenticated with Google. Email: ${email}, UID: ${user.uid}`);
+    console.log(`User providers:`, user.providerData.map(p => p.providerId));
+    
     // Check for existing email with password auth in Firestore
     console.log(`Checking Firestore for users with email: ${email}`);
     const usersRef = collection(db, "users");
@@ -1730,7 +2111,7 @@ export async function signInWithGoogle(options) {
     // For any other errors, rethrow
     throw error;
   }
-}
+}*/
 
 // Add this function to auth.js
 export const getAndNavigateToCurrentStep = async (navigate) => {

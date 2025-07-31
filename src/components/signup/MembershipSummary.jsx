@@ -25,12 +25,19 @@ export default function MembershipSummary({
   const [showDocuSignOverlay, setShowDocuSignOverlay] = useState(false);
   const [smsPhoneNumber, setSmsPhoneNumber] = useState("");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [showSummaryIntroOverlay, setShowSummaryIntroOverlay] = useState(true); // Show intro overlay on mount
   
   // Local state for editable membership details
-  const [localPaymentFrequency, setLocalPaymentFrequency] = useState('annually');
   const [localIceCode, setLocalIceCode] = useState('');
   const [localIceCodeValid, setLocalIceCodeValid] = useState(null);
+  const [localIceDiscountPercent, setLocalIceDiscountPercent] = useState(null); // Added state for discount percentage
+  const [localIceDiscountAmount, setLocalIceDiscountAmount] = useState(null); // Added state for discount amount
   const [isValidatingIceCode, setIsValidatingIceCode] = useState(false);
+  
+  // CMS Waiver and Privacy states
+  const [cmsWaiver, setCmsWaiver] = useState(false);
+  const [freelyReleaseName, setFreelyReleaseName] = useState(false);
+  const [maintainConfidentiality, setMaintainConfidentiality] = useState(false);
   
   // Use system font like PackagePage
   const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -86,7 +93,6 @@ export default function MembershipSummary({
         }
         
 
-        // 4. Get funding information
         // 4. Get funding information
         let fundingDataFromBackend = null;
         try {
@@ -146,16 +152,12 @@ export default function MembershipSummary({
         const discountPercent = hasIceDiscount ? (membershipDataFromBackend.iceCodeInfo.discountPercent || 0) : 0;
         const discountAmount = hasIceDiscount ? Math.round(annualCost * (discountPercent / 100)) : 0;
         
-        let paymentAmount = annualCost;
-        let firstPaymentAmount = annualCost - discountAmount;
+        // Add application fee for non-basic memberships
+        const isBasicMembership = packageDataFromBackend?.preservationType === 'basic';
+        const applicationFee = isBasicMembership ? 0 : 300;
         
-        if (membershipDataFromBackend?.paymentFrequency === 'monthly') {
-          paymentAmount = Math.round(annualCost / 12);
-          firstPaymentAmount = Math.round((annualCost - discountAmount) / 12);
-        } else if (membershipDataFromBackend?.paymentFrequency === 'quarterly') {
-          paymentAmount = Math.round(annualCost / 4);
-          firstPaymentAmount = Math.round((annualCost - discountAmount) / 4);
-        }
+        let paymentAmount = annualCost;
+        let firstPaymentAmount = annualCost - discountAmount + applicationFee;
         
         // Set summary data combining all sources
         setSummaryData({
@@ -169,7 +171,8 @@ export default function MembershipSummary({
             discountAmount: discountAmount,
             paymentAmount: paymentAmount,
             firstPaymentAmount: firstPaymentAmount,
-            hasIceDiscount: hasIceDiscount
+            hasIceDiscount: hasIceDiscount,
+            applicationFee: applicationFee
           }
         });
         
@@ -204,24 +207,11 @@ export default function MembershipSummary({
 
   useEffect(() => {
     if (summaryData?.membershipData) {
-      console.log('Backend payment frequency:', summaryData.membershipData.paymentFrequency);
-      
-      // Only set if there's actually a saved value AND it's a valid option
-      if (summaryData.membershipData.paymentFrequency) {
-        const savedFrequency = summaryData.membershipData.paymentFrequency;
-        
-        // Only set to valid options (annually or monthly)
-        if (savedFrequency === 'annually' || savedFrequency === 'monthly') {
-          setLocalPaymentFrequency(savedFrequency);
-        } else {
-          // Default to annually if saved value is not a current option
-          setLocalPaymentFrequency('annually');
-        }
-      }
-      
-      // Keep the rest as is
+      // Keep the ICE code setup
       setLocalIceCode(summaryData.membershipData.iceCode || '');
       setLocalIceCodeValid(summaryData.membershipData.iceCodeValid || null);
+      // Set the discount percentage from loaded data
+      setLocalIceDiscountPercent(summaryData.membershipData.iceCodeInfo?.discountPercent || null);
     }
   }, [summaryData]);
 
@@ -234,17 +224,6 @@ export default function MembershipSummary({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
-  };
-
-  // Get payment frequency display text
-  const getPaymentFrequencyText = (frequency) => {
-    switch(frequency) {
-      case 'monthly': return 'Monthly';
-      case 'quarterly': return 'Quarterly';
-      case 'annually': return 'Annual';
-      case 'lifetime': return 'Lifetime (Custom Quote)';
-      default: return 'Annual';
-    }
   };
 
   // Get preservation type display text
@@ -261,86 +240,161 @@ export default function MembershipSummary({
   const calculateCosts = () => {
     const annualCost = packageData?.annualCost || 540;
     const hasIceDiscount = membershipData?.iceCodeValid && membershipData?.iceCodeInfo;
-    const discountAmount = hasIceDiscount ? Math.round(annualCost * 0.25) : 0;
+    const discountPercent = hasIceDiscount ? (membershipData?.iceCodeInfo?.discountPercent || 25) : 0;
+    const discountAmount = hasIceDiscount ? Math.round(annualCost * (discountPercent / 100)) : 0;
+    const isBasicMembership = packageData?.preservationType === 'basic';
+    const applicationFee = isBasicMembership ? 0 : 300;
     
     let paymentAmount = annualCost;
-    if (membershipData?.paymentFrequency === 'monthly') {
-      paymentAmount = Math.round(annualCost / 12);
-    } else if (membershipData?.paymentFrequency === 'quarterly') {
-      paymentAmount = Math.round(annualCost / 4);
-    }
-    
-    const firstPaymentAmount = hasIceDiscount ? paymentAmount - (membershipData?.paymentFrequency === 'monthly' ? Math.round(discountAmount / 12) : membershipData?.paymentFrequency === 'quarterly' ? Math.round(discountAmount / 4) : discountAmount) : paymentAmount;
+    let firstPaymentAmount = annualCost - discountAmount + applicationFee;
     
     return {
       baseCost: annualCost,
       discountAmount,
+      discountPercent,
       paymentAmount,
       firstPaymentAmount,
-      hasIceDiscount
+      hasIceDiscount,
+      applicationFee
     };
   };
 
   // Calculate local costs based on current selections
   const calculateLocalCosts = () => {
+    console.log("💵 === CALCULATE LOCAL COSTS DEBUG START ===");
+    
     const annualCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost || 540;
     const hasIceDiscount = localIceCodeValid === true;
-    const discountAmount = hasIceDiscount ? Math.round(annualCost * 0.25) : 0;
     
-    const monthlyAmount = Math.round(annualCost / 12);
-    const quarterlyAmount = Math.round(annualCost / 4);
-    const annualAmount = annualCost;
+    console.log("📊 Initial values:");
+    console.log("   - Annual cost:", annualCost);
+    console.log("   - Has ICE discount:", hasIceDiscount);
+    console.log("   - localIceCodeValid:", localIceCodeValid);
+    console.log("   - localIceDiscountPercent:", localIceDiscountPercent, "(type:", typeof localIceDiscountPercent, ")");
+    
+    // Use the discount percentage from state (set by validation)
+    // Falls back to data from initial load, then to 25% as last resort
+    const discountPercent = localIceDiscountPercent || 
+                           summaryData?.membershipData?.iceCodeInfo?.discountPercent || 
+                           (hasIceDiscount ? 25 : 0);
+    
+    console.log("🎯 Discount calculation:");
+    console.log("   - Final discountPercent:", discountPercent, "(type:", typeof discountPercent, ")");
+    console.log("   - Calculation: ", annualCost, " * (", discountPercent, " / 100)");
+    console.log("   - Division result:", discountPercent / 100);
+    console.log("   - Multiplication result:", annualCost * (discountPercent / 100));
+    
+    const discountAmount = hasIceDiscount ? Math.round(annualCost * (discountPercent / 100)) : 0;
+    
+    console.log("   - Final discountAmount:", discountAmount);
+    console.log("   - Is this reasonable?", discountAmount <= annualCost ? "YES ✓" : "NO ✗ - DISCOUNT EXCEEDS TOTAL!");
+    
+    const isBasicMembership = summaryData?.packageData?.preservationType === 'basic' || packageData?.preservationType === 'basic';
+    const applicationFee = isBasicMembership ? 0 : 300;
+    const cmsAnnualFee = cmsWaiver ? 200 : 0; // Add CMS fee if waiver is selected
     
     let paymentAmount = annualCost;
-    let firstPaymentAmount = annualCost;
+    let firstPaymentAmount = hasIceDiscount ? annualCost - discountAmount + applicationFee + cmsAnnualFee : annualCost + applicationFee + cmsAnnualFee;
     
-    if (localPaymentFrequency === 'monthly') {
-      paymentAmount = monthlyAmount;
-      firstPaymentAmount = hasIceDiscount ? monthlyAmount - Math.round(discountAmount / 12) : monthlyAmount;
-    } else if (localPaymentFrequency === 'quarterly') {
-      paymentAmount = quarterlyAmount;
-      firstPaymentAmount = hasIceDiscount ? quarterlyAmount - Math.round(discountAmount / 4) : quarterlyAmount;
-    } else {
-      firstPaymentAmount = hasIceDiscount ? annualCost - discountAmount : annualCost;
-    }
+    console.log("💰 Final calculations:");
+    console.log("   - Payment amount:", paymentAmount);
+    console.log("   - Application fee:", applicationFee);
+    console.log("   - First payment amount:", firstPaymentAmount);
+    console.log("   - Breakdown: ", annualCost, " - ", discountAmount, " + ", applicationFee, " = ", firstPaymentAmount);
+    
+    console.log("💵 === CALCULATE LOCAL COSTS DEBUG END ===");
     
     return {
-      monthlyAmount,
-      quarterlyAmount,
-      annualAmount,
       paymentAmount,
       firstPaymentAmount,
       discountAmount,
-      hasIceDiscount
+      discountPercent, // Include the percentage for display
+      hasIceDiscount,
+      applicationFee,
+      cmsAnnualFee // Include CMS fee
     };
-  };
-
-  // Handle payment frequency change
-  const handlePaymentFrequencyChange = (frequency) => {
-    setLocalPaymentFrequency(frequency);
   };
 
   // Handle ICE code validation
   const handleIceCodeValidation = async () => {
     if (!localIceCode.trim()) {
       setLocalIceCodeValid(null);
+      setLocalIceDiscountPercent(null);
       return;
     }
     
     setIsValidatingIceCode(true);
     try {
+      console.log("🔍 === ICE CODE VALIDATION DEBUG START ===");
       console.log("Validating ICE code:", localIceCode);
-      const result = await membershipService.validateIceCode(localIceCode);
-      console.log("ICE code validation result:", result);
       
-      setLocalIceCodeValid(result.valid);
+      const result = await membershipService.validateIceCode(localIceCode);
+      
+      console.log("📦 Raw validation result:", result);
+      console.log("📊 Result structure:");
+      console.log("   - valid:", result.valid, "(type:", typeof result.valid, ")");
+      console.log("   - discountPercent:", result.discountPercent, "(type:", typeof result.discountPercent, ")");
+      console.log("   - educatorName:", result.educatorName);
+      console.log("   - Full result object:", JSON.stringify(result, null, 2));
+      
+      // Check if the code is valid
       if (result.valid) {
-        // Store the ICE code info if needed
-        console.log("Valid ICE code info:", result);
+        setLocalIceCodeValid(true);
+        
+        // Get the discount percentage from the backend response
+        // The backend returns discountPercent (e.g., 10, 25, or 50)
+        const discountPercent = result.discountPercent || 25;
+        
+        console.log("💰 Discount calculation:");
+        console.log("   - Raw discountPercent from result:", result.discountPercent);
+        console.log("   - Final discountPercent to use:", discountPercent);
+        console.log("   - Type of discountPercent:", typeof discountPercent);
+        
+        // Ensure it's a number and within reasonable bounds
+        const numericDiscount = Number(discountPercent);
+        console.log("   - Numeric discount:", numericDiscount);
+        
+        if (isNaN(numericDiscount) || numericDiscount < 0 || numericDiscount > 100) {
+          console.error("❌ Invalid discount percentage:", numericDiscount);
+          console.error("   Setting to default 25%");
+          setLocalIceDiscountPercent(25);
+          setLocalIceDiscountAmount(Math.round((summaryData?.calculatedCosts?.baseCost || 540) * 0.25));
+        } else {
+          setLocalIceDiscountPercent(numericDiscount);
+          const discountAmount = Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (numericDiscount / 100));
+          setLocalIceDiscountAmount(discountAmount);
+        }
+        
+        console.log("✅ Valid ICE code!");
+        console.log("   Educator:", result.educatorName);
+        console.log("   Final Discount:", numericDiscount + "%");
+        
+        // Store any additional info if needed
+        const iceInfo = {
+          educatorName: result.educatorName,
+          educatorType: result.educatorType,
+          discountPercent: numericDiscount,
+          // Calculate discount amount based on current annual cost
+          discountAmount: Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (numericDiscount / 100))
+        };
+        
+        console.log("📋 ICE info object:", iceInfo);
+        console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
+      } else {
+        // Invalid code
+        setLocalIceCodeValid(false);
+        setLocalIceDiscountPercent(null);
+        setLocalIceDiscountAmount(null);
+        
+        console.log("❌ Invalid ICE code:", result.error || "Unknown error");
+        console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
       }
     } catch (error) {
       console.error("Error validating ICE code:", error);
       setLocalIceCodeValid(false);
+      setLocalIceDiscountPercent(null);
+      setLocalIceDiscountAmount(null);
+      console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
     } finally {
       setIsValidatingIceCode(false);
     }
@@ -348,37 +402,144 @@ export default function MembershipSummary({
 
   // Handle showing the confirmation overlay
   const handleShowConfirmation = () => {
+    setError(null);
     setShowDocuSignOverlay(true);
   };
 
-  const handleProceedToDocuSign = async () => {
-    setIsSubmitting(true);
-    setError(null);
+// In MembershipSummary component (paste-3.txt)
+// Replace the entire handleProceedToDocuSign function with this:
+
+const handleProceedToDocuSign = async () => {
+  setIsSubmitting(true);
+  setError(null);
+  
+  try {
+    console.log("MembershipSummary: Proceeding to DocuSign...");
+    console.log("SMS Phone Number from overlay:", smsPhoneNumber); // Debug log
     
-    try {
-      console.log("MembershipSummary: Proceeding to DocuSign...");
+    // Close the overlay first
+    setShowDocuSignOverlay(false);
+    
+    // Validate ICE code one final time if entered
+    let finalIceCode = '';
+    let finalIceDiscountAmount = 0;
+    
+    if (localIceCode && localIceCode.trim()) {
+      console.log("Validating ICE code before submission...");
+      const validationResult = await membershipService.validateIceCode(localIceCode.trim());
       
-      // Close the overlay first
-      setShowDocuSignOverlay(false);
-      
-      // Pass the updated values back to parent
-      if (onSignAgreement) {
-        // Pass an object with updated values, not the event
-        const updatedData = {
-          paymentFrequency: localPaymentFrequency,
-          iceCode: localIceCode,
-          iceCodeValid: localIceCodeValid
-        };
-        await onSignAgreement(updatedData);
+      if (validationResult.valid) {
+        finalIceCode = localIceCode.trim();
+        const discountPercent = validationResult.discountPercent || 25;
+        finalIceDiscountAmount = Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (discountPercent / 100));
+        console.log("ICE code validated:", finalIceCode, "Discount amount:", finalIceDiscountAmount);
+      } else {
+        console.log("ICE code validation failed, proceeding without discount");
       }
-    } catch (err) {
-      console.error("Error proceeding to DocuSign:", err);
-      setError("Failed to proceed to agreement signing. Please try again.");
-      setShowDocuSignOverlay(false);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+    
+    // Get membership cost - don't proceed without it
+    const membershipCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost;
+    if (!membershipCost) {
+      console.error("Missing membership cost - cannot proceed");
+      setError("Membership cost not found. Please refresh and try again.");
+      return;
+    }
+
+    // Map funding method to correct values
+    const fundingMethod = summaryData?.fundingData?.fundingMethod || summaryData?.fundingData?.method || '';
+    let fundingChoice = 'other'; // default
+    if (fundingMethod === 'insurance') fundingChoice = 'insurance';
+    else if (fundingMethod === 'prepay') fundingChoice = 'prepay';
+    
+    // Get the data object that has all the contact information
+    const data = summaryData || {
+      contactData: contactData || {},
+      packageData: packageData || {},
+      membershipData: membershipData || {},
+      fundingData: {},
+      calculatedCosts: calculateCosts()
+    };
+    
+    // Create userFinalSelections object with ALL the contact data fields
+    const userFinalSelections = {
+      // Personal Information
+      firstName: data.contactData?.firstName || null,
+      lastName: data.contactData?.lastName || null,
+      fullName: `${data.contactData?.firstName || ''} ${data.contactData?.lastName || ''}`.trim(),
+      email: data.contactData?.email || user?.email || '',
+      sex: data.contactData?.sex || null,
+      dateOfBirth: data.contactData?.dateOfBirth || null,
+      
+      // Phone Information
+      phoneType: data.contactData?.phoneType || null,
+      mobilePhone: data.contactData?.mobilePhone || null,
+      workPhone: data.contactData?.workPhone || null,
+      homePhone: data.contactData?.homePhone || null,
+      primaryPhone: data.contactData?.mobilePhone || data.contactData?.homePhone || data.contactData?.workPhone || null,
+      
+      // Home Address
+      streetAddress: data.contactData?.streetAddress || null,
+      city: data.contactData?.city || null,
+      region: data.contactData?.region || null,
+      postalCode: data.contactData?.postalCode || null,
+      country: data.contactData?.country || null,
+      cnty_hm: data.contactData?.cnty_hm || null,
+      fullHomeAddress: data.contactData?.streetAddress ? 
+        `${data.contactData.streetAddress}, ${data.contactData.city}, ${data.contactData.region} ${data.contactData.postalCode}, ${data.contactData.country}` : null,
+      
+      // Mailing Address
+      sameMailingAddress: data.contactData?.sameMailingAddress || 'Yes',
+      mailingStreetAddress: data.contactData?.mailingStreetAddress || null,
+      mailingCity: data.contactData?.mailingCity || null,
+      mailingRegion: data.contactData?.mailingRegion || null,
+      mailingPostalCode: data.contactData?.mailingPostalCode || null,
+      mailingCountry: data.contactData?.mailingCountry || null,
+      cnty_ml: data.contactData?.cnty_ml || null,
+      fullMailingAddress: data.contactData?.mailingStreetAddress ? 
+        `${data.contactData.mailingStreetAddress}, ${data.contactData.mailingCity}, ${data.contactData.mailingRegion} ${data.contactData.mailingPostalCode}, ${data.contactData.mailingCountry}` : null,
+      
+      // Membership selections
+      iceCode: finalIceCode,
+      iceCodeDiscountAmount: finalIceDiscountAmount,
+      membership: membershipCost,
+      submissionDate: new Date().toISOString(),
+      
+      // Preferences
+      cmsWaiver: cmsWaiver,
+      freelyReleaseName: freelyReleaseName,
+      maintainConfidentiality: maintainConfidentiality,
+      
+      // Package info
+      fundingChoice: fundingChoice,
+      preservationType: data.packageData?.preservationType || 'Not specified',
+      preservationEstimate: data.packageData?.preservationEstimate || 0
+    };
+    
+    console.log("User final selections:", userFinalSelections);
+    
+    // Pass the updated values back to parent INCLUDING THE SMS PHONE NUMBER
+    if (onSignAgreement) {
+      const updatedData = {
+        paymentFrequency: 'annually',
+        iceCode: localIceCode,
+        iceCodeValid: localIceCodeValid,
+        iceDiscountPercent: localIceDiscountPercent,
+        userFinalSelections: userFinalSelections,
+        docusignPhoneNumber: smsPhoneNumber // THIS IS THE KEY - PASS THE SMS PHONE NUMBER!
+      };
+      
+      console.log("Passing to parent with docusignPhoneNumber:", updatedData.docusignPhoneNumber);
+      await onSignAgreement(updatedData);
+    }
+  } catch (err) {
+    console.error("Error proceeding to DocuSign:", err);
+    setError("Failed to proceed to agreement signing. Please try again.");
+    setShowDocuSignOverlay(false);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (isLoading) {
     return (
@@ -395,6 +556,9 @@ export default function MembershipSummary({
     fundingData: {},
     calculatedCosts: calculateCosts()
   };
+
+  // Define isBasicMembership here to fix the scope issue
+  const isBasicMembership = data.packageData?.preservationType === 'basic';
 
   return (
     <>
@@ -438,28 +602,28 @@ export default function MembershipSummary({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Name</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.firstName} {data.contactData?.lastName}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Email</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.email || user?.email}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Phone</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.mobilePhone || data.contactData?.homePhone || data.contactData?.workPhone || 'Not provided'}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Date of Birth</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.dateOfBirth || 'Not provided'}
                   </p>
                 </div>
@@ -468,7 +632,7 @@ export default function MembershipSummary({
                 {data.contactData?.phoneType && (
                   <div>
                     <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Preferred Contact Method</p>
-                    <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                    <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                       {data.contactData.phoneType} Phone
                     </p>
                   </div>
@@ -477,7 +641,7 @@ export default function MembershipSummary({
                 {/* Same Mailing Address */}
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Same Mailing Address</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.sameMailingAddress || 'Yes'}
                   </p>
                 </div>
@@ -485,7 +649,7 @@ export default function MembershipSummary({
                 {/* Home Address */}
                 <div className="md:col-span-2">
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Home Address</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {data.contactData?.streetAddress && (
                       <>
                         {data.contactData.streetAddress}<br />
@@ -503,7 +667,7 @@ export default function MembershipSummary({
                 {data.contactData?.sameMailingAddress === 'No' && data.contactData?.mailingStreetAddress && (
                   <div className="md:col-span-2">
                     <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Mailing Address</p>
-                    <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                    <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                       {data.contactData.mailingStreetAddress}<br />
                       {data.contactData.mailingCity}, {data.contactData.mailingRegion} {data.contactData.mailingPostalCode}<br />
                       {data.contactData.mailingCountry}
@@ -541,7 +705,7 @@ export default function MembershipSummary({
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>
                     {data.packageData?.preservationType === 'basic' ? 'Package Type' : 'Preservation Type'}
                   </p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {getPreservationTypeText(data.packageData?.preservationType)}
                   </p>
                 </div>
@@ -549,7 +713,7 @@ export default function MembershipSummary({
                 {data.packageData?.preservationType !== 'basic' && (
                   <div>
                     <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Preservation Cost (Estimate)</p>
-                    <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                    <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                       {formatCurrency(data.packageData?.preservationEstimate)}
                     </p>
                   </div>
@@ -578,7 +742,7 @@ export default function MembershipSummary({
                 
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Selected Funding Method</p>
-                  <p className="text-gray-600 font-normal mt-1" style={{ fontSize: '16px' }}>
+                  <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {(() => {
                       // Try multiple possible field names
                       const method = data.fundingData?.fundingMethod || 
@@ -590,7 +754,7 @@ export default function MembershipSummary({
                       
                       if (!method || method === '') return 'Not Selected';
                       if (method === 'insurance') return 'Life Insurance';
-                      if (method === 'prepay') return 'prepayment';
+                      if (method === 'prepay') return 'Prepayment';
                       if (method === 'undecided') return 'Decide Later';
                       if (method === 'none') return 'Not Required (Basic Membership)';
                       return method; // Show raw value if not matching expected values
@@ -630,6 +794,51 @@ export default function MembershipSummary({
               </div>
             )}
 
+            {/* CMS Waiver Section - Only show for cryopreservation members */}
+            {data.packageData?.preservationType !== 'basic' && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+                <div className="mb-6 flex items-start pt-4">
+                  <div className="p-3 rounded-lg relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
+                         style={{
+                           backgroundSize: '400% 100%',
+                           backgroundPosition: '75% 50%'
+                         }}></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4 pt-2">
+                    <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Comprehensive Member Standby (CMS)</h2>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-5">
+                    <p className="text-gray-700 text-sm mb-4">
+                      <strong>CMS Program:</strong> Current CMS charges are <strong>$200</strong> U.S. annually. All Cryopreservation Members are subject to a waiting period of 180 days from the date the cryopreservation agreement is signed before joining the CMS program unless opting into the CMS waiver.
+                    </p>
+                    <p className="text-gray-700 text-sm">
+                      <strong>CMS Waiver:</strong> In exchange for a waiver of the annual CMS fee, you agree to a permanent increase of $20,000 to your Cryopreservation Fund Minimum above the then-current minimum. When fund minimums are increased in the future, yours will always be $20,000 higher.
+                    </p>
+                  </div>
+                  
+                  <label className="flex items-start cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={cmsWaiver}
+                      onChange={(e) => setCmsWaiver(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
+                    />
+                    <div className="ml-3">
+                      <span className="text-gray-900 font-medium">Yes, I want to enroll in CMS immediately with the waiver</span>
+                      <p className="text-gray-600 text-sm mt-1">I understand this adds $200 to my annual dues and $20,000 to my funding minimum permanently.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Membership Details Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
               <div className="mb-8 flex items-start pt-4">
@@ -649,35 +858,8 @@ export default function MembershipSummary({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Payment Options */}
+                {/* Left Column - ICE Code Only */}
                 <div>
-                  {/* Payment Frequency Selection */}
-                  <div className="mb-6">
-                    <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '16px' }}>Payment Frequency</p>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => handlePaymentFrequencyChange('annually')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-28 ${
-                          localPaymentFrequency === 'annually' 
-                            ? 'bg-white text-[#775684] border-2 border-[#775684]' 
-                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        Annual
-                      </button>
-                      <button
-                        onClick={() => handlePaymentFrequencyChange('monthly')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all w-28 ${
-                          localPaymentFrequency === 'monthly' 
-                            ? 'bg-white text-[#775684] border-2 border-[#775684]' 
-                            : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        Monthly
-                      </button>
-                    </div>
-                  </div>
-                  
                   {/* ICE Code Input */}
                   <div>
                     <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '16px' }}>ICE Discount Code</p>
@@ -692,6 +874,7 @@ export default function MembershipSummary({
                           // Reset validation state immediately
                           if (!value.trim()) {
                             setLocalIceCodeValid(null);
+                            setLocalIceDiscountPercent(null);
                             return;
                           }
                           
@@ -715,7 +898,7 @@ export default function MembershipSummary({
                     </div>
                     {localIceCode && localIceCodeValid === true && (
                       <p className="text-[#775684] mt-2 text-sm">
-                        ✓ Valid code - 25% discount applied
+                        ✓ Valid code - {calculateLocalCosts().discountPercent}% discount applied
                       </p>
                     )}
                     {localIceCode && localIceCodeValid === false && (
@@ -729,28 +912,41 @@ export default function MembershipSummary({
                 {/* Right Column - Pricing Summary */}
                 <div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '18px' }}>Payment Summary</p>  {/* Changed from 16px to 18px */}
+                    <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '18px' }}>Payment Summary</p>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <p className="text-gray-600 text-sm">Base Membership</p>
-                        <p className="text-gray-900 text-sm">
-                          {formatCurrency(calculateLocalCosts().paymentAmount)}
-                          {localPaymentFrequency === 'monthly' && '/mo'}
-                          {localPaymentFrequency === 'annually' && '/yr'}
+                        <p className="text-gray-600 text-sm font-light">Annual Membership</p>
+                        <p className="text-gray-900 text-sm font-light">
+                          {formatCurrency(calculateLocalCosts().paymentAmount)}/yr
                         </p>
                       </div>
                       
+                      {/* Add Application Fee line for non-basic */}
+                      {data.packageData?.preservationType !== 'basic' && (
+                        <div className="flex justify-between items-center">
+                          <p className="text-gray-600 text-sm font-light">Application Fee (one-time)</p>
+                          <p className="text-gray-900 text-sm font-light">{formatCurrency(300)}</p>
+                        </div>
+                      )}
+                      
+                      {cmsWaiver && !isBasicMembership && (
+                        <div className="flex justify-between items-center">
+                          <p className="text-gray-600 text-sm font-light">CMS Annual Fee</p>
+                          <p className="text-gray-900 text-sm font-light">{formatCurrency(200)}</p>
+                        </div>
+                      )}
+                      
                       {localIceCodeValid && (
                         <div className="flex justify-between items-center">
-                          <p className="text-gray-600 text-sm">ICE Discount</p>
-                          <p className="text-[#775684] text-sm">
+                          <p className="text-gray-600 text-sm font-light">ICE Discount ({calculateLocalCosts().discountPercent}%)</p>
+                          <p className="text-[#775684] text-sm font-light">
                             -{formatCurrency(calculateLocalCosts().discountAmount)}
                           </p>
                         </div>
                       )}
                       
                       <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <p className="text-gray-900 font-medium">First Payment</p>
+                        <p className="text-gray-900 font-medium">Total Due Today</p>
                         <p className="text-[#775684] font-semibold text-lg">
                           {formatCurrency(calculateLocalCosts().firstPaymentAmount)}
                         </p>
@@ -758,6 +954,53 @@ export default function MembershipSummary({
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            {/* Privacy Preferences Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+              <div className="mb-6 flex items-start pt-4">
+                <div className="p-3 rounded-lg relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
+                       style={{
+                         backgroundSize: '400% 100%',
+                         backgroundPosition: '85% 50%'
+                       }}></div>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div className="ml-4 pt-2">
+                  <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Privacy Preferences</h2>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-gray-700 text-sm mb-4">Please select one of the following options regarding your membership information:</p>
+                
+                <label className="flex items-start cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={freelyReleaseName}
+                    onChange={(e) => setFreelyReleaseName(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="ml-3">
+                    <span className="text-gray-900 font-medium">I give Alcor permission to freely release my name and related Alcor membership status at its discretion</span>
+                  </div>
+                </label>
+                
+                <label className="flex items-start cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={maintainConfidentiality}
+                    onChange={(e) => setMaintainConfidentiality(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="ml-3">
+                    <span className="text-gray-900 font-medium">Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor's General Terms and Conditions</span>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -778,7 +1021,7 @@ export default function MembershipSummary({
                     </div>
                     <div className="ml-5">
                       <p className="text-gray-800" style={{ fontSize: '18px' }}>
-                        You'll only be charged for your membership today.
+                        You'll only be charged for your membership {data.packageData?.preservationType !== 'basic' && 'and application fee'} today.
                       </p>
                       
                       {/* Funding-specific messages */}
@@ -985,6 +1228,100 @@ export default function MembershipSummary({
             )}
           </button>
         </div>
+      </div>
+    </div>
+  </div>,
+  document.body
+)}
+
+{/* Summary Introduction Overlay - Shows when page first loads */}
+{showSummaryIntroOverlay && createPortal(
+  <div 
+    onClick={() => setShowSummaryIntroOverlay(false)} // Click outside to close
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999999,
+      padding: '1rem',
+      fontFamily: SYSTEM_FONT
+    }}
+  >
+    <div 
+      className="bg-white rounded-xl shadow-2xl p-6 sm:p-7 mx-2 sm:mx-4 max-w-xl w-full"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+    >
+      <div className="text-center">
+        {/* Review Icon */}
+        <div className="mx-auto mb-4 w-14 h-14 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
+          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+        </div>
+        
+        {/* Title */}
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Review Your Membership Summary</h2>
+        
+        {/* Main Message */}
+        <p className="text-gray-700 text-sm sm:text-base mb-5 leading-relaxed">
+          You're almost done! This page shows a complete summary of your membership selections.
+        </p>
+        
+        {/* Checklist */}
+        <div className="bg-gray-50 rounded-lg p-4 sm:p-5 mb-5 text-left">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Please verify the following:</h3>
+          <div className="space-y-2">
+            <div className="flex items-start">
+              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-gray-700 text-sm">Your contact information is correct</p>
+            </div>
+            <div className="flex items-start">
+              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-gray-700 text-sm">Your selected package type matches your preference</p>
+            </div>
+            {data.packageData?.preservationType !== 'basic' && (
+              <div className="flex items-start">
+                <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-gray-700 text-sm">Your funding method selection is accurate</p>
+              </div>
+            )}
+            <div className="flex items-start">
+              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-gray-700 text-sm">The payment amount is what you expect</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* ICE Code Reminder */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5">
+          <p className="text-blue-800 text-xs sm:text-sm">
+            <strong>Have an ICE discount code?</strong> You can enter it in the Membership Details section below to reduce your first-year dues.
+          </p>
+        </div>
+        
+        {/* Button */}
+        <button
+          onClick={() => setShowSummaryIntroOverlay(false)}
+          className="w-full sm:w-auto px-6 py-3 bg-[#775684] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#664573] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+        >
+          Review My Summary
+        </button>
       </div>
     </div>
   </div>,

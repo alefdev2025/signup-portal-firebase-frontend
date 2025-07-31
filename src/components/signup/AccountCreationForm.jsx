@@ -64,7 +64,7 @@ const AccountCreationForm = ({
       title: "Need assistance?",
       content: (
         <>
-          Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
         </>
       )
     }
@@ -181,7 +181,7 @@ const AccountCreationForm = ({
         <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] px-4 py-4 sm:w-full sm:max-w-2xl sm:mx-auto sm:relative sm:left-auto sm:right-auto sm:ml-auto sm:mr-auto sm:px-0 sm:py-0 bg-white rounded-xl shadow-md overflow-hidden">
           <form onSubmit={onSubmitForm} className="p-8 space-y-10 sm:space-y-6">
             <div className="mb-10 sm:mb-10">
-              <label htmlFor="verificationCode" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-4">
+              <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-4 sm:mb-4">
                 Verification Code
               </label>
               <input 
@@ -191,7 +191,7 @@ const AccountCreationForm = ({
                 value={formData.verificationCode}
                 onChange={handleFormChange}
                 placeholder="Enter the 6-digit code" 
-                className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                 disabled={isSubmitting || resendingCode}
                 autoComplete="one-time-code"
                 maxLength={6}
@@ -205,7 +205,7 @@ const AccountCreationForm = ({
                 <button 
                   type="button" 
                   onClick={handleResendCode}
-                  className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
+                  className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
                   disabled={isSubmitting || resendingCode}
                 >
                   {resendingCode ? (
@@ -228,7 +228,7 @@ const AccountCreationForm = ({
                 <button 
                   type="button" 
                   onClick={changeEmail}
-                  className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base sm:text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
+                  className="flex items-center justify-center py-3 px-5 sm:px-6 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-gray-700 font-semibold text-base transition-colors shadow-sm hover:shadow-md sm:w-auto"
                   disabled={isSubmitting || resendingCode}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-[#f39c12]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -247,7 +247,7 @@ const AccountCreationForm = ({
                   backgroundColor: "#6f2d74",
                   color: "white"
                 }}
-                className="w-full py-4 sm:py-5 px-6 rounded-full font-semibold text-base sm:text-lg mb-16 sm:mb-8 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
+                className="w-full py-3 px-6 rounded-full font-semibold text-base mb-16 sm:mb-8 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
               >
                 {isSubmitting ? (
                   <>
@@ -315,8 +315,8 @@ const AccountCreationForm = ({
             </div>
           )}
           
-          <div className="mb-28 sm:mb-6">
-            <label htmlFor="email" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-2">Email</label>
+          <div className="mb-6">
+            <label htmlFor="email" className="block text-gray-800 text-base font-medium mb-2">Email</label>
             <input 
               type="email" 
               id="email"
@@ -324,32 +324,32 @@ const AccountCreationForm = ({
               value={formData.email}
               onChange={handleFormChange}
               placeholder="e.g. john.smith@example.com" 
-              className="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg mb-6 sm:mb-0"
+              className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
               disabled={isSubmitting}
             />
-            {errors.email && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2">{errors.email}</p>}
+            {errors.email && <p className="text-red-500 text-xs sm:text-sm mt-2">{errors.email}</p>}
           </div>
           
           {/* Enhanced Password Field with visibility toggle and requirements - pass mobile-specific props */}
-          <div className="mb-28 sm:mb-6">
+          <div className="mb-6">
             <PasswordField
               value={passwordState}
               onChange={handleFormChange}
               isSubmitting={isSubmitting}
               error={errors.password}
-              className="mb-10 sm:mb-0" 
-              inputClassName="w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border border-gray-300 sm:border-brand-purple/30 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg"
-              labelClassName="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-2"
-              errorClassName="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2"
+              className="mb-0" 
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+              labelClassName="block text-gray-800 text-base font-medium mb-2"
+              errorClassName="text-red-500 text-xs sm:text-sm mt-2"
             />
           </div>
           
           {/* Confirm Password Field with Match Indicator */}
-          <div className="mb-28 sm:mb-6">
-            <label htmlFor="confirmPassword" className="block text-gray-800 text-base sm:text-lg font-medium mb-4 sm:mb-2">
+          <div className="mb-6">
+            <label htmlFor="confirmPassword" className="block text-gray-800 text-base font-medium mb-2">
               Confirm Password
             </label>
-            <div className="relative mb-10 sm:mb-0">
+            <div className="relative">
               <input 
                 type="password" 
                 id="confirmPassword"
@@ -357,26 +357,26 @@ const AccountCreationForm = ({
                 value={confirmPasswordState}
                 onChange={handleFormChange}
                 placeholder="Re-enter your password" 
-                className={`w-full px-3 sm:px-4 py-3 sm:py-5 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-gray-300 sm:border-brand-purple/30'} rounded-md focus:outline-none focus:ring-1 focus:ring-brand-purple/50 focus:border-brand-purple/50 text-gray-800 text-base sm:text-lg`}
+                className={`w-full px-4 py-3 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-purple-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base`}
                 disabled={isSubmitting}
                 autoComplete="new-password"
               />
               {confirmPasswordState && confirmPasswordState === passwordState && !errors.confirmPassword && (
-                <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               )}
             </div>
-            {errors.confirmPassword && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2">{errors.confirmPassword}</p>}
+            {errors.confirmPassword && <p className="text-red-500 text-xs sm:text-sm mt-2">{errors.confirmPassword}</p>}
             {confirmPasswordState && confirmPasswordState !== passwordState && !errors.confirmPassword && (
-              <p className="text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">Passwords do not match</p>
+              <p className="text-gray-500 text-xs sm:text-sm mt-2">Passwords do not match</p>
             )}
           </div>
           
-          <div className="mb-28 sm:mb-16">
-            <div className="mb-10 sm:mb-0">
+          <div className="mb-8">
+            <div className="mb-0">
               <label className={`flex items-start sm:items-center ${errors.termsAccepted ? 'text-red-500' : ''}`}>
                 <input 
                   type="checkbox" 
@@ -384,7 +384,7 @@ const AccountCreationForm = ({
                   checked={formData.termsAccepted}
                   onChange={handleFormChange}
                   disabled={isSubmitting}
-                  className={`mt-2 sm:mt-0 mr-2 sm:mr-4 h-4 sm:h-5 w-4 sm:w-5 appearance-none checked:bg-[#d39560] border ${errors.termsAccepted ? 'border-red-500' : 'border-gray-300 sm:border-brand-purple/30'} bg-white rounded focus:ring-1 focus:ring-[#d39560] flex-shrink-0`}
+                  className={`mt-1 sm:mt-0 mr-3 h-4 w-4 appearance-none checked:bg-[#d39560] border ${errors.termsAccepted ? 'border-red-500' : 'border-purple-300'} bg-white rounded focus:ring-2 focus:ring-[#d39560] flex-shrink-0`}
                   style={{ 
                     backgroundImage: "url(\"data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e\")",
                     backgroundPosition: "center",
@@ -392,12 +392,12 @@ const AccountCreationForm = ({
                     backgroundRepeat: "no-repeat"
                   }}
                 />
-                <span className={`text-${errors.termsAccepted ? 'red-500' : 'gray-700'} text-sm sm:text-base leading-4 sm:leading-normal`}>
+                <span className={`text-${errors.termsAccepted ? 'red-500' : 'gray-700'} text-sm leading-5`}>
                   I agree to the{' '}
                   <button 
                     type="button" 
                     onClick={() => openModal('terms')} 
-                    className="text-brand-purple font-medium underline hover:text-purple-800 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
+                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
                   >
                     Terms of Use
                   </button>
@@ -405,7 +405,7 @@ const AccountCreationForm = ({
                   <button 
                     type="button" 
                     onClick={() => openModal('privacy')} 
-                    className="text-brand-purple font-medium underline hover:text-purple-800 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
+                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
                   >
                     Privacy Policy
                   </button>
@@ -413,10 +413,10 @@ const AccountCreationForm = ({
                 </span>
               </label>
             </div>
-            {errors.termsAccepted && <p className="text-red-500 text-xs sm:text-sm mt-1 sm:mt-2 ml-7 sm:ml-10">{errors.termsAccepted}</p>}
+            {errors.termsAccepted && <p className="text-red-500 text-xs sm:text-sm mt-2 ml-7">{errors.termsAccepted}</p>}
           </div>
           
-          <div className="pt-6 sm:pt-8">
+          <div className="space-y-4">
             {/* Get Started Button */}
             <button 
               type="submit"
@@ -425,11 +425,11 @@ const AccountCreationForm = ({
                 backgroundColor: "#31314f", 
                 color: "white"
               }}
-              className="w-full py-4 sm:py-5 px-6 rounded-full font-semibold text-lg sm:text-lg mb-8 sm:mb-4 flex items-center justify-center hover:opacity-90 shadow-sm"
+              className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-4 sm:h-5 w-4 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -438,17 +438,17 @@ const AccountCreationForm = ({
               ) : (
                 <>
                   <span className="mr-2">Get Started</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 sm:h-5 w-4 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </>
               )}
             </button>
             
-            {/* OR Divider - Using more spacing */}
-            <div className="flex items-center my-8 sm:my-4">
+            {/* OR Divider */}
+            <div className="flex items-center my-4">
               <div className="flex-grow border-t border-gray-300"></div>
-              <div className="px-4 sm:px-8 text-gray-500 uppercase text-xs sm:text-sm">OR</div>
+              <div className="px-4 text-gray-500 uppercase text-sm">OR</div>
               <div className="flex-grow border-t border-gray-300"></div>
             </div>
             
@@ -457,12 +457,12 @@ const AccountCreationForm = ({
               type="button"
               onClick={handleGoogleSignInWithTermsCheck}
               disabled={isGoogleSigningIn || isSubmitting}
-              className="w-full bg-white border border-gray-300 text-gray-700 py-4 sm:py-5 px-6 rounded-full font-medium text-lg sm:text-lg mb-8 sm:mb-6 flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
+              className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-gray-50 shadow-sm disabled:opacity-70"
             >
               {isGoogleSigningIn ? (
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 sm:h-6 w-5 sm:w-6 mr-2 sm:mr-3 opacity-50" />
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 w-5 mr-3 opacity-50" />
               ) : (
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 sm:h-6 w-5 sm:w-6 mr-2 sm:mr-3" />
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="h-5 w-5 mr-3" />
               )}
               Continue with Google
             </button>
@@ -475,13 +475,13 @@ const AccountCreationForm = ({
             )}
           </div>
           
-          <div className="text-center">
-            <p className="text-gray-700 text-sm sm:text-base">
+          <div className="text-center mt-6">
+            <p className="text-gray-700 text-sm">
               Already have an account?{' '}
               <button 
                 type="button"
                 onClick={() => window.location.href = '/login?continue=signup'} 
-                className="text-brand-purple hover:underline bg-transparent border-none cursor-pointer"
+                className="text-purple-700 hover:underline bg-transparent border-none cursor-pointer"
               >
                 Login
               </button>

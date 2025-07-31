@@ -389,14 +389,45 @@ const AccountCreationStep = () => {
         console.log("Requesting email verification for:", formData.email);
         const result = await requestEmailVerification(formData.email, formData.name || "New Member");
         
+        // ADD DEBUG CODE HERE
+        console.log("=== FULL BACKEND RESPONSE ===");
+        console.log("Raw result:", result);
+        console.log("result.success:", result.success);
+        console.log("result.isExistingUser:", result.isExistingUser);
+        console.log("result.signupCompleted:", result.signupCompleted);
+        console.log("result.isPortalUser:", result.isPortalUser);
+        console.log("Full JSON:", JSON.stringify(result, null, 2));
+        console.log("=== END RESPONSE ===");
+        
         if (result.success) {
           console.log("Verification request successful:", result);
           
           if (result.isExistingUser) {
-            console.log("This is an existing user - redirecting to login");
+            console.log("This is an existing user - checking completion status");
+            console.log(`Checking: signupCompleted(${result.signupCompleted}) || isPortalUser(${result.isPortalUser})`);
             
+            // Check if user has completed signup (if backend provides this)
+            if (result.signupCompleted || result.isPortalUser) {
+              // Completed user - go to regular portal login
+              console.log("USER IS COMPLETE - REDIRECTING TO PORTAL LOGIN");
+              
+              // DEBUG: Add delay to see logs
+              console.log("WAITING 5 SECONDS BEFORE REDIRECT - CHECK CONSOLE NOW!");
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              
+              window.location.href = `/login?email=${encodeURIComponent(formData.email)}`;
+              setIsSubmitting(false);
+              return;
+            } else {
+              console.log("USER NOT COMPLETE - CONTINUING WITH SIGNUP FLOW");
+            }
+            
+            // User exists but hasn't completed signup - continue with existing logic
             if ((result.authProviders && result.authProviders.includes('google.com') && !result.hasPasswordAuth) || 
                 (result.authProvider === 'google' && !result.hasPasswordAuth)) {
+              
+              console.log("REDIRECTING TO LOGIN WITH GOOGLE PROVIDER - WAITING 5 SECONDS");
+              await new Promise(resolve => setTimeout(resolve, 5000));
               
               window.location.href = `/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=google&addPassword=true`;
               setIsSubmitting(false);
@@ -407,10 +438,17 @@ const AccountCreationStep = () => {
                 (result.authProvider === 'password' && !result.hasGoogleAuth) ||
                 (result.hasPasswordAuth && !result.hasGoogleAuth)) {
               
+              console.log("REDIRECTING TO LOGIN WITH PASSWORD PROVIDER - WAITING 5 SECONDS");
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              
               window.location.href = `/login?email=${encodeURIComponent(formData.email)}&continue=signup&provider=password&linkAccounts=true`;
               setIsSubmitting(false);
               return;
             }
+            
+            // Default - user hasn't completed signup
+            console.log("DEFAULT REDIRECT TO CONTINUE SIGNUP - WAITING 5 SECONDS");
+            await new Promise(resolve => setTimeout(resolve, 5000));
             
             window.location.href = `/login?email=${encodeURIComponent(formData.email)}&continue=signup`;
             setIsSubmitting(false);
@@ -448,7 +486,12 @@ const AccountCreationStep = () => {
             (error.message && error.message.toLowerCase().includes('already exists') || 
              error.message && error.message.toLowerCase().includes('already in use'))) {
           
-          window.location.href = `/login?email=${encodeURIComponent(formData.email)}&continue=signup`;
+          console.log("ERROR: EMAIL ALREADY IN USE - WAITING 5 SECONDS BEFORE REDIRECT");
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          // Instead of always adding continue=signup, just go to regular login
+          // The login page will determine where to route them based on their status
+          window.location.href = `/login?email=${encodeURIComponent(formData.email)}`;
           return;
         } else {
           setErrors(prev => ({

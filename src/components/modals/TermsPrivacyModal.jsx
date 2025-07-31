@@ -53,48 +53,65 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
     if (type === 'terms') {
       return `
         <h1>Terms of Use</h1>
-        <p class="date">Ultimo renovatum: Mensis Maius 1, 2025</p>
+        <p class="date">Last Updated: July 29, 2025</p>
 
-        <h2>1. Acceptance of Terms</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        <h2>1. Acceptance</h2>
+        <p>By creating an account or applying for membership with Alcor Life Extension Foundation, you agree to these Terms of Use.</p>
         
-        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+        <h2>2. Account Information</h2>
+        <p>You agree to provide accurate, current, and complete information during the application process and to keep this information updated.</p>
         
-        <h2>2. Definitions and Terms</h2>
-        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
+        <h2>3. Use of Information</h2>
+        <p>Information you provide will be used to:</p>
+        <ul>
+          <li>Process your membership application</li>
+          <li>Create and maintain your member file</li>
+          <li>Communicate about your membership</li>
+          <li>Provide member services</li>
+        </ul>
         
-        <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur.</p>
+        <h2>4. Security</h2>
+        <p>You are responsible for maintaining the security of your account credentials and for all activities under your account.</p>
         
-        <h2>3. Service Usage</h2>
-        <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.</p>
-        
-        <p>Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.</p>
+        <h2>5. Privacy</h2>
+        <p>Your information will be handled according to our Privacy Policy. We do not sell or rent your personal information to third parties.</p>
       `;
     } else { // Privacy Policy
       return `
         <h1>Privacy Policy</h1>
-        <p class="date">Ultimo renovatum: Mensis Maius 1, 2025</p>
+        <p class="date">Last Updated: July 29, 2025</p>
 
-        <h2>1. Introduction</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-        
-        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
-        
-        <h2>2. Information We Collect</h2>
-        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt:</p>
-        
+        <h2>1. Information We Collect</h2>
+        <p>We collect information you provide when applying for membership, including:</p>
         <ul>
-          <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</li>
-          <li>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-          <li>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</li>
+          <li>Name, email, phone, and address</li>
+          <li>Account credentials</li>
+          <li>Membership application details</li>
+          <li>Payment information</li>
         </ul>
         
-        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+        <h2>2. How We Use Information</h2>
+        <p>Your information is used to:</p>
+        <ul>
+          <li>Process membership applications</li>
+          <li>Maintain member records</li>
+          <li>Provide member services</li>
+          <li>Send important updates</li>
+          <li>Comply with legal requirements</li>
+        </ul>
         
-        <h2>3. How We Collect Information</h2>
-        <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.</p>
+        <h2>3. Information Security</h2>
+        <p>We use appropriate security measures to protect your personal information, including encryption and secure servers.</p>
         
-        <p>Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus.</p>
+        <h2>4. Your Rights</h2>
+        <p>You have the right to access, update, or request deletion of your personal information. Contact us to exercise these rights.</p>
+        
+        <h2>5. Contact Us</h2>
+        <p>For questions about privacy, contact us at:<br>
+        Alcor Life Extension Foundation<br>
+        7895 E. Acoma Dr., Suite 110<br>
+        Scottsdale, AZ 85260<br>
+        Phone: (480) 905-1906</p>
       `;
     }
   };
@@ -119,7 +136,7 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
           align-items: center;
           justify-content: center;
           z-index: 999999;
-          padding: 20px;
+          padding: 16px;
           transition: background-color 200ms;
         }
         .modal-backdrop-open {
@@ -141,12 +158,14 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
         style={{
           backgroundColor: 'white',
           borderRadius: '12px',
-          width: window.innerWidth <= 768 ? '95vw' : '65vw',
-          maxWidth: '850px',
+          width: window.innerWidth <= 768 ? 'calc(100vw - 32px)' : '65vw',
+          maxWidth: window.innerWidth <= 768 ? 'calc(100vw - 32px)' : '850px',
+          height: 'auto',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4)'
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4)',
+          margin: '0 auto'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -155,14 +174,15 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
           backgroundColor: '#262c4c',
           borderTopLeftRadius: '12px',
           borderTopRightRadius: '12px',
-          padding: '16px 24px',
+          padding: '24px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          minHeight: '72px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <img src={alcorLogo} alt="Alcor Logo" style={{ height: '40px', marginRight: '16px' }} />
-            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'white' }}>{title}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <img src={alcorLogo} alt="Alcor Logo" style={{ height: '48px', marginRight: '0' }} />
+            <h2 style={{ margin: 0, fontSize: window.innerWidth <= 768 ? '18px' : '20px', fontWeight: 'bold', color: 'white', paddingTop: '12px' }}>{title}</h2>
           </div>
           <button 
             onClick={onClose} 
@@ -192,7 +212,7 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '32px 48px',
+          padding: window.innerWidth <= 768 ? '20px 16px' : '32px 48px',
           backgroundColor: 'white'
         }}>
           {loading ? (
@@ -223,38 +243,42 @@ const TermsPrivacyModal = ({ isOpen, onClose, type }) => {
               100% { transform: rotate(360deg); }
             }
             .modal-content h1 {
-              font-size: 28px;
+              font-size: ${window.innerWidth <= 768 ? '20px' : '24px'};
               font-weight: bold;
               color: #1f2937;
               margin: 0 0 8px 0;
             }
             .modal-content h2 {
-              font-size: 18px;
+              font-size: ${window.innerWidth <= 768 ? '16px' : '18px'};
               font-weight: 600;
               color: #374151;
-              margin: 24px 0 12px 0;
+              margin: ${window.innerWidth <= 768 ? '16px 0 8px 0' : '24px 0 12px 0'};
             }
             .modal-content p {
-              font-size: 14px;
+              font-size: ${window.innerWidth <= 768 ? '13px' : '14px'};
               line-height: 1.6;
               color: #4b5563;
-              margin: 0 0 16px 0;
+              margin: 0 0 ${window.innerWidth <= 768 ? '12px' : '16px'} 0;
             }
             .modal-content .date {
               font-style: italic;
               color: #6b7280;
-              font-size: 14px;
-              margin-bottom: 24px;
+              font-size: ${window.innerWidth <= 768 ? '12px' : '14px'};
+              margin-bottom: ${window.innerWidth <= 768 ? '16px' : '24px'};
             }
             .modal-content ul {
-              margin: 16px 0;
-              padding-left: 24px;
+              margin: ${window.innerWidth <= 768 ? '12px 0' : '16px 0'};
+              padding-left: ${window.innerWidth <= 768 ? '20px' : '24px'};
             }
             .modal-content li {
-              font-size: 14px;
+              font-size: ${window.innerWidth <= 768 ? '13px' : '14px'};
               line-height: 1.6;
               color: #4b5563;
-              margin-bottom: 8px;
+              margin-bottom: ${window.innerWidth <= 768 ? '6px' : '8px'};
+            }
+            .modal-content strong {
+              font-weight: 600;
+              color: #374151;
             }
           `}</style>
         </div>

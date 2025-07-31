@@ -1,5 +1,5 @@
-// File: pages/SinglePageSignup.jsx - Banner preloads, content shows spinner - FIXED SCROLLING
-import React, { useMemo } from 'react';
+// File: pages/SinglePageSignup.jsx - Updated with MembershipCompletionStep
+import React, { useMemo, useState } from 'react';
 import { useSignupFlow } from '../contexts/SignupFlowContext';
 import { useUser } from "../contexts/UserContext";
 
@@ -10,14 +10,17 @@ import ContactInfoStep from "../components/signup/ContactInfoStep";
 import PackageStep from "../components/signup/PackageStep";
 import FundingStep from "../components/signup/FundingStep";
 import MembershipStep from "../components/signup/MembershipStep";
+import MembershipCompletionSteps from "../components/signup/MembershipCompletionSteps"; // ADD THIS
+import MembershipDocuSign from "../components/signup/MembershipDocuSign"; // ADD THIS
 import DocuSignStep from "../components/signup/DocuSignStep";
 import PaymentStep from "../components/signup/PaymentStep";
+import CompletionStep from "../components/signup/CompletionStep"; // Add if you have a final welcome step
 
 // Import banners
 import ResponsiveBanner from "../components/ResponsiveBanner";
 import SimpleBanner from "../components/SimpleBanner";
 
-// Updated component mapping to include payment step
+// Updated component mapping to include completion step
 const STEP_COMPONENTS = {
   AccountCreationStep,
   AccountSuccessStep,
@@ -25,8 +28,10 @@ const STEP_COMPONENTS = {
   PackageStep,
   FundingStep,
   MembershipStep,
+  MembershipCompletionStep: MembershipCompletionSteps, // ADD THIS MAPPING
   DocuSignStep,
-  PaymentStep
+  PaymentStep,
+  CompletionStep // Add if you have this
 };
 
 export default function SinglePageSignup() {
@@ -38,6 +43,9 @@ export default function SinglePageSignup() {
     isTransitioning,
     getStepProgress 
   } = useSignupFlow();
+  
+  // State for DocuSign overlay
+  const [showDocuSign, setShowDocuSign] = useState(false);
 
   // Memoize step component with better error handling
   const StepComponent = useMemo(() => {
@@ -68,11 +76,13 @@ export default function SinglePageSignup() {
     return Component;
   }, [currentStep, currentStepIndex]);
 
-  // Memoize banner steps
-  const bannerSteps = useMemo(() => 
-    steps.filter((_, index) => index !== 1).map(step => step.label), 
-    [steps]
-  );
+  // Memoize banner steps - updated to include all steps
+  const bannerSteps = useMemo(() => {
+    // Show appropriate steps based on current position
+    const allSteps = ["Account", "Contact Info", "Package", "Funding", "Membership", "Complete Membership", "Payment", "Welcome"];
+    // Filter out steps after a certain point if needed
+    return allSteps.slice(0, 7); // Show first 7 steps in banner
+  }, []);
 
   console.log(`SinglePageSignup rendering - currentStepIndex: ${currentStepIndex}, currentStep: ${currentStep?.id || 'undefined'}`);
 
@@ -84,17 +94,47 @@ export default function SinglePageSignup() {
     if (currentStep?.id === 'payment') {
       return "Complete Your Payment";
     }
+    if (currentStep?.id === 'completion') {
+      return "Complete Your Membership";
+    }
     return "Alcor Signup";
   };
 
-  // Full-screen steps with SimpleBanner preloaded
-  if (currentStep?.id === 'docusign' || currentStep?.id === 'payment') {
+  // Handle DocuSign overlay
+  if (showDocuSign) {
+    return (
+      <MembershipDocuSign
+        membershipData={{}} // Pass actual data from your state/context
+        packageData={{}}
+        contactData={{}}
+        onBack={() => setShowDocuSign(false)}
+        onComplete={() => {
+          setShowDocuSign(false);
+          // Reload to refresh completion status
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
+  // Props to pass to MembershipCompletionStep
+  const getStepProps = () => {
+    if (currentStep?.component === 'MembershipCompletionStep') {
+      return {
+        onNavigateToDocuSign: () => setShowDocuSign(true)
+      };
+    }
+    return {};
+  };
+
+  // Full-screen steps with SimpleBanner
+  if (currentStep?.id === 'docusign' || currentStep?.id === 'payment' || currentStep?.id === 'completion') {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col">
         {/* SimpleBanner - ALWAYS SHOWS IMMEDIATELY */}
         <SimpleBanner title={getSimpleBannerTitle()} />
         
-        {/* Content area - REMOVED h-full constraint that was blocking scroll */}
+        {/* Content area */}
         <div className="flex-1 overflow-auto">
           {/* Show loading spinner if not ready */}
           {(isLoading || !authResolved) ? (
@@ -105,14 +145,14 @@ export default function SinglePageSignup() {
               </div>
             </div>
           ) : (
-            /* Render step component - REMOVED h-full and fixed positioning */
+            /* Render step component */
             <div 
               className={`w-full transition-all duration-300 ${
                 isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
               }`}
             >
               <div key={`step-${currentStepIndex}`}>
-                <StepComponent />
+                <StepComponent {...getStepProps()} />
               </div>
             </div>
           )}
@@ -123,11 +163,11 @@ export default function SinglePageSignup() {
 
   // For all other steps, show responsive banner and normal layout
   return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Beautiful banner - ALWAYS SHOWS IMMEDIATELY */}
       <ResponsiveBanner 
         activeStep={currentStepIndex}
-        steps={["Account", "Contact Info", "Package", "Funding", "Membership"]}  // Just hardcode it
+        steps={bannerSteps}
         showSteps={true}
         showStar={true}
         showProgressBar={true}
@@ -156,7 +196,7 @@ export default function SinglePageSignup() {
             >
               {/* Render current step component with key for clean transitions */}
               <div key={`step-${currentStepIndex}`}>
-                <StepComponent />
+                <StepComponent {...getStepProps()} />
               </div>
             </div>
           )}

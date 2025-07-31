@@ -329,7 +329,7 @@ function CheckoutForm({ userData }) {
       title: "Need assistance?",
       content: (
         <span>
-          Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
         </span>
       )
     }

@@ -73,7 +73,7 @@ const contactInfoHelpContent = [
     title: "Need assistance?",
     content: (
       <>
-        Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
       </>
     )
   }
@@ -672,12 +672,12 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Age Requirement</h3>
               <p className="text-gray-600 mb-6 leading-relaxed text-base">
                 You must be at least 18 years old to register. If you're interested otherwise, please contact our support team at{" "}
-                <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline font-medium">
-                  support@alcor.com
+                <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline font-medium">
+                  info@alcor.org
                 </a>{" "}
                 or call{" "}
                 <a href="tel:8005551234" className="text-[#775684] hover:underline font-medium">
-                  (800) 555-1234
+                623-432-7775
                 </a>.
               </p>
               <button

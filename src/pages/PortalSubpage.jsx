@@ -70,8 +70,8 @@ const PortalSubpage = () => {
       content: (
         <span>
           Our support team is here to help. Contact us at{' '}
-          <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">
-            support@alcor.com
+          <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">
+            info@alcor.org
           </a>{' '}
           or call (480) 905-1906.
         </span>

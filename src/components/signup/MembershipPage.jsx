@@ -5,15 +5,20 @@ import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
 import MembershipSummary from "./MembershipSummary";
 import MembershipDocuSign from "./MembershipDocuSign";
-import PaymentOptions from "./PaymentOptions";
+import MembershipCompletionSteps from "./MembershipCompletionSteps";
+import MembershipPayment from "./MembershipPayment";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
 import iceLogo from "../../assets/images/ICE-logo-temp.png";
 import navyALogo from "../../assets/images/navy-a-logo.png";
+import { auth } from "../../services/firebase";
 
 // Import membership service
 import membershipService from "../../services/membership";
 import fundingService from "../../services/funding";
 import { getMembershipCost } from "../../services/pricing";
+
+// IMPORTANT: Import the progress update API
+import { updateSignupProgressAPI } from "../../services/auth";
 
 // Define help content
 const membershipHelpContent = [
@@ -37,7 +42,7 @@ const membershipHelpContent = [
     title: "Need assistance?",
     content: (
       <>
-        Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
       </>
     )
   }
@@ -54,6 +59,9 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // ===== IMPORTANT FIX: Add state to track current document type =====
+  const [currentDocumentType, setCurrentDocumentType] = useState('membership_agreement');
   
   // Form state with default values for summary page
   const [iceCode, setIceCode] = useState(initialData?.iceCode || "");
@@ -355,19 +363,28 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     // setCurrentPage('membership');
   };
   
-  // In MembershipPage.jsx, update handleProceedToDocuSign:
   const handleProceedToDocuSign = async (updatedData = {}) => {
     setIsSubmitting(true);
     
     try {
-      console.log("MembershipPage: Proceeding to DocuSign step...");
-      console.log("MembershipPage: Updated data from summary:", updatedData);
+      console.log("🚀 === MEMBERSHIP PAGE: PROCEED TO DOCUSIGN START ===");
+      console.log("Current user:", user);
+      console.log("Updated data from summary:", updatedData);
       
       // Use updated values from MembershipSummary if provided, otherwise use existing state
-      // Note: We're accessing the component's state variables here
       const finalIceCode = updatedData.iceCode !== undefined ? updatedData.iceCode : iceCode;
       const finalPaymentFrequency = updatedData.paymentFrequency || paymentFrequency;
       const finalIceCodeValid = updatedData.iceCodeValid !== undefined ? updatedData.iceCodeValid : iceCodeValid;
+      const finalIceDiscountPercent = updatedData.iceDiscountPercent || null;
+      
+      // Extract membership cost from updatedData or use state
+      const finalMembershipCost = updatedData.membership || membershipCost;
+      
+      // Extract userFinalSelections if provided
+      const userFinalSelections = updatedData.userFinalSelections || null;
+      
+      // Extract docusignPhoneNumber from updatedData
+      const docusignPhoneNumber = updatedData.docusignPhoneNumber || null;
       
       // Validate ICE code one final time before saving (only if changed and not empty)
       let finalIceCodeInfo = iceCodeInfo;
@@ -392,38 +409,107 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
       
       // Create data object with all details
       const data = {
+        // IMPORTANT: Include membership cost at the top level as backend expects
+        membership: finalMembershipCost,
         iceCode: (finalIceCode || '').trim(),
         paymentFrequency: finalPaymentFrequency,
         iceCodeValid: finalIceCode && finalIceCode.trim() ? finalIceCodeValid : null,
         iceCodeInfo: finalIceCode && finalIceCode.trim() ? finalIceCodeInfo : null,
+        iceDiscountPercent: finalIceDiscountPercent,
         interestedInLifetime: false,
-        completionDate: new Date().toISOString()
+        completionDate: new Date().toISOString(),
+        // Include userFinalSelections if provided from MembershipSummary
+        userFinalSelections: userFinalSelections,
+        // Include docusignPhoneNumber
+        docusignPhoneNumber: docusignPhoneNumber
       };
       
-      console.log("MembershipPage: Submitting data to backend:", data);
+      console.log("📝 Membership data to save:", data);
+      console.log("📝 Membership cost being sent:", data.membership);
+      console.log("📝 DocuSign phone number being sent:", data.docusignPhoneNumber);
       
-      // Save membership data to backend
+      // STEP 1: Save detailed membership data to /api/membership/save
       try {
+        console.log("💾 [1/2] Saving detailed membership data to backend...");
         const saveResult = await membershipService.saveMembershipSelection(data);
-        console.log("MembershipPage: Save result:", saveResult);
+        console.log("💾 Save result:", saveResult);
         
         if (!saveResult || !saveResult.success) {
           throw new Error("Failed to save membership selection to backend");
         }
+        console.log("✅ Detailed membership data saved successfully");
       } catch (error) {
-        console.error("Error saving membership selection:", error);
+        console.error("❌ Error saving membership selection:", error);
         setError("Failed to save your membership selection. Please try again.");
+        setIsSubmitting(false);
         return false;
       }
       
-      // Navigate to DocuSign step instead of showing DocuSign directly
-      if (onNext) {
-        onNext(data);
+      // STEP 2: Call the signup membership endpoint to update progress
+      try {
+        console.log("📊 [2/2] Updating signup progress via /api/signup/membership...");
+        
+        const token = await auth.currentUser.getIdToken();
+        
+        // Call the signup membership endpoint which updates progress
+        const progressResponse = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/membership`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            // Send minimal data since detailed data was already saved
+            membership: finalMembershipCost,
+            paymentFrequency: finalPaymentFrequency,
+            iceCode: (finalIceCode || '').trim(),
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        const progressResult = await progressResponse.json();
+        console.log("📊 Signup membership endpoint result:", progressResult);
+        
+        if (!progressResponse.ok || !progressResult.success) {
+          console.error("❌ Failed to update progress via signup endpoint:", progressResult.error);
+          // Don't fail the whole process if just progress update fails
+        } else {
+          console.log("✅ Progress updated successfully to step 6 (docusign)");
+        }
+      } catch (progressError) {
+        console.error("❌ Error calling signup membership endpoint:", progressError);
+        // Don't fail the whole process if just progress update fails
       }
       
+      // Wait a bit for updates to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify the progress update worked
+      try {
+        console.log("🔍 Verifying progress update...");
+        const { getUserProgressAPI } = await import("../../services/auth");
+        const verifyResult = await getUserProgressAPI();
+        console.log("🔍 Current progress from backend:", verifyResult);
+        
+        if (verifyResult.success && (verifyResult.step === 6 || verifyResult.stepName === "docusign")) {
+          console.log("✅ Progress verified: User is now at step 6 (docusign)");
+        } else {
+          console.warn("⚠️ Progress verification shows different step:", {
+            step: verifyResult.step,
+            stepName: verifyResult.stepName
+          });
+        }
+      } catch (verifyError) {
+        console.error("❌ Error verifying progress:", verifyError);
+      }
+      
+      console.log("🎯 Navigating to completion steps page");
+      setCurrentPage('completion');
+      
+      console.log("🚀 === MEMBERSHIP PAGE: PROCEED TO DOCUSIGN END ===");
       return true;
     } catch (error) {
-      console.error("Error in handleProceedToDocuSign:", error);
+      console.error("❌ Error in handleProceedToDocuSign:", error);
       setError(error.message || "An error occurred while saving your selection");
       return false;
     } finally {
@@ -431,9 +517,57 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     }
   };
   
-  // Handler for DocuSign completion
-  const handleDocuSignComplete = () => {
-    console.log("DocuSign process completed successfully");
+  // Handler for going back from completion steps to summary
+  const handleBackFromCompletion = () => {
+    setCurrentPage('summary');
+  };
+  
+  // Handler for navigating to payment
+  const handleNavigateToPayment = () => {
+    console.log("Navigating to payment page");
+    setCurrentPage('payment');
+  };
+  
+  // ===== IMPORTANT FIX: Update handler to accept and store document type =====
+  const handleNavigateToDocuSign = (documentType) => {
+    console.log("Navigating to DocuSign page for document:", documentType);
+    setCurrentDocumentType(documentType || 'membership_agreement');
+    setCurrentPage('docusign');
+  };
+  
+  // Handler for payment complete
+  const handlePaymentComplete = async (paymentResult) => {
+    console.log("Payment completed:", paymentResult);
+    
+    try {
+      // Update payment status to completed
+      await membershipService.updatePaymentStatus(
+        'completed',
+        paymentResult.transactionId,
+        paymentResult.paymentAmount
+      );
+      
+      console.log("✅ Payment status updated - user should be at step 8");
+      
+      // Navigate back to completion steps to show success
+      setCurrentPage('completion');
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      // Still continue even if status update fails
+      setCurrentPage('completion');
+    }
+  };
+  
+  // Handler for DocuSign complete
+  const handleDocuSignComplete = async (docusignResult) => {
+    console.log("DocuSign completed:", docusignResult);
+    // Return to completion steps
+    setCurrentPage('completion');
+  };
+  
+  // Handler for completion steps complete
+  const handleCompletionComplete = () => {
+    console.log("Membership completion process completed successfully");
     
     // If onNext prop is provided, use it (for step integration)
     if (onNext) {
@@ -444,16 +578,12 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         iceCodeInfo: iceCode.trim() ? iceCodeInfo : null,
         interestedInLifetime: false,
         docuSignCompleted: true,
+        paymentCompleted: true,
         completionDate: new Date().toISOString()
       };
       
       onNext(finalData);
     }
-  };
-  
-  // Handler for going back from DocuSign to summary
-  const handleBackFromDocuSign = () => {
-    setCurrentPage('summary');
   };
   
   // Calculate pricing based on package info
@@ -505,13 +635,14 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     }).format(amount);
   };
   
-  // Prepare membership data for child components
+  // Prepare data for child components
   const membershipData = {
     iceCode: iceCode.trim(),
     paymentFrequency: paymentFrequency,
     iceCodeValid: iceCodeValid,
     iceCodeInfo: iceCodeInfo,
-    interestedInLifetime: false
+    interestedInLifetime: false,
+    membership: membershipCost // Add this for payment component
   };
   
   const packageData = {
@@ -521,6 +652,9 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   };
   
   const contactData = initialData?.contactData || user;
+  
+  // Create funding data from available information
+  const fundingData = initialData?.fundingData || {};
   
   // Handle loading states
   if (isLoading) {
@@ -542,17 +676,49 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     );
   }
   
+  // ===== IMPORTANT FIX: Pass documentType prop when rendering MembershipDocuSign =====
+  // Handle docusign page render
   if (currentPage === 'docusign') {
-    // Return DocuSign component using a portal to render it outside the normal layout
     return createPortal(
       <MembershipDocuSign
         membershipData={membershipData}
         packageData={packageData}
         contactData={contactData}
-        onBack={handleBackFromDocuSign}
+        documentType={currentDocumentType}  // ⭐ ADD THIS LINE - Pass the document type
+        onBack={() => setCurrentPage('completion')} // Go back to completion steps
         onComplete={handleDocuSignComplete}
       />,
       document.body
+    );
+  }
+  
+  // Handle payment page render
+  if (currentPage === 'payment') {
+    return createPortal(
+      <MembershipPayment
+        membershipData={membershipData}
+        packageData={packageData}
+        contactData={contactData}
+        onBack={() => setCurrentPage('completion')} // Go back to completion steps
+        onComplete={handlePaymentComplete}
+      />,
+      document.body
+    );
+  }
+  
+  // Render completion steps page
+  if (currentPage === 'completion') {
+    return (
+      <MembershipCompletionSteps
+        membershipData={membershipData}
+        packageData={packageData}
+        contactData={contactData}
+        fundingData={fundingData}
+        onBack={handleBackFromCompletion}
+        onComplete={handleCompletionComplete}
+        onNavigateToDocuSign={handleNavigateToDocuSign}
+        onNavigateToPayment={handleNavigateToPayment}
+      />
     );
   }
   
