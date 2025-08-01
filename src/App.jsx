@@ -10,7 +10,7 @@ import WelcomePage from "./pages/WelcomePage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPassword";
 import SinglePageSignup from "./pages/SinglePageSignup";
-import StandalonePaymentPage from './pages/PaymentPage';
+import StandalonePaymentPage from './pages/PaymentPageBackup';
 import WelcomeMember from './pages/WelcomeMember';
 import DemoPasswordPage from './pages/DemoPasswordPage';
 import PortalHome from './pages/PortalHome';

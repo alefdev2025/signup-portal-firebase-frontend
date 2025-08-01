@@ -45,12 +45,39 @@ export default function MembershipCompletionSteps({
       setIsLoading(true);
       setError(null);
       
+      // Get completion status (includes readyForDocuSign data)
       const result = await membershipService.checkMembershipCompletionStatus();
       
       if (result.success) {
         console.log("✅ Completion status loaded:", result.data);
         setCompletionData(result.data);
         setTempPhoneNumber(result.data.docusignPhoneNumber || '');
+        
+        // Also get payment status from readyForPayment
+        try {
+          const paymentStatus = await membershipService.getPaymentStatus();
+          if (paymentStatus.success && paymentStatus.data.exists) {
+            console.log("💳 Payment status from readyForPayment:", paymentStatus.data);
+            
+            // Merge payment status into completion data
+            setCompletionData(prev => ({
+              ...prev,
+              readyForPayment: paymentStatus.data,
+              payment: {
+                ...prev.payment,
+                status: paymentStatus.data.paymentStatus?.status || prev.payment?.status || 'not_started',
+                completedAt: paymentStatus.data.paymentStatus?.completedAt || prev.payment?.completedAt,
+                paymentId: paymentStatus.data.paymentStatus?.transactionId || prev.payment?.paymentId,
+                method: paymentStatus.data.paymentStatus?.paymentMethod || prev.payment?.method
+              },
+              paymentCompleted: paymentStatus.data.paymentStatus?.status === 'completed' || prev.paymentCompleted,
+              totalDue: paymentStatus.data.paymentDetails?.totalDue || prev.totalDue
+            }));
+          }
+        } catch (paymentError) {
+          console.warn("Could not fetch readyForPayment data:", paymentError);
+          // Continue with existing data
+        }
         
         // Check if everything is completed
         if (result.data.allStepsCompleted && onComplete) {
@@ -67,6 +94,7 @@ export default function MembershipCompletionSteps({
       setIsLoading(false);
     }
   };
+  
 
   // Always refresh status when component mounts or becomes visible
   useEffect(() => {
@@ -209,19 +237,43 @@ export default function MembershipCompletionSteps({
       
       console.log("💳 Starting payment process");
       
-      if (onNavigateToPayment) {
-        onNavigateToPayment();
-      } else {
-        navigate('/signup/payment', { 
-          state: { 
-            totalDue: completionData.totalDue 
-          } 
+      // Create or update readyForPayment object
+      try {
+        const createResult = await membershipService.createReadyForPayment();
+        console.log("✅ readyForPayment created:", createResult);
+        
+        // Update payment status to in_progress
+        await membershipService.updatePaymentProgress('in_progress', {
+          paymentMethod: 'pending_selection'
         });
+        
+        // Pass the readyForPayment data to payment component
+        const paymentData = {
+          ...completionData,
+          readyForPayment: createResult.data
+        };
+        
+        if (onNavigateToPayment) {
+          onNavigateToPayment(paymentData);
+        } else {
+          navigate('/signup/payment', { 
+            state: { 
+              totalDue: createResult.data.paymentDetails.totalDue,
+              paymentBreakdown: createResult.data.paymentDetails,
+              membershipDetails: createResult.data.membershipInfo,
+              readyForPayment: createResult.data,
+              readyForDocuSign: completionData
+            } 
+          });
+        }
+      } catch (createError) {
+        console.error("Error creating readyForPayment:", createError);
+        throw new Error("Failed to initialize payment. Please try again.");
       }
       
     } catch (error) {
       console.error("Error starting payment:", error);
-      setError("Failed to start payment process. Please try again.");
+      setError(error.message || "Failed to start payment process. Please try again.");
     }
   };
 

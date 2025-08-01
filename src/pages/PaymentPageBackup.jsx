@@ -1,10 +1,6 @@
 // PRODUCTION-READY Stripe Integration - STRICT VALIDATION
-
-// WE'RE USING PAYMENT PAGE BACKUP FOR NOW
-
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { loadStripe } from '@stripe/stripe-js';
 import { PageLoadingSpinner } from '../components/LoadingSpinner';
 import { ButtonLoader } from '../components/DotLoader';
@@ -32,7 +28,15 @@ import yellowStar from "../assets/images/alcor-yellow-star.png";
 import TermsPrivacyModal from "../components/modals/TermsPrivacyModal";
 import HelpPanel from "../components/signup/HelpPanel";
 
-const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
+// FEATURE FLAGS
+const ENABLE_ACH_PAYMENTS = false; // Set to true to enable ACH payments
+
+// Debug: Check if env variable is loaded
+console.log('Stripe Key from env:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+// Initialize Stripe - fallback to hardcoded key if env var not available
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp';
+const stripePromise = loadStripe(stripeKey);
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -80,17 +84,8 @@ function CheckoutForm({ userData, paymentLineItems }) {
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
 
-  // CRITICAL: Validate payment data up front
-  if (!paymentLineItems || !paymentLineItems.totalDue) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
-          <p className="text-gray-600">Payment information is missing. Please go back and try again.</p>
-        </div>
-      </div>
-    );
-  }
+  // CRITICAL: Use state for payment info to ensure re-render
+  const [paymentInfo, setPaymentInfo] = useState(null);
 
   // Store element reference when ready
   const handleCardReady = useCallback(() => {
@@ -110,19 +105,16 @@ function CheckoutForm({ userData, paymentLineItems }) {
     }
   }, []);
 
-  // Get contact data - NO FALLBACKS
+  // Get contact data - handle gracefully if missing
   const contactData = useMemo(() => {
     if (!userData?.contactData?.email) {
-      throw new Error('Contact information is required for payment');
+      return null;
     }
     return userData.contactData;
   }, [userData?.contactData]);
 
   // Get membership data
   const membershipData = useMemo(() => userData?.membershipData || {}, [userData?.membershipData]);
-
-  // CRITICAL: Use state for payment info to ensure re-render
-  const [paymentInfo, setPaymentInfo] = useState(null);
 
   // Calculate payment info when line items are available
   useEffect(() => {
@@ -163,15 +155,6 @@ function CheckoutForm({ userData, paymentLineItems }) {
     console.log('Payment info set:', info);
     setPaymentInfo(info);
   }, [paymentLineItems, membershipData]);
-
-  // Show loading while payment info is being set
-  if (!paymentInfo) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
-      </div>
-    );
-  }
 
   // Process payment
   const handleSubmit = useCallback(async (event) => {
@@ -402,6 +385,38 @@ function CheckoutForm({ userData, paymentLineItems }) {
     }).format(amount);
   };
 
+  // VALIDATION - After all hooks are declared
+  if (!paymentLineItems || !paymentLineItems.totalDue) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
+          <p className="text-gray-600">Payment information is missing. Please go back and try again.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!contactData || !contactData.email) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
+          <p className="text-gray-600">Contact information is required for payment.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while payment info is being set
+  if (!paymentInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
+      </div>
+    );
+  }
+
   if (paymentStatus === 'completed') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#12243c] to-[#4b3965] flex items-center justify-center p-4">
@@ -459,7 +474,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
           </div>
         </div>
         
-        <div className="flex items-start justify-center pt-8 lg:pt-10 px-4">
+        <div className="flex items-start justify-center pt-4 lg:pt-6 px-4">
           <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-0">
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
@@ -520,7 +535,6 @@ function CheckoutForm({ userData, paymentLineItems }) {
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <h3 className="text-sm font-normal text-white mb-1">CMS Annual Fee</h3>
-                                <p className="text-white/70 text-xs mb-1">Medicare supplement</p>
                               </div>
                               <div className="text-right">
                                 <div className="text-base font-medium text-white">
@@ -600,7 +614,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                     <div className="max-w-md mx-auto w-full">
                       <h2 className="text-lg font-bold text-gray-900 mb-5">Payment Information</h2>
 
-                      <form onSubmit={handleSubmit} className="space-y-8 lg:space-y-6 pb-8 lg:pb-12">
+                      <form onSubmit={handleSubmit} className="space-y-8 pb-8 lg:pb-12">
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-3">
                             Email Address
@@ -652,27 +666,31 @@ function CheckoutForm({ userData, paymentLineItems }) {
                               </div>
                             </div>
                             
-                            <hr className="border-gray-200" />
-                            
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <input
-                                  type="radio"
-                                  id="ach"
-                                  name="paymentMethod"
-                                  value="ach"
-                                  checked={paymentMethod === 'ach'}
-                                  onChange={() => setPaymentMethod('ach')}
-                                  className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
-                                />
-                                <label htmlFor="ach" className="flex items-center cursor-pointer">
-                                  <div className="bg-[#0052cc] text-white px-2 py-0.5 rounded text-xs font-bold mr-2">
-                                    ACH
+                            {ENABLE_ACH_PAYMENTS && (
+                              <>
+                                <hr className="border-gray-200" />
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      type="radio"
+                                      id="ach"
+                                      name="paymentMethod"
+                                      value="ach"
+                                      checked={paymentMethod === 'ach'}
+                                      onChange={() => setPaymentMethod('ach')}
+                                      className="mr-3 w-4 h-4 text-[#13273f] focus:ring-[#13273f]"
+                                    />
+                                    <label htmlFor="ach" className="flex items-center cursor-pointer">
+                                      <div className="bg-[#0052cc] text-white px-2 py-0.5 rounded text-xs font-bold mr-2">
+                                        ACH
+                                      </div>
+                                      <span className="font-medium text-sm">Bank Transfer</span>
+                                    </label>
                                   </div>
-                                  <span className="font-medium text-sm">Bank Transfer</span>
-                                </label>
-                              </div>
-                            </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -689,7 +707,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                               />
                             </div>
                             
-                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                               <div className="flex items-start">
                                 <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -749,7 +767,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                               </div>
                             </div>
                             
-                            <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                               <div className="flex items-start">
                                 <svg className="w-4 h-4 text-amber-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-.833-1.99-.833-2.78 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -763,7 +781,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                         )}
 
                         {error && (
-                          <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-start">
                               <svg className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -773,47 +791,49 @@ function CheckoutForm({ userData, paymentLineItems }) {
                           </div>
                         )}
 
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
-                        >
-                          {isLoading ? (
-                            <div className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
-                            </div>
-                          ) : (
-                            <span className="flex items-center">
-                              <img src={alcorStar} alt="" className="h-4 mr-1" />
-                              {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.totalDue)}`}
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </span>
-                          )}
-                        </button>
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+                          >
+                            {isLoading ? (
+                              <div className="flex items-center justify-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
+                              </div>
+                            ) : (
+                              <span className="flex items-center">
+                                <img src={alcorStar} alt="" className="h-4 mr-1" />
+                                {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.totalDue)}`}
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </span>
+                            )}
+                          </button>
 
-                        <p className="text-xs text-gray-500 text-center leading-tight -mt-2">
-                          By completing your purchase, you agree to our{' '}
-                          <span 
-                            onClick={() => openModal('terms')} 
-                            className="text-[#13273f] hover:underline cursor-pointer"
-                          >
-                            terms of service
-                          </span>{' '}
-                          and{' '}
-                          <span 
-                            onClick={() => openModal('privacy')} 
-                            className="text-[#13273f] hover:underline cursor-pointer"
-                          >
-                            privacy policy
-                          </span>.
-                          Your membership will be activated immediately upon successful payment.
-                        </p>
+                          <p className="text-xs text-gray-500 text-center leading-relaxed mt-4">
+                            By completing your purchase, you agree to our{' '}
+                            <span 
+                              onClick={() => openModal('terms')} 
+                              className="text-[#13273f] hover:underline cursor-pointer"
+                            >
+                              terms of service
+                            </span>{' '}
+                            and{' '}
+                            <span 
+                              onClick={() => openModal('privacy')} 
+                              className="text-[#13273f] hover:underline cursor-pointer"
+                            >
+                              privacy policy
+                            </span>.
+                            Your membership will be activated immediately upon successful payment.
+                          </p>
+                        </div>
                       </form>
                     </div>
                   </div>
@@ -842,9 +862,10 @@ function CheckoutForm({ userData, paymentLineItems }) {
   );
 }
 
-// Data loader component with STRICT validation
+// Data loader component with STRICT validation and debugging
 function PaymentPageLoader() {
   const { currentUser } = useUser();
+  const location = useLocation();
   const [userData, setUserData] = useState(null);
   const [paymentLineItems, setPaymentLineItems] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -853,36 +874,57 @@ function PaymentPageLoader() {
 
   useEffect(() => {
     const loadUserData = async () => {
+      console.log('🔍 PaymentPageLoader starting...');
+      console.log('Current user:', currentUser);
+      console.log('Location state:', location.state);
+      
       if (!currentUser) {
+        console.log('❌ No current user, redirecting to signup');
         navigate('/signup', { replace: true });
         return;
       }
 
       try {
-        // FIRST: Check for payment data from MembershipPayment
-        const storedPaymentData = sessionStorage.getItem('pendingPaymentData');
+        // FIRST: Try to get payment data from location state (direct navigation)
         let lineItems = null;
         
-        if (storedPaymentData) {
-          try {
-            const parsedData = JSON.parse(storedPaymentData);
-            console.log('📦 Retrieved payment data from session:', parsedData);
-            
-            // CRITICAL: Validate line items exist
-            if (!parsedData.lineItems || !parsedData.lineItems.totalDue) {
-              throw new Error('Invalid payment data - missing line items');
+        if (location.state?.paymentDetails) {
+          console.log('📍 Found payment data in location state');
+          lineItems = location.state.paymentDetails;
+        } else {
+          // Check sessionStorage as fallback
+          const storedPaymentData = sessionStorage.getItem('pendingPaymentData');
+          console.log('📦 Checking sessionStorage:', storedPaymentData ? 'Found data' : 'No data');
+          
+          if (storedPaymentData) {
+            try {
+              const parsedData = JSON.parse(storedPaymentData);
+              console.log('📦 Parsed payment data:', parsedData);
+              
+              // CRITICAL: Validate line items exist
+              if (!parsedData.lineItems || !parsedData.lineItems.totalDue) {
+                console.error('❌ Invalid payment data - missing line items');
+                throw new Error('Invalid payment data - missing line items');
+              }
+              
+              lineItems = parsedData.lineItems;
+              console.log('✅ Line items extracted:', lineItems);
+              
+            } catch (e) {
+              console.error('❌ Error parsing stored payment data:', e);
+              throw new Error('Corrupted payment data. Please go back and try again.');
             }
-            
-            lineItems = parsedData.lineItems;
-            setPaymentLineItems(lineItems);
-            
-          } catch (e) {
-            console.error('Error parsing stored payment data:', e);
-            throw new Error('Corrupted payment data. Please go back and try again.');
           }
         }
         
+        // Set payment line items immediately if found
+        if (lineItems) {
+          console.log('💰 Setting payment line items:', lineItems);
+          setPaymentLineItems(lineItems);
+        }
+        
         // Load user data for display
+        console.log('👤 Loading user data...');
         const [contactResult, membershipResult] = await Promise.allSettled([
           getContactInfo(),
           membershipService.getMembershipInfo()
@@ -891,29 +933,43 @@ function PaymentPageLoader() {
         let contactData = null;
         if (contactResult.status === 'fulfilled' && contactResult.value.success) {
           contactData = contactResult.value.contactInfo;
+          console.log('✅ Contact data loaded:', contactData);
+        } else {
+          console.log('⚠️ Failed to load contact data');
         }
 
         let membershipData = null;
         if (membershipResult.status === 'fulfilled' && membershipResult.value.success) {
           membershipData = membershipResult.value.data.membershipInfo;
+          console.log('✅ Membership data loaded:', membershipData);
+        } else {
+          console.log('⚠️ Failed to load membership data');
         }
 
         // CRITICAL: Validate required data
         if (!contactData?.email) {
+          console.error('❌ No contact email found');
           throw new Error('Contact information is required for payment');
         }
         
         if (!lineItems || !lineItems.totalDue) {
+          console.error('❌ No valid line items found');
           throw new Error('Payment information not found. Please go back to the previous step.');
         }
 
-        setUserData({
+        // Set user data
+        const finalUserData = {
           contactData: contactData,
           membershipData: membershipData || {},
           pricingData: {} // Not using fallback pricing
-        });
+        };
+        
+        console.log('✅ Setting final user data:', finalUserData);
+        setUserData(finalUserData);
+        setError(null);
 
       } catch (err) {
+        console.error('❌ Error in loadUserData:', err);
         setError(err.message || 'Failed to load payment information');
       } finally {
         setIsLoading(false);
@@ -921,13 +977,14 @@ function PaymentPageLoader() {
     };
 
     loadUserData();
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, location.state]);
 
   if (isLoading) {
     return <ButtonLoader message="Loading payment information..." />;
   }
 
   if (error || !userData || !paymentLineItems) {
+    console.log('🚨 Rendering error state:', { error, hasUserData: !!userData, hasLineItems: !!paymentLineItems });
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 text-center max-w-md mx-auto">
@@ -949,6 +1006,7 @@ function PaymentPageLoader() {
     );
   }
 
+  console.log('✅ Rendering CheckoutForm with data');
   return <CheckoutForm userData={userData} paymentLineItems={paymentLineItems} />;
 }
 

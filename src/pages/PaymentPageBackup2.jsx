@@ -1,8 +1,4 @@
-// PRODUCTION-READY Stripe Integration - STRICT VALIDATION
-
-// WE'RE USING PAYMENT PAGE BACKUP FOR NOW
-
-
+// PRODUCTION-READY Stripe Integration - Fixed All Syntax Errors
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from '@stripe/stripe-js';
@@ -57,7 +53,7 @@ const CARD_ELEMENT_OPTIONS = {
   hidePostalCode: false,
 };
 
-function CheckoutForm({ userData, paymentLineItems }) {
+function CheckoutForm({ userData }) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -80,18 +76,6 @@ function CheckoutForm({ userData, paymentLineItems }) {
   // Help panel state
   const [showHelpInfo, setShowHelpInfo] = useState(false);
 
-  // CRITICAL: Validate payment data up front
-  if (!paymentLineItems || !paymentLineItems.totalDue) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
-          <p className="text-gray-600">Payment information is missing. Please go back and try again.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Store element reference when ready
   const handleCardReady = useCallback(() => {
     if (elements) {
@@ -110,68 +94,52 @@ function CheckoutForm({ userData, paymentLineItems }) {
     }
   }, []);
 
-  // Get contact data - NO FALLBACKS
-  const contactData = useMemo(() => {
-    if (!userData?.contactData?.email) {
-      throw new Error('Contact information is required for payment');
-    }
-    return userData.contactData;
-  }, [userData?.contactData]);
-
-  // Get membership data
+  // Memoize user data
+  const contactData = useMemo(() => userData?.contactData || {}, [userData?.contactData]);
   const membershipData = useMemo(() => userData?.membershipData || {}, [userData?.membershipData]);
+  const pricingData = useMemo(() => userData?.pricingData || { membershipCost: 540 }, [userData?.pricingData]);
 
-  // CRITICAL: Use state for payment info to ensure re-render
-  const [paymentInfo, setPaymentInfo] = useState(null);
+  const paymentInfo = useMemo(() => {
+    const baseCost = pricingData.membershipCost || 540;
+    const paymentFrequency = membershipData.paymentFrequency || 'annually';
+    const hasIceDiscount = membershipData.iceCodeValid && membershipData.iceCodeInfo;
+    
+    let amount = baseCost;
+    let frequency = 'Annual';
+    let perText = 'per year';
+    
+    if (paymentFrequency === 'monthly') {
+      amount = Math.round(baseCost / 12);
+      frequency = 'Monthly';
+      perText = 'per month';
+    } else if (paymentFrequency === 'quarterly') {
+      amount = Math.round(baseCost / 4);
+      frequency = 'Quarterly';
+      perText = 'per quarter';
+    }
 
-  // Calculate payment info when line items are available
-  useEffect(() => {
-    if (!paymentLineItems) return;
-    
-    console.log('Setting payment info with line items:', paymentLineItems);
-    
-    // Validate all required fields exist
-    const requiredFields = ['baseCost', 'totalDue'];
-    for (const field of requiredFields) {
-      if (paymentLineItems[field] === undefined || paymentLineItems[field] === null) {
-        console.error(`Missing required payment field: ${field}`);
-        return;
+    let iceDiscount = 0;
+    if (hasIceDiscount && membershipData.iceCodeInfo) {
+      const discountPercent = membershipData.iceCodeInfo.discountPercent || 25;
+      iceDiscount = Math.round(baseCost * (discountPercent / 100));
+      
+      if (paymentFrequency === 'monthly') {
+        iceDiscount = Math.round(iceDiscount / 12);
+      } else if (paymentFrequency === 'quarterly') {
+        iceDiscount = Math.round(iceDiscount / 4);
       }
     }
-    
-    // Validate amounts are positive
-    if (paymentLineItems.totalDue <= 0) {
-      console.error('Invalid payment amount');
-      return;
-    }
-    
-    // Set the payment info
-    const info = {
-      baseCost: paymentLineItems.baseCost,
-      applicationFee: paymentLineItems.applicationFee || 0,
-      iceDiscount: paymentLineItems.iceDiscount || 0,
-      cmsAnnualFee: paymentLineItems.cmsAnnualFee || 0,
-      totalDue: paymentLineItems.totalDue,
-      originalAmount: paymentLineItems.baseCost,
-      discountedAmount: paymentLineItems.totalDue,
-      frequency: 'Annual',
-      perText: 'per year',
-      hasDiscount: (paymentLineItems.iceDiscount || 0) > 0,
-      iceCode: membershipData?.iceCode || null
-    };
-    
-    console.log('Payment info set:', info);
-    setPaymentInfo(info);
-  }, [paymentLineItems, membershipData]);
 
-  // Show loading while payment info is being set
-  if (!paymentInfo) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
-      </div>
-    );
-  }
+    return {
+      originalAmount: amount,
+      discountedAmount: Math.max(0, amount - iceDiscount),
+      discount: iceDiscount,
+      frequency,
+      perText,
+      hasDiscount: hasIceDiscount,
+      iceCode: membershipData.iceCode
+    };
+  }, [membershipData, pricingData]);
 
   // Process payment
   const handleSubmit = useCallback(async (event) => {
@@ -212,8 +180,8 @@ function CheckoutForm({ userData, paymentLineItems }) {
           type: 'card',
           card: cardElement,
           billing_details: {
-            name: `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim(),
-            email: contactData.email,
+            name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
+            email: contactData?.email,
           },
         });
 
@@ -223,29 +191,21 @@ function CheckoutForm({ userData, paymentLineItems }) {
 
         console.log('Payment method created:', pm.id);
 
-        // Create payment intent with EXACT amount from backend
+        // Create payment intent
         const paymentData = {
-          amount: Math.round(paymentInfo.totalDue * 100), // Convert to cents - use totalDue from backend
+          amount: Math.round(paymentInfo.discountedAmount * 100),
           currency: 'usd',
           paymentFrequency: membershipData?.paymentFrequency || 'annually',
           iceCode: membershipData?.iceCode || null,
           paymentMethodId: pm.id,
           customerInfo: {
-            email: contactData.email,
-            name: `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim(),
-          },
-          // Include line items for backend validation
-          lineItems: {
-            baseCost: paymentInfo.baseCost,
-            applicationFee: paymentInfo.applicationFee,
-            iceDiscount: paymentInfo.iceDiscount,
-            cmsAnnualFee: paymentInfo.cmsAnnualFee,
-            totalDue: paymentInfo.totalDue
+            email: contactData?.email,
+            name: `${contactData?.firstName || ''} ${contactData?.lastName || ''}`.trim(),
           }
         };
 
-        console.log('Creating payment intent with backend amount:', paymentData.amount / 100);
-        console.log('Payment line items:', paymentData.lineItems);
+        console.log('Creating payment intent with payment method:', pm.id);
+        console.log('🚀 SENDING TO BACKEND:', JSON.stringify(paymentData, null, 2));
         const intentResult = await createPaymentIntent(paymentData);
         
         if (!intentResult.success) {
@@ -386,6 +346,8 @@ function CheckoutForm({ userData, paymentLineItems }) {
     setModalType(null);
   };
 
+
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -429,6 +391,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
         {/* Top Header Bar - Mobile */}
         <div className="md:hidden">
           <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+            {/* Additional diagonal gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
             
             <div className="flex items-center justify-between pt-3 relative z-10">
@@ -448,6 +411,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
         
         {/* Top Header Bar - Desktop */}
         <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
+          {/* Additional diagonal gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
           
           <div className="w-full flex justify-between items-center relative z-10">
@@ -466,83 +430,48 @@ function CheckoutForm({ userData, paymentLineItems }) {
             
                 {/* LEFT SIDE - Order Summary with Custom Gradient */}
                 <div className="lg:col-span-2 bg-gradient-to-br from-[#0a1629] to-[#1e2650] p-6 text-white flex flex-col relative overflow-hidden">
+                  {/* Additional diagonal gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
                   
                   <div className="relative z-10 h-full flex flex-col">
                     <div className="mt-3 mb-6">
-                      <h2 className="text-xl font-medium text-white mb-4 flex items-center">
-                        Activate Membership
-                        <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
-                      </h2>
+                    <h2 className="text-xl font-medium text-white mb-4 flex items-center">
+  Activate Membership
+  <img src={alcorStar} alt="Alcor Star" className="h-5 ml-1" />
+</h2>
                     </div>
                     
                     <div className="space-y-4 flex-grow">
-                      {/* Grouped Summary Items */}
+                      {/* Grouped Summary Items - Membership, Discount, and Tax */}
                       <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 space-y-4">
-                        {/* Base Membership Cost */}
+                        {/* Main Membership */}
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="text-sm font-normal text-white mb-1 flex items-center">
                               Alcor Membership
                               <img src={alcorStar} alt="Alcor Star" className="h-4 ml-1" />
                             </h3>
-                            <p className="text-white/70 text-xs mb-1">Annual Plan</p>
+                            <p className="text-white/70 text-xs mb-1">{paymentInfo.frequency} Plan</p>
                           </div>
                           <div className="text-right">
                             <div className="text-base font-medium text-white">
-                              ${paymentLineItems?.baseCost || 0}
+                              {formatCurrency(paymentInfo.originalAmount)}
                             </div>
                           </div>
                         </div>
 
-                        {/* Application Fee - DIRECTLY FROM paymentLineItems */}
-                        {paymentLineItems?.applicationFee > 0 && (
-                          <>
-                            <hr className="border-white/20 my-3" />
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h3 className="text-sm font-normal text-white mb-1">One-time Application Fee</h3>
-                                <p className="text-white/70 text-xs mb-1">First-time members only</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-base font-medium text-white">
-                                  ${paymentLineItems.applicationFee}
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {/* CMS Annual Fee - DIRECTLY FROM paymentLineItems */}
-                        {paymentLineItems?.cmsAnnualFee > 0 && (
-                          <>
-                            <hr className="border-white/20 my-3" />
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h3 className="text-sm font-normal text-white mb-1">CMS Annual Fee</h3>
-                                <p className="text-white/70 text-xs mb-1">Medicare supplement</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-base font-medium text-white">
-                                  ${paymentLineItems.cmsAnnualFee}
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {/* ICE Code Discount - DIRECTLY FROM paymentLineItems */}
-                        {paymentLineItems?.iceDiscount > 0 && (
+                        {/* ICE Code Discount */}
+                        {paymentInfo.hasDiscount && (
                           <>
                             <hr className="border-white/20 my-3" />
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <h3 className="text-sm font-normal text-white mb-1">ICE Code Discount</h3>
-                                <p className="text-white/70 text-xs mb-1">Applied</p>
+                                <p className="text-white/70 text-xs mb-1">Code: {paymentInfo.iceCode}</p>
                               </div>
                               <div className="text-right">
                                 <div className="text-base font-medium text-blue-300">
-                                  -${paymentLineItems.iceDiscount}
+                                  -{formatCurrency(paymentInfo.discount)}
                                 </div>
                               </div>
                             </div>
@@ -564,13 +493,13 @@ function CheckoutForm({ userData, paymentLineItems }) {
                         </div>
                       </div>
 
-                      {/* Total Section - DIRECTLY FROM paymentLineItems */}
+                      {/* Total Section */}
                       <div className="mt-6 pt-4">
                         <div className="bg-white/15 backdrop-blur-sm rounded-lg p-4 border border-white/30">
                           <div className="flex justify-between items-center">
                             <div className="text-sm font-normal text-white">Total Due Today</div>
                             <div className="text-base font-medium text-white">
-                              ${paymentLineItems?.totalDue || 0}
+                              {formatCurrency(paymentInfo.discountedAmount)}
                             </div>
                           </div>
                         </div>
@@ -594,7 +523,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                   </div>
                 </div>
 
-                {/* RIGHT SIDE - Payment Form */}
+                {/* RIGHT SIDE - Payment Form with Internal Scrolling (Desktop Only) */}
                 <div className="lg:col-span-3 lg:h-full lg:overflow-hidden">
                   <div className="lg:h-full lg:overflow-y-auto p-6 lg:p-8">
                     <div className="max-w-md mx-auto w-full">
@@ -608,7 +537,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
                           <div className="relative">
                             <input
                               type="email"
-                              value={contactData.email}
+                              value={contactData?.email || ''}
                               className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                               readOnly
                             />
@@ -773,29 +702,29 @@ function CheckoutForm({ userData, paymentLineItems }) {
                           </div>
                         )}
 
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
-                        >
-                          {isLoading ? (
-                            <div className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
-                            </div>
-                          ) : (
-                            <span className="flex items-center">
-                              <img src={alcorStar} alt="" className="h-4 mr-1" />
-                              {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.totalDue)}`}
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </span>
-                          )}
-                        </button>
+<button
+  type="submit"
+  disabled={isLoading}
+  className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
+>
+  {isLoading ? (
+    <div className="flex items-center justify-center">
+      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {paymentMethod === 'card' ? 'Processing Payment...' : 'Processing Transfer...'}
+    </div>
+  ) : (
+    <span className="flex items-center">
+      <img src={alcorStar} alt="" className="h-4 mr-1" />
+      {`Complete ${paymentMethod === 'card' ? 'Payment' : 'Bank Transfer'} • ${formatCurrency(paymentInfo.discountedAmount)}`}
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    </span>
+  )}
+</button>
 
                         <p className="text-xs text-gray-500 text-center leading-tight -mt-2">
                           By completing your purchase, you agree to our{' '}
@@ -832,7 +761,7 @@ function CheckoutForm({ userData, paymentLineItems }) {
         bannerColor="#13273f"
       />
       
-      {/* Help Panel Component */}
+      {/* Help Panel Component - Always rendered so pink button is visible */}
       <HelpPanel 
         showHelpInfo={showHelpInfo} 
         toggleHelpInfo={toggleHelpInfo} 
@@ -842,11 +771,10 @@ function CheckoutForm({ userData, paymentLineItems }) {
   );
 }
 
-// Data loader component with STRICT validation
+// Data loader component
 function PaymentPageLoader() {
   const { currentUser } = useUser();
   const [userData, setUserData] = useState(null);
-  const [paymentLineItems, setPaymentLineItems] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -859,33 +787,10 @@ function PaymentPageLoader() {
       }
 
       try {
-        // FIRST: Check for payment data from MembershipPayment
-        const storedPaymentData = sessionStorage.getItem('pendingPaymentData');
-        let lineItems = null;
-        
-        if (storedPaymentData) {
-          try {
-            const parsedData = JSON.parse(storedPaymentData);
-            console.log('📦 Retrieved payment data from session:', parsedData);
-            
-            // CRITICAL: Validate line items exist
-            if (!parsedData.lineItems || !parsedData.lineItems.totalDue) {
-              throw new Error('Invalid payment data - missing line items');
-            }
-            
-            lineItems = parsedData.lineItems;
-            setPaymentLineItems(lineItems);
-            
-          } catch (e) {
-            console.error('Error parsing stored payment data:', e);
-            throw new Error('Corrupted payment data. Please go back and try again.');
-          }
-        }
-        
-        // Load user data for display
-        const [contactResult, membershipResult] = await Promise.allSettled([
+        const [contactResult, membershipResult, pricingResult] = await Promise.allSettled([
           getContactInfo(),
-          membershipService.getMembershipInfo()
+          membershipService.getMembershipInfo(),
+          getMembershipCost()
         ]);
 
         let contactData = null;
@@ -898,19 +803,33 @@ function PaymentPageLoader() {
           membershipData = membershipResult.value.data.membershipInfo;
         }
 
-        // CRITICAL: Validate required data
+        let pricingData = null;
+        if (pricingResult.status === 'fulfilled' && pricingResult.value?.success) {
+          pricingData = {
+            membershipCost: pricingResult.value.membershipCost || 540,
+            age: pricingResult.value.age,
+            annualDues: pricingResult.value.annualDues
+          };
+        }
+
+        // Set defaults if data is missing
         if (!contactData?.email) {
           throw new Error('Contact information is required for payment');
         }
-        
-        if (!lineItems || !lineItems.totalDue) {
-          throw new Error('Payment information not found. Please go back to the previous step.');
-        }
 
         setUserData({
-          contactData: contactData,
-          membershipData: membershipData || {},
-          pricingData: {} // Not using fallback pricing
+          contactData: contactData || {},
+          membershipData: membershipData || {
+            paymentFrequency: 'annually',
+            iceCodeValid: false,
+            iceCode: null,
+            iceCodeInfo: null
+          },
+          pricingData: pricingData || {
+            membershipCost: 540,
+            age: null,
+            annualDues: 540
+          }
         });
 
       } catch (err) {
@@ -924,10 +843,10 @@ function PaymentPageLoader() {
   }, [currentUser, navigate]);
 
   if (isLoading) {
-    return <ButtonLoader message="Loading payment information..." />;
+    return <ButtonLoader message="Preparing your payment..." />;
   }
 
-  if (error || !userData || !paymentLineItems) {
+  if (error || !userData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 text-center max-w-md mx-auto">
@@ -937,19 +856,19 @@ function PaymentPageLoader() {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3">Unable to Load Payment</h3>
-          <p className="text-gray-600 mb-6">{error || 'Payment information not found'}</p>
+          <p className="text-gray-600 mb-6">{error || 'Failed to load payment data'}</p>
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/signup')}
             className="bg-gradient-to-r from-[#12243c] to-[#4b3965] text-white px-6 py-2.5 rounded-lg font-semibold hover:from-[#0f1e33] hover:to-[#402f56] transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
-            Go Back
+            Back to Signup
           </button>
         </div>
       </div>
     );
   }
 
-  return <CheckoutForm userData={userData} paymentLineItems={paymentLineItems} />;
+  return <CheckoutForm userData={userData} />;
 }
 
 // Main payment page with proper Elements wrapper

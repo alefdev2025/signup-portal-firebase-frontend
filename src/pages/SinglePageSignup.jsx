@@ -1,4 +1,4 @@
-// File: pages/SinglePageSignup.jsx - Updated with MembershipCompletionStep
+// File: pages/SinglePageSignup.jsx - Updated with MembershipCompletionStep and Payment Overlay
 import React, { useMemo, useState } from 'react';
 import { useSignupFlow } from '../contexts/SignupFlowContext';
 import { useUser } from "../contexts/UserContext";
@@ -10,17 +10,18 @@ import ContactInfoStep from "../components/signup/ContactInfoStep";
 import PackageStep from "../components/signup/PackageStep";
 import FundingStep from "../components/signup/FundingStep";
 import MembershipStep from "../components/signup/MembershipStep";
-import MembershipCompletionSteps from "../components/signup/MembershipCompletionSteps"; // ADD THIS
-import MembershipDocuSign from "../components/signup/MembershipDocuSign"; // ADD THIS
+import MembershipCompletionSteps from "../components/signup/MembershipCompletionSteps";
+import MembershipDocuSign from "../components/signup/MembershipDocuSign";
+import MembershipPayment from "../components/signup/MembershipPayment";
 import DocuSignStep from "../components/signup/DocuSignStep";
 import PaymentStep from "../components/signup/PaymentStep";
-import CompletionStep from "../components/signup/CompletionStep"; // Add if you have a final welcome step
+import CompletionStep from "../components/signup/CompletionStep";
 
 // Import banners
 import ResponsiveBanner from "../components/ResponsiveBanner";
 import SimpleBanner from "../components/SimpleBanner";
 
-// Updated component mapping to include completion step
+// Component mapping
 const STEP_COMPONENTS = {
   AccountCreationStep,
   AccountSuccessStep,
@@ -28,10 +29,10 @@ const STEP_COMPONENTS = {
   PackageStep,
   FundingStep,
   MembershipStep,
-  MembershipCompletionStep: MembershipCompletionSteps, // ADD THIS MAPPING
+  MembershipCompletionStep: MembershipCompletionSteps,
   DocuSignStep,
   PaymentStep,
-  CompletionStep // Add if you have this
+  CompletionStep
 };
 
 export default function SinglePageSignup() {
@@ -46,6 +47,10 @@ export default function SinglePageSignup() {
   
   // State for DocuSign overlay
   const [docuSignState, setDocuSignState] = useState({ show: false, documentType: null });
+  
+  // State for Payment overlay
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
 
   // Memoize step component with better error handling
   const StepComponent = useMemo(() => {
@@ -76,12 +81,10 @@ export default function SinglePageSignup() {
     return Component;
   }, [currentStep, currentStepIndex]);
 
-  // Memoize banner steps - updated to include all steps
+  // Memoize banner steps
   const bannerSteps = useMemo(() => {
-    // Show appropriate steps based on current position
-    const allSteps = ["Account", "Contact Info", "Package", "Funding", "Membership", "Complete Membership", "Payment", "Welcome"];
-    // Filter out steps after a certain point if needed
-    return allSteps.slice(0, 7); // Show first 7 steps in banner
+    const allSteps = ["Account", "Contact Info", "Package", "Funding", "Membership", "Complete Membership"];
+    return allSteps.slice(0, 5); // Show first 7 steps in banner
   }, []);
 
   console.log(`SinglePageSignup rendering - currentStepIndex: ${currentStepIndex}, currentStep: ${currentStep?.id || 'undefined'}`);
@@ -101,22 +104,44 @@ export default function SinglePageSignup() {
   };
 
   // Handle DocuSign overlay
-// Handle DocuSign overlay
-if (docuSignState.show) {
-  return (
-    <MembershipDocuSign
-      membershipData={{}}
-      packageData={{}}
-      contactData={{}}
-      documentType={docuSignState.documentType} // This passes the document type
-      onBack={() => setDocuSignState({ show: false, documentType: null })}
-      onComplete={() => {
-        setDocuSignState({ show: false, documentType: null });
-        window.location.reload();
-      }}
-    />
-  );
-}
+  if (docuSignState.show) {
+    return (
+      <MembershipDocuSign
+        membershipData={{}}
+        packageData={{}}
+        contactData={{}}
+        documentType={docuSignState.documentType}
+        onBack={() => setDocuSignState({ show: false, documentType: null })}
+        onComplete={() => {
+          setDocuSignState({ show: false, documentType: null });
+          // Reload to refresh completion status
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
+  // Handle Payment overlay
+  if (showPayment) {
+    return (
+      <MembershipPayment
+        membershipData={{}}
+        packageData={{}}
+        contactData={{}}
+        completionData={paymentData}
+        onBack={() => {
+          setShowPayment(false);
+          // Reload to refresh completion status
+          window.location.reload();
+        }}
+        onComplete={() => {
+          setShowPayment(false);
+          // Reload to refresh completion status
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   // Props to pass to MembershipCompletionStep
   const getStepProps = () => {
@@ -125,6 +150,12 @@ if (docuSignState.show) {
         onNavigateToDocuSign: (documentType) => {
           console.log('SinglePageSignup: Opening DocuSign for:', documentType);
           setDocuSignState({ show: true, documentType: documentType });
+        },
+        onNavigateToPayment: (completionData) => {
+          console.log('SinglePageSignup: Opening Payment with data:', completionData);
+          // Show payment overlay without changing step
+          setShowPayment(true);
+          setPaymentData(completionData);
         }
       };
     }

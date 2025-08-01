@@ -557,6 +557,167 @@ export const initiatePayment = async (paymentData) => {
   }
 };
 
+/**
+ * Create readyForPayment object when proceeding to payment
+ * @returns {Promise<object>} Creation result with payment data
+ */
+ export const createReadyForPayment = async () => {
+  try {
+    console.log("Creating readyForPayment object...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/create-ready-for-payment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create payment data');
+    }
+    
+    console.log("readyForPayment created:", data);
+    return data;
+  } catch (error) {
+    console.error("Error creating readyForPayment:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get payment status from readyForPayment object
+ * @returns {Promise<object>} Payment status
+ */
+export const getPaymentStatus = async () => {
+  try {
+    console.log("Getting payment status...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/payment-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get payment status');
+    }
+    
+    console.log("Payment status:", data);
+    return data;
+  } catch (error) {
+    console.error("Error getting payment status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update payment progress
+ * @param {string} status The payment status
+ * @param {object} paymentData Additional payment data
+ * @returns {Promise<object>} Update result
+ */
+export const updatePaymentProgress = async (status, paymentData = {}) => {
+  try {
+    console.log("Updating payment progress:", { status, ...paymentData });
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/update-payment-progress`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status,
+        ...paymentData
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update payment progress');
+    }
+    
+    console.log("Payment progress updated:", data);
+    return data;
+  } catch (error) {
+    console.error("Error updating payment progress:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create Salesforce contact after DocuSign completion
+ * @returns {Promise<object>} Salesforce contact creation result
+ */
+ export const createSalesforceContact = async () => {
+  try {
+    console.log("Creating Salesforce contact...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/create-salesforce-contact`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create Salesforce contact');
+    }
+    
+    console.log("Salesforce contact creation response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error creating Salesforce contact:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get Salesforce contact status
+ * @returns {Promise<object>} Salesforce status
+ */
+export const getSalesforceStatus = async () => {
+  try {
+    console.log("Getting Salesforce status...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/salesforce-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get Salesforce status');
+    }
+    
+    console.log("Salesforce status:", data);
+    return data;
+  } catch (error) {
+    console.error("Error getting Salesforce status:", error);
+    throw error;
+  }
+};
+
 // Default export with all functions
 export default {
   saveMembershipSelection,
@@ -570,5 +731,10 @@ export default {
   initiatePayment,
   updateDocuSignPhone,
   updateDocuSignStatus,
-  updatePaymentStatus
+  updatePaymentStatus,
+  createReadyForPayment,
+  getPaymentStatus,
+  updatePaymentProgress,
+  createSalesforceContact,
+  getSalesforceStatus
 };

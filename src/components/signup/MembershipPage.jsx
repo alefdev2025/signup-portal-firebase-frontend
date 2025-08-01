@@ -60,7 +60,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // ===== IMPORTANT FIX: Add state to track current document type =====
+  // State to track current document type for DocuSign
   const [currentDocumentType, setCurrentDocumentType] = useState('membership_agreement');
   
   // Form state with default values for summary page
@@ -523,17 +523,18 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   };
   
   // Handler for navigating to payment
-  const handleNavigateToPayment = () => {
-    console.log("Navigating to payment page");
+  const handleNavigateToPayment = (paymentData) => {
+    console.log("Navigating to payment page with data:", paymentData);
     setCurrentPage('payment');
   };
   
-  // ===== IMPORTANT FIX: Update handler to accept and store document type =====
-  const [navigationState, setNavigationState] = useState({ page: 'completion', documentType: null });
-
+  // FIXED: Handler for navigating to DocuSign
   const handleNavigateToDocuSign = (documentType) => {
     console.log('NAVIGATING TO DOCUSIGN WITH:', documentType);
-    setNavigationState({ page: 'docusign', documentType: documentType });
+    // Set the current document type
+    setCurrentDocumentType(documentType);
+    // Change the page to docusign
+    setCurrentPage('docusign');
   };
   
   // Handler for payment complete
@@ -677,7 +678,6 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     );
   }
   
-  // ===== IMPORTANT FIX: Pass documentType prop when rendering MembershipDocuSign =====
   // Handle docusign page render
   if (currentPage === 'docusign') {
     return createPortal(
@@ -685,7 +685,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         membershipData={membershipData}
         packageData={packageData}
         contactData={contactData}
-        documentType={currentDocumentType}  // ⭐ ADD THIS LINE - Pass the document type
+        documentType={currentDocumentType}  // Pass the document type
         onBack={() => setCurrentPage('completion')} // Go back to completion steps
         onComplete={handleDocuSignComplete}
       />,
@@ -730,6 +730,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         membershipData={membershipData}
         packageData={packageData}
         contactData={contactData}
+        fundingData={fundingData}
         onBack={handleBackFromSummary}
         onSignAgreement={handleProceedToDocuSign}
       />

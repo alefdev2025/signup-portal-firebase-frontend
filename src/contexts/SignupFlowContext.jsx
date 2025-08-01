@@ -11,9 +11,7 @@ const SIGNUP_STEPS = [
   { id: 'package', label: 'Package', component: 'PackageStep' },
   { id: 'funding', label: 'Funding', component: 'FundingStep' },
   { id: 'membership', label: 'Membership', component: 'MembershipStep' },
-  { id: 'completion', label: 'Complete Membership', component: 'MembershipCompletionStep' }, // NEW STEP
-  { id: 'payment', label: 'Payment', component: 'PaymentStep' },
-  { id: 'welcome', label: 'Complete', component: 'CompletionStep' }
+  { id: 'completion', label: 'Complete Membership', component: 'MembershipCompletionStep' } // NEW STEP
 ];
 
 /*const SIGNUP_STEPS = [
