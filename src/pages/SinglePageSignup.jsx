@@ -1,5 +1,5 @@
 // File: pages/SinglePageSignup.jsx - Updated with MembershipCompletionStep and Payment Overlay
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSignupFlow } from '../contexts/SignupFlowContext';
 import { useUser } from "../contexts/UserContext";
 
@@ -144,23 +144,28 @@ export default function SinglePageSignup() {
   }
 
   // Props to pass to MembershipCompletionStep
-  const getStepProps = () => {
-    if (currentStep?.component === 'MembershipCompletionStep') {
-      return {
-        onNavigateToDocuSign: (documentType) => {
-          console.log('SinglePageSignup: Opening DocuSign for:', documentType);
-          setDocuSignState({ show: true, documentType: documentType });
-        },
-        onNavigateToPayment: (completionData) => {
-          console.log('SinglePageSignup: Opening Payment with data:', completionData);
-          // Show payment overlay without changing step
-          setShowPayment(true);
-          setPaymentData(completionData);
-        }
-      };
-    }
-    return {};
-  };
+// Props to pass to MembershipCompletionStep
+const getStepProps = () => {
+  if (currentStep?.component === 'MembershipCompletionStep') {
+    return {
+      onComplete: () => {
+        console.log('All membership steps completed - redirecting to welcome page');
+        window.location.href = '/welcome-member';
+      },
+      onNavigateToDocuSign: (documentType) => {
+        console.log('SinglePageSignup: Opening DocuSign for:', documentType);
+        setDocuSignState({ show: true, documentType: documentType });
+      },
+      onNavigateToPayment: (completionData) => {
+        console.log('SinglePageSignup: Opening Payment with data:', completionData);
+        // Show payment overlay without changing step
+        setShowPayment(true);
+        setPaymentData(completionData);
+      }
+    };
+  }
+  return {};
+};
 
   // Full-screen steps with SimpleBanner
   if (currentStep?.id === 'docusign' || currentStep?.id === 'payment' || currentStep?.id === 'completion') {
