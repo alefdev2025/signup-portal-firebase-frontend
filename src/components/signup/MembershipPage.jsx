@@ -529,10 +529,11 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   };
   
   // ===== IMPORTANT FIX: Update handler to accept and store document type =====
+  const [navigationState, setNavigationState] = useState({ page: 'completion', documentType: null });
+
   const handleNavigateToDocuSign = (documentType) => {
-    console.log("Navigating to DocuSign page for document:", documentType);
-    setCurrentDocumentType(documentType || 'membership_agreement');
-    setCurrentPage('docusign');
+    console.log('NAVIGATING TO DOCUSIGN WITH:', documentType);
+    setNavigationState({ page: 'docusign', documentType: documentType });
   };
   
   // Handler for payment complete

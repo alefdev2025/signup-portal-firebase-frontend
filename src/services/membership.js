@@ -1,4 +1,4 @@
-// File: services/membership.js
+// File: services/membership.js - Complete Version
 import { auth } from './firebase';
 
 // Base URL for API calls - should be configured through environment variables
@@ -108,7 +108,8 @@ export const getMembershipInfo = async () => {
     
     return {
       success: true,
-      data: result.data
+      data: result.data,
+      readyForDocuSign: result.readyForDocuSign // Include this if returned
     };
   } catch (error) {
     console.error("Error getting membership info:", error);
@@ -119,6 +120,11 @@ export const getMembershipInfo = async () => {
   }
 };
 
+/**
+ * Validate ICE discount code
+ * @param {string} iceCode The ICE code to validate
+ * @returns {Promise<object>} Validation result
+ */
 export const validateIceCode = async (iceCode) => {
   try {
     const user = auth.currentUser;
@@ -166,9 +172,8 @@ export const validateIceCode = async (iceCode) => {
       valid: result.isValid || result.valid,
       educatorName: result.educatorName,
       discountPercent: result.discountLevel, // Backend now returns percentage directly
-      // These fields aren't returned by backend anymore, set defaults:
-      educatorType: null,
       discountAmount: null,
+      educatorType: null,
       iceCompensationPercent: null,
       iceCompensationAmount: null,
       error: result.error
@@ -181,7 +186,6 @@ export const validateIceCode = async (iceCode) => {
     };
   }
 };
-
 
 /**
  * Get membership costs and options
@@ -301,9 +305,11 @@ export const validateMembershipData = async (membershipData) => {
   }
 };
 
-// In services/membership.js, update all the new methods to remove the extra /api:
-
-const checkMembershipCompletionStatus = async () => {
+/**
+ * Check membership completion status
+ * @returns {Promise<object>} Completion status
+ */
+export const checkMembershipCompletionStatus = async () => {
   try {
     console.log("Checking membership completion status...");
     const token = await auth.currentUser?.getIdToken();
@@ -330,7 +336,167 @@ const checkMembershipCompletionStatus = async () => {
   }
 };
 
-const initiateDocuSign = async (docusignData) => {
+/**
+ * Get detailed DocuSign status
+ * @returns {Promise<object>} DocuSign status
+ */
+export const getDocuSignStatus = async () => {
+  try {
+    console.log("Getting DocuSign status...");
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/docusign-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get DocuSign status');
+    }
+    
+    console.log("DocuSign status response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error getting DocuSign status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update DocuSign phone number
+ * @param {object} phoneData The phone number data
+ * @returns {Promise<object>} Update result
+ */
+export const updateDocuSignPhone = async (phoneData) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/update-docusign-phone`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(phoneData)
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update phone number');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Error updating phone number:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update DocuSign document status
+ * @param {string} documentType The document type (membership_agreement or confidentiality_agreement)
+ * @param {string} status The status (not_started, in_progress, completed)
+ * @param {string} envelopeId The DocuSign envelope ID (optional)
+ * @returns {Promise<object>} Update result
+ */
+export const updateDocuSignStatus = async (documentType, status, envelopeId = null) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    console.log("Updating DocuSign status:", { documentType, status, envelopeId });
+    
+    const response = await fetch(`${API_BASE_URL}/membership/update-docusign-status`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        documentType,
+        status,
+        envelopeId
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update DocuSign status');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Error updating DocuSign status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update payment status
+ * @param {string} status The payment status
+ * @param {string} paymentId The payment transaction ID (optional)
+ * @param {number} amount The payment amount (optional)
+ * @returns {Promise<object>} Update result
+ */
+export const updatePaymentStatus = async (status, paymentId = null, amount = null) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    console.log("Updating payment status:", { status, paymentId, amount });
+    
+    const response = await fetch(`${API_BASE_URL}/membership/update-payment-status`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status,
+        paymentId,
+        amount
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update payment status');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Initiate DocuSign process
+ * @param {object} docusignData The data for DocuSign
+ * @returns {Promise<object>} DocuSign initiation result
+ */
+export const initiateDocuSign = async (docusignData = {}) => {
   try {
     console.log("Initiating DocuSign process with data:", docusignData);
     const token = await auth.currentUser?.getIdToken();
@@ -341,7 +507,7 @@ const initiateDocuSign = async (docusignData) => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(docusignData)  // Pass the phone number and other data
+      body: JSON.stringify(docusignData)
     });
     
     const data = await response.json();
@@ -358,34 +524,12 @@ const initiateDocuSign = async (docusignData) => {
   }
 };
 
-const checkDocuSignStatus = async () => {
-  try {
-    console.log("Checking DocuSign status...");
-    const token = await auth.currentUser?.getIdToken();
-    
-    const response = await fetch(`${API_BASE_URL}/membership/docusign-status`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to check DocuSign status');
-    }
-    
-    console.log("DocuSign status response:", data);
-    return data;
-  } catch (error) {
-    console.error("Error checking DocuSign status:", error);
-    throw error;
-  }
-};
-
-const initiatePayment = async (paymentData) => {
+/**
+ * Initiate payment process
+ * @param {object} paymentData The payment data
+ * @returns {Promise<object>} Payment initiation result
+ */
+export const initiatePayment = async (paymentData) => {
   try {
     console.log("Initiating payment process with data:", paymentData);
     const token = await auth.currentUser?.getIdToken();
@@ -413,6 +557,7 @@ const initiatePayment = async (paymentData) => {
   }
 };
 
+// Default export with all functions
 export default {
   saveMembershipSelection,
   getMembershipInfo,
@@ -420,7 +565,10 @@ export default {
   getMembershipCosts,
   validateMembershipData,
   checkMembershipCompletionStatus,
+  getDocuSignStatus,
   initiateDocuSign,
-  checkDocuSignStatus,
-  initiatePayment
+  initiatePayment,
+  updateDocuSignPhone,
+  updateDocuSignStatus,
+  updatePaymentStatus
 };

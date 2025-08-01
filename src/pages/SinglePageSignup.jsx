@@ -45,7 +45,7 @@ export default function SinglePageSignup() {
   } = useSignupFlow();
   
   // State for DocuSign overlay
-  const [showDocuSign, setShowDocuSign] = useState(false);
+  const [docuSignState, setDocuSignState] = useState({ show: false, documentType: null });
 
   // Memoize step component with better error handling
   const StepComponent = useMemo(() => {
@@ -101,27 +101,31 @@ export default function SinglePageSignup() {
   };
 
   // Handle DocuSign overlay
-  if (showDocuSign) {
-    return (
-      <MembershipDocuSign
-        membershipData={{}} // Pass actual data from your state/context
-        packageData={{}}
-        contactData={{}}
-        onBack={() => setShowDocuSign(false)}
-        onComplete={() => {
-          setShowDocuSign(false);
-          // Reload to refresh completion status
-          window.location.reload();
-        }}
-      />
-    );
-  }
+// Handle DocuSign overlay
+if (docuSignState.show) {
+  return (
+    <MembershipDocuSign
+      membershipData={{}}
+      packageData={{}}
+      contactData={{}}
+      documentType={docuSignState.documentType} // This passes the document type
+      onBack={() => setDocuSignState({ show: false, documentType: null })}
+      onComplete={() => {
+        setDocuSignState({ show: false, documentType: null });
+        window.location.reload();
+      }}
+    />
+  );
+}
 
   // Props to pass to MembershipCompletionStep
   const getStepProps = () => {
     if (currentStep?.component === 'MembershipCompletionStep') {
       return {
-        onNavigateToDocuSign: () => setShowDocuSign(true)
+        onNavigateToDocuSign: (documentType) => {
+          console.log('SinglePageSignup: Opening DocuSign for:', documentType);
+          setDocuSignState({ show: true, documentType: documentType });
+        }
       };
     }
     return {};
