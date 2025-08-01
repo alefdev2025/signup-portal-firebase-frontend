@@ -718,6 +718,42 @@ export const getSalesforceStatus = async () => {
   }
 };
 
+
+export const getReadyForDocuSign = async () => {
+  try {
+    console.log("Getting readyForDocuSign data...");
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/ready-for-docusign`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get readyForDocuSign data');
+    }
+    
+    console.log("readyForDocuSign data retrieved successfully");
+    return data;
+  } catch (error) {
+    console.error("Error getting readyForDocuSign:", error);
+    return {
+      success: false,
+      error: error.message || 'Failed to get readyForDocuSign data'
+    };
+  }
+};
+
 // Default export with all functions
 export default {
   saveMembershipSelection,
@@ -736,5 +772,6 @@ export default {
   getPaymentStatus,
   updatePaymentProgress,
   createSalesforceContact,
-  getSalesforceStatus
+  getSalesforceStatus,
+  getReadyForDocuSign
 };

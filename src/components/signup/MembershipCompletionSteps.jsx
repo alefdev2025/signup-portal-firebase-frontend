@@ -1,9 +1,14 @@
-// File: pages/signup/MembershipCompletionSteps.jsx - Fixed Version
+// File: pages/signup/MembershipCompletionSteps.jsx - Professional Design with Country Code Phone Input
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import membershipService from "../../services/membership";
 import { updateSignupProgressAPI } from "../../services/auth";
+import alcorStar from "../../assets/images/alcor-star.png";
+import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
+
+// Font family from PackagePage
+const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 // Step Status Constants
 const STEP_STATUS = {
@@ -24,6 +29,48 @@ const DOCUMENT_DISPLAY_NAMES = {
   confidentiality_agreement: 'Terms and Conditions'
 };
 
+// Country codes for phone input
+const COUNTRY_CODES = [
+  { code: '+1', country: 'US', flag: '🇺🇸', name: 'United States' },
+  { code: '+1', country: 'CA', flag: '🇨🇦', name: 'Canada' },
+  { code: '+44', country: 'GB', flag: '🇬🇧', name: 'United Kingdom' },
+  { code: '+61', country: 'AU', flag: '🇦🇺', name: 'Australia' },
+  { code: '+49', country: 'DE', flag: '🇩🇪', name: 'Germany' },
+  { code: '+33', country: 'FR', flag: '🇫🇷', name: 'France' },
+  { code: '+39', country: 'IT', flag: '🇮🇹', name: 'Italy' },
+  { code: '+34', country: 'ES', flag: '🇪🇸', name: 'Spain' },
+  { code: '+31', country: 'NL', flag: '🇳🇱', name: 'Netherlands' },
+  { code: '+46', country: 'SE', flag: '🇸🇪', name: 'Sweden' },
+  { code: '+47', country: 'NO', flag: '🇳🇴', name: 'Norway' },
+  { code: '+45', country: 'DK', flag: '🇩🇰', name: 'Denmark' },
+  { code: '+358', country: 'FI', flag: '🇫🇮', name: 'Finland' },
+  { code: '+48', country: 'PL', flag: '🇵🇱', name: 'Poland' },
+  { code: '+41', country: 'CH', flag: '🇨🇭', name: 'Switzerland' },
+  { code: '+43', country: 'AT', flag: '🇦🇹', name: 'Austria' },
+  { code: '+32', country: 'BE', flag: '🇧🇪', name: 'Belgium' },
+  { code: '+353', country: 'IE', flag: '🇮🇪', name: 'Ireland' },
+  { code: '+64', country: 'NZ', flag: '🇳🇿', name: 'New Zealand' },
+  { code: '+81', country: 'JP', flag: '🇯🇵', name: 'Japan' },
+  { code: '+82', country: 'KR', flag: '🇰🇷', name: 'South Korea' },
+  { code: '+86', country: 'CN', flag: '🇨🇳', name: 'China' },
+  { code: '+91', country: 'IN', flag: '🇮🇳', name: 'India' },
+  { code: '+52', country: 'MX', flag: '🇲🇽', name: 'Mexico' },
+  { code: '+55', country: 'BR', flag: '🇧🇷', name: 'Brazil' },
+  { code: '+54', country: 'AR', flag: '🇦🇷', name: 'Argentina' },
+  { code: '+27', country: 'ZA', flag: '🇿🇦', name: 'South Africa' },
+  { code: '+90', country: 'TR', flag: '🇹🇷', name: 'Turkey' },
+  { code: '+7', country: 'RU', flag: '🇷🇺', name: 'Russia' },
+  { code: '+65', country: 'SG', flag: '🇸🇬', name: 'Singapore' },
+  { code: '+60', country: 'MY', flag: '🇲🇾', name: 'Malaysia' },
+  { code: '+63', country: 'PH', flag: '🇵🇭', name: 'Philippines' },
+  { code: '+66', country: 'TH', flag: '🇹🇭', name: 'Thailand' },
+  { code: '+62', country: 'ID', flag: '🇮🇩', name: 'Indonesia' },
+  { code: '+84', country: 'VN', flag: '🇻🇳', name: 'Vietnam' },
+  { code: '+972', country: 'IL', flag: '🇮🇱', name: 'Israel' },
+  { code: '+971', country: 'AE', flag: '🇦🇪', name: 'UAE' },
+  { code: '+966', country: 'SA', flag: '🇸🇦', name: 'Saudi Arabia' }
+];
+
 export default function MembershipCompletionSteps({ 
   onBack,
   onComplete,
@@ -37,7 +84,47 @@ export default function MembershipCompletionSteps({
   const [error, setError] = useState(null);
   const [completionData, setCompletionData] = useState(null);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [tempPhoneNumber, setTempPhoneNumber] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState(COUNTRY_CODES[0]);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [salesforceStatus, setSalesforceStatus] = useState(null);
+  const [isCreatingSalesforce, setIsCreatingSalesforce] = useState(false);
+  const [backButtonError, setBackButtonError] = useState(false);
+
+  // Animation styles from PackagePage
+  const fadeInStyle = {
+    opacity: 0,
+    animation: 'fadeIn 0.5s ease-in-out forwards'
+  };
+
+  const getAnimationDelay = (index) => ({
+    animationDelay: `${index * 0.1}s`
+  });
+
+  // Parse phone number and set country code
+  const parsePhoneNumber = (fullPhone) => {
+    if (!fullPhone) return { countryCode: COUNTRY_CODES[0], number: '' };
+    
+    // Remove all non-digits
+    const digitsOnly = fullPhone.replace(/\D/g, '');
+    
+    // Try to match country code
+    for (const country of COUNTRY_CODES) {
+      const codeDigits = country.code.replace(/\D/g, '');
+      if (digitsOnly.startsWith(codeDigits)) {
+        return {
+          countryCode: country,
+          number: digitsOnly.substring(codeDigits.length)
+        };
+      }
+    }
+    
+    // Default to US if no match
+    if (digitsOnly.length === 10) {
+      return { countryCode: COUNTRY_CODES[0], number: digitsOnly };
+    }
+    
+    return { countryCode: COUNTRY_CODES[0], number: digitsOnly };
+  };
 
   // Check completion status from backend
   const checkCompletionStatus = async () => {
@@ -51,7 +138,30 @@ export default function MembershipCompletionSteps({
       if (result.success) {
         console.log("✅ Completion status loaded:", result.data);
         setCompletionData(result.data);
-        setTempPhoneNumber(result.data.docusignPhoneNumber || '');
+        
+        // Parse phone number if exists
+        if (result.data.docusignPhoneNumber) {
+          const parsed = parsePhoneNumber(result.data.docusignPhoneNumber);
+          setSelectedCountryCode(parsed.countryCode);
+          setPhoneNumber(parsed.number);
+        }
+        
+        // Check if both DocuSign documents are completed
+        const docs = result.data.docusignDocuments;
+        const bothDocusignCompleted = 
+          docs.membershipAgreement === STEP_STATUS.COMPLETED && 
+          docs.confidentialityAgreement === STEP_STATUS.COMPLETED;
+        
+        // If both DocuSign documents are completed, check Salesforce status
+        if (bothDocusignCompleted) {
+          await checkSalesforceStatus();
+          
+          // Auto-create Salesforce contact if it doesn't exist
+          const sfStatus = await checkSalesforceStatus();
+          if (!sfStatus?.exists) {
+            await createSalesforceContact();
+          }
+        }
         
         // Also get payment status from readyForPayment
         try {
@@ -95,6 +205,57 @@ export default function MembershipCompletionSteps({
     }
   };
   
+  // Check Salesforce status
+  const checkSalesforceStatus = async () => {
+    try {
+      console.log("🔍 Checking Salesforce status...");
+      const sfResult = await membershipService.getSalesforceStatus();
+      
+      if (sfResult.success) {
+        console.log("📊 Salesforce status:", sfResult.data);
+        setSalesforceStatus(sfResult.data);
+        return sfResult.data;
+      }
+    } catch (error) {
+      console.error("❌ Error checking Salesforce status:", error);
+      // Don't fail the whole process if Salesforce check fails
+      setSalesforceStatus({ exists: false, error: error.message });
+    }
+    return null;
+  };
+  
+  // Create Salesforce contact
+  const createSalesforceContact = async () => {
+    try {
+      setIsCreatingSalesforce(true);
+      setError(null);
+      
+      console.log("🚀 Creating Salesforce contact...");
+      const result = await membershipService.createSalesforceContact();
+      
+      if (result.success) {
+        console.log("✅ Salesforce contact created:", result.data);
+        setSalesforceStatus({
+          exists: true,
+          contactId: result.data.contactId,
+          createdAt: result.data.createdAt
+        });
+        
+        // Refresh completion status to get updated data
+        await checkCompletionStatus();
+        
+        return true;
+      } else {
+        throw new Error(result.error || 'Failed to create Salesforce contact');
+      }
+    } catch (error) {
+      console.error("❌ Error creating Salesforce contact:", error);
+      setError("Failed to create Salesforce contact. Please try again or contact support.");
+      return false;
+    } finally {
+      setIsCreatingSalesforce(false);
+    }
+  };
 
   // Always refresh status when component mounts or becomes visible
   useEffect(() => {
@@ -155,24 +316,28 @@ export default function MembershipCompletionSteps({
   // Handle saving phone number
   const handleSavePhone = async () => {
     try {
-      const phoneRegex = /^\+?1?\d{10,}$/;
-      if (!tempPhoneNumber.match(phoneRegex)) {
-        setError("Please enter a valid phone number (10+ digits)");
+      // Validate phone number
+      const phoneDigitsOnly = phoneNumber.replace(/\D/g, '');
+      if (phoneDigitsOnly.length < 7) {
+        setError("Please enter a valid phone number");
         return;
       }
       
+      // Combine country code and phone number
+      const fullPhoneNumber = `${selectedCountryCode.code}${phoneDigitsOnly}`;
+      
       const result = await membershipService.updateDocuSignPhone({
-        docusignPhoneNumber: tempPhoneNumber
+        docusignPhoneNumber: fullPhoneNumber
       });
       
       if (result.success) {
         setCompletionData(prev => ({
           ...prev,
-          docusignPhoneNumber: tempPhoneNumber
+          docusignPhoneNumber: fullPhoneNumber
         }));
         setIsEditingPhone(false);
         setError(null);
-        console.log("✅ Phone number saved successfully");
+        console.log("✅ Phone number saved successfully:", fullPhoneNumber);
       } else {
         throw new Error(result.error || "Failed to update phone number");
       }
@@ -208,7 +373,6 @@ export default function MembershipCompletionSteps({
       }
       
       console.log(`📝 Starting DocuSign for document type: ${docToSign}`);
-      console.log(`📝 Document constants check - MEMBERSHIP_AGREEMENT: ${DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT}, CONFIDENTIALITY_AGREEMENT: ${DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT}`);
       
       // Navigate to DocuSign
       if (onNavigateToDocuSign) {
@@ -232,6 +396,12 @@ export default function MembershipCompletionSteps({
     try {
       if (!completionData?.docusignCompleted) {
         setError("Please complete signing all agreements first.");
+        return;
+      }
+      
+      // Check if Salesforce contact exists
+      if (!salesforceStatus?.exists) {
+        setError("Please wait for processing to complete. Click the refresh button if this takes too long.");
         return;
       }
       
@@ -288,12 +458,21 @@ export default function MembershipCompletionSteps({
     }).format(amount);
   };
 
+  // Format phone number for display
+  const formatPhoneDisplay = (fullPhone) => {
+    if (!fullPhone) return 'No phone number provided';
+    
+    const parsed = parsePhoneNumber(fullPhone);
+    const formatted = parsed.number.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+    return `${parsed.countryCode.code} ${formatted}`;
+  };
+
   // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
-        <p className="ml-4 text-xl text-gray-700">Loading membership completion steps...</p>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#775684]"></div>
+        <p className="ml-4 text-lg text-gray-600" style={{ fontFamily: SYSTEM_FONT }}>Loading membership completion steps...</p>
       </div>
     );
   }
@@ -302,10 +481,11 @@ export default function MembershipCompletionSteps({
   if (!completionData) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">Failed to load membership data</p>
+        <p className="text-red-600 mb-4" style={{ fontFamily: SYSTEM_FONT }}>Failed to load membership data</p>
         <button
           onClick={checkCompletionStatus}
-          className="px-4 py-2 bg-[#775684] text-white rounded-lg hover:bg-[#664573]"
+          className="py-3 px-6 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+          style={{ fontFamily: SYSTEM_FONT }}
         >
           Retry
         </button>
@@ -314,75 +494,125 @@ export default function MembershipCompletionSteps({
   }
 
   const { docusignDocuments, payment, docusignCompleted, paymentCompleted, totalDue } = completionData;
+  
+  // Check if both DocuSign documents are completed
+  const bothDocusignCompleted = 
+    docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED && 
+    docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED;
+  
+  // Determine if payment can be started
+  const canStartPayment = bothDocusignCompleted && salesforceStatus?.exists;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8">
+    <div className="w-full max-w-4xl mx-auto px-4 py-8" style={{ fontFamily: SYSTEM_FONT }}>
       
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6" style={fadeInStyle}>
           <div className="flex">
             <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
-            <p className="text-red-700">{error}</p>
+            <p className="text-red-700" style={{ fontSize: '14px' }}>{error}</p>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Membership</h1>
-        <p className="text-gray-600">Please complete all steps below to finalize your membership</p>
+      {/* Header - Smaller and more professional */}
+      <div className="text-center mb-6" style={{...fadeInStyle, ...getAnimationDelay(0)}}>
+        <h1 className="text-2xl font-semibold text-gray-900">Complete Your Membership</h1>
+        <p className="text-gray-600 mt-2" style={{ fontSize: '15px' }}>Please complete all steps below to finalize your membership</p>
       </div>
 
-      {/* Phone Number Section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      {/* Phone Number Section - Professional design */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 mb-6" style={{...fadeInStyle, ...getAnimationDelay(1)}}>
         <div className="flex items-start">
-          <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
+          <div className="flex-shrink-0 mr-4">
+            <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-800 mb-1">SMS Verification Required</h3>
-            <p className="text-blue-700 text-sm mb-2">
+            <h3 className="text-gray-900 mb-1" style={{ fontSize: '16px', fontWeight: '500' }}>SMS Verification Required</h3>
+            <p className="text-gray-600 mb-3" style={{ fontSize: '14px' }}>
               DocuSign will send an SMS verification code to this number:
             </p>
             
             {isEditingPhone ? (
-              <div className="flex items-center space-x-2 mt-2">
-                <input
-                  type="tel"
-                  value={tempPhoneNumber}
-                  onChange={(e) => setTempPhoneNumber(e.target.value)}
-                  className="flex-1 p-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Enter phone number"
-                />
-                <button
-                  onClick={handleSavePhone}
-                  className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-sm"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setIsEditingPhone(false);
-                    setTempPhoneNumber(completionData.docusignPhoneNumber || '');
-                    setError(null);
-                  }}
-                  className="text-gray-600 hover:text-gray-800 px-3 py-2 text-sm"
-                >
-                  Cancel
-                </button>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  {/* Country Code Dropdown */}
+                  <div className="relative">
+                    <select
+                      value={COUNTRY_CODES.indexOf(selectedCountryCode)}
+                      onChange={(e) => setSelectedCountryCode(COUNTRY_CODES[parseInt(e.target.value)])}
+                      className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
+                      style={{ minWidth: '120px' }}
+                    >
+                      {COUNTRY_CODES.map((country, index) => (
+                        <option key={country.code + country.country} value={index}>
+                          {country.flag} {country.code}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Phone Number Input */}
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
+                    placeholder="Phone number"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleSavePhone}
+                    className="bg-[#775684] text-white px-4 py-2 rounded-md hover:bg-[#664573] text-sm font-medium transition-all"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingPhone(false);
+                      if (completionData.docusignPhoneNumber) {
+                        const parsed = parsePhoneNumber(completionData.docusignPhoneNumber);
+                        setSelectedCountryCode(parsed.countryCode);
+                        setPhoneNumber(parsed.number);
+                      } else {
+                        setPhoneNumber('');
+                        setSelectedCountryCode(COUNTRY_CODES[0]);
+                      }
+                      setError(null);
+                    }}
+                    className="text-gray-600 hover:text-gray-800 px-3 py-2 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center justify-between">
                 <p className="text-gray-900 font-medium">
-                  {completionData.docusignPhoneNumber || 'No phone number provided'}
+                  {completionData.docusignPhoneNumber ? formatPhoneDisplay(completionData.docusignPhoneNumber) : 'No phone number provided'}
                 </p>
                 <button
                   onClick={() => {
                     setIsEditingPhone(true);
-                    setTempPhoneNumber(completionData.docusignPhoneNumber || '');
+                    if (completionData.docusignPhoneNumber) {
+                      const parsed = parsePhoneNumber(completionData.docusignPhoneNumber);
+                      setSelectedCountryCode(parsed.countryCode);
+                      setPhoneNumber(parsed.number);
+                    }
                   }}
                   className="text-[#775684] hover:text-[#664573] font-medium text-sm"
                 >
@@ -394,172 +624,204 @@ export default function MembershipCompletionSteps({
         </div>
       </div>
 
-      {/* Two Cards Side by Side */}
+
+
+      {/* Two Cards Side by Side - Styled like Package Page cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         
         {/* Step 1: DocuSign Card */}
-        <div className={`bg-white rounded-xl shadow-sm border-2 p-6 ${
-          docusignCompleted ? 'border-green-500' : 'border-gray-200'
-        }`}>
-          <div className="text-center">
-            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-              docusignCompleted ? 'bg-green-100' : 'bg-gray-100'
-            }`}>
-              {docusignCompleted ? (
-                <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              )}
-            </div>
+        <div 
+          className={`cursor-pointer transform transition duration-300 hover:scale-[1.02]`}
+          style={{...fadeInStyle, ...getAnimationDelay(3)}}
+        >
+          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ring-1 ring-gray-300 transition-all duration-300 hover:shadow-lg h-full flex flex-col`}>
             
-            <h3 className="text-xl font-semibold mb-2">Step 1: Sign Agreements</h3>
-            
-            {/* Document Status List */}
-            <div className="text-left mb-4 space-y-2">
-              <div 
-                className={`flex items-center justify-between p-2 rounded transition-colors ${
-                  docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
-                    ? 'bg-green-50' 
-                    : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                }`}
-                onClick={() => {
-                  console.log("🔍 Membership Agreement clicked");
-                  console.log("  - Status:", docusignDocuments.membershipAgreement);
-                  console.log("  - Has phone:", !!completionData.docusignPhoneNumber);
-                  if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                    console.log("  - Starting DocuSign for:", DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
-                    handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
-                  }
-                }}
-              >
-                <span className="text-sm">Membership Agreement</span>
-                {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            {/* Card Header - White Section */}
+            <div className="bg-white p-7 md:px-8 md:pt-8 md:pb-6 flex-1 flex flex-col">
+              <div className="flex items-center mb-4">
+                <div className="p-3.5 rounded-lg mr-3.5" style={{ 
+                  background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' 
+                }}>
+                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                ) : (
-                  <span className="text-xs text-[#775684] hover:underline">Sign →</span>
-                )}
+                </div>
+                <h3 className="font-normal text-gray-900" style={{ fontSize: '20px' }}>Step 1: Sign Agreements</h3>
               </div>
               
-              <div 
-                className={`flex items-center justify-between p-2 rounded transition-colors ${
-                  docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
-                    ? 'bg-green-50' 
-                    : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                }`}
-                onClick={() => {
-                  console.log("🔍 Terms & Conditions clicked");
-                  console.log("  - Status:", docusignDocuments.confidentialityAgreement);
-                  console.log("  - Has phone:", !!completionData.docusignPhoneNumber);
-                  if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                    console.log("  - Starting DocuSign for:", DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
-                    handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
-                  }
-                }}
-              >
-                <span className="text-sm">Terms & Conditions</span>
-                {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
-                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <span className="text-xs text-[#775684] hover:underline">Sign →</span>
-                )}
+              <p className="text-gray-600 font-light" style={{ fontSize: '16px' }}>
+                Sign your membership documents electronically
+              </p>
+              
+              {/* Document Status List */}
+              <div className="mt-6 space-y-3 flex-1">
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
+                      ? 'bg-green-50' 
+                      : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                  }`}
+                  onClick={() => {
+                    if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                      handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
+                    }
+                  }}
+                >
+                  <span className="text-sm font-normal text-gray-700">Membership Agreement</span>
+                  {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                  )}
+                </div>
+                
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
+                      ? 'bg-green-50' 
+                      : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                  }`}
+                  onClick={() => {
+                    if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                      handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
+                    }
+                  }}
+                >
+                  <span className="text-sm font-normal text-gray-700">Terms & Conditions</span>
+                  {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                  )}
+                </div>
               </div>
             </div>
             
-            {docusignCompleted ? (
-              <div className="text-green-600 font-medium">✓ All Agreements Signed</div>
-            ) : (
+            {/* Card Footer - White Section with Navy Button */}
+            <div className="bg-white p-6 border-t border-gray-100">
               <button
                 onClick={() => handleStartDocuSign()}
-                disabled={!completionData.docusignPhoneNumber}
-                className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-                  completionData.docusignPhoneNumber 
-                    ? 'bg-[#775684] text-white hover:bg-[#664573]'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                disabled={!completionData.docusignPhoneNumber || docusignCompleted}
+                className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
+                  !completionData.docusignPhoneNumber || docusignCompleted
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
                 }`}
               >
-                Continue Signing
+                {docusignCompleted ? 'Agreements Signed' : 'Continue Signing'}
               </button>
-            )}
+            </div>
           </div>
         </div>
         
         {/* Step 2: Payment Card */}
-        <div className={`bg-white rounded-xl shadow-sm border-2 p-6 ${
-          paymentCompleted 
-            ? 'border-green-500' 
-            : !docusignCompleted
-              ? 'border-gray-200 opacity-60'
-              : 'border-gray-200'
-        }`}>
-          <div className="text-center">
-            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-              paymentCompleted ? 'bg-green-100' : 'bg-gray-100'
-            }`}>
-              {paymentCompleted ? (
-                <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              )}
+        <div 
+          className={`cursor-pointer transform transition duration-300 hover:scale-[1.02] ${
+            !canStartPayment ? 'opacity-60' : ''
+          }`}
+          style={{...fadeInStyle, ...getAnimationDelay(4)}}
+        >
+          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ${
+            paymentCompleted 
+              ? 'ring-2 ring-green-500' 
+              : canStartPayment
+                ? 'ring-1 ring-gray-300'
+                : 'ring-1 ring-gray-200'
+          } transition-all duration-300 hover:shadow-lg h-full flex flex-col`}>
+            
+            {/* Card Header - White Section */}
+            <div className="bg-white p-7 md:px-8 md:pt-8 md:pb-6 flex-1 flex flex-col">
+              <div className="flex items-center mb-4">
+                <div className="p-3.5 rounded-lg mr-3.5" style={{ 
+                  background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' 
+                }}>
+                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h3 className="font-normal text-gray-900" style={{ fontSize: '20px' }}>Step 2: Payment</h3>
+              </div>
+              
+              <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
+                Complete your membership payment
+              </p>
+              
+              {/* Payment Info */}
+              <div className="border-t border-gray-200 pt-4 flex-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: '500' }}>Amount due:</span>
+                  <span className="font-normal text-gray-900" style={{ fontSize: '18px' }}>
+                    {paymentCompleted ? 'Paid' : formatCurrency(totalDue)}
+                  </span>
+                </div>
+                
+                {!bothDocusignCompleted && (
+                  <p className="text-sm text-gray-500 mt-3 italic">Complete all agreements first</p>
+                )}
+                
+
+              </div>
             </div>
             
-            <h3 className="text-xl font-semibold mb-2">Step 2: Payment</h3>
-            
-            <p className="text-gray-600 mb-4">
-              {paymentCompleted 
-                ? 'Your payment has been processed'
-                : `Amount due: ${formatCurrency(totalDue)}`
-              }
-            </p>
-            
-            {!docusignCompleted && (
-              <p className="text-sm text-gray-500 mb-4">Complete all agreements first</p>
-            )}
-            
-            {paymentCompleted ? (
-              <div className="text-green-600 font-medium">✓ Payment Completed</div>
-            ) : (
-              <button
-                onClick={handleStartPayment}
-                disabled={!docusignCompleted}
-                className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-                  !docusignCompleted
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#775684] text-white hover:bg-[#664573]'
-                }`}
-              >
-                Make Payment
-              </button>
-            )}
+            {/* Card Footer - White Section with Navy Button */}
+            <div className="bg-white p-6 border-t border-gray-100">
+              {paymentCompleted ? (
+                <div className="text-center">
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <svg className="w-8 h-8 text-green-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <p className="font-medium text-green-700">Payment Completed</p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleStartPayment}
+                  disabled={!canStartPayment}
+                  className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
+                    !canStartPayment
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
+                  }`}
+                >
+                  Make Payment
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Progress Summary */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-6">
-        <h4 className="font-semibold text-gray-800 mb-2">Progress Summary</h4>
+      {/* Progress Summary - Clean design */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
+        <h4 className="text-gray-900 mb-3" style={{ fontSize: '15px', fontWeight: '500' }}>Progress Summary</h4>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Documents Signed:</span>
-            <span className="text-sm font-medium">
+            <span className="text-gray-600" style={{ fontSize: '14px' }}>Documents Signed:</span>
+            <span className="font-medium text-gray-900">
               {[docusignDocuments.membershipAgreement, docusignDocuments.confidentialityAgreement]
                 .filter(s => s === STEP_STATUS.COMPLETED).length} of 2
             </span>
           </div>
+          {bothDocusignCompleted && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600" style={{ fontSize: '14px' }}>Ready for Payment:</span>
+              <span className="font-medium">
+                {salesforceStatus?.exists ? (
+                  <span className="text-green-600">Yes</span>
+                ) : (
+                  <span className="text-yellow-600">Processing</span>
+                )}
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Payment Status:</span>
-            <span className="text-sm font-medium">
+            <span className="text-gray-600" style={{ fontSize: '14px' }}>Payment Status:</span>
+            <span className="font-medium text-gray-900">
               {paymentCompleted ? 'Completed' : 'Pending'}
             </span>
           </div>
@@ -567,40 +829,68 @@ export default function MembershipCompletionSteps({
       </div>
 
       {/* Refresh Button */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8" style={{...fadeInStyle, ...getAnimationDelay(6)}}>
         <button
           onClick={checkCompletionStatus}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors inline-flex items-center"
+          className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-all duration-300 inline-flex items-center text-sm"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           Refresh Status
         </button>
-        <p className="text-sm text-gray-500 mt-2">
-          Click to check if you've completed any steps outside this page
-        </p>
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between mt-8">
-        <button
-          type="button"
-          onClick={onBack}
-          className="py-3 px-6 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50"
-        >
-          Back
-        </button>
+      <div className="flex justify-between mt-8" style={{...fadeInStyle, ...getAnimationDelay(7)}}>
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => setBackButtonError(true)}
+            className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Back
+          </button>
+          {backButtonError && (
+            <p className="ml-4 text-red-600 text-sm">Contact support for application modifications</p>
+          )}
+        </div>
         
         {completionData.allStepsCompleted && (
           <button
             onClick={onComplete}
-            className="py-3 px-6 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573]"
+            className="py-5 px-8 bg-[#775684] text-white rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] hover:bg-[#664573]"
           >
             Continue
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
           </button>
         )}
       </div>
     </div>
   );
+}
+
+// Add global styles
+if (typeof document !== 'undefined') {
+  const globalStyles = document.createElement('style');
+  globalStyles.innerHTML = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-in-out forwards;
+    }
+  `;
+  
+  if (!document.head.querySelector('style[data-completion-steps-styles]')) {
+    globalStyles.setAttribute('data-completion-steps-styles', 'true');
+    document.head.appendChild(globalStyles);
+  }
 }

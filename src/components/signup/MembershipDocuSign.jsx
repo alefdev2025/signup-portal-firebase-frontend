@@ -1,4 +1,4 @@
-// File: pages/signup/MembershipDocuSign.jsx - FIXED VERSION
+// File: pages/signup/MembershipDocuSign.jsx - BACKEND-ONLY VERSION
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
 import alcorStar from "../../assets/images/alcor-yellow-star.png";
@@ -7,22 +7,16 @@ import whiteALogoNoText from "../../assets/images/alcor-white-logo-no-text.png";
 
 // Import services
 import membershipService from "../../services/membership";
-import fundingService from "../../services/funding";
-import { getContactInfo } from "../../services/contact";
-import { getMembershipCost } from "../../services/pricing";
 
 import DotLoader, { NewtonCradleLoader } from "../../components/DotLoader";
 
-// FIXED: Document names to match backend
+// Document names to match backend
 const DOCUMENT_NAMES = {
   membership_agreement: 'Membership Agreement',
-  confidentiality_agreement: 'Terms and Conditions' // Match backend naming
+  confidentiality_agreement: 'Terms and Conditions'
 };
 
 export default function MembershipDocuSign({ 
-  membershipData,
-  packageData,
-  contactData,
   documentType,
   onBack,
   onComplete 
@@ -35,7 +29,6 @@ export default function MembershipDocuSign({
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userData, setUserData] = useState(null);
   const [docuSignStatus, setDocuSignStatus] = useState('initializing');
   const [docuSignError, setDocuSignError] = useState(null);
   const [signingUrl, setSigningUrl] = useState(null);
@@ -77,27 +70,23 @@ export default function MembershipDocuSign({
     }
   }, []);
 
-  // Enhanced message listener for DocuSign iframe events
+  // Message listener for DocuSign iframe events
   const setupDocuSignMessageListener = useCallback(() => {
-    // Clean up existing listener
     cleanup();
     
     const messageListener = async (event) => {
       console.log('Received message from:', event.origin, 'Data:', event.data);
       
-      // Verify the origin is from DocuSign
       if (!DOCUSIGN_ORIGINS.includes(event.origin)) {
         console.warn('Message from unknown origin:', event.origin);
         return;
       }
       
-      // Handle different types of messages
       if (event.data && typeof event.data === 'object') {
         const { type, message, eventType } = event.data;
         
         console.log('DocuSign event:', { type, message, eventType, fullData: event.data });
         
-        // Handle various DocuSign event types
         switch (type || eventType) {
           case 'signing_complete':
           case 'signing-complete':
@@ -107,13 +96,11 @@ export default function MembershipDocuSign({
             setShowIframe(false);
             setIframeLoaded(false);
             
-            // Clear any timeouts
             if (iframeTimeoutRef.current) {
               clearTimeout(iframeTimeoutRef.current);
               iframeTimeoutRef.current = null;
             }
             
-            // Update backend status for this document
             try {
               await membershipService.updateDocuSignStatus(
                 currentDocument,
@@ -124,7 +111,6 @@ export default function MembershipDocuSign({
               console.error('Error updating document status:', err);
             }
             
-            // Call completion handler after a brief delay
             setTimeout(() => {
               if (onComplete) {
                 onComplete({
@@ -170,7 +156,6 @@ export default function MembershipDocuSign({
             setIframeLoaded(true);
             setIframeError(false);
             
-            // Clear timeout since iframe loaded successfully
             if (iframeTimeoutRef.current) {
               clearTimeout(iframeTimeoutRef.current);
               iframeTimeoutRef.current = null;
@@ -178,7 +163,6 @@ export default function MembershipDocuSign({
             break;
             
           case 'resize':
-            // Handle iframe resize if needed
             if (event.data.height && iframeRef.current) {
               iframeRef.current.style.height = `${event.data.height}px`;
             }
@@ -188,7 +172,6 @@ export default function MembershipDocuSign({
             console.log('ℹ️ Unknown DocuSign event:', type || eventType, event.data);
         }
       } else if (typeof event.data === 'string') {
-        // Sometimes DocuSign sends string messages
         console.log('DocuSign string message:', event.data);
         
         if (event.data.includes('complete') || event.data.includes('success')) {
@@ -196,7 +179,6 @@ export default function MembershipDocuSign({
           setDocuSignStatus('completed');
           setShowIframe(false);
           
-          // Update backend status
           try {
             await membershipService.updateDocuSignStatus(
               currentDocument,
@@ -226,31 +208,25 @@ export default function MembershipDocuSign({
     setIframeLoaded(true);
     setIframeError(false);
     
-    // Clear timeout
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
     }
     
-    // EMERGENCY FIX: Force iframe to full viewport
     if (iframeRef.current) {
       const iframe = iframeRef.current;
       iframe.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 999999 !important;';
       
-      // Also hide any parent containers that might be constraining it
       document.body.style.overflow = 'hidden';
       
-      // Find and hide the signup layout if it exists
       const signupLayout = document.querySelector('.signup-layout');
       if (signupLayout) {
         signupLayout.style.display = 'none';
       }
     }
     
-    // Try to communicate with the iframe
     try {
       if (iframeRef.current && iframeRef.current.contentWindow) {
-        // Send a ready message to DocuSign iframe
         iframeRef.current.contentWindow.postMessage({ type: 'parent_ready' }, '*');
       }
     } catch (err) {
@@ -288,286 +264,203 @@ export default function MembershipDocuSign({
     }, IFRAME_TIMEOUT);
   }, [iframeLoaded]);
 
-  // Enhanced DocuSign process with complete data mapping from readyForDocuSign
-  // Enhanced DocuSign process with complete data mapping from readyForDocuSign
-const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
-  // CRITICAL: Validate docType parameter
-  if (!docType) {
-    console.error('❌ CRITICAL ERROR: docType is undefined or null');
-    console.error('❌ Called with docType:', docType);
-    console.error('❌ Stack trace:', new Error().stack);
-    throw new Error('Document type is required but was not provided to startEmbeddedDocuSignProcess');
-  }
-  
-  try {
-    setDocuSignStatus('creating');
-    setDocuSignError(null);
-    setIframeError(false);
-    setIframeLoaded(false);
+  // CRITICAL: Enhanced DocuSign process that ONLY uses backend data
+  const startEmbeddedDocuSignProcess = async (readyForDocuSignData, docType) => {
+    if (!docType) {
+      console.error('❌ CRITICAL ERROR: docType is undefined or null');
+      throw new Error('Document type is required but was not provided');
+    }
     
-    console.log(`🚀 Starting DocuSign embedded process for: ${docType}`);
-    console.log(`📄 Document: ${DOCUMENT_NAMES[docType]}`);
-    console.log('📋 User data collection:', userDataCollection);
+    if (!readyForDocuSignData) {
+      console.error('❌ CRITICAL ERROR: No readyForDocuSign data available');
+      throw new Error('Backend data is required but was not provided');
+    }
     
-    // First, try to get readyForDocuSign data from backend
-    let readyForDocuSignData = null;
     try {
-      const membershipResult = await membershipService.getMembershipInfo();
-      if (membershipResult.success && membershipResult.data) {
-        // The readyForDocuSign data might be at the user level
-        readyForDocuSignData = membershipResult.readyForDocuSign;
+      setDocuSignStatus('creating');
+      setDocuSignError(null);
+      setIframeError(false);
+      setIframeLoaded(false);
+      
+      console.log(`🚀 Starting DocuSign embedded process for: ${docType}`);
+      console.log(`📄 Document: ${DOCUMENT_NAMES[docType]}`);
+      console.log('📋 Backend readyForDocuSign data:', readyForDocuSignData);
+      
+      // CRITICAL: Map ONLY from readyForDocuSign data - NO FALLBACKS
+      const docuSignData = {
+        // User ID for backend
+        userId: user?.uid || '',
+        uid: user?.uid || '',
+        firebaseUid: user?.uid || '',
+
+        // Personal Information - ONLY from backend
+        firstName: readyForDocuSignData.personalInfo?.firstName || '',
+        lastName: readyForDocuSignData.personalInfo?.lastName || '',
+        email: readyForDocuSignData.personalInfo?.email || '',
+        dateOfBirth: readyForDocuSignData.personalInfo?.dateOfBirth || '',
+        
+        // Phone Information - CRITICAL: Use docusignPhoneNumber
+        phone: readyForDocuSignData.docusignPhoneNumber || '',
+        
+        // Address Information - ONLY from backend
+        address: readyForDocuSignData.homeAddress?.street || '',
+        streetAddress: readyForDocuSignData.homeAddress?.street || '',
+        city: readyForDocuSignData.homeAddress?.city || '',
+        state: readyForDocuSignData.homeAddress?.state || '',
+        region: readyForDocuSignData.homeAddress?.state || '',
+        zipCode: readyForDocuSignData.homeAddress?.postalCode || '',
+        postalCode: readyForDocuSignData.homeAddress?.postalCode || '',
+        country: readyForDocuSignData.homeAddress?.country || 'United States',
+        
+        // Membership Details - ONLY from backend
+        paymentFrequency: readyForDocuSignData.membershipDetails?.paymentFrequency || 'annually',
+        annualCost: readyForDocuSignData.membershipDetails?.membershipCost || 540,
+        membership: readyForDocuSignData.membershipDetails?.membershipCost || 540,
+        membershipCost: readyForDocuSignData.membershipDetails?.membershipCost || 540,
+        
+        // Preservation Information - ONLY from backend
+        preservationType: readyForDocuSignData.membershipDetails?.preservationType || 'Not specified',
+        preservationEstimate: readyForDocuSignData.membershipDetails?.preservationEstimate || 0,
+        
+        // ICE Code Information - ONLY from backend
+        iceCode: readyForDocuSignData.iceCodeDetails?.code || '',
+        iceDiscount: readyForDocuSignData.iceCodeDetails?.discountAmount || 0,
+        iceCodeValid: readyForDocuSignData.iceCodeDetails?.valid || false,
+        iceCodeInfo: readyForDocuSignData.iceCodeDetails || null,
+        
+        // Privacy Preferences - ONLY from backend
+        freelyReleaseName: readyForDocuSignData.preferences?.freelyReleaseName || false,
+        maintainConfidentiality: readyForDocuSignData.preferences?.maintainConfidentiality || false,
+        
+        // CMS Waiver - ONLY from backend
+        cmsWaiver: readyForDocuSignData.preferences?.cmsWaiver || false,
+        
+        // Funding Method - ONLY from backend
+        fundingMethod: readyForDocuSignData.funding?.fundingChoice || 'Not specified',
+        
+        // Application metadata
+        applicationDate: new Date().toLocaleDateString(),
+        applicationTime: new Date().toLocaleTimeString()
+      };
+      
+      console.log('📋 Prepared DocuSign data (BACKEND ONLY):', docuSignData);
+      console.log('🔍 Key fields check:');
+      console.log('  - User ID:', docuSignData.userId);
+      console.log('  - Full Name:', `${docuSignData.firstName} ${docuSignData.lastName}`);
+      console.log('  - Email:', docuSignData.email);
+      console.log('  - Phone:', docuSignData.phone);
+      console.log('  - Address:', `${docuSignData.address}, ${docuSignData.city}, ${docuSignData.state} ${docuSignData.zipCode}`);
+      console.log('  - Membership Cost:', docuSignData.membershipCost);
+      console.log('  - Privacy - Freely Release Name:', docuSignData.freelyReleaseName);
+      console.log('  - Privacy - Maintain Confidentiality:', docuSignData.maintainConfidentiality);
+      
+      // Validate required fields
+      if (!docuSignData.email || !docuSignData.firstName || !docuSignData.lastName) {
+        throw new Error('Missing required user information. Please complete your profile.');
       }
+      
+      // Validate phone is present
+      if (!docuSignData.phone) {
+        throw new Error('Phone number is required for identity verification. Please add your phone number in the completion steps.');
+      }
+      
+      // Update backend status to in_progress
+      try {
+        await membershipService.updateDocuSignStatus(
+          docType,
+          'in_progress'
+        );
+      } catch (err) {
+        console.error('Error updating document status to in_progress:', err);
+      }
+      
+      // Use Firebase SDK to call the function
+      const functions = getFunctions();
+      const createEmbeddedEnvelope = httpsCallable(functions, 'createEmbeddedEnvelope');
+      
+      console.log('📞 Calling Firebase function createEmbeddedEnvelope...');
+      
+      // Create the request payload
+      const requestPayload = {
+        signerData: docuSignData,
+        documentType: docType,
+        clientUserId: `${docuSignData.email}_${docType}_${Date.now()}`,
+        returnUrl: `${window.location.origin}/signup/membership`
+      };
+      
+      console.log('📤 SENDING TO FIREBASE - Full payload:', JSON.stringify(requestPayload, null, 2));
+      
+      let result;
+      try {
+        result = await createEmbeddedEnvelope(requestPayload);
+        console.log('📨 Firebase function result:', result?.data);
+      } catch (firebaseError) {
+        console.error('❌ Firebase function call failed:', firebaseError);
+        throw firebaseError;
+      }
+      
+      if (result.data && result.data.signingUrl) {
+        console.log('✅ Got signing URL:', result.data.signingUrl);
+        setSigningUrl(result.data.signingUrl);
+        setDocuSignStatus('signing');
+        setupDocuSignMessageListener();
+        
+        setTimeout(() => {
+          setShowIframe(true);
+          setupIframeTimeout();
+        }, 500);
+        
+      } else if (result.data && result.data.success === false) {
+        console.error('❌ Backend returned error:', result.data.error);
+        throw new Error(result.data.error || 'Failed to create DocuSign envelope');
+      } else {
+        console.error('❌ Unexpected result structure:', result);
+        throw new Error('Unexpected response from DocuSign service');
+      }
+      
     } catch (err) {
-      console.log('Could not fetch readyForDocuSign data:', err);
+      console.error('❌ DocuSign error:', err);
+      console.error('❌ Error type:', err.constructor.name);
+      console.error('❌ Error stack:', err.stack);
+      
+      retryCountRef.current += 1;
+      
+      let errorMessage = 'Failed to start signing process';
+      let canRetry = retryCountRef.current < MAX_RETRY_ATTEMPTS;
+      
+      if (err.code === 'functions/unauthenticated') {
+        errorMessage = 'Authentication required. Please sign in to continue.';
+        canRetry = false;
+      } else if (err.code === 'functions/permission-denied') {
+        errorMessage = 'Permission denied. Please try signing in again.';
+        canRetry = false;
+      } else if (err.code === 'functions/unavailable') {
+        errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
+      } else if (err.code === 'functions/timeout') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      console.log(`🔄 Retry attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}, Can retry: ${canRetry}`);
+      
+      if (canRetry) {
+        errorMessage += ` (Attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`;
+        
+        setTimeout(() => {
+          console.log(`🔄 Auto-retrying DocuSign process (${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`);
+          startEmbeddedDocuSignProcess(readyForDocuSignData, docType);
+        }, 2000 * retryCountRef.current);
+        
+        return;
+      }
+      
+      setDocuSignStatus('error');
+      setDocuSignError(errorMessage);
     }
-    
-    console.log('📦 readyForDocuSign data from backend:', readyForDocuSignData);
-    
-    // Prepare DocuSign data with complete mapping from all available sources
-    const docuSignData = {
-      // Personal Information - prioritize readyForDocuSign data
-      firstName: readyForDocuSignData?.personalInfo?.firstName || 
-                userDataCollection.contactData?.firstName || 
-                user?.firstName || '',
-      
-      lastName: readyForDocuSignData?.personalInfo?.lastName || 
-               userDataCollection.contactData?.lastName || 
-               user?.lastName || '',
-      
-      email: readyForDocuSignData?.personalInfo?.email || 
-             userDataCollection.contactData?.email || 
-             user?.email || '',
-      
-      dateOfBirth: readyForDocuSignData?.personalInfo?.dateOfBirth || 
-                   userDataCollection.contactData?.dateOfBirth || '',
-      
-      // Phone Information - use the docusignPhoneNumber first, then fallback to other phones
-      phone: readyForDocuSignData?.docusignPhoneNumber || 
-             readyForDocuSignData?.phoneInfo?.primaryPhone ||
-             readyForDocuSignData?.phoneInfo?.mobilePhone || 
-             readyForDocuSignData?.phoneInfo?.workPhone ||
-             readyForDocuSignData?.phoneInfo?.homePhone ||
-             userDataCollection.contactData?.mobilePhone || 
-             userDataCollection.contactData?.homePhone || 
-             userDataCollection.contactData?.workPhone || '',
-      
-      // Address Information from readyForDocuSign
-      address: readyForDocuSignData?.homeAddress?.street || 
-               userDataCollection.contactData?.streetAddress || '',
-      
-      streetAddress: readyForDocuSignData?.homeAddress?.street || 
-                     userDataCollection.contactData?.streetAddress || '',
-      
-      city: readyForDocuSignData?.homeAddress?.city || 
-            userDataCollection.contactData?.city || '',
-      
-      state: readyForDocuSignData?.homeAddress?.state || 
-             userDataCollection.contactData?.region || '',
-      
-      region: readyForDocuSignData?.homeAddress?.state || 
-              userDataCollection.contactData?.region || '',
-      
-      zipCode: readyForDocuSignData?.homeAddress?.postalCode || 
-               userDataCollection.contactData?.postalCode || '',
-      
-      postalCode: readyForDocuSignData?.homeAddress?.postalCode || 
-                  userDataCollection.contactData?.postalCode || '',
-      
-      country: readyForDocuSignData?.homeAddress?.country || 
-               userDataCollection.contactData?.country || 'United States',
-      
-      // Membership Details
-      paymentFrequency: readyForDocuSignData?.membershipDetails?.paymentFrequency || 
-                       userDataCollection.membershipData?.paymentFrequency || 'annually',
-      
-      annualCost: readyForDocuSignData?.membershipDetails?.membershipCost || 
-                  readyForDocuSignData?.paymentBreakdown?.baseCost ||
-                  userDataCollection.pricingData?.membershipCost || 
-                  userDataCollection.packageData?.annualCost || 540,
-      
-      membership: readyForDocuSignData?.membershipDetails?.membershipCost || 
-                  readyForDocuSignData?.paymentBreakdown?.baseCost ||
-                  userDataCollection.pricingData?.membershipCost || 540,
-      
-      membershipCost: readyForDocuSignData?.membershipDetails?.membershipCost || 
-                      readyForDocuSignData?.paymentBreakdown?.baseCost ||
-                      userDataCollection.pricingData?.membershipCost || 540,
-      
-      // Preservation Information
-      preservationType: readyForDocuSignData?.membershipDetails?.preservationType || 
-                       userDataCollection.packageData?.preservationType || 'Not specified',
-      
-      preservationEstimate: readyForDocuSignData?.membershipDetails?.preservationEstimate || 
-                           userDataCollection.packageData?.preservationEstimate || 0,
-      
-      // ICE Code Information
-      iceCode: readyForDocuSignData?.iceCodeDetails?.code || 
-               userDataCollection.membershipData?.iceCode || '',
-      
-      iceDiscount: readyForDocuSignData?.iceCodeDetails?.discountAmount || 
-                   readyForDocuSignData?.paymentBreakdown?.iceDiscount || 0,
-      
-      iceCodeValid: readyForDocuSignData?.iceCodeDetails?.valid || 
-                    userDataCollection.membershipData?.iceCodeValid || false,
-      
-      iceCodeInfo: userDataCollection.membershipData?.iceCodeValid && userDataCollection.membershipData?.iceCodeInfo 
-        ? userDataCollection.membershipData.iceCodeInfo 
-        : readyForDocuSignData?.iceCodeDetails || null,
-      
-      // Privacy Preferences from readyForDocuSign
-      freelyReleaseName: readyForDocuSignData?.preferences?.freelyReleaseName || false,
-      maintainConfidentiality: readyForDocuSignData?.preferences?.maintainConfidentiality || false,
-      
-      // CMS Waiver
-      cmsWaiver: readyForDocuSignData?.preferences?.cmsWaiver || false,
-      
-      // Funding Method
-      fundingMethod: readyForDocuSignData?.funding?.fundingChoice || 
-                    userDataCollection.fundingData?.fundingMethod || 
-                    userDataCollection.fundingData?.method || 'Not specified',
-      
-      // Other fields that might be needed
-      interestedInLifetime: userDataCollection.membershipData?.interestedInLifetime || false,
-      
-      // Application metadata
-      applicationDate: new Date().toLocaleDateString(),
-      applicationTime: new Date().toLocaleTimeString()
-    };
-    
-    console.log('📋 Prepared DocuSign data:', docuSignData);
-    console.log('🔍 Key fields check:');
-    console.log('  - Full Name:', `${docuSignData.firstName} ${docuSignData.lastName}`);
-    console.log('  - Email:', docuSignData.email);
-    console.log('  - Phone:', docuSignData.phone);
-    console.log('  - Address:', `${docuSignData.address}, ${docuSignData.city}, ${docuSignData.state} ${docuSignData.zipCode}`);
-    console.log('  - Membership Cost:', docuSignData.membershipCost);
-    console.log('  - Privacy - Freely Release Name:', docuSignData.freelyReleaseName);
-    console.log('  - Privacy - Maintain Confidentiality:', docuSignData.maintainConfidentiality);
-    
-    // Validate required fields
-    if (!docuSignData.email || !docuSignData.firstName || !docuSignData.lastName) {
-      throw new Error('Missing required user information (name or email)');
-    }
-    
-    // CRITICAL: Validate docType one more time before sending
-    if (!docType || typeof docType !== 'string') {
-      console.error('❌ CRITICAL: docType is invalid just before backend call');
-      console.error('❌ docType value:', docType);
-      console.error('❌ docType type:', typeof docType);
-      throw new Error(`Invalid document type: ${docType}`);
-    }
-    
-    // Update backend status to in_progress
-    try {
-      await membershipService.updateDocuSignStatus(
-        docType,
-        'in_progress'
-      );
-    } catch (err) {
-      console.error('Error updating document status to in_progress:', err);
-    }
-    
-    // Use Firebase SDK to call the function
-    const functions = getFunctions();
-    const createEmbeddedEnvelope = httpsCallable(functions, 'createEmbeddedEnvelope');
-    
-    console.log('📞 Calling Firebase function createEmbeddedEnvelope...');
-    
-    // Create the request payload - ENSURE documentType is included
-    const requestPayload = {
-      signerData: docuSignData,
-      documentType: docType,  // CRITICAL: This must be included
-      clientUserId: `${docuSignData.email}_${docType}_${Date.now()}`,
-      returnUrl: `${window.location.origin}/signup/membership`
-    };
-    
-    // CRITICAL: Verify documentType is in the payload
-    if (!requestPayload.documentType) {
-      console.error('❌ CRITICAL ERROR: documentType missing from request payload!');
-      console.error('❌ docType parameter:', docType);
-      console.error('❌ Full payload:', requestPayload);
-      throw new Error('documentType is missing from request payload');
-    }
-    
-    console.log('📤 SENDING TO FIREBASE - Full payload:', JSON.stringify(requestPayload, null, 2));
-    console.log('📤 CRITICAL: documentType in payload:', requestPayload.documentType);
-    
-    let result;
-    try {
-      result = await createEmbeddedEnvelope(requestPayload);
-      console.log('📨 Firebase function raw result:', result);
-      console.log('📨 Firebase function result.data:', result?.data);
-    } catch (firebaseError) {
-      console.error('❌ Firebase function call failed:', firebaseError);
-      throw firebaseError;
-    }
-    
-    // Check the result structure
-    if (result.data && result.data.signingUrl) {
-      console.log('✅ Got signing URL:', result.data.signingUrl);
-      console.log('✅ Full successful response:', result.data);
-      setSigningUrl(result.data.signingUrl);
-      setDocuSignStatus('signing');
-      setupDocuSignMessageListener();
-      
-      // Show iframe after a brief delay to ensure message listener is ready
-      setTimeout(() => {
-        setShowIframe(true);
-        setupIframeTimeout();
-      }, 500);
-      
-    } else if (result.data && result.data.success === false) {
-      console.error('❌ Backend returned error:', result.data.error);
-      throw new Error(result.data.error || 'Failed to create DocuSign envelope');
-    } else {
-      console.error('❌ Unexpected result structure:', result);
-      throw new Error('Unexpected response from DocuSign service');
-    }
-    
-  } catch (err) {
-    console.error('❌ DocuSign error:', err);
-    console.error('❌ Error type:', err.constructor.name);
-    console.error('❌ Error stack:', err.stack);
-    
-    // Enhanced error handling with retry logic
-    retryCountRef.current += 1;
-    
-    let errorMessage = 'Failed to start signing process';
-    let canRetry = retryCountRef.current < MAX_RETRY_ATTEMPTS;
-    
-    if (err.code === 'functions/unauthenticated') {
-      errorMessage = 'Authentication required. Please sign in to continue.';
-      canRetry = false;
-    } else if (err.code === 'functions/permission-denied') {
-      errorMessage = 'Permission denied. Please try signing in again.';
-      canRetry = false;
-    } else if (err.code === 'functions/unavailable') {
-      errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
-    } else if (err.code === 'functions/timeout') {
-      errorMessage = 'Request timed out. Please check your connection and try again.';
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-    
-    console.log(`🔄 Retry attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}, Can retry: ${canRetry}`);
-    
-    if (canRetry) {
-      errorMessage += ` (Attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`;
-      
-      // Auto-retry after a delay
-      setTimeout(() => {
-        console.log(`🔄 Auto-retrying DocuSign process (${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`);
-        startEmbeddedDocuSignProcess(userDataCollection, docType);
-      }, 2000 * retryCountRef.current); // Exponential backoff
-      
-      return;
-    }
-    
-    setDocuSignStatus('error');
-    setDocuSignError(errorMessage);
-  }
-};
-  // Load user data and start DocuSign process on mount
+  };
+
+  // CRITICAL: Load ONLY backend data on mount
   useEffect(() => {
     const initializeSigningProcess = async () => {
       try {
@@ -577,93 +470,56 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
         retryCountRef.current = 0;
         
         console.log(`🔄 MembershipDocuSign: Initializing signing process for ${currentDocument}...`);
+        console.log(`📡 Fetching ONLY backend data - no local fallbacks`);
         
-        // Gather all user data from various services
-        const userDataCollection = {};
+        // CRITICAL: Get ONLY the backend readyForDocuSign data
+        let readyForDocuSignData = null;
         
-        // Get contact information
         try {
-          const contactResult = await getContactInfo();
-          if (contactResult.success && contactResult.contactInfo) {
-            userDataCollection.contactData = contactResult.contactInfo;
-          } else if (contactData) {
-            userDataCollection.contactData = contactData;
+          console.log('🔄 Fetching readyForDocuSign data from backend...');
+          
+          // Use the dedicated endpoint to get the full readyForDocuSign object
+          const result = await membershipService.getReadyForDocuSign();
+          
+          console.log('📦 readyForDocuSign endpoint result:', result);
+          
+          if (result.success && result.data) {
+            readyForDocuSignData = result.data;
+            console.log('✅ Got complete readyForDocuSign data from backend');
+            
+            // Validate that we have the required data
+            if (!readyForDocuSignData.personalInfo || !readyForDocuSignData.personalInfo.email) {
+              console.error('⚠️ WARNING: personalInfo is missing or incomplete');
+              console.error('⚠️ readyForDocuSign data:', JSON.stringify(readyForDocuSignData, null, 2));
+              throw new Error('Personal information is missing. Please complete the membership summary again.');
+            }
+          } else {
+            throw new Error('Failed to fetch readyForDocuSign data from backend');
           }
+          
+          console.log('✅ Backend readyForDocuSign data fetched:', readyForDocuSignData);
+          
+          // Add detailed logging to debug the structure
+          console.log('📊 Data structure check:');
+          console.log('  - personalInfo exists?', !!readyForDocuSignData.personalInfo);
+          console.log('  - personalInfo contents:', readyForDocuSignData.personalInfo);
+          console.log('  - Full readyForDocuSign object:', JSON.stringify(readyForDocuSignData, null, 2));
+          
         } catch (err) {
-          console.error('❌ Error loading contact info:', err);
-          if (contactData) {
-            userDataCollection.contactData = contactData;
-          }
+          console.error('❌ CRITICAL: Failed to fetch backend data:', err);
+          throw new Error('Unable to retrieve your membership information. Please go back and try again.');
         }
         
-        // Get membership information
-        try {
-          const membershipResult = await membershipService.getMembershipInfo();
-          if (membershipResult.success && membershipResult.data) {
-            userDataCollection.membershipData = membershipResult.data.membershipInfo;
-          } else if (membershipData) {
-            userDataCollection.membershipData = membershipData;
-          }
-        } catch (err) {
-          console.error('❌ Error loading membership info:', err);
-          if (membershipData) {
-            userDataCollection.membershipData = membershipData;
-          }
+        if (!readyForDocuSignData) {
+          throw new Error('No membership data found. Please complete the membership summary first.');
         }
         
-        // Get package information
-        try {
-          const packageResult = await fundingService.getPackageInfoForFunding();
-          if (packageResult.success) {
-            userDataCollection.packageData = {
-              packageType: packageResult.packageType,
-              preservationType: packageResult.preservationType,
-              preservationEstimate: packageResult.preservationEstimate,
-              annualCost: packageResult.annualCost
-            };
-          } else if (packageData) {
-            userDataCollection.packageData = packageData;
-          }
-        } catch (err) {
-          console.error('❌ Error loading package info:', err);
-          if (packageData) {
-            userDataCollection.packageData = packageData;
-          }
-        }
-        
-        // Get funding information
-        try {
-          const fundingResult = await fundingService.getUserFundingInfo();
-          if (fundingResult.success && fundingResult.data) {
-            userDataCollection.fundingData = fundingResult.data;
-          }
-        } catch (err) {
-          console.error('❌ Error loading funding info:', err);
-        }
-        
-        // Get pricing information
-        try {
-          const pricingResult = await getMembershipCost();
-          if (pricingResult?.success) {
-            userDataCollection.pricingData = {
-              age: pricingResult.age,
-              annualDues: pricingResult.annualDues,
-              membershipCost: pricingResult.membershipCost || 540
-            };
-          }
-        } catch (err) {
-          console.error('❌ Error loading pricing info:', err);
-        }
-        
-        console.log('📋 User data collection complete:', userDataCollection);
-        setUserData(userDataCollection);
-        
-        // Start EMBEDDED DocuSign process for the specified document
-        await startEmbeddedDocuSignProcess(userDataCollection, documentType);
+        // Start EMBEDDED DocuSign process with ONLY backend data
+        await startEmbeddedDocuSignProcess(readyForDocuSignData, documentType);
         
       } catch (err) {
         console.error('❌ Error initializing signing process:', err);
-        setError('Failed to initialize signing process. Please refresh the page and try again.');
+        setError(err.message || 'Failed to initialize signing process. Please refresh the page and try again.');
       } finally {
         setIsLoading(false);
       }
@@ -671,20 +527,35 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
     
     initializeSigningProcess();
     
-    // Cleanup on unmount
     return cleanup;
-  }, [currentDocument, membershipData, packageData, contactData, cleanup]);
+  }, [currentDocument, documentType, cleanup]);
 
-  // Handle retry DocuSign
+  // Handle retry DocuSign - must re-fetch backend data
   const handleRetryDocuSign = async () => {
-    if (userData) {
-      console.log('🔄 Manual retry triggered');
-      setShowIframe(false);
-      setIframeLoaded(false);
-      setIframeError(false);
-      retryCountRef.current = 0;
-      cleanup();
-      await startEmbeddedDocuSignProcess(userDataCollection, documentType);
+    console.log('🔄 Manual retry triggered - fetching fresh backend data');
+    setShowIframe(false);
+    setIframeLoaded(false);
+    setIframeError(false);
+    retryCountRef.current = 0;
+    cleanup();
+    
+    try {
+      // Re-fetch backend data using the dedicated endpoint
+      console.log('🔄 Re-fetching readyForDocuSign data from backend...');
+      const result = await membershipService.getReadyForDocuSign();
+      
+      if (!result.success || !result.data) {
+        throw new Error('Failed to fetch backend data on retry');
+      }
+      
+      const readyForDocuSignData = result.data;
+      console.log('✅ Got fresh readyForDocuSign data for retry');
+      
+      await startEmbeddedDocuSignProcess(readyForDocuSignData, documentType);
+      
+    } catch (err) {
+      console.error('❌ Error during retry:', err);
+      setError(err.message || 'Failed to retry. Please go back and try again.');
     }
   };
 
@@ -700,7 +571,7 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
         return {
           icon: <DotLoader size="lg" color="primary" />,
           title: `Preparing Your ${DOCUMENT_NAMES[currentDocument]}`,
-          message: 'Gathering your information and preparing your document...',
+          message: 'Fetching your information from our secure servers...',
           color: 'text-[#775684]'
         };
       
@@ -802,17 +673,14 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
     );
   }
 
-  // Use useEffect to break out of any parent constraints
+  // Break out of parent constraints
   useEffect(() => {
-    // Save original body styles
     const originalOverflow = document.body.style.overflow;
     const originalPosition = document.body.style.position;
     
-    // Lock body scroll and ensure full viewport
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     
-    // Hide any parent containers
     const allParents = document.querySelectorAll('.signup-layout, .signup-container, [class*="layout"], [class*="container"]');
     const hiddenElements = [];
     allParents.forEach(el => {
@@ -824,7 +692,6 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
       }
     });
     
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = originalOverflow;
       document.body.style.position = originalPosition;
@@ -853,10 +720,10 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
         ...marcellusStyle
       }}
     >
+      {/* Headers remain the same */}
       {/* Top Header Bar - Mobile */}
       <div className="md:hidden" style={{ flexShrink: 0 }}>
         <div className="py-8 px-4 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative">
-          {/* Additional diagonal gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
           
           <div className="flex items-center justify-between pt-3 relative z-10">
@@ -876,7 +743,6 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
 
       {/* Top Header Bar - Desktop */}
       <div className="hidden md:block py-3 px-6 bg-gradient-to-br from-[#0a1629] to-[#1e2650] relative" style={{ flexShrink: 0 }}>
-        {/* Additional diagonal gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
         
         <div className="w-full flex justify-between items-center relative z-10">
@@ -890,7 +756,7 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
       
       {/* Main Content Area */}
       <div style={{ flex: '1 1 auto', position: 'relative', overflow: 'hidden' }}>
-        {/* Status Section - Show when not signing or when iframe hasn't loaded */}
+        {/* Status Section */}
         {(!showIframe || !iframeLoaded) && (
           <div style={{ 
             position: 'absolute', 
@@ -910,7 +776,7 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
               </div>
             </div>
             
-            {/* Simplified loading display */}
+            {/* Status displays */}
             {(docuSignStatus === 'initializing' || docuSignStatus === 'creating' || 
               (docuSignStatus === 'signing' && !iframeLoaded)) && (
               <div className="text-center">
@@ -925,7 +791,7 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
                   {docuSignStatus === 'signing' && !iframeLoaded && 'Loading Document'}
                 </h2>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  {docuSignStatus === 'initializing' && 'We\'re gathering your information...'}
+                  {docuSignStatus === 'initializing' && 'Fetching your information from our secure servers...'}
                   {docuSignStatus === 'creating' && 'Setting up your signing session...'}
                   {docuSignStatus === 'signing' && !iframeLoaded && 'Almost there...'}
                 </p>
@@ -986,7 +852,7 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
           </div>
         )}
         
-        {/* DocuSign Embedded Iframe - FULL SCREEN */}
+        {/* DocuSign iframe */}
         {showIframe && signingUrl && (
           <div style={{ 
             position: 'absolute', 
@@ -998,7 +864,6 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
             height: '100%',
             zIndex: 999999
           }}>
-            {/* Loading overlay - shows until iframe loads */}
             {!iframeLoaded && (
               <div style={{
                 position: 'absolute',
@@ -1020,7 +885,6 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
               </div>
             )}
             
-            {/* Error overlay - shows if iframe fails to load */}
             {iframeError && (
               <div style={{
                 position: 'absolute',
@@ -1048,7 +912,6 @@ const startEmbeddedDocuSignProcess = async (userDataCollection, docType) => {
               </div>
             )}
             
-            {/* Actual DocuSign iframe - MAXIMUM SIZE */}
             <iframe
               ref={iframeRef}
               src={signingUrl}
