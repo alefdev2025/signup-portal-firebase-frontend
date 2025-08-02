@@ -1,5 +1,5 @@
-// File: pages/PackagePage.jsx
-import React, { useState, useEffect, useRef } from "react";
+// File: pages/PackagePage.jsx - FIXED VERSION
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getMembershipCost } from "../../services/pricing";
 import HelpPanel from "./HelpPanel";
 import { savePackageInfo, getPackageInfo } from "../../services/package";
@@ -20,7 +20,7 @@ import { PackageContentDesktopOriginal } from "./PackageContentDesktopOriginal";
 
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-export default function PackagePage({ onNext, onBack, initialData = {}, preloadedMembershipData = null }) {
+export default function PackagePage({ onNext, onBack, initialData = {}, preloadedMembershipData = null, isParentReady = true }) {
   const initRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [membershipCost, setMembershipCost] = useState(preloadedMembershipData?.membershipCost || 540);
@@ -218,6 +218,11 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   const handleBackClick = () => {
     console.log("⬅️ PackagePage: Handle back button clicked");
     
+    if (!isParentReady) {
+      console.log("⚠️ Parent not ready, ignoring back button");
+      return;
+    }
+    
     // Call the onBack prop if provided
     if (typeof onBack === 'function') {
       console.log("✅ Calling parent onBack handler");
@@ -230,6 +235,11 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   const handleNext = async () => {
     if (!selectedOption) {
       console.warn("⚠️ PackagePage: No option selected, cannot proceed");
+      return;
+    }
+    
+    if (!isParentReady) {
+      console.log("⚠️ Parent not ready, cannot proceed");
       return;
     }
     
@@ -251,7 +261,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       }
       
       // Calculate preservation cost with international pricing
-      const preservationEstimate = calculatePreservationEstimate(selectedOption);
+      const preservationEstimate = preservationEstimates[selectedOption];
       
       console.log("💰 PackagePage: Price calculations:");
       console.log("  - Base membership cost:", membershipCost);
@@ -340,6 +350,15 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
     return price;
   };
 
+  const preservationEstimates = useMemo(() => {
+    console.log("📊 Calculating all preservation estimates (memoized)");
+    return {
+      neuro: calculatePreservationEstimate('neuro'),
+      wholebody: calculatePreservationEstimate('wholebody'),
+      basic: calculatePreservationEstimate('basic')
+    };
+  }, [isInternational]); 
+
   // Get package price with selected options
   const getPackagePrice = (packageType) => {
     if (!membershipCost) return null;
@@ -395,6 +414,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   console.log("  - User Country:", userCountry);
   console.log("  - Membership Cost:", membershipCost);
   console.log("  - Membership Age:", membershipAge);
+  console.log("  - Parent Ready:", isParentReady);
   
   // Define animation styles for the component
   const fadeInStyle = {
@@ -577,7 +597,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
             type="button"
             onClick={handleBackClick}
             className="py-4 px-8 border border-gray-300 rounded-full text-gray-700 font-medium text-lg flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isParentReady}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -588,9 +608,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           <button 
             type="button"
             onClick={handleNext}
-            disabled={isSubmitting || isLoading || !selectedOption}
+            disabled={isSubmitting || isLoading || !selectedOption || !isParentReady}
             className={`py-4 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] ${
-              selectedOption ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              selectedOption && isParentReady ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
             } disabled:opacity-70`}
           >
             {isSubmitting ? (

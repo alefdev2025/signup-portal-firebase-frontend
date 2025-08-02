@@ -687,6 +687,33 @@ export const updatePaymentProgress = async (status, paymentData = {}) => {
   }
 };
 
+export const retrieveAndUploadDocuments = async (salesforceContactId, salesforceAgreementId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/membership/retrieve-and-upload-documents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`
+      },
+      body: JSON.stringify({
+        salesforceContactId,
+        salesforceAgreementId
+      })
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to retrieve and upload documents');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error retrieving and uploading documents:', error);
+    throw error;
+  }
+};
+
 /**
  * Get Salesforce contact status
  * @returns {Promise<object>} Salesforce status
@@ -773,5 +800,6 @@ export default {
   updatePaymentProgress,
   createSalesforceContact,
   getSalesforceStatus,
-  getReadyForDocuSign
+  getReadyForDocuSign,
+  retrieveAndUploadDocuments
 };

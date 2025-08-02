@@ -1,67 +1,27 @@
-// File: components/signup/AccountCreationSuccess.jsx - FIXED
+// File: components/signup/AccountCreationSuccess.jsx - SIMPLIFIED VERSION
 import React, { useState } from 'react';
-import { useSignupFlow } from '../../contexts/SignupFlowContext';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import { saveSignupState } from '../../services/storage';
 import alcorFullLogo from '../../assets/images/navy-alcor-logo.png';
 
 const AccountCreationSuccess = ({ currentUser, onNext }) => {
-  const { goToNextStep } = useSignupFlow();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // ONLY update backend when user clicks continue, not on render
+  // Handle continue button click
   const handleContinue = async () => {
-    console.log("Continue button clicked");
+    console.log("Continue button clicked in AccountCreationSuccess");
     setIsLoading(true);
     setError(null);
     
     try {
-      if (!currentUser || !currentUser.uid) {
-        throw new Error("User authentication required");
-      }
-      
-      const userDocRef = doc(db, "users", currentUser.uid);
-      
-      console.log("Updating user document in Firestore...");
-      await setDoc(userDocRef, {
-        email: currentUser.email,
-        displayName: currentUser.displayName || "New Member",
-        signupStep: "contact_info",
-        signupProgress: 1, // Mark that account creation is complete
-        lastUpdated: new Date(),
-        ...(await getDoc(userDocRef)).data() // Preserve existing data
-      }, { merge: true });
-      
-      console.log("Backend updated successfully with progress 1");
-      
-      // Update local storage
-      const signupState = {
-        userId: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName || "New Member",
-        signupStep: "contact_info",
-        signupProgress: 1,
-        timestamp: Date.now()
-      };
-      
-      saveSignupState(signupState);
-      console.log("Local state updated with progress 1");
-      
-      // Navigate to next step
-      if (onNext) {
-        onNext();
-      } else {
-        goToNextStep();
-      }
-      
+      // Just call the parent's onNext handler
+      // The parent (AccountSuccessStep) handles all the logic
+      await onNext();
     } catch (error) {
-      console.error("Error updating backend:", error);
+      console.error("Error in continue handler:", error);
       setError("There was an issue updating your progress. Please try again.");
-    } finally {
       setIsLoading(false);
     }
+    // Note: Don't set isLoading to false on success because we're navigating away
   };
   
   return (

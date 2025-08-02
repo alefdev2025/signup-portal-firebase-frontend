@@ -1,5 +1,5 @@
 // File: pages/signup/MembershipCompletionSteps.jsx - Professional Design with Country Code Phone Input
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import membershipService from "../../services/membership";
@@ -89,6 +89,12 @@ export default function MembershipCompletionSteps({
   const [salesforceStatus, setSalesforceStatus] = useState(null);
   const [isCreatingSalesforce, setIsCreatingSalesforce] = useState(false);
   const [backButtonError, setBackButtonError] = useState(false);
+  
+  // CRITICAL: Add refs to prevent duplicate calls
+  const isCheckingStatus = useRef(false);
+  const isCreatingSalesforceRef = useRef(false);
+  const hasInitialized = useRef(false);
+  const lastCheckTime = useRef(0);
 
   // Animation styles from PackagePage
   const fadeInStyle = {
@@ -127,7 +133,17 @@ export default function MembershipCompletionSteps({
   };
 
   // Check completion status from backend
-  const checkCompletionStatus = async () => {
+  const checkCompletionStatus = async (forceCheck = false) => {
+    // Prevent duplicate calls
+    const now = Date.now();
+    if (!forceCheck && (isCheckingStatus.current || now - lastCheckTime.current < 1000)) {
+      console.log("⚠️ Skipping duplicate status check");
+      return;
+    }
+    
+    isCheckingStatus.current = true;
+    lastCheckTime.current = now;
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -154,11 +170,10 @@ export default function MembershipCompletionSteps({
         
         // If both DocuSign documents are completed, check Salesforce status
         if (bothDocusignCompleted) {
-          await checkSalesforceStatus();
-          
-          // Auto-create Salesforce contact if it doesn't exist
           const sfStatus = await checkSalesforceStatus();
-          if (!sfStatus?.exists) {
+          
+          // CRITICAL: Only auto-create if not already creating and doesn't exist
+          if (!sfStatus?.exists && !isCreatingSalesforceRef.current) {
             await createSalesforceContact();
           }
         }
@@ -202,6 +217,7 @@ export default function MembershipCompletionSteps({
       setError(error.message || "Failed to load membership status. Please refresh and try again.");
     } finally {
       setIsLoading(false);
+      isCheckingStatus.current = false;
     }
   };
   
@@ -224,8 +240,16 @@ export default function MembershipCompletionSteps({
     return null;
   };
   
-  // Create Salesforce contact
+  // Create Salesforce contact AND gets their new documents and uploads them to salesforce
   const createSalesforceContact = async () => {
+    // CRITICAL: Prevent duplicate creation calls
+    if (isCreatingSalesforceRef.current) {
+      console.log("⚠️ Already creating Salesforce contact, skipping duplicate call");
+      return false;
+    }
+    
+    isCreatingSalesforceRef.current = true;
+    
     try {
       setIsCreatingSalesforce(true);
       setError(null);
@@ -238,11 +262,37 @@ export default function MembershipCompletionSteps({
         setSalesforceStatus({
           exists: true,
           contactId: result.data.contactId,
+          agreementId: result.data.agreementId, // Make sure to save the agreement ID too
           createdAt: result.data.createdAt
         });
         
+        // NEW: Retrieve and upload DocuSign documents to Salesforce
+        try {
+          console.log("📄 Retrieving and uploading DocuSign documents...");
+          const docResult = await membershipService.retrieveAndUploadDocuments(
+            result.data.contactId,
+            result.data.agreementId
+          );
+          
+          if (docResult.success) {
+            console.log("✅ Documents retrieved and uploaded:", docResult.data);
+            // Optionally update the UI to show documents were uploaded
+            setSalesforceStatus(prev => ({
+              ...prev,
+              documentsUploaded: true,
+              documentUploadResults: docResult.data
+            }));
+          } else {
+            console.warn("⚠️ Document upload failed but continuing:", docResult.error);
+          }
+        } catch (docError) {
+          console.error("❌ Failed to retrieve/upload documents:", docError);
+          // Don't fail the whole process if document upload fails
+          // Maybe show a warning to the user but let them continue
+        }
+        
         // Refresh completion status to get updated data
-        await checkCompletionStatus();
+        await checkCompletionStatus(true); // Force check to bypass rate limiting
         
         return true;
       } else {
@@ -254,38 +304,17 @@ export default function MembershipCompletionSteps({
       return false;
     } finally {
       setIsCreatingSalesforce(false);
+      isCreatingSalesforceRef.current = false;
     }
   };
 
-  // Always refresh status when component mounts or becomes visible
+  // Initial load - only once
   useEffect(() => {
-    console.log("📊 MembershipCompletionSteps mounted/visible - refreshing status");
-    checkCompletionStatus();
-  }, []);
-
-  // Refresh when navigating back to this page
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log("📊 Page focused - refreshing completion status");
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      console.log("📊 MembershipCompletionSteps initial load");
       checkCompletionStatus();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    
-    // Also check on visibility change
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log("📊 Page became visible - refreshing completion status");
-        checkCompletionStatus();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    }
   }, []);
 
   // Handle returning from DocuSign or Payment
@@ -301,15 +330,15 @@ export default function MembershipCompletionSteps({
       membershipService.updateDocuSignStatus(documentType, 'completed', envelopeId)
         .then(() => {
           console.log("✅ DocuSign status updated");
-          checkCompletionStatus();
+          checkCompletionStatus(true); // Force check
         })
         .catch(err => {
           console.error("Error updating DocuSign status:", err);
-          checkCompletionStatus();
+          checkCompletionStatus(true); // Force check
         });
     } else if (location.state?.docusignCompleted || location.state?.paymentCompleted) {
       console.log("📍 Returned from step, refreshing status");
-      checkCompletionStatus();
+      checkCompletionStatus(true); // Force check
     }
   }, [location]);
 
@@ -447,6 +476,12 @@ export default function MembershipCompletionSteps({
     }
   };
 
+  // Manual refresh handler
+  const handleManualRefresh = () => {
+    console.log("🔄 Manual refresh triggered");
+    checkCompletionStatus(true); // Force check
+  };
+
   // Format currency
   const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "N/A";
@@ -483,7 +518,7 @@ export default function MembershipCompletionSteps({
       <div className="text-center py-12">
         <p className="text-red-600 mb-4" style={{ fontFamily: SYSTEM_FONT }}>Failed to load membership data</p>
         <button
-          onClick={checkCompletionStatus}
+          onClick={handleManualRefresh}
           className="py-3 px-6 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
           style={{ fontFamily: SYSTEM_FONT }}
         >
@@ -813,6 +848,8 @@ export default function MembershipCompletionSteps({
               <span className="font-medium">
                 {salesforceStatus?.exists ? (
                   <span className="text-green-600">Yes</span>
+                ) : isCreatingSalesforce ? (
+                  <span className="text-yellow-600">Creating...</span>
                 ) : (
                   <span className="text-yellow-600">Processing</span>
                 )}
@@ -831,13 +868,14 @@ export default function MembershipCompletionSteps({
       {/* Refresh Button */}
       <div className="text-center mb-8" style={{...fadeInStyle, ...getAnimationDelay(6)}}>
         <button
-          onClick={checkCompletionStatus}
-          className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-all duration-300 inline-flex items-center text-sm"
+          onClick={handleManualRefresh}
+          disabled={isCheckingStatus.current || isCreatingSalesforce}
+          className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-all duration-300 inline-flex items-center text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Refresh Status
+          {isCheckingStatus.current ? 'Refreshing...' : 'Refresh Status'}
         </button>
       </div>
 

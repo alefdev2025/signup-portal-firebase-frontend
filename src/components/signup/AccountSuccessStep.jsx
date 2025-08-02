@@ -1,20 +1,18 @@
-// File: pages/signup/AccountSuccessStep.jsx - ZERO RELOAD VERSION
+// File: pages/signup/AccountSuccessStep.jsx - FIXED VERSION
 import React, { useState, useEffect } from "react";
 import { useSignupFlow } from '../../contexts/SignupFlowContext';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../services/firebase";
 import { useUser } from "../../contexts/UserContext";
 import { isAccountCreated } from "../../services/storage";
-// Import the new API function
 import { updateSignupProgressAPI } from "../../services/auth";
-
-// Import components
 import AccountCreationSuccess from "../../components/signup/AccountCreationSuccess";
 
 const AccountSuccessStep = () => {
   const { goToNextStep, navigateToStep } = useSignupFlow();
   const { currentUser, refreshUserProgress } = useUser();
   const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false); // Track if we're ready for navigation
   
   // Add debugging
   useEffect(() => {
@@ -24,7 +22,7 @@ const AccountSuccessStep = () => {
     console.log("Account created:", isAccountCreated());
   }, [currentUser]);
   
-  // ZERO RELOAD: Simplified auth check that doesn't trigger unnecessary refreshes
+  // Check auth and update database if needed
   useEffect(() => {
     const checkAuth = async () => {
       if (!currentUser) {
@@ -59,17 +57,21 @@ const AccountSuccessStep = () => {
           
           console.log("Database updated with success step completion");
           
-          // ZERO RELOAD: Don't call refreshUserProgress here - the UserContext 
-          // already has the correct state from the verification process
-          console.log("Skipping refresh to prevent reload - UserContext already has correct state");
+          // IMPORTANT: Refresh the user context to ensure it has the latest state
+          await refreshUserProgress();
+          console.log("User progress refreshed");
         } else if (userDoc.exists()) {
           console.log("User document exists:", userDoc.data());
         }
         
-        console.log("User should see the success page, setting loading=false");
+        // Mark as ready for navigation
+        setIsReady(true);
+        console.log("Component is ready for navigation");
         setLoading(false);
       } catch (error) {
         console.error("Error checking user progress:", error);
+        // Still allow continuation even if there's an error
+        setIsReady(true);
         setLoading(false);
       }
     };
@@ -78,16 +80,19 @@ const AccountSuccessStep = () => {
     if (currentUser) {
       checkAuth();
     }
-  }, [currentUser, navigateToStep]);
+  }, [currentUser, navigateToStep, refreshUserProgress]);
   
-  // ZERO RELOAD: Simplified continue handler that doesn't trigger unnecessary refreshes
+  // Handle continue button click
   const handleContinue = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !isReady) {
+      console.log("Cannot continue - currentUser:", !!currentUser, "isReady:", isReady);
+      return;
+    }
     
     try {
-      console.log("Continue button clicked, updating via API");
+      console.log("Continue button clicked, updating to contact_info step");
       
-      // Call the API function instead of direct Firestore call
+      // Call the API function to update progress to step 2
       const result = await updateSignupProgressAPI("contact_info", 2);
       
       if (!result.success) {
@@ -97,8 +102,7 @@ const AccountSuccessStep = () => {
       
       console.log("API update successful, navigating to contact step");
       
-      // ZERO RELOAD: Don't call refreshUserProgress here - just navigate
-      // The UserContext will pick up the new state when the next step loads
+      // Navigate to the next step
       goToNextStep();
     } catch (error) {
       console.error("Error updating progress:", error);

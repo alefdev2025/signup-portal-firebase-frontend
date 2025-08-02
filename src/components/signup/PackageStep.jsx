@@ -1,4 +1,4 @@
-// File: pages/signup/PackageStep.jsx
+// File: pages/signup/PackageStep.jsx - FIXED VERSION
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useSignupFlow } from "../../contexts/SignupFlowContext";
@@ -28,6 +28,7 @@ const PackageStep = () => {
   const [formData, setFormData] = useState({});
   const [membershipData, setMembershipData] = useState(null);
   const [error, setError] = useState(null);
+  const [isReady, setIsReady] = useState(false); // Track if component is ready
   // Add initialization tracker to prevent double initialization
   const initializedRef = useRef(false);
   
@@ -96,10 +97,14 @@ const PackageStep = () => {
           setError(membershipResult?.error || "Failed to calculate membership cost");
         }
         
-        LOG_TO_TERMINAL("Initialization complete");
+        // Mark as ready for interaction
+        setIsReady(true);
+        LOG_TO_TERMINAL("Initialization complete, component is ready");
+        
       } catch (error) {
         console.error("Error initializing package step:", error);
         setError("An error occurred while loading your information. Please try again.");
+        setIsReady(true); // Still mark as ready to allow retry
       } finally {
         setLoading(false);
       }
@@ -115,6 +120,11 @@ const PackageStep = () => {
   
   // Handle going back to previous step
   const handleBack = () => {
+    if (!isReady) {
+      LOG_TO_TERMINAL("Component not ready, ignoring back button");
+      return;
+    }
+    
     LOG_TO_TERMINAL("PackageStep: Back button clicked");
     
     // Use SignupFlow navigation system
@@ -122,59 +132,59 @@ const PackageStep = () => {
   };
   
   // Handle form submission and proceeding to next step
-  const handleNext = async (stepData) => {
-    if (!currentUser) {
-      LOG_TO_TERMINAL("No current user - cannot proceed");
-      return false;
+// In PackageStep.jsx - Update the handleNext function
+const handleNext = async (stepData) => {
+  if (!currentUser || !isReady) {
+    LOG_TO_TERMINAL(`Cannot proceed - currentUser: ${!!currentUser}, isReady: ${isReady}`);
+    return false;
+  }
+  
+  try {
+    LOG_TO_TERMINAL("Saving package info and proceeding to next step");
+    
+    // Save form data locally
+    saveFormData("package", stepData);
+    LOG_TO_TERMINAL("Form data saved locally");
+    
+    // Update progress via API
+    LOG_TO_TERMINAL("Updating progress via API...");
+    const progressResult = await updateSignupProgressAPI("funding", 4);
+    
+    if (!progressResult.success) {
+      throw new Error(progressResult.error || "Failed to update progress");
     }
     
-    try {
-      LOG_TO_TERMINAL("Saving package info and proceeding to next step");
+    LOG_TO_TERMINAL("Progress updated successfully");
+    
+    // CRITICAL: Refresh user progress BEFORE navigating
+    if (typeof refreshUserProgress === 'function') {
+      LOG_TO_TERMINAL("Refreshing user progress...");
+      await refreshUserProgress();
+      LOG_TO_TERMINAL("User progress refreshed");
       
-      // Save form data locally
-      saveFormData("package", stepData);
-      LOG_TO_TERMINAL("Form data saved locally");
-      
-      // Save package info via API
-      const saveResult = await savePackageInfo(stepData);
-      
-      if (!saveResult.success) {
-        throw new Error(saveResult.error || "Failed to save package information");
-      }
-      
-      LOG_TO_TERMINAL("Package info saved to backend");
-      
-      // Update progress via API
-      LOG_TO_TERMINAL("Updating progress via API...");
-      const progressResult = await updateSignupProgressAPI("funding", 4);
-      
-      if (!progressResult.success) {
-        throw new Error(progressResult.error || "Failed to update progress");
-      }
-      
-      LOG_TO_TERMINAL("Progress updated successfully, proceeding to next step");
-      
-      // Refresh user progress from context
-      if (typeof refreshUserProgress === 'function') {
-        await refreshUserProgress();
-      }
-      
-      // Use goToNextStep() like the contact step does
-      const navigationSuccess = goToNextStep();
-      
-      if (navigationSuccess) {
-        LOG_TO_TERMINAL("Navigation to next step successful");
-        return true;
-      } else {
-        LOG_TO_TERMINAL("Navigation failed");
-        return false;
-      }
-    } catch (error) {
-      LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
-      console.error("Error saving package info:", error);
-      return false;
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-  };
+    
+    // Navigate to next step
+    const navigationSuccess = goToNextStep();
+    
+    if (navigationSuccess) {
+      LOG_TO_TERMINAL("Navigation to next step successful");
+      return true;
+    } else {
+      LOG_TO_TERMINAL("Navigation failed - likely due to progress not updated yet");
+      // Try one more time after a delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const retryNavigation = goToNextStep();
+      return retryNavigation;
+    }
+  } catch (error) {
+    LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
+    console.error("Error saving package info:", error);
+    return false;
+  }
+};
   
   // Show loading spinner while initializing
   if (loading) {
@@ -187,7 +197,7 @@ const PackageStep = () => {
   }
   
   // Show error state if there was a problem
-  if (error) {
+  if (error && !isReady) {
     return (
       <div className="flex justify-center pt-8 bg-gray-100 min-h-screen">
         <div className="text-center py-3 px-8 bg-white rounded-lg shadow-md max-w-md">
@@ -218,6 +228,7 @@ const PackageStep = () => {
       onBack={handleBack}
       onNext={handleNext}
       preloadedMembershipData={membershipData} // Pass the pre-loaded membership data
+      isParentReady={isReady} // Pass ready state to child
     />
   );
 };
