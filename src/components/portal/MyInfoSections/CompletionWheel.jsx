@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * CompletionWheel Component
@@ -39,8 +39,8 @@ import React from 'react';
 const CompletionWheel = ({ 
   data, 
   fieldConfig, 
-  radius = 75, 
-  strokeWidth = 10,
+  radius = 90,
+  strokeWidth = 15,
   colors = {
     high: '#032CA6',
     medium: '#F26430', 
@@ -50,15 +50,33 @@ const CompletionWheel = ({
     label: '#021859'
   }
 }) => {
-  const normalizedRadius = radius - strokeWidth * 2;
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 640;
+      console.log('Mobile check:', mobile, 'Width:', window.innerWidth);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Use different values for mobile - more dramatic differences
+  const actualRadius = isMobile ? 60 : 90; // Smaller radius but thicker stroke on mobile
+  const actualStrokeWidth = isMobile ? 12 : 15; // Thicker relative to size on mobile
+  
+  console.log('Wheel rendering - Mobile:', isMobile, 'Radius:', actualRadius, 'Stroke:', actualStrokeWidth);
+  
+  const normalizedRadius = actualRadius - actualStrokeWidth * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
-    let filledRecommended = 0;
     
-    // Check required fields
+    // Check required fields only
     Object.values(fieldConfig.required).forEach(field => {
       // Check if field has a custom checkValue function
       if (field.checkValue && typeof field.checkValue === 'function') {
@@ -74,79 +92,76 @@ const CompletionWheel = ({
       }
     });
     
-    // Check recommended fields
-    Object.values(fieldConfig.recommended).forEach(field => {
-      // Check if field has a custom checkValue function
-      if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue(data)) {
-          filledRecommended++;
-        }
-      } else {
-        // Default check
-        const value = data[field.source]?.[field.field];
-        if (value && (Array.isArray(value) ? value.length > 0 : value.trim() !== '')) {
-          filledRecommended++;
-        }
-      }
-    });
-    
     const totalRequired = Object.keys(fieldConfig.required).length;
-    const totalRecommended = Object.keys(fieldConfig.recommended).length;
     
-    // If there are no recommended fields, required fields should be worth 100%
-    if (totalRecommended === 0) {
-      const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 100 : 0;
-      return Math.round(requiredPercentage);
-    } else {
-      // Weight: 70% for required fields, 30% for recommended when both exist
-      const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 70 : 0;
-      const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 30 : 0;
-      return Math.round(requiredPercentage + recommendedPercentage);
-    }
+    // Required fields are now worth 100%
+    const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 100 : 0;
+    return Math.round(requiredPercentage);
   };
   
   const completionPercentage = calculateCompletion();
   const strokeDashoffset = circumference - (completionPercentage / 100) * circumference;
-  
-  const getCompletionColor = (percentage) => {
-    if (percentage >= 80) return colors.high;
-    if (percentage >= 50) return colors.medium;
-    return colors.low;
-  };
+
+  // Generate unique ID for gradient
+  const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
-    <div className="relative">
+    <div className="relative inline-flex">
       <svg
-        height={radius * 2}
-        width={radius * 2}
+        height={actualRadius * 2}
+        width={actualRadius * 2}
         className="transform -rotate-90"
       >
+        <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#212849" />   {/* Navy */}
+          <stop offset="30%" stopColor="#4d3666" />  {/* Purple-Navy */}
+          <stop offset="60%" stopColor="#7d4582" />  {/* Purple */}
+          <stop offset="85%" stopColor="#864d7b" />  {/* Purple-Pink */}
+          <stop offset="95%" stopColor="#9f6367" />  {/* Hint of Pink */}
+          <stop offset="100%" stopColor="#aa6c61" /> {/* Hint of Orange */}
+        </linearGradient>
+        </defs>
+        
+        {/* Background circle */}
         <circle
           stroke={colors.background}
           fill="transparent"
-          strokeWidth={strokeWidth}
+          strokeWidth={actualStrokeWidth}
           r={normalizedRadius}
-          cx={radius}
-          cy={radius}
+          cx={actualRadius}
+          cy={actualRadius}
         />
+        
+        {/* Progress circle with gradient */}
         <circle
-          stroke={getCompletionColor(completionPercentage)}
+          stroke={`url(#${gradientId})`}
           fill="transparent"
-          strokeWidth={strokeWidth}
+          strokeWidth={actualStrokeWidth}
           strokeDasharray={circumference + ' ' + circumference}
-          style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease' }}
+          style={{ 
+            strokeDashoffset,
+            transition: 'stroke-dashoffset 0.5s ease',
+            strokeLinecap: 'round'
+          }}
           r={normalizedRadius}
-          cx={radius}
-          cy={radius}
+          cx={actualRadius}
+          cy={actualRadius}
         />
       </svg>
       
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl font-bold" style={{ color: colors.text }}>
+          <div 
+            className={`font-bold ${isMobile ? 'text-2xl' : 'text-3xl'}`} 
+            style={{ color: colors.text }}
+          >
             {completionPercentage}%
           </div>
-          <div className="text-sm" style={{ color: colors.label }}>
+          <div 
+            className={`${isMobile ? 'text-xs' : 'text-sm'}`} 
+            style={{ color: colors.label }}
+          >
             Complete
           </div>
         </div>
@@ -170,15 +185,15 @@ const CompletionWheel = ({
  export const CompletionWheelWithLegend = ({ 
   title = 'Profile Completion',
   legendColors = {
-    required: '#512BD9',
-    recommended: '#F26430'
+    required: '#7d4582',      // Purple from your gradient
+    recommended: '#D1D5DB'    // Light gray to match the field dots
   },
   sectionColor,
   ...wheelProps 
 }) => {
-  // Change this logic - only use sectionColor for required, always use orange for recommended
-  const requiredColor = sectionColor || legendColors.required;
-  const recommendedColor = legendColors.recommended; // Always use orange, ignore sectionColor
+  // Always use purple for required, ignore sectionColor
+  const requiredColor = '#7d4582';  // Force purple
+  const recommendedColor = '#D1D5DB'; // Force light gray
 
   return (
     <div className="flex flex-col items-center">

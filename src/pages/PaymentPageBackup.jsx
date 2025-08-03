@@ -285,12 +285,20 @@ function CheckoutForm({ userData, paymentLineItems }) {
         }
 
         console.log('Membership created successfully');
+
+        navigate('/signup/completion', { 
+          replace: true,
+          state: { 
+            paymentCompleted: true,
+            paymentResult: confirmResult 
+          }
+        });
         
         // Navigate immediately to welcome member page
-        navigate('/welcome-member', { 
+        /*navigate('/welcome-member', { 
           replace: true,
           state: { paymentResult: confirmResult }
-        });
+        });*/
 
       } else {
         // Handle ACH payment

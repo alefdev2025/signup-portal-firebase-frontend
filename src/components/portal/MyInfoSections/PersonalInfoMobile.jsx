@@ -6,7 +6,7 @@ import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 
 // DEBUG CONFIGURATION - Change these values to test different user states
-const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const OVERRIDE_MEMBER_CATEGORY = false;  // Set to true to use debug category, false to use actual
 const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
 
 // Helper function to get effective member category
@@ -101,7 +101,7 @@ const PersonalInfoMobile = ({
 }) => {
   // Get effective member category for debugging
   const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
-  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant' && !personalInfo?.ssn;
 
   const formatSSN = (ssn) => {
     if (!ssn) return '—';

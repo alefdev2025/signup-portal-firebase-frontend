@@ -1459,7 +1459,6 @@ const loadMemberCategory = async () => {
       // Update state with cleaned data
       setPersonalInfo(cleanedData);
       setOriginalData(prev => ({ ...prev, personal: cleanedData }));
-      setEditMode(prev => ({ ...prev, personal: false }));
       
       // Clear cache after successful save
       memberDataService.clearCache(salesforceContactId);
@@ -1493,6 +1492,8 @@ const loadMemberCategory = async () => {
       setPersonalInfo(previousPersonalInfo);
       setSaveMessage({ type: 'error', text: `Failed to save: ${error.message}` });
     } finally {
+      // Always close edit mode and clear saving state
+      setEditMode(prev => ({ ...prev, personal: false }));
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
       //console.log('🔵 === END savePersonalInfo ===\n');

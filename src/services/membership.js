@@ -781,6 +781,40 @@ export const getReadyForDocuSign = async () => {
   }
 };
 
+/**
+ * Update member payment status in Salesforce
+ * @param {string} contactId - Salesforce Contact ID
+ * @param {object} paymentData - Payment information
+ * @returns {Promise<object>} Update result
+ */
+ export const updateMemberPaymentStatus = async (contactId, paymentData) => {
+  try {
+    console.log("Updating member payment status in Salesforce...", { contactId, paymentData });
+    const token = await auth.currentUser?.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/salesforce/members/${contactId}/payment-status`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update payment status');
+    }
+    
+    console.log("Payment status updated successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    throw error;
+  }
+};
+
 // Default export with all functions
 export default {
   saveMembershipSelection,
@@ -801,5 +835,6 @@ export default {
   createSalesforceContact,
   getSalesforceStatus,
   getReadyForDocuSign,
-  retrieveAndUploadDocuments
+  retrieveAndUploadDocuments,
+  updateMemberPaymentStatus
 };

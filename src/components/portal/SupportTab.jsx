@@ -48,7 +48,7 @@ const SupportTab = () => {
       icon: '📧',
       title: 'Email Support',
       description: 'Get help via email within 24 hours',
-      action: 'support@alcor.org',
+      action: 'infot@alcor.org',
       available: 'Mon-Fri 9AM-5PM PST'
     },
     {

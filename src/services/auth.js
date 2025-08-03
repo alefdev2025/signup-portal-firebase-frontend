@@ -2573,6 +2573,50 @@ export const checkMemberAccount = async (email, alcorId = null) => {
   }
 };
 
+/**
+ * Create portal account for signup flow applicant
+ * Used when user completes step 8 without an A-number
+ */
+ export const createApplicantPortalAccount = async (data) => {
+  try {
+    const { email, firstName, lastName, membershipType, completedSignup } = data;
+    
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User must be authenticated');
+    }
+    
+    console.log('Creating applicant portal account:', { email, membershipType });
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'createApplicantPortalAccount',
+      userId: user.uid,
+      email: email || user.email,
+      firstName,
+      lastName,
+      membershipType,
+      completedSignup
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('createApplicantPortalAccount result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error creating applicant portal account:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create applicant portal account'
+    };
+  }
+};
+
 // NEED THIS?
 /**
  * Create portal account for existing Alcor member

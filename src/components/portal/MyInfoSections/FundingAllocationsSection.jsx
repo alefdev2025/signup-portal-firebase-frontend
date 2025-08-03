@@ -17,7 +17,7 @@ import { CompletionWheelWithLegend } from './CompletionWheel';
 import { isSectionEditable } from '../memberCategoryConfig';
 
 // DEBUG CONFIGURATION - Change these values to test different user states
-const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const OVERRIDE_MEMBER_CATEGORY = false;  // Set to true to use debug category, false to use actual
 const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
 
 // Helper function to get effective member category

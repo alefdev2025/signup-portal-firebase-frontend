@@ -174,12 +174,7 @@ const CardOverlay = ({
           <div className={overlayStyles.body.wrapper}>
             {/* Success Message */}
             {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
-              </div>
+              <p className="text-sm text-gray-500 mb-6">Information updated successfully</p>
             )}
 
             {/* Fields */}
@@ -530,11 +525,7 @@ const ContactInfoSection = ({
       lastName: { field: 'lastName', source: 'personalInfo', label: 'Last Name' },
       dateOfBirth: { field: 'dateOfBirth', source: 'personalInfo', label: 'Date of Birth' },
       personalEmail: { field: 'personalEmail', source: 'contactInfo', label: 'Personal Email' },
-      preferredPhone: { field: 'preferredPhone', source: 'contactInfo', label: 'Preferred Phone' }
-    },
-    recommended: {
-      middleName: { field: 'middleName', source: 'personalInfo', label: 'Middle Name' },
-      workEmail: { field: 'workEmail', source: 'contactInfo', label: 'Work Email' },
+      preferredPhone: { field: 'preferredPhone', source: 'contactInfo', label: 'Preferred Phone' },
       anyPhone: { 
         field: 'anyPhone', 
         source: 'contactInfo', 
@@ -547,6 +538,10 @@ const ContactInfoSection = ({
           );
         }
       }
+    },
+    recommended: {
+      middleName: { field: 'middleName', source: 'personalInfo', label: 'Middle Name' },
+      workEmail: { field: 'workEmail', source: 'contactInfo', label: 'Work Email' }
     }
   };
 
@@ -573,9 +568,12 @@ const ContactInfoSection = ({
   };
 
   const handleOverlaySave = (updatedContactInfo, updatedPersonalInfo) => {
-    // Update parent state with the new data
-    setContactInfo(updatedContactInfo);
-    setPersonalInfo(updatedPersonalInfo);
+    // Use React 18's automatic batching or wrap in unstable_batchedUpdates for React 17
+    // React 18 automatically batches these, but we can be explicit
+    ReactDOM.flushSync(() => {
+      setContactInfo(updatedContactInfo);
+      setPersonalInfo(updatedPersonalInfo);
+    });
     // Set flag to trigger save after state updates
     setPendingSave(true);
   };

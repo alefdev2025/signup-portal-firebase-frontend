@@ -841,7 +841,7 @@ const NotificationsTab = () => {
 
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-500">
-                        Need assistance? Contact support at support@alcor.org
+                        Need assistance? Contact support at info@alcor.org
                       </p>
                     </div>
                   </div>
@@ -928,8 +928,8 @@ const NotificationsTab = () => {
                 <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
                 <p className="text-sm text-gray-600">
                   Contact support at{' '}
-                  <a href="mailto:support@alcor.org" className="text-[#9f5fa6] hover:underline">
-                    support@alcor.org
+                  <a href="mailto:info@alcor.org" className="text-[#9f5fa6] hover:underline">
+                    info@alcor.org
                   </a>
                 </p>
               </div>

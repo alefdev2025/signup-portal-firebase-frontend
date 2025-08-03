@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import membershipService from "../../services/membership";
-import { updateSignupProgressAPI } from "../../services/auth";
+import { updateSignupProgressAPI, createApplicantPortalAccount } from "../../services/auth";
 import alcorStar from "../../assets/images/alcor-star.png";
 import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 
@@ -89,6 +89,7 @@ export default function MembershipCompletionSteps({
   const [salesforceStatus, setSalesforceStatus] = useState(null);
   const [isCreatingSalesforce, setIsCreatingSalesforce] = useState(false);
   const [backButtonError, setBackButtonError] = useState(false);
+  const [isCompletingMembership, setIsCompletingMembership] = useState(false);
   
   // CRITICAL: Add refs to prevent duplicate calls
   const isCheckingStatus = useRef(false);
@@ -204,11 +205,7 @@ export default function MembershipCompletionSteps({
           // Continue with existing data
         }
         
-        // Check if everything is completed
-        if (result.data.allStepsCompleted && onComplete) {
-          console.log("🎉 All steps completed, triggering completion");
-          onComplete();
-        }
+        // Don't auto-complete, wait for user to click Continue
       } else {
         throw new Error(result.error || 'Failed to load completion status');
       }
@@ -307,6 +304,63 @@ export default function MembershipCompletionSteps({
       isCreatingSalesforceRef.current = false;
     }
   };
+
+  // Handle completion and portal account creation
+// Handle completion and portal account creation
+const handleComplete = async () => {
+  try {
+    setIsCompletingMembership(true);
+    setError(null);
+    
+    console.log('All steps completed, creating portal account...');
+    
+    // Create applicant portal account
+    const portalResult = await createApplicantPortalAccount({
+      completedSignup: true
+    });
+    
+    if (portalResult.success) {
+      console.log('✅ Portal account created successfully');
+      
+      // Update payment status in Salesforce
+      if (salesforceStatus?.contactId) {
+        try {
+          console.log('💰 Updating payment status in Salesforce...');
+          const paymentUpdateResult = await membershipService.updateMemberPaymentStatus(
+            salesforceStatus.contactId,
+            {
+              amount: completionData?.totalDue || completionData?.readyForPayment?.paymentDetails?.totalDue,
+              method: completionData?.payment?.method || 'credit_card',
+              reference: completionData?.payment?.paymentId || completionData?.readyForPayment?.paymentStatus?.transactionId,
+              paymentDate: completionData?.payment?.completedAt || new Date().toISOString()
+            }
+          );
+          
+          if (paymentUpdateResult.success) {
+            console.log('✅ Payment status updated in Salesforce');
+          } else {
+            console.warn('⚠️ Failed to update payment status:', paymentUpdateResult.error);
+          }
+        } catch (error) {
+          console.error('⚠️ Error updating payment status:', error);
+          // Don't fail the whole process, just log the error
+        }
+      }
+      
+      // Redirect to portal
+      window.location.href = '/portal-home';
+      
+    } else {
+      throw new Error(portalResult.error || 'Failed to create portal account');
+    }
+    
+  } catch (error) {
+    console.error('Error completing membership:', error);
+    setError(error.message || 'Failed to complete membership setup. Please try again.');
+  } finally {
+    setIsCompletingMembership(false);
+  }
+};
 
   // Initial load - only once
   useEffect(() => {
@@ -760,12 +814,8 @@ export default function MembershipCompletionSteps({
           }`}
           style={{...fadeInStyle, ...getAnimationDelay(4)}}
         >
-          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ${
-            paymentCompleted 
-              ? 'ring-2 ring-green-500' 
-              : canStartPayment
-                ? 'ring-1 ring-gray-300'
-                : 'ring-1 ring-gray-200'
+          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ring-1 ${
+            canStartPayment ? 'ring-gray-300' : 'ring-gray-200'
           } transition-all duration-300 hover:shadow-lg h-full flex flex-col`}>
             
             {/* Card Header - White Section */}
@@ -790,42 +840,38 @@ export default function MembershipCompletionSteps({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: '500' }}>Amount due:</span>
                   <span className="font-normal text-gray-900" style={{ fontSize: '18px' }}>
-                    {paymentCompleted ? 'Paid' : formatCurrency(totalDue)}
+                    {formatCurrency(totalDue)}
                   </span>
                 </div>
+                
+                {paymentCompleted && (
+                  <div className="flex items-center mt-3 text-green-600">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium">Payment completed</span>
+                  </div>
+                )}
                 
                 {!bothDocusignCompleted && (
                   <p className="text-sm text-gray-500 mt-3 italic">Complete all agreements first</p>
                 )}
-                
-
               </div>
             </div>
             
             {/* Card Footer - White Section with Navy Button */}
             <div className="bg-white p-6 border-t border-gray-100">
-              {paymentCompleted ? (
-                <div className="text-center">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <svg className="w-8 h-8 text-green-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <p className="font-medium text-green-700">Payment Completed</p>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={handleStartPayment}
-                  disabled={!canStartPayment}
-                  className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
-                    !canStartPayment
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
-                  }`}
-                >
-                  Make Payment
-                </button>
-              )}
+              <button
+                onClick={handleStartPayment}
+                disabled={!canStartPayment || paymentCompleted}
+                className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
+                  !canStartPayment || paymentCompleted
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
+                }`}
+              >
+                {paymentCompleted ? 'Payment Completed' : 'Make Payment'}
+              </button>
             </div>
           </div>
         </div>
@@ -897,15 +943,25 @@ export default function MembershipCompletionSteps({
           )}
         </div>
         
-        {completionData.allStepsCompleted && (
+        {(completionData.allStepsCompleted || (docusignCompleted && paymentCompleted)) && (
           <button
-            onClick={onComplete}
-            className="py-5 px-8 bg-[#775684] text-white rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] hover:bg-[#664573]"
+            onClick={handleComplete}
+            disabled={isCompletingMembership}
+            className="py-5 px-8 bg-[#775684] text-white rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] hover:bg-[#664573] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
+            {isCompletingMembership ? (
+              <span className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Creating Portal Access...
+              </span>
+            ) : (
+              <>
+                Complete & Access Portal
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+              </>
+            )}
           </button>
         )}
       </div>

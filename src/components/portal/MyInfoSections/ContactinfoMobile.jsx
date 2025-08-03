@@ -112,33 +112,37 @@ const ContactInfoMobile = ({
                   
                   {/* Compact completion indicator */}
                   <div className="relative">
-                    <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                  <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                       <circle
                         stroke="#f5f5f5"
                         fill="transparent"
-                        strokeWidth={4}
-                        r={36}
-                        cx={40}
-                        cy={40}
+                        strokeWidth={8}
+                        r={42}
+                        cx={50}
+                        cy={50}
                       />
                       <circle
                         stroke="url(#gradient)"
                         fill="transparent"
-                        strokeWidth={4}
-                        strokeDasharray={`${226.19} ${226.19}`}
+                        strokeWidth={8}
+                        strokeDasharray={`${264} ${264}`}
                         style={{ 
-                          strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                          strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                           transition: 'stroke-dashoffset 0.5s ease',
                           strokeLinecap: 'round'
                         }}
-                        r={36}
-                        cx={40}
-                        cy={40}
+                        r={42}
+                        cx={50}
+                        cy={50}
                       />
                       <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#512BD9" />
-                          <stop offset="100%" stopColor="#F26430" />
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#212849" />
+                          <stop offset="30%" stopColor="#4d3666" />
+                          <stop offset="60%" stopColor="#7d4582" />
+                          <stop offset="85%" stopColor="#864d7b" />
+                          <stop offset="95%" stopColor="#9f6367" />
+                          <stop offset="100%" stopColor="#aa6c61" />
                         </linearGradient>
                       </defs>
                     </svg>

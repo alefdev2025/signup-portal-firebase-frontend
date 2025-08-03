@@ -120,7 +120,7 @@ const animationStyles = {
     /* NEW: Card entrance animations */
     .card-animate {
       opacity: 0;
-      transform: translateY(30px) scale(0.97);
+      transform: scale(0.98);  // Remove translateY(30px)
     }
     
     .card-animate.visible {
@@ -155,15 +155,11 @@ const animationStyles = {
     @keyframes cardSlideIn {
       0% {
         opacity: 0;
-        transform: translateY(30px) scale(0.97);
-      }
-      60% {
-        opacity: 1;
-        transform: translateY(-2px) scale(1);
+        transform: scale(0.98);  // Remove translateY, just slight scale
       }
       100% {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: scale(1);
       }
     }
     

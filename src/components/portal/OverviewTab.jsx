@@ -10,6 +10,7 @@ import dewarsImage from '../../assets/images/dewars2.jpg';
 import podcastImage from '../../assets/images/podcast-image2.png';
 import { getContactActivities, formatActivity, filterDuplicateInvoiceActivities } from '../../services/activity';
 import analytics from '../../services/analytics';
+import WelcomeOverlay from './WelcomeOverlay';
 
 // Global toggle for Quick Actions colors
 const USE_GRADIENT_COLORS = true;
@@ -901,6 +902,8 @@ const OverviewTab = ({ setActiveTab }) => {
          </div>
        )}
      </div>
+      {/* Welcome Overlay */}
+    <WelcomeOverlay />
    </div>
  );
 };

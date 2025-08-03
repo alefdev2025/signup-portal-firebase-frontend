@@ -33,11 +33,11 @@ const overlayStyles = Object.freeze({
   // Body section
   body: Object.freeze({
     wrapper: "px-10 py-8 bg-white",
-    successMessage: Object.freeze({
-      container: "mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 animate-fadeIn",
-      icon: "w-5 h-5 text-green-600 flex-shrink-0",
-      text: "text-green-800 font-medium"
-    }),
+    successMessage: {
+      container: 'bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4',
+      icon: 'w-5 h-5 text-gray-600',
+      text: 'text-sm text-gray-800'
+    },
     content: "space-y-6",
     description: Object.freeze({
       container: "mt-8 pt-6 border-t border-gray-100",

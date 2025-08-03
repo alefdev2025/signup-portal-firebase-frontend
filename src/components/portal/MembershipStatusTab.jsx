@@ -1054,15 +1054,14 @@ const MembershipStatusTab = () => {
               
               <div className="pb-4 border-b border-gray-100">
                 <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Requirements Checklist</h4>
-                <p className="text-sm text-gray-600">Track completed and pending membership requirements including signatures, consent forms, and funding proof.</p>
               </div>
               
               <div>
                 <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
                 <p className="text-sm text-gray-600">
                   Contact support at{' '}
-                  <a href="mailto:support@alcor.org" className="text-[#9f5fa6] hover:underline">
-                    support@alcor.org
+                  <a href="mailto:info@alcor.org" className="text-[#9f5fa6] hover:underline">
+                    info@alcor.org
                   </a>
                 </p>
               </div>

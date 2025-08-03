@@ -1,7 +1,7 @@
 // SharedInfoComponents.jsx - ONE place for InfoField and InfoCard
 import React from 'react';
 import fieldStyles from './desktopCardStyles/fieldStyles';
-import infoCardStyles from './desktopCardStyles/infoCardStyles';
+import infoCardStyles from './desktopCardStyles/infoCardStylesBlues';
 import animationStyles from './desktopCardStyles/animationStyles';
 
 export const InfoField = ({ label, value, isRequired, isRecommended, requiredColor = '#512BD9', recommendedColor = '#F26430' }) => {
@@ -12,9 +12,9 @@ export const InfoField = ({ label, value, isRequired, isRecommended, requiredCol
       <div className="flex items-center gap-1.5">
         {(isRequired || isRecommended) && (
           <div 
-            className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
-            style={{ backgroundColor: isRequired ? requiredColor : recommendedColor }}
-          />
+  className="w-2 h-2 rounded-full flex-shrink-0" 
+  style={{ backgroundColor: isRequired ? '#7d4582' : '#D1D5DB' }}
+/>
         )}
         <label 
           className={infoCardStyles.field.label}

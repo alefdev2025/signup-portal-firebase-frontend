@@ -59,6 +59,72 @@ export const getContactInfo = async () => {
     }
   };
 
+  // Check portal welcome status
+export const getPortalWelcomeStatus = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/portal-welcome-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error checking portal welcome status:", error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
+// Mark portal welcome as shown
+export const markPortalWelcomeShown = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/mark-portal-welcome-shown`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error marking portal welcome as shown:", error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
   // In services/contact.js
 export const saveContactInfo = async (contactData) => {
     try {

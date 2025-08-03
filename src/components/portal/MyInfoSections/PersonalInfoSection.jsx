@@ -20,7 +20,7 @@ import { CompletionWheelWithLegend } from './CompletionWheel';
 import { isSectionEditable } from '../memberCategoryConfig';
 
 // DEBUG CONFIGURATION - Change these values to test different user states
-const OVERRIDE_MEMBER_CATEGORY = true;  // Set to true to use debug category, false to use actual
+const OVERRIDE_MEMBER_CATEGORY = false;  // Set to true to use debug category, false to use actual
 const DEBUG_CATEGORY = 'CryoApplicant'; // Options: 'CryoApplicant', 'CryoMember', 'AssociateMember'
 
 // Helper function to get effective member category
@@ -199,7 +199,7 @@ const CardOverlay = ({
 
   // Get effective member category for debugging
   const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
-  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant' && !data.personalInfo?.ssn;
 
   useEffect(() => {
     if (isOpen) {
@@ -546,14 +546,9 @@ const CardOverlay = ({
           </div>
 
           <div className={overlayStyles.body.wrapper}>
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
-              </div>
-            )}
+          {showSuccess && (
+            <p className="text-sm text-gray-500 mb-6">Information updated successfully</p>
+          )}
 
             {!editMode ? (
               <div className="space-y-6">
@@ -776,7 +771,7 @@ const PersonalInfoSection = ({
 
   // Get effective member category for debugging
   const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
-  const canEditSSN = effectiveMemberCategory === 'CryoApplicant';
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant' && !safePersonalInfo?.ssn;
 
   // Detect mobile
   useEffect(() => {
@@ -861,7 +856,13 @@ const PersonalInfoSection = ({
       savePersonalInfo();
       setPendingSave(false);
     }
-  }, [pendingSave, personalInfo]);
+  }, [pendingSave]);
+  /*useEffect(() => {
+    if (pendingSave) {
+      savePersonalInfo();
+      setPendingSave(false);
+    }
+  }, [pendingSave, personalInfo]);*/
 
   const formatSSN = (ssn) => {
     if (!ssn) return '—';
@@ -1112,8 +1113,10 @@ const PersonalInfoSection = ({
   };
 
   const handleOverlaySave = (updatedPersonalInfo) => {
-    // Update parent state with the new data
-    setPersonalInfo(updatedPersonalInfo);
+    // Use React 18's automatic batching
+    ReactDOM.flushSync(() => {
+      setPersonalInfo(updatedPersonalInfo);
+    });
     // Set flag to trigger save after state updates
     setPendingSave(true);
   };

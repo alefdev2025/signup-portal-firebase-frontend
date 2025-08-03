@@ -102,8 +102,8 @@ export const modernContactStyles = {
     },
     body: {
       wrapper: "p-6 sm:p-8",
-      successMessage: "mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3",
-      successIcon: "w-6 h-6 text-green-600",
+      successMessage: "mb-6 p-4 bg-gray-50 border border-green-200 rounded-xl flex items-center gap-3",
+      successIcon: "w-6 h-6 text-gray-600",
       successText: "text-green-800 font-medium"
     },
     footer: {

@@ -149,7 +149,23 @@ mobileSection: {
   },
 
   // Section-specific dark backgrounds for mobile, icon styles for desktop
-  sectionIcons: {
+// Section-specific dark backgrounds for mobile, icon styles for desktop
+sectionIcons: {
+  // Same gradient for all sections but keeping the blue borders - SMALLER BOXES
+  contact: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#3B82F6] shadow-md",
+  personal: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#60A5FA] shadow-md",
+  addresses: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#818CF8] shadow-md",
+  family: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#A78BFA] shadow-md",
+  occupation: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#C084FC] shadow-md",
+  medical: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#E879F9] shadow-md",
+  cryo: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#F472B6] shadow-md",
+  funding: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB7185] shadow-md",
+  legal: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#FCA5A7] shadow-md",
+  nextOfKin: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB923C] shadow-md"
+},
+
+  // Section-specific dark backgrounds for mobile, icon styles for desktop
+  /*sectionIcons: {
     // Icon-only styles for desktop with gradients, outlines, and shadows
     contact: "bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] p-2 rounded-lg transform transition duration-300 border-2 border-[#3B82F6] shadow-lg hover:shadow-xl",
     personal: "bg-gradient-to-br from-[#244060] via-[#1a2f4a] to-[#111f33] p-2 rounded-lg transform transition duration-300 border-2 border-[#60A5FA] shadow-lg hover:shadow-xl",
@@ -161,7 +177,7 @@ mobileSection: {
     funding: "bg-gradient-to-br from-[#876b93] via-[#705579] to-[#57405f] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB7185] shadow-lg hover:shadow-xl",
     legal: "bg-gradient-to-br from-[#907095] via-[#795a7b] to-[#5f4461] p-2 rounded-lg transform transition duration-300 border-2 border-[#FCA5A7] shadow-lg hover:shadow-xl",
     nextOfKin: "bg-gradient-to-br from-[#997596] via-[#825f7c] to-[#664862] p-2 rounded-lg transform transition duration-300 border-2 border-[#FB923C] shadow-lg hover:shadow-xl"
-  },
+  },*/
 
   // Full section backgrounds for mobile dark theme
   sectionBackgrounds: {
