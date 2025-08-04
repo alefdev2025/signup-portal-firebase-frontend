@@ -132,6 +132,7 @@ const PortalSidebar = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const [displayName, setDisplayName] = useState('Member');
 
   useEffect(() => {
     // Check if mobile on mount and window resize
@@ -176,6 +177,31 @@ const PortalSidebar = ({
       document.head.removeChild(style);
     };
   }, []);
+
+  // Update display name when memberData or currentUser changes
+  useEffect(() => {
+    const updateDisplayName = () => {
+      console.log('Updating display name with:', { memberData, currentUser });
+      
+      // Only update if we have actual name data - don't overwrite with "Member"
+      if (memberData?.firstName && memberData?.lastName) {
+        const fullName = `${memberData.firstName} ${memberData.lastName}`;
+        console.log('Setting display name from memberData:', fullName);
+        setDisplayName(fullName);
+      } else if (memberData?.name && memberData.name !== 'Member') {
+        console.log('Setting display name from memberData.name:', memberData.name);
+        setDisplayName(memberData.name);
+      } else if (currentUser?.displayName && currentUser.displayName !== 'Member') {
+        console.log('Setting display name from currentUser.displayName:', currentUser.displayName);
+        setDisplayName(currentUser.displayName);
+      } else if (displayName === 'Member') {
+        // Only set to 'Member' if we don't already have a name
+        console.log('No name found, keeping current display name:', displayName);
+      }
+    };
+
+    updateDisplayName();
+  }, [memberData?.firstName, memberData?.lastName, memberData?.name, currentUser?.displayName]);
 
   // Fetch profile picture when memberData changes
   useEffect(() => {
@@ -243,27 +269,6 @@ const PortalSidebar = ({
     } finally {
       setIsLoggingOut(false);
     }
-  };
-
-  // Get user display info
-  const getUserDisplayName = () => {
-    //console.log('PortalSidebar memberData:', memberData);
-    //console.log('PortalSidebar currentUser:', currentUser);
-    
-    if (memberData?.firstName && memberData?.lastName) {
-      //console.log('Using memberData name:', `${memberData.firstName} ${memberData.lastName}`);
-      return `${memberData.firstName} ${memberData.lastName}`;
-    }
-    if (memberData?.name) {
-      //console.log('Using memberData.name:', memberData.name);
-      return memberData.name;
-    }
-    if (currentUser?.displayName) {
-      //console.log('Using currentUser.displayName:', currentUser.displayName);
-      return currentUser.displayName;
-    }
-    //console.log('Defaulting to "Member"');
-    return 'Member';
   };
 
   const getUserEmail = () => {
@@ -447,7 +452,7 @@ const PortalSidebar = ({
           </div>
           <div className="flex-1 overflow-hidden text-left">
             <p className={`text-white ${layoutMode === 'floating' ? 'text-sm' : 'text-base'} font-medium truncate drop-shadow-sm`}>
-              {getUserDisplayName()}
+              {displayName}
             </p>
             <p className={`text-white/${layoutMode === 'floating' ? '80' : '90'} ${layoutMode === 'floating' ? 'text-xs' : 'text-sm'} truncate`}>
               {isLoggingOut ? 'Logging out...' : 'Logout'}

@@ -16,7 +16,7 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
     const style = document.createElement('style');
     style.innerHTML = `
       .notification-dropdown * {
-        font-family: Helvetica, Arial, sans-serif !important;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
       }
     `;
     document.head.appendChild(style);
@@ -139,7 +139,7 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
               <button 
                 onClick={handleMarkAllAsRead}
                 className={`text-sm font-medium text-[#5b2f4b] hover:text-[#3f2541]`}
-                style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
               >
                 Mark all as read
               </button>
@@ -149,11 +149,11 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
             {!notificationsLoaded ? (
               <div className={`px-4 py-8 text-center text-gray-500`}>
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#794384] mx-auto mb-2"></div>
-                <span style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>Loading notifications...</span>
+                <span style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>Loading notifications...</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className={`px-4 py-8 text-center text-gray-500`}>
-                <span style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No notifications</span>
+                <span style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>No notifications</span>
               </div>
             ) : (
               notifications.slice(0, 10).map((notification) => (
@@ -168,15 +168,15 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm font-medium ${!notification.read ? 'font-semibold' : ''} text-gray-900`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                        <p className={`text-sm font-medium ${!notification.read ? 'font-semibold' : ''} text-gray-900`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>
                           {notification.title}
                         </p>
                         {!notification.read && (
                           <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
                         )}
                       </div>
-                      <p className={`text-sm mt-0.5 text-gray-600`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{notification.content}</p>
-                      <p className={`text-xs mt-1 text-gray-400`} style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{formatNotificationTime(notification.createdAt)}</p>
+                      <p className={`text-sm mt-0.5 text-gray-600`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>{notification.content}</p>
+                      <p className={`text-xs mt-1 text-gray-400`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>{formatNotificationTime(notification.createdAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
             <button 
               onClick={handleViewAllNotifications}
               className={`w-full text-center text-sm font-medium text-[#5b2f4b] hover:text-[#3f2541] flex items-center justify-center gap-1`}
-              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+              style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}
             >
               <img src={alcorYellowStar} alt="" className="w-4 h-4" />
               View all notifications ({notifications.length} total)
@@ -208,6 +208,23 @@ const PortalHeader = ({
   isGlassmorphic = false,
   variant = 'regular'
 }) => {
+  // Add styles for consistent font usage
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      .portal-header * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   // Function to generate breadcrumb from activeTab
   const getBreadcrumb = () => {
     if (!activeTab) return 'Home';
@@ -272,7 +289,7 @@ const PortalHeader = ({
     ? 'text-[11px] md:text-xs' 
     : 'text-xs md:text-sm';
 
-  const emergencyButtonClasses = `bg-white text-red-600 ${emergencyButtonPadding} rounded-full font-semibold ${emergencyButtonText} flex items-center gap-1 md:gap-2 shadow-md hover:shadow-lg transition-all duration-200 border-2 border-red-600 hover:bg-red-50`;
+  const emergencyButtonClasses = `bg-white text-red-600 ${emergencyButtonPadding} rounded-full ${emergencyButtonText} flex items-center gap-1 md:gap-2 shadow-sm hover:shadow-sm transition-all duration-200 border border-red-600`;
 
   const settingsIconSize = variant === 'compact' ? 'w-5 h-5 md:w-6 md:h-6' : 'w-7 h-7 md:w-8 md:h-8';
   const settingsButtonPadding = variant === 'compact' ? 'p-1 md:p-1.5' : 'p-1.5 md:p-2';
@@ -296,12 +313,12 @@ const PortalHeader = ({
           </button>
           
           {activeTab !== 'overview' && (
-            <div className="hidden md:flex items-center gap-2 pl-3">
+            <div className="hidden md:flex items-center gap-2 pl-8">
               <h1 
-                className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} font-thin tracking-wide text-black`}
+                className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} tracking-wide text-black`}
                 style={{
-                  fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                  fontWeight: '100',
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  fontWeight: '300',
                 }}
               >
                 {getBreadcrumb()}
@@ -324,7 +341,13 @@ const PortalHeader = ({
         {/* Right side - Action buttons */}
         <div className={`flex items-center ${variant === 'compact' ? 'gap-1.5 md:gap-3' : 'gap-2 md:gap-4'}`}>
           {/* Emergency Button - Now visible on all pages */}
-          <button className={emergencyButtonClasses}>
+          <button 
+            className={emergencyButtonClasses}
+            style={{
+              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+              fontWeight: '300',
+            }}
+          >
             <svg className={`${variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5'}`} fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
@@ -333,7 +356,10 @@ const PortalHeader = ({
           </button>
           
           {/* Settings - Now black */}
-          <button className={settingsButtonClasses}>
+          <button 
+            className={settingsButtonClasses}
+            onClick={() => setActiveTab('account-settings')}
+          >
             <svg className={settingsIconSize} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

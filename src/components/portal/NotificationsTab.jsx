@@ -2,15 +2,11 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/notifications';
-//import { reportActivity, ACTIVITY_TYPES } from '../../services/activity';
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { X, Clock, User, Bell, AlertCircle, Mic, FileText, MapPin, RefreshCw, Info, Mail, Check } from 'lucide-react';
 import alcorStar from '../../assets/images/alcor-star.png';
 import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
-
-// Import the icon components from settings
-import { IconWrapper, BellIcon, iconStyle } from '../portal/iconStyle';
 
 const NotificationsTab = () => {
   const { notifications, refreshNotifications, notificationsLoaded, salesforceContactId } = useMemberPortal();
@@ -25,7 +21,7 @@ const NotificationsTab = () => {
   const notificationsRef = React.useRef(null);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   
-  // Define pagination constant - Changed from 2 to 3
+  // Define pagination constant
   const ITEMS_PER_PAGE = 3;
   
   // Modal width configuration
@@ -38,79 +34,33 @@ const NotificationsTab = () => {
   
   const CURRENT_MODAL_WIDTH = MODAL_WIDTH_CONFIG.large;
 
-  // Add Inter font and styles matching settings
+  // Add Helvetica font to match MembershipStatusTab
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap');
-      
       .notifications-tab * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-      }
-      .notifications-tab p,
-      .notifications-tab span,
-      .notifications-tab div {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
         font-weight: 300 !important;
       }
       .notifications-tab .font-bold,
       .notifications-tab .font-semibold {
-        font-weight: 600 !important;
+        font-weight: 500 !important;
+      }
+      .notifications-tab .font-bold {
+        font-weight: 700 !important;
       }
       .notifications-tab h1 {
-        font-weight: 500 !important;
-        letter-spacing: -0.02em !important;
+        font-weight: 300 !important;
       }
       .notifications-tab h2,
       .notifications-tab h3,
       .notifications-tab h4 {
         font-weight: 400 !important;
-        letter-spacing: -0.01em !important;
       }
-      .notifications-tab .section-subtitle {
+      .notifications-tab .font-medium {
         font-weight: 400 !important;
-        letter-spacing: 0.05em !important;
-        color: #6b7280 !important;
       }
-      @media (min-width: 1024px) {
-        .notifications-tab .card-title {
-          font-weight: 600 !important;
-        }
-      }
-      @media (max-width: 1023px) {
-        .notifications-tab .card-title {
-          font-weight: 600 !important;
-        }
-      }
-      .notifications-tab .fade-in {
-        animation: fadeIn 0.8s ease-out;
-      }
-      .notifications-tab .slide-in {
-        animation: slideIn 0.8s ease-out;
-      }
-      .notifications-tab .stagger-in > * {
-        opacity: 0;
-        animation: slideIn 0.5s ease-out forwards;
-      }
-      .notifications-tab .stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
-      .notifications-tab .stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
-      .notifications-tab .stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
-      .notifications-tab .stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
-      .notifications-tab .stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
-      @media (max-width: 1023px) {
-        .notifications-tab pre,
-        .notifications-tab code {
-          line-height: 2 !important;
-        }
-        .notifications-tab .comment-line {
-          margin-bottom: 1rem !important;
-          display: block !important;
-        }
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes slideIn {
+      @keyframes fadeInUp {
         from {
           opacity: 0;
           transform: translateY(20px);
@@ -120,110 +70,17 @@ const NotificationsTab = () => {
           transform: translateY(0);
         }
       }
-      .professional-card {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        background: #ffffff;
-        border-radius: 1rem;
+      .notifications-tab .animate-fadeInUp {
+        animation: fadeInUp 0.8s ease-out forwards;
       }
-      @media (max-width: 1023px) {
-        .professional-card {
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
+      .notifications-tab .animate-fadeInUp-delay-1 {
+        animation: fadeInUp 0.8s ease-out 0.1s both;
       }
-      .professional-card:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        transform: translateY(-2px);
+      .notifications-tab .animate-fadeInUp-delay-2 {
+        animation: fadeInUp 0.8s ease-out 0.2s both;
       }
-      @media (max-width: 1023px) {
-        .professional-card:hover {
-          box-shadow: 0 6px 10px rgba(0, 0, 0, 0.18);
-        }
-      }
-      .notification-item {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-      }
-      .notification-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-        transition: left 0.6s ease;
-      }
-      .luxury-divider {
-        height: 1px;
-        background: linear-gradient(to right, transparent, #d1d5db 20%, #d1d5db 80%, transparent);
-      }
-      .notification-description {
-        font-weight: 400 !important;
-        line-height: 1.6 !important;
-        color: #9ca3af !important;
-      }
-      @media (min-width: 1024px) {
-        .notification-description {
-          color: #b8bcc8 !important;
-        }
-      }
-      .notification-item h3 {
-        font-weight: 600 !important;
-        color: #111827 !important;
-      }
-      .notification-item p {
-        font-weight: 400 !important;
-        color: #4b5563 !important;
-      }
-      .status-badge,
-      .status-badge span {
-        font-weight: 500 !important;
-        letter-spacing: 0.08em !important;
-        font-size: 0.6875rem !important;
-        text-transform: uppercase !important;
-      }
-      .icon-luxury {
-        position: relative;
-        overflow: hidden;
-      }
-      .icon-luxury::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-        transform: rotate(45deg);
-        transition: all 0.6s;
-        opacity: 0;
-      }
-      .professional-card:hover .icon-luxury::after {
-        opacity: 1;
-        animation: shimmer 1.5s ease;
-      }
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-      @media (min-width: 1024px) {
-        .next-button:hover .star-icon {
-          animation: spin 0.5s ease-in-out;
-        }
-      }
-      .gradient-border-top {
-        position: relative;
-        border-top: 3px solid transparent;
-        background-clip: padding-box;
-      }
-      .gradient-border {
-        position: relative;
-        background: linear-gradient(#f3f4f6, #f3f4f6) padding-box,
-                    linear-gradient(to right, #0a1628, #6e4376) border-box;
-        border: 1px solid transparent;
-        border-radius: 0.5rem;
+      .notifications-tab .animate-fadeInUp-delay-3 {
+        animation: fadeInUp 0.8s ease-out 0.3s both;
       }
     `;
     document.head.appendChild(style);
@@ -236,7 +93,6 @@ const NotificationsTab = () => {
   // Fetch notifications on mount
   useEffect(() => {
     refreshNotifications();
-    
   }, [salesforceContactId]);
 
   // Add click outside handler for dropdown menus
@@ -369,118 +225,19 @@ const NotificationsTab = () => {
   };
 
   const getIcon = (type, isRead = false) => {
-    // STYLE OPTIONS - Change this number to try different styles (1-5)
-    const ICON_STYLE = 3;
+    const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
+    const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
     
-    if (ICON_STYLE === 1) {
-      // Style 1: Gradient backgrounds with white icons
-      const gradients = {
-        message: 'from-blue-500 to-blue-700',
-        travel: 'from-green-500 to-green-700',
-        announcement: 'from-red-500 to-red-700',
-        update: 'from-red-500 to-red-700',
-        podcast: 'from-purple-500 to-purple-700',
-        newsletter: 'from-indigo-500 to-indigo-700',
-        default: 'from-gray-500 to-gray-700'
-      };
-      
-      const gradient = gradients[type] || gradients.default;
-      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
-      const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
-      
-      return (
-        <div className={`w-full h-full rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm`}>
-          {type === 'message' && <Mail {...iconProps} />}
-          {type === 'travel' && <MapPin {...iconProps} />}
-          {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
-          {type === 'podcast' && <Mic {...iconProps} />}
-          {type === 'newsletter' && <FileText {...iconProps} />}
-          {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
-        </div>
-      );
-    } else if (ICON_STYLE === 2) {
-      // Style 2: Soft pastel backgrounds with colored icons
-      const colors = {
-        message: { bg: 'bg-blue-100', icon: 'text-blue-600' },
-        travel: { bg: 'bg-green-100', icon: 'text-green-600' },
-        announcement: { bg: 'bg-red-100', icon: 'text-red-600' },
-        update: { bg: 'bg-red-100', icon: 'text-red-600' },
-        podcast: { bg: 'bg-purple-100', icon: 'text-purple-600' },
-        newsletter: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
-        default: { bg: 'bg-gray-100', icon: 'text-gray-600' }
-      };
-      
-      const style = colors[type] || colors.default;
-      const iconClass = `w-5 h-5 lg:w-6 lg:h-6 ${style.icon} transition-transform duration-200`;
-      const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
-      
-      return (
-        <div className={`w-full h-full rounded-lg ${style.bg} flex items-center justify-center`}>
-          {type === 'message' && <Mail {...iconProps} />}
-          {type === 'travel' && <MapPin {...iconProps} />}
-          {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
-          {type === 'podcast' && <Mic {...iconProps} />}
-          {type === 'newsletter' && <FileText {...iconProps} />}
-          {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
-        </div>
-      );
-    } else if (ICON_STYLE === 3) {
-      // Style 3: Dark navy gradient background matching the theme
-      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
-      const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
-      
-      return (
-        <div className="w-full h-full rounded-lg bg-gradient-to-r from-[#0a1628] to-[#6e4376] flex items-center justify-center shadow-md">
-          {type === 'message' && <Mail {...iconProps} />}
-          {type === 'travel' && <MapPin {...iconProps} />}
-          {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
-          {type === 'podcast' && <Mic {...iconProps} />}
-          {type === 'newsletter' && <FileText {...iconProps} />}
-          {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
-        </div>
-      );
-    } else if (ICON_STYLE === 4) {
-      // Style 4: Outlined with colored borders
-      const colors = {
-        message: 'border-blue-500 text-blue-500',
-        travel: 'border-green-500 text-green-500',
-        announcement: 'border-red-500 text-red-500',
-        update: 'border-red-500 text-red-500',
-        podcast: 'border-purple-500 text-purple-500',
-        newsletter: 'border-indigo-500 text-indigo-500',
-        default: 'border-gray-500 text-gray-500'
-      };
-      
-      const style = colors[type] || colors.default;
-      const iconClass = `w-5 h-5 lg:w-6 lg:h-6 ${style.split(' ')[1]} transition-transform duration-200`;
-      const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
-      
-      return (
-        <div className={`w-full h-full rounded-full bg-white border-2 ${style.split(' ')[0]} flex items-center justify-center`}>
-          {type === 'message' && <Mail {...iconProps} />}
-          {type === 'travel' && <MapPin {...iconProps} />}
-          {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
-          {type === 'podcast' && <Mic {...iconProps} />}
-          {type === 'newsletter' && <FileText {...iconProps} />}
-          {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
-        </div>
-      );
-    } else {
-      // Style 5: Original dark gray with light border
-      const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
-      const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
-      
-      return (
-        <div className="w-full h-full rounded-full bg-gray-600 border-2 border-gray-300 flex items-center justify-center">
-          {type === 'message' && <Mail {...iconProps} />}
-          {type === 'travel' && <MapPin {...iconProps} />}
-          {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
-          {type === 'podcast' && <Mic {...iconProps} />}
-          {type === 'newsletter' && <FileText {...iconProps} />}
-          {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
-        </div>
-      );
-    }
+    return (
+      <div className="w-full h-full rounded-lg bg-gradient-to-r from-[#0a1628] to-[#6e4376] flex items-center justify-center shadow-md">
+        {type === 'message' && <Mail {...iconProps} />}
+        {type === 'travel' && <MapPin {...iconProps} />}
+        {(type === 'announcement' || type === 'update') && <AlertCircle {...iconProps} />}
+        {type === 'podcast' && <Mic {...iconProps} />}
+        {type === 'newsletter' && <FileText {...iconProps} />}
+        {!['message', 'travel', 'announcement', 'update', 'podcast', 'newsletter'].includes(type) && <Info {...iconProps} />}
+      </div>
+    );
   };
 
   const filteredNotifications = notifications.filter(n => {
@@ -504,7 +261,6 @@ const NotificationsTab = () => {
   // Handle page change
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    // Don't scroll - just change the page
   };
 
   // Reset to page 1 when filters change
@@ -517,12 +273,13 @@ const NotificationsTab = () => {
     return (
       <div className="notifications-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
         <div className="h-8"></div>
-        <div className="animate-pulse px-4">
-          <div className="bg-white border border-gray-100 p-8 rounded-2xl">
-            <div className="space-y-6">
-              <div className="h-4 bg-gray-100 w-32 mb-2 rounded"></div>
-              <div className="h-3 bg-gray-50 w-full rounded"></div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 relative mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
             </div>
+            <p className="text-gray-500 font-light">Loading notifications...</p>
           </div>
         </div>
       </div>
@@ -534,259 +291,418 @@ const NotificationsTab = () => {
       {/* Small top padding */}
       <div className="h-8"></div>
       
-      {/* Main Card */}
-      <div className="px-4 sm:px-6 lg:px-0">
-        <div className="max-w-5xl">
-          <div className="professional-card bg-white shadow-lg border border-gray-200 rounded-2xl overflow-hidden gradient-border-top">
-            {/* Card Header */}
-            <div className="px-6 lg:px-8 py-5 lg:py-6 pb-8 lg:pb-10 border-b border-gray-200 fade-in">
-              <div className="flex items-center justify-between mb-6 lg:mb-8 pb-4 lg:pb-2 pt-2 slide-in">
-                <div className="flex items-center gap-4">
-                  <IconWrapper className="icon-luxury" size="large" color="gradient">
-                    <Bell className={`${iconStyle.iconSizeLarge} ${iconStyle.iconColor}`} strokeWidth={iconStyle.strokeWidth} />
-                  </IconWrapper>
-                  <h2 className="text-xl font-bold text-gray-800 card-title flex items-center">
-                    Notifications
-                    <img src={alcorStar} alt="" className="w-5 h-5 ml-1" />
-                  </h2>
+      {/* Main Card - Desktop */}
+      <div className="hidden sm:block">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', minHeight: '600px' }}>
+          {/* Card Header */}
+          <div className="p-8 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
+                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
                 </div>
-                
-                {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllAsRead}
-                    className="text-xs tracking-wider uppercase text-gray-600 lg:text-gray-500 hover:text-gray-700 font-normal transition-all duration-300 border-b border-transparent hover:border-gray-400"
-                  >
-                    Mark all as read
-                  </button>
+                <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
+                  Notifications
+                  <img src={alcorStar} alt="" className="w-6 h-6 ml-1" />
+                </h2>
+              </div>
+              
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-normal transition-colors"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col lg:flex-row gap-4 mt-6">
+              <div className="flex bg-gray-200 rounded-lg p-1">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
+                    filter === 'all' 
+                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter('unread')}
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
+                    filter === 'unread' 
+                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Unread ({unreadCount})
+                </button>
+                <button
+                  onClick={() => setFilter('read')}
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
+                    filter === 'read' 
+                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Read
+                </button>
+              </div>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">All Types</option>
+                <option value="message">Messages</option>
+                <option value="announcement">Announcements</option>
+                <option value="podcast">Podcasts</option>
+                <option value="newsletter">Newsletters</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Content Section - Fixed height with scroll */}
+          <div className="p-8" style={{ minHeight: '400px' }}>
+            {filteredNotifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex items-center justify-center mb-4">
+                  <Bell className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-lg font-normal">No notifications found</p>
+                {filter !== 'all' && (
+                  <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
                 )}
               </div>
-
-              {/* Filters */}
-              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-6 lg:mt-8">
-                <div className="flex bg-gray-300 rounded-lg p-0.5 w-fit h-12 lg:h-auto lg:w-[400px]">
-                  <button
-                    onClick={() => setFilter('all')}
-                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
-                      filter === 'all' 
-                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
-                        : 'text-[#6e4376] hover:text-[#8a4191]'
+            ) : (
+              <div className="space-y-4">
+                {paginatedNotifications.map((notification, index) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all animate-fadeInUp-delay-${Math.min(index + 1, 3)} ${
+                      !notification.read 
+                        ? 'border-purple-200 bg-purple-50/30 hover:bg-purple-50' 
+                        : 'border-gray-300 hover:bg-gray-50'
                     }`}
-                    style={{ fontWeight: filter === 'all' ? 700 : 400 }}
                   >
-                    All
-                    {filter === 'all' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
-                  </button>
-                  <button
-                    onClick={() => setFilter('unread')}
-                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
-                      filter === 'unread' 
-                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
-                        : 'text-[#6e4376] hover:text-[#8a4191]'
-                    }`}
-                    style={{ fontWeight: filter === 'unread' ? 700 : 400 }}
-                  >
-                    Unread ({unreadCount})
-                    {filter === 'unread' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
-                  </button>
-                  <button
-                    onClick={() => setFilter('read')}
-                    className={`px-4 lg:px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-0.5 h-full lg:flex-1 ${
-                      filter === 'read' 
-                        ? 'bg-white text-[#6e4376] shadow-sm font-bold' 
-                        : 'text-[#6e4376] hover:text-[#8a4191]'
-                    }`}
-                    style={{ fontWeight: filter === 'read' ? 700 : 400 }}
-                  >
-                    Read
-                    {filter === 'read' && <img src={alcorStar} alt="" className="w-3 h-3 ml-0.5" />}
-                  </button>
-                </div>
-
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-4 lg:px-3 pr-10 lg:pr-8 py-2.5 lg:py-2.5 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#6e4376] focus:border-[#6e4376] transition-all lg:w-auto h-12 lg:h-auto"
-                  style={{ '--tw-ring-width': '1px' }}
-                >
-                  <option value="all">All Types</option>
-                  <option value="message">Messages</option>
-                  <option value="announcement">Announcements</option>
-                  <option value="podcast">Podcasts</option>
-                  <option value="newsletter">Newsletters</option>
-                  <option value="travel">Travel Updates</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Notifications List */}
-            <div className="bg-white pt-4 lg:pt-2">
-              {filteredNotifications.length === 0 ? (
-                <div className="px-6 py-16 text-center">
-                  <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                    <Bell className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 text-lg font-normal">No notifications found</p>
-                  {filter !== 'all' && (
-                    <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
-                  )}
-                </div>
-              ) : (
-                <div className="stagger-in">
-                  {paginatedNotifications.map((notification, index) => (
-                    <div key={notification.id}>
-                      <div
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`px-6 lg:px-8 py-5 lg:py-6 transition-all duration-200 cursor-pointer hover:bg-gray-50 ${
-                          !notification.read ? 'bg-purple-50/30' : ''
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 mt-0 lg:mt-0.5">
-                            {getIcon(notification.type, notification.read)}
-                          </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                        {getIcon(notification.type, notification.read)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className={`text-base ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-900`}>
+                            {notification.title}
+                            {!notification.read && <img src={alcorYellowStar} alt="" className="w-4 h-4 inline-block ml-1 align-text-bottom" />}
+                          </h3>
                           
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-4 mb-1 lg:mb-1">
-                              <h3 className={`text-base lg:text-sm ${!notification.read ? 'font-semibold text-gray-900' : 'font-normal text-gray-800'}`}>
-                                {notification.title}
-                                {!notification.read && <img src={alcorYellowStar} alt="" className="w-4 h-4 inline-block ml-1 align-text-bottom" />}
-                              </h3>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {!notification.read && (
+                              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                            )}
+                            
+                            {/* Actions Menu */}
+                            <div className="relative dropdown-menu-container">
+                              <button 
+                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMenuId(openMenuId === notification.id ? null : notification.id);
+                                }}
+                              >
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                              </button>
                               
-                              <div className="flex items-center gap-3">
-                                {!notification.read && (
-                                  <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-                                )}
-                                
-                                {/* Actions Menu */}
-                                <div className="relative dropdown-menu-container">
-                                  <button 
-                                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              {openMenuId === notification.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                  {notification.read ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkAsUnread(notification.id);
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
+                                    >
+                                      Mark as unread
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkAsRead(notification.id);
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
+                                    >
+                                      Mark as read
+                                    </button>
+                                  )}
+                                  <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setOpenMenuId(openMenuId === notification.id ? null : notification.id);
+                                      handleDeleteNotification(notification.id);
+                                      setOpenMenuId(null);
                                     }}
+                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg transition-colors"
                                   >
-                                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                    </svg>
+                                    Delete
                                   </button>
-                                  
-                                  {openMenuId === notification.id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                                      {notification.read ? (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleMarkAsUnread(notification.id);
-                                            setOpenMenuId(null);
-                                          }}
-                                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
-                                        >
-                                          Mark as unread
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleMarkAsRead(notification.id);
-                                            setOpenMenuId(null);
-                                          }}
-                                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
-                                        >
-                                          Mark as read
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteNotification(notification.id);
-                                          setOpenMenuId(null);
-                                        }}
-                                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg transition-colors"
-                                      >
-                                        Delete
-                                      </button>
-                                    </div>
-                                  )}
                                 </div>
-                              </div>
+                              )}
                             </div>
-                            
-                            <p className="text-sm lg:text-xs notification-description line-clamp-2 text-gray-500 lg:text-gray-400 mt-1 lg:mt-1.5" style={{ minHeight: '2.5rem' }}>
-                              {notification.type === 'message' && notification.metadata?.messageId && messageContentCache[notification.metadata.messageId]
-                                ? messageContentCache[notification.metadata.messageId]
-                                : notification.content}
-                            </p>
-                            <p className="text-xs text-gray-400 lg:text-gray-500 mt-2 lg:mt-2.5">
-                              {formatDate(notification.createdAt)}
-                            </p>
                           </div>
                         </div>
+                        
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                          {notification.type === 'message' && notification.metadata?.messageId && messageContentCache[notification.metadata.messageId]
+                            ? messageContentCache[notification.metadata.messageId]
+                            : notification.content}
+                        </p>
+                        
+                        <p className="text-xs text-gray-500">
+                          {formatDate(notification.createdAt)}
+                        </p>
                       </div>
-                      {index < paginatedNotifications.length - 1 && (
-                        <div className="px-6 lg:px-12">
-                          <div className="h-px bg-gray-100"></div>
-                        </div>
-                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Pagination */}
-              {filteredNotifications.length > ITEMS_PER_PAGE && (
-                <div className="px-6 lg:px-8 py-4 border-t border-gray-200 flex items-center justify-between">
-                  <p className="text-sm text-gray-600 hidden lg:block">
-                    Showing {startIndex + 1}-{Math.min(endIndex, filteredNotifications.length)} of {filteredNotifications.length}
-                  </p>
-                  
-                  <div className="flex items-center gap-2 lg:gap-6 w-full lg:w-auto justify-between lg:justify-end">
-                    <button
-                      onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 text-sm font-normal rounded-lg transition-all ${
-                        currentPage === 1 
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                          : 'bg-gradient-to-r from-[#0a1628] to-[#3a2f5a] text-white hover:from-[#1e2f4a] hover:to-[#6e4376] hover:shadow-md'
-                      }`}
-                    >
-                      Previous
-                    </button>
-                    
-                    <span className="text-sm text-gray-600 px-2 lg:px-4">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    
-                    <button
-                      onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className={`next-button px-4 py-2 text-sm font-normal rounded-lg transition-all flex items-center gap-1 ${
-                        currentPage === totalPages 
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                          : 'bg-gradient-to-r from-[#0a1628] to-[#3a2f5a] text-white hover:from-[#1e2f4a] hover:to-[#6e4376] hover:shadow-md'
-                      }`}
-                    >
-                      Next
-                      {currentPage !== totalPages && <img src={alcorStar} alt="" className="star-icon w-4 h-4 lg:w-5 lg:h-5 brightness-0 invert" />}
-                    </button>
                   </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {filteredNotifications.length > ITEMS_PER_PAGE && (
+              <div className="mt-8 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredNotifications.length)} of {filteredNotifications.length}
+                </p>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 text-sm font-normal rounded-lg transition-all ${
+                      currentPage === 1 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white hover:shadow-md'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <span className="text-sm text-gray-600 px-4">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  
+                  <button
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 text-sm font-normal rounded-lg transition-all ${
+                      currentPage === totalPages 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white hover:shadow-md'
+                    }`}
+                  >
+                    Next
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="mt-16 px-4 lg:px-0 pb-2 lg:pb-8 max-w-5xl">
-        <div className="luxury-divider mb-8"></div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></div>
-            <p className="text-xs text-gray-600 lg:text-gray-500 tracking-wider uppercase font-light">Updates in real-time</p>
+      {/* Mobile View */}
+      <div className="sm:hidden px-4 space-y-4">
+        {/* Header Card - Mobile */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          <div className="px-6 py-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
+                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <h2 className="text-base font-semibold text-gray-900 flex items-center">
+                  Notifications
+                  <img src={alcorStar} alt="" className="w-4 h-4 ml-1" />
+                </h2>
+              </div>
+              
+              {unreadCount > 0 && (
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+
+            {/* Mobile Filters */}
+            <div className="space-y-3">
+              <div className="flex bg-gray-200 rounded-lg p-0.5">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    filter === 'all' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-700'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter('unread')}
+                  className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    filter === 'unread' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-700'
+                  }`}
+                >
+                  Unread
+                </button>
+                <button
+                  onClick={() => setFilter('read')}
+                  className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    filter === 'read' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-700'
+                  }`}
+                >
+                  Read
+                </button>
+              </div>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Types</option>
+                <option value="message">Messages</option>
+                <option value="announcement">Announcements</option>
+                <option value="podcast">Podcasts</option>
+                <option value="newsletter">Newsletters</option>
+              </select>
+
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="w-full py-2 text-xs text-purple-600 font-medium"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Notifications List - Mobile */}
+        {filteredNotifications.length === 0 ? (
+          <div className="bg-white shadow-sm rounded-xl p-8 text-center animate-fadeInUp-delay-1" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+            <Bell className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500">No notifications found</p>
+          </div>
+        ) : (
+          <>
+            {paginatedNotifications.map((notification, index) => (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-${Math.min(index + 1, 3)} ${
+                  !notification.read ? 'border-l-4 border-l-purple-500' : ''
+                }`}
+                style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}
+              >
+                <div className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                      {getIcon(notification.type, notification.read)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className={`text-sm ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-900`}>
+                          {notification.title}
+                        </h3>
+                        
+                        <div className="relative dropdown-menu-container">
+                          <button 
+                            className="p-1 rounded hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === notification.id ? null : notification.id);
+                            }}
+                          >
+                            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        {notification.content}
+                      </p>
+                      
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formatDate(notification.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Mobile Pagination */}
+            {filteredNotifications.length > ITEMS_PER_PAGE && (
+              <div className="bg-white shadow-sm rounded-xl p-4 animate-fadeInUp-delay-3" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1.5 text-xs rounded-lg ${
+                      currentPage === 1 
+                        ? 'bg-gray-100 text-gray-400' 
+                        : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <span className="text-xs text-gray-600">
+                    {currentPage} / {totalPages}
+                  </span>
+                  
+                  <button
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1.5 text-xs rounded-lg ${
+                      currentPage === totalPages 
+                        ? 'bg-gray-100 text-gray-400' 
+                        : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      {/* Add padding at the end */}
+      <div className="h-32"></div>
 
       {/* Message Modal */}
       {selectedMessage && messageContent && ReactDOM.createPortal(
@@ -798,7 +714,7 @@ const NotificationsTab = () => {
               {/* Modal Header */}
               <div className="border-b border-gray-200 p-6 flex items-start justify-between flex-shrink-0 bg-white">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-gradient-to-r from-[#162740] to-[#785683]">
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
                     <Bell className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -855,7 +771,7 @@ const NotificationsTab = () => {
                 </p>
                 <button
                   onClick={closeMessageModal}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#162740] to-[#785683] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-normal flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-normal flex items-center gap-2"
                 >
                   Close
                   <img src={alcorStar} alt="" className="w-4 h-4 brightness-0 invert" />
@@ -870,16 +786,16 @@ const NotificationsTab = () => {
       {/* Help Button - Desktop Only */}
       <div className="hidden lg:block fixed bottom-8 right-8 z-50">
         <button
-            className="w-16 h-16 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
-            onClick={() => setShowHelpPopup(!showHelpPopup)}
+          className="w-16 h-16 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
+          onClick={() => setShowHelpPopup(!showHelpPopup)}
+        >
+          <svg 
+            className="w-8 h-8 text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="1.8" 
+            viewBox="0 0 24 24"
           >
-            <svg 
-              className="w-8 h-8 text-white" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="1.8" 
-              viewBox="0 0 24 24"
-            >
             <path 
               strokeLinecap="round" 
               strokeLinejoin="round" 
@@ -892,7 +808,7 @@ const NotificationsTab = () => {
         {showHelpPopup && (
           <div className="fixed bottom-28 right-8 w-80 bg-white rounded-lg shadow-2xl overflow-hidden z-50 animate-slideIn">
             <div className="bg-[#9f5fa6] text-white px-4 py-3 flex items-center justify-between">
-              <h3 className="text-base" style={{ fontWeight: 500 }}>Help & Information</h3>
+              <h3 className="text-base font-medium">Help & Information</h3>
               <button
                 onClick={() => setShowHelpPopup(false)}
                 className="text-white hover:bg-white/20 rounded p-1 transition-colors"
@@ -905,27 +821,27 @@ const NotificationsTab = () => {
             
             <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
               <div className="pb-4 border-b border-gray-100">
-                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notifications Overview</h4>
+                <h4 className="text-sm text-gray-900 mb-2 font-semibold">Notifications Overview</h4>
                 <p className="text-sm text-gray-600">View and manage all your notifications including messages, announcements, and updates from Alcor.</p>
               </div>
               
               <div className="pb-4 border-b border-gray-100">
-                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Filter Options</h4>
+                <h4 className="text-sm text-gray-900 mb-2 font-semibold">Filter Options</h4>
                 <p className="text-sm text-gray-600">Use filters to view all notifications, only unread ones, or previously read messages. Filter by type to see specific categories.</p>
               </div>
               
               <div className="pb-4 border-b border-gray-100">
-                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Notification Types</h4>
-                <p className="text-sm text-gray-600">Messages from staff, travel updates, announcements, podcasts, and newsletters. Click any notification to view details.</p>
+                <h4 className="text-sm text-gray-900 mb-2 font-semibold">Notification Types</h4>
+                <p className="text-sm text-gray-600">Messages from staff, announcements, podcasts, and newsletters. Click any notification to view details.</p>
               </div>
               
               <div className="pb-4 border-b border-gray-100">
-                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Managing Notifications</h4>
+                <h4 className="text-sm text-gray-900 mb-2 font-semibold">Managing Notifications</h4>
                 <p className="text-sm text-gray-600">Mark notifications as read/unread or delete them using the menu icon. Use "Mark all as read" to clear all unread notifications.</p>
               </div>
               
               <div>
-                <h4 className="text-sm text-gray-900 mb-2" style={{ fontWeight: 600 }}>Need assistance?</h4>
+                <h4 className="text-sm text-gray-900 mb-2 font-semibold">Need assistance?</h4>
                 <p className="text-sm text-gray-600">
                   Contact support at{' '}
                   <a href="mailto:info@alcor.org" className="text-[#9f5fa6] hover:underline">

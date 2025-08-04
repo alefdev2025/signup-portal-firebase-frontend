@@ -32,7 +32,7 @@ import HelpPanel from "../components/signup/HelpPanel";
 const ENABLE_ACH_PAYMENTS = false; // Set to true to enable ACH payments
 
 // Debug: Check if env variable is loaded
-console.log('Stripe Key from env:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+//console.log('Stripe Key from env:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 // Initialize Stripe - fallback to hardcoded key if env var not available
 const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp';
