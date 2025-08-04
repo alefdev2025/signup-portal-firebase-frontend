@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import alcorWhiteLogo from '../../assets/images/alcor-white-logo.png';
+import { getMemberProfilePicture } from '../../services/contact';
+import { auth } from '../../services/firebase';
 
 // =============================================
 // GLOBAL CONFIGURATION VARIABLES
@@ -89,7 +91,7 @@ const navigationItems = [
       subItems: [
         { id: 'forms', label: 'Forms' },
         { id: 'information', label: 'Information' },
-        { id: 'procedure', label: 'Procedure' }  // Add this line
+        { id: 'procedure', label: 'Procedure' }
       ]
     },
     { 
@@ -121,10 +123,15 @@ const PortalSidebar = ({
   isMobileMenuOpen, 
   setIsMobileMenuOpen, 
   isElevated,
-  layoutMode = 'floating' 
+  layoutMode = 'floating',
+  memberData,
+  currentUser,
+  onLogout
 }) => {
   const [expandedItems, setExpandedItems] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(null);
 
   useEffect(() => {
     // Check if mobile on mount and window resize
@@ -170,6 +177,24 @@ const PortalSidebar = ({
     };
   }, []);
 
+  // Fetch profile picture when memberData changes
+  useEffect(() => {
+    const fetchProfilePicture = async () => {
+      if (memberData?.salesforceContactId) {
+        const result = await getMemberProfilePicture(memberData.salesforceContactId);
+        
+        if (result.success && result.profilePicture) {
+          // Use the full image URL with auth token
+          const token = await auth.currentUser.getIdToken();
+          const imageUrlWithAuth = `${result.profilePicture.fullImageUrl}?token=${token}`;
+          setProfileImageUrl(imageUrlWithAuth);
+        }
+      }
+    };
+    
+    fetchProfilePicture();
+  }, [memberData?.salesforceContactId]);
+
   const handleNavClick = (tabId) => {
     const navItem = navigationItems.find(item => item.id === tabId);
     
@@ -194,6 +219,62 @@ const PortalSidebar = ({
 
   const isItemActive = (itemId) => {
     return activeTab === itemId || activeTab.startsWith(`${itemId}-`);
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    try {
+      // Close mobile menu
+      setIsMobileMenuOpen(false);
+      
+      console.log('Starting logout process...');
+      
+      // Call the parent's logout handler
+      if (onLogout) {
+        await onLogout();
+      } else {
+        console.error('No logout handler provided');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Failed to log out. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // Get user display info
+  const getUserDisplayName = () => {
+    //console.log('PortalSidebar memberData:', memberData);
+    //console.log('PortalSidebar currentUser:', currentUser);
+    
+    if (memberData?.firstName && memberData?.lastName) {
+      //console.log('Using memberData name:', `${memberData.firstName} ${memberData.lastName}`);
+      return `${memberData.firstName} ${memberData.lastName}`;
+    }
+    if (memberData?.name) {
+      //console.log('Using memberData.name:', memberData.name);
+      return memberData.name;
+    }
+    if (currentUser?.displayName) {
+      //console.log('Using currentUser.displayName:', currentUser.displayName);
+      return currentUser.displayName;
+    }
+    //console.log('Defaulting to "Member"');
+    return 'Member';
+  };
+
+  const getUserEmail = () => {
+    return currentUser?.email || memberData?.email || '';
+  };
+
+  const getMemberType = () => {
+    if (memberData?.membershipType) return memberData.membershipType;
+    if (memberData?.isApplicant) return 'Applicant';
+    if (memberData?.alcorId) return 'Member';
+    return 'User';
   };
 
   // Get gradient based on device and mode
@@ -260,6 +341,133 @@ const PortalSidebar = ({
 
   const cornerMaskColors = getCornerMaskColors();
 
+  const renderSidebarContent = () => (
+    <div className="relative z-10 flex flex-col h-full">
+      <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
+        <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
+        <button 
+          className="text-white/60 hover:text-white xl:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Close menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <nav className="flex-1 p-4 pt-6 overflow-y-auto">
+        <div className="space-y-1">
+          {navigationItems.map((item) => (
+            <div key={item.id} className="group">
+              <button
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
+                  isItemActive(item.id)
+                    ? 'bg-white/20 text-white shadow-lg'
+                    : 'text-white/90 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={isItemActive(item.id) ? 'text-white' : 'text-white/90'}>
+                    {item.icon}
+                  </span>
+                  <span className="text-lg">{item.label}</span>
+                </div>
+                {item.subItems && (
+                  <svg 
+                    className={`w-4 h-4 transition-all duration-200 ${
+                      isMobile ? 'opacity-100' : 'xl:opacity-60 xl:group-hover:opacity-100'
+                    } ${
+                      expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
+                    }`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* Subitems */}
+              {item.subItems && expandedItems.includes(item.id) && (
+                <div className="mt-1 ml-11 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <button
+                      key={subItem.id}
+                      onClick={() => handleSubItemClick(item.id, subItem.id)}
+                      className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
+                        activeTab === `${item.id}-${subItem.id}`
+                          ? 'bg-white/20 text-white shadow-md'
+                          : layoutMode === 'floating'
+                            ? 'text-white/70 hover:text-white hover:bg-white/5'
+                            : 'text-white/85 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {subItem.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </nav>
+
+      <div className="p-4 border-t border-white/20">
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg transition-colors"
+        >
+          <div className={`${layoutMode === 'floating' ? 'w-12 h-12' : 'w-14 h-14'} rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg`}>
+            {profileImageUrl ? (
+              <img 
+                src={profileImageUrl} 
+                alt="Profile" 
+                className="w-full h-full rounded-full object-cover" 
+                onError={(e) => {
+                  console.error('Failed to load profile image');
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <svg 
+              className={`${layoutMode === 'floating' ? 'w-8 h-8' : 'w-9 h-9'} text-white ${profileImageUrl ? 'hidden' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              viewBox="0 0 24 24"
+              style={{ display: profileImageUrl ? 'none' : 'block' }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div className="flex-1 overflow-hidden text-left">
+            <p className={`text-white ${layoutMode === 'floating' ? 'text-sm' : 'text-base'} font-medium truncate drop-shadow-sm`}>
+              {getUserDisplayName()}
+            </p>
+            <p className={`text-white/${layoutMode === 'floating' ? '80' : '90'} ${layoutMode === 'floating' ? 'text-xs' : 'text-sm'} truncate`}>
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </p>
+          </div>
+          {isLoggingOut ? (
+            <svg className="animate-spin h-5 w-5 text-white/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Mobile overlay */}
@@ -300,202 +508,14 @@ const PortalSidebar = ({
         </>
       )}
       
-      {/* Sidebar content without wrapper for traditional mode */}
-      {layoutMode === 'traditional' ? (
-        <div
-          className={`portal-sidebar ${sidebarClasses}`}
-          aria-label="Sidebar"
-          style={sidebarStyles}
-        >
-            {/* Content layer */}
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
-                <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
-                <button 
-                  className="text-white/60 hover:text-white xl:hidden"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  aria-label="Close menu"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <nav className="flex-1 p-4 pt-6 overflow-y-auto">
-                <div className="space-y-1">
-                  {navigationItems.map((item) => (
-                    <div key={item.id} className="group">
-                      <button
-                        onClick={() => handleNavClick(item.id)}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
-                          isItemActive(item.id)
-                            ? 'bg-white/20 text-white shadow-lg'
-                            : 'text-white/90 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={isItemActive(item.id) ? 'text-white' : 'text-white/90'}>
-                            {item.icon}
-                          </span>
-                          <span className="text-lg">{item.label}</span>
-                        </div>
-                        {item.subItems && (
-                          <svg 
-                            className={`w-4 h-4 transition-all duration-200 ${
-                              isMobile ? 'opacity-100' : 'xl:opacity-60 xl:group-hover:opacity-100'
-                            } ${
-                              expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
-                            }`} 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        )}
-                      </button>
-                      
-                      {/* Subitems */}
-                      {item.subItems && expandedItems.includes(item.id) && (
-                        <div className="mt-1 ml-11 space-y-1">
-                          {item.subItems.map((subItem) => (
-                            <button
-                              key={subItem.id}
-                              onClick={() => handleSubItemClick(item.id, subItem.id)}
-                              className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
-                                activeTab === `${item.id}-${subItem.id}`
-                                  ? 'bg-white/20 text-white shadow-md'
-                                  : 'text-white/85 hover:text-white hover:bg-white/5'
-                              }`}
-                            >
-                              {subItem.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </nav>
-
-              <div className="p-4 border-t border-white/20">
-  <div className="flex items-center gap-3 px-4 py-3">
-    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
-      {profileImage ? (
-        <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-      ) : (
-        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )}
-    </div>
-    <div className="flex-1 overflow-hidden">
-      <p className="text-white text-base font-medium truncate drop-shadow-sm">Test User</p>
-      <p className="text-white/90 text-sm truncate">Member</p>
-    </div>
-  </div>
-</div>
-            </div>
-        </div>
-      ) : (
-        <div
-          className={`portal-sidebar ${sidebarClasses}`}
-          aria-label="Sidebar"
-          style={sidebarStyles}
-        >
-          {/* Content layer for floating mode */}
-          <div className="relative z-10 flex flex-col h-full">
-            <div className="p-6 pt-10 pb-8 border-b border-white/20 flex items-center justify-between">
-              <img src={alcorWhiteLogo} alt="Alcor Logo" className="h-16 w-auto" />
-              <button 
-                className="text-white/60 hover:text-white xl:hidden"
-                onClick={() => setIsMobileMenuOpen(false)}
-                aria-label="Close menu"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <nav className="flex-1 p-4 pt-6 overflow-y-auto">
-              <div className="space-y-1">
-                {navigationItems.map((item) => (
-                  <div key={item.id} className="group">
-                    <button
-                      onClick={() => handleNavClick(item.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all font-normal relative group ${
-                        isItemActive(item.id)
-                          ? 'bg-white/20 text-white shadow-lg'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={isItemActive(item.id) ? 'text-white' : 'text-white/80'}>
-                          {item.icon}
-                        </span>
-                        <span className="text-lg">{item.label}</span>
-                      </div>
-                      {item.subItems && (
-                        <svg 
-                          className={`w-4 h-4 transition-all duration-200 ${
-                            isMobile ? 'opacity-100' : 'xl:opacity-60 xl:group-hover:opacity-100'
-                          } ${
-                            expandedItems.includes(item.id) ? 'rotate-180 !opacity-100' : ''
-                          }`} 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </button>
-                    
-                    {/* Subitems */}
-                    {item.subItems && expandedItems.includes(item.id) && (
-                      <div className="mt-1 ml-11 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <button
-                            key={subItem.id}
-                            onClick={() => handleSubItemClick(item.id, subItem.id)}
-                            className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
-                              activeTab === `${item.id}-${subItem.id}`
-                                ? 'bg-white/20 text-white shadow-md'
-                                : 'text-white/70 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            {subItem.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </nav>
-
-            <div className="p-4 border-t border-white/20">
-  <div className="flex items-center gap-3 px-4 py-3">
-    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg">
-      {profileImage ? (
-        <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-      ) : (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )}
-    </div>
-    <div className="flex-1 overflow-hidden">
-      <p className="text-white text-sm font-medium truncate drop-shadow-sm">Test User</p>
-      <p className="text-white/80 text-xs truncate">Member</p>
-    </div>
-  </div>
-</div>
-          </div>
-        </div>
-      )}
+      {/* Sidebar */}
+      <div
+        className={`portal-sidebar ${sidebarClasses}`}
+        aria-label="Sidebar"
+        style={sidebarStyles}
+      >
+        {renderSidebarContent()}
+      </div>
     </>
   );
 };

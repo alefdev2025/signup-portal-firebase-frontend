@@ -5,7 +5,7 @@ const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 const apiCall = async (endpoint, options = {}) => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log('[Salesforce Member API] Calling:', url);
+    //console.log('[Salesforce Member API] Calling:', url);
     
     const response = await fetch(url, {
       method: options.method || 'GET',
@@ -17,11 +17,11 @@ const apiCall = async (endpoint, options = {}) => {
       body: options.body ? JSON.stringify(options.body) : undefined
     });
 
-    console.log('[Salesforce Member API] Response status:', response.status);
+    //console.log('[Salesforce Member API] Response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Salesforce Member API] Error response:', errorText);
+      //console.error('[Salesforce Member API] Error response:', errorText);
       
       return {
         success: false,
@@ -31,14 +31,14 @@ const apiCall = async (endpoint, options = {}) => {
     }
 
     const data = await response.json();
-    console.log('[Salesforce Member API] Success - Data received');
+    //console.log('[Salesforce Member API] Success - Data received');
     return {
       success: true,
       data: data,
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('[Salesforce Member API] Error:', error);
+    //console.error('[Salesforce Member API] Error:', error);
     return {
       success: false,
       error: error.message,
@@ -317,7 +317,7 @@ export const getMemberDocument = async (contactId, documentId, documentType = 'a
       return data;
     }
   } catch (error) {
-    console.error('[Salesforce Member API] Error downloading document:', error);
+    //console.error('[Salesforce Member API] Error downloading document:', error);
     return {
       success: false,
       error: error.message,
@@ -344,7 +344,7 @@ export const uploadMemberDocument = async (contactId, formData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('[Salesforce Member API] Error uploading document:', error);
+    //console.error('[Salesforce Member API] Error uploading document:', error);
     return {
       success: false,
       error: error.message,
@@ -368,7 +368,7 @@ export const uploadMemberVideoTestimony = async (contactId, formData) => {
   try {
     const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`;
     
-    console.log('[VideoTestimony] Uploading video testimony for contact:', contactId);
+    //console.log('[VideoTestimony] Uploading video testimony for contact:', contactId);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -378,7 +378,7 @@ export const uploadMemberVideoTestimony = async (contactId, formData) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[VideoTestimony] Upload error:', errorText);
+      //console.error('[VideoTestimony] Upload error:', errorText);
       
       return {
         success: false,
@@ -388,10 +388,10 @@ export const uploadMemberVideoTestimony = async (contactId, formData) => {
     }
 
     const data = await response.json();
-    console.log('[VideoTestimony] Upload successful');
+    //console.log('[VideoTestimony] Upload successful');
     return data;
   } catch (error) {
-    console.error('[VideoTestimony] Upload error:', error);
+    //console.error('[VideoTestimony] Upload error:', error);
     return {
       success: false,
       error: error.message,
@@ -410,7 +410,7 @@ export const downloadMemberVideoTestimony = async (contactId) => {
   try {
     const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`;
     
-    console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+    //console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -419,7 +419,7 @@ export const downloadMemberVideoTestimony = async (contactId) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[VideoTestimony] Download error:', errorText);
+      //console.error('[VideoTestimony] Download error:', errorText);
       
       return {
         success: false,
@@ -527,7 +527,7 @@ export async function updateMemberFundingInfo(contactId, fundingData) {
 
     return data;
   } catch (error) {
-    console.error('Error updating member funding info:', error);
+    //console.error('Error updating member funding info:', error);
     return {
       success: false,
       error: error.message || 'Failed to update funding information'

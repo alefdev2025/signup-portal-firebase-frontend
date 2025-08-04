@@ -125,6 +125,59 @@ export const markPortalWelcomeShown = async () => {
   }
 };
 
+// Get member profile picture
+export const getMemberProfilePicture = async (contactId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    console.log("Fetching profile picture for contact:", contactId);
+    
+    const response = await fetch(
+      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/salesforce/member/${contactId}/profile-picture`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get profile picture');
+    }
+    
+    // If we have profile picture data, construct the full URL for the image
+    if (result.data && result.data.imageUrl) {
+      // The imageUrl is relative, so we need to prepend the base URL
+      result.data.fullImageUrl = `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app${result.data.imageUrl}`;
+    }
+    
+    return {
+      success: true,
+      profilePicture: result.data
+    };
+  } catch (error) {
+    console.error("Error fetching profile picture:", error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
   // In services/contact.js
 export const saveContactInfo = async (contactData) => {
     try {

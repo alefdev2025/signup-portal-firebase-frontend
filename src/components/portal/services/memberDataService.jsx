@@ -40,19 +40,19 @@ class MemberDataService {
     
     // Check if data is already cached
     if (this.cache.has(cacheKey)) {
-      console.log(`[MemberDataService] Returning cached ${dataType} for contact:`, contactId);
+      //console.log(`[MemberDataService] Returning cached ${dataType} for contact:`, contactId);
       return this.cache.get(cacheKey);
     }
 
     // Check if we're already fetching this data
     const existingPromise = this.cache.get(`${cacheKey}_promise`);
     if (existingPromise) {
-      console.log(`[MemberDataService] Waiting for existing ${dataType} fetch`);
+      //console.log(`[MemberDataService] Waiting for existing ${dataType} fetch`);
       return existingPromise;
     }
 
     // Fetch the data
-    console.log(`[MemberDataService] Fetching ${dataType} for contact:`, contactId);
+    //console.log(`[MemberDataService] Fetching ${dataType} for contact:`, contactId);
     const fetchPromise = fetchFunction(contactId)
       .then(result => {
         if (result.success) {
@@ -64,7 +64,7 @@ class MemberDataService {
         }
       })
       .catch(error => {
-        console.error(`[MemberDataService] Error fetching ${dataType}:`, error);
+        //console.error(`[MemberDataService] Error fetching ${dataType}:`, error);
         this.cache.delete(`${cacheKey}_promise`);
         throw error;
       });
@@ -125,7 +125,7 @@ class MemberDataService {
 
   // DOCUMENTS
   async getDocuments(contactId) {
-    console.log("[DOCUMENTS] Getting member document ids");
+    //console.log("[DOCUMENTS] Getting member document ids");
     return this.fetchAndCache(contactId, 'documents', getMemberDocuments);
   }
   
@@ -141,7 +141,7 @@ class MemberDataService {
       
       return result;
     } catch (error) {
-      console.error('[MemberDataService] Error uploading document:', error);
+      //console.error('[MemberDataService] Error uploading document:', error);
       throw error;
     }
   }
@@ -157,7 +157,7 @@ class MemberDataService {
       
       return result;
     } catch (error) {
-      console.error('[MemberDataService] Error deleting document:', error);
+      //console.error('[MemberDataService] Error deleting document:', error);
       throw error;
     }
   }
@@ -183,7 +183,7 @@ class MemberDataService {
       
       return result;
     } catch (error) {
-      console.error('[MemberDataService] Error uploading video testimony:', error);
+      //console.error('[MemberDataService] Error uploading video testimony:', error);
       throw error;
     }
   }
@@ -199,14 +199,14 @@ class MemberDataService {
       
       return result;
     } catch (error) {
-      console.error('[MemberDataService] Error deleting video testimony:', error);
+      //console.error('[MemberDataService] Error deleting video testimony:', error);
       throw error;
     }
   }
 
   async downloadVideoTestimony(contactId) {
     try {
-      console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+      //console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
       
       // Use the full backend URL
       const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`, {
@@ -237,10 +237,10 @@ class MemberDataService {
       // Get the response as blob for binary data
       const blob = await response.blob();
       
-      console.log('[VideoTestimony] Download successful:', {
+      /*console.log('[VideoTestimony] Download successful:', {
         blobSize: blob.size,
         contentType: contentType
-      });
+      });*/
   
       return {
         success: true,
@@ -258,21 +258,21 @@ class MemberDataService {
   clearCacheEntry(contactId, dataType) {
     const cacheKey = this.getCacheKey(contactId, dataType);
     this.cache.delete(cacheKey);
-    console.log(`[MemberDataService] Cleared cache for ${dataType}`);
+    //console.log(`[MemberDataService] Cleared cache for ${dataType}`);
   }
   
   async preloadInBackground(contactId) {
     if (!contactId) {
-      console.log('[MemberDataService] No contact ID provided for preload');
+      //console.log('[MemberDataService] No contact ID provided for preload');
       return;
     }
   
     if (this.isPreloading) {
-      console.log('[MemberDataService] Already preloading, returning existing promise');
+      //console.log('[MemberDataService] Already preloading, returning existing promise');
       return this.preloadPromise;
     }
   
-    console.log('[MemberDataService] Starting background preload for contact:', contactId);
+    //console.log('[MemberDataService] Starting background preload for contact:', contactId);
     this.isPreloading = true;
   
     this.preloadPromise = Promise.allSettled([
@@ -292,9 +292,9 @@ class MemberDataService {
     ]).then(results => {
       const errors = results.filter(r => r.status === 'rejected');
       if (errors.length > 0) {
-        console.warn('[MemberDataService] Some preloads failed:', errors);
+        //console.warn('[MemberDataService] Some preloads failed:', errors);
       }
-      console.log('[MemberDataService] Preload completed');
+      //console.log('[MemberDataService] Preload completed');
       this.isPreloading = false;
       return results;
     });
@@ -313,11 +313,11 @@ class MemberDataService {
         }
       }
       keysToDelete.forEach(key => this.cache.delete(key));
-      console.log(`[MemberDataService] Cleared cache for contact: ${contactId}`);
+      //console.log(`[MemberDataService] Cleared cache for contact: ${contactId}`);
     } else {
       // Clear entire cache
       this.cache.clear();
-      console.log('[MemberDataService] Cleared entire cache');
+      //console.log('[MemberDataService] Cleared entire cache');
     }
   }
 

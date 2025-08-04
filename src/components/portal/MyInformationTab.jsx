@@ -256,6 +256,50 @@ const MyInformationTab = () => {
     nextOfKin: {},
     fundingAllocations: {}
   });
+
+  useEffect(() => {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .my-information-tab * {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    }
+    /* ... existing styles ... */
+    
+    /* Add these animations */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-slideUp {
+      animation: slideUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+    
+    /* Staggered delays for sections */
+    .delay-100 { animation-delay: 100ms; }
+    .delay-200 { animation-delay: 200ms; }
+    .delay-300 { animation-delay: 300ms; }
+    .delay-400 { animation-delay: 400ms; }
+    .delay-500 { animation-delay: 500ms; }
+    .delay-600 { animation-delay: 600ms; }
+    .delay-700 { animation-delay: 700ms; }
+    .delay-800 { animation-delay: 800ms; }
+    .delay-900 { animation-delay: 900ms; }
+    .delay-1000 { animation-delay: 1000ms; }
+  `;
+  document.head.appendChild(style);
+  
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
   
   useEffect(() => {
     if (!salesforceContactId) return;
@@ -1451,9 +1495,6 @@ const loadMemberCategory = async () => {
           type: 'warning', 
           text: `Some information was saved, but there were errors: ${errorDetails}` 
         });
-      } else {
-        // Complete success
-        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
       }
       
       // Update state with cleaned data
@@ -1684,7 +1725,7 @@ const loadMemberCategory = async () => {
       
       // SUCCESS PATH - Update everything
       setSavingSection('saved');
-      setSaveMessage({ type: 'success', text: 'Contact information saved successfully!' });
+      //setSaveMessage({ type: 'success', text: 'Contact information saved successfully!' });
       
       // Update original data to reflect saved state
       setOriginalData(prev => ({ 
@@ -3403,46 +3444,51 @@ const saveFunding = async () => {
   return (
     <div className="my-information-tab relative min-h-screen">
       {/* White Background - Mobile Only */}
-      <div className="fixed inset-0 z-0 sm:hidden bg-white">
-      </div>
+      <div className="fixed inset-0 z-0 sm:hidden bg-white"></div>
       
-      {/* Main Content Container - WITH PADDING */}
-      <div className="relative z-10 bg-transparent px-6 sm:p-6 lg:p-8 pt-6 sm:pt-8 pb-6 sm:pb-8">
-        {/* Save Message */}
-        {saveMessage.text && (
-          <Alert 
-            type={saveMessage.type} 
-            onClose={() => setSaveMessage({ type: '', text: '' })}
-          >
-            {saveMessage.text}
-          </Alert>
-        )}
-
-        {/* Mobile view - negative margins to extend past padding */}
-        <div className="sm:hidden -mx-6">
-          <div className="space-y-6">
-            {/* Contact Information - Always visible for all member types */}
-            {isSectionVisible(memberCategory, 'contact') && (
-            <>
-              {!sectionsLoaded.contact ? (
-                <SectionSkeleton />
-              ) : (
-                <ContactInfoSection
-                  contactInfo={contactInfo || {}}
-                  setContactInfo={setContactInfo}
-                  personalInfo={personalInfo || {}}
-                  setPersonalInfo={setPersonalInfo}
-                  editMode={editMode}
-                  toggleEditMode={toggleEditMode}
-                  cancelEdit={cancelEdit}
-                  saveContactInfo={saveContactInfo}
-                  savingSection={savingSection}
-                  fieldErrors={fieldErrors}
-                  memberCategory={memberCategory}
-                />
-              )}
-            </>
+      {/* Main Content Container - Match DocumentsTab padding */}
+      <div className="relative z-10 bg-transparent -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
+        {/* Small top padding like DocumentsTab */}
+        <div className="h-8"></div>
+        
+        <div className="px-4 md:px-0">
+          {/* Save Message */}
+          {saveMessage.text && (
+            <Alert 
+              type={saveMessage.type} 
+              onClose={() => setSaveMessage({ type: '', text: '' })}
+            >
+              {saveMessage.text}
+            </Alert>
           )}
+  
+          {/* Mobile view */}
+          <div className="sm:hidden">
+            <div className="space-y-6">
+              {/* Contact Information with slide-up animation */}
+              {isSectionVisible(memberCategory, 'contact') && (
+                <>
+                  {!sectionsLoaded.contact ? (
+                    <SectionSkeleton />
+                  ) : (
+                    <div className="animate-slideUp">
+                      <ContactInfoSection
+                        contactInfo={contactInfo || {}}
+                        setContactInfo={setContactInfo}
+                        personalInfo={personalInfo || {}}
+                        setPersonalInfo={setPersonalInfo}
+                        editMode={editMode}
+                        toggleEditMode={toggleEditMode}
+                        cancelEdit={cancelEdit}
+                        saveContactInfo={saveContactInfo}
+                        savingSection={savingSection}
+                        fieldErrors={fieldErrors}
+                        memberCategory={memberCategory}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
 
             {/* Personal Information */}
             {isSectionVisible(memberCategory, 'personal') && (
@@ -3914,6 +3960,7 @@ const saveFunding = async () => {
             {sectionSeparator()}
           </>
         )}
+        </div>
         </div>
       </div>
       

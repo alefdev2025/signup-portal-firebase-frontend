@@ -39,8 +39,8 @@ import React, { useState, useEffect } from 'react';
 const CompletionWheel = ({ 
   data, 
   fieldConfig, 
-  radius = 90,
-  strokeWidth = 15,
+  radius = 75,
+  strokeWidth = 12,
   colors = {
     high: '#032CA6',
     medium: '#F26430', 
@@ -64,8 +64,8 @@ const CompletionWheel = ({
   }, []);
 
   // Use different values for mobile - more dramatic differences
-  const actualRadius = isMobile ? 60 : 90; // Smaller radius but thicker stroke on mobile
-  const actualStrokeWidth = isMobile ? 12 : 15; // Thicker relative to size on mobile
+  const actualRadius = isMobile ? 50 : radius; // Smaller radius on mobile
+  const actualStrokeWidth = isMobile ? 10 : strokeWidth; // Slightly thinner on mobile
   
   console.log('Wheel rendering - Mobile:', isMobile, 'Radius:', actualRadius, 'Stroke:', actualStrokeWidth);
   
@@ -153,13 +153,13 @@ const CompletionWheel = ({
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
           <div 
-            className={`font-bold ${isMobile ? 'text-2xl' : 'text-3xl'}`} 
+            className={`font-semibold ${isMobile ? 'text-xl' : 'text-2xl'}`} 
             style={{ color: colors.text }}
           >
             {completionPercentage}%
           </div>
           <div 
-            className={`${isMobile ? 'text-xs' : 'text-sm'}`} 
+            className={`${isMobile ? 'text-[10px]' : 'text-xs'}`} 
             style={{ color: colors.label }}
           >
             Complete

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Info, AlertCircle, DollarSign, BookOpen } from 'lucide-react';
+import { FileText, Info, AlertCircle, DollarSign, BookOpen, Users } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
@@ -7,6 +7,7 @@ import informationImage from '../../assets/images/information-image.JPG';
 import emergencyImage from '../../components/portal/emergency-image.jpg';
 import financialImage from '../../components/portal/financial-image.jpg';
 import educationImage from '../../assets/images/education-image.jpg';
+import petImage from '../../assets/images/home-address.jpg';
 
 const InformationDocumentsTab = () => {
   const [downloading, setDownloading] = useState({});
@@ -55,6 +56,9 @@ const InformationDocumentsTab = () => {
       }
       .info-docs-tab .slide-in-delay-4 {
         animation: slideIn 0.6s ease-out 0.4s both;
+      }
+      .info-docs-tab .slide-in-delay-5 {
+        animation: slideIn 0.6s ease-out 0.5s both;
       }
       .info-docs-tab .stagger-in > * {
         opacity: 0;
@@ -310,6 +314,21 @@ const InformationDocumentsTab = () => {
           pages: 6
         }
       ]
+    },
+    {
+      title: "Pet Documents",
+      icon: Users,
+      description: "Information about preserving your beloved pets. Learn about Alcor's partnership with pet preservation services to ensure your cherished companions can join you in the future.",
+      image: petImage,
+      imageLabel: "Pet Preservation",
+      documents: [
+        {
+          title: "Straight Freeze Pet Shipping Instructions",
+          description: "Complete guide for arranging cryopreservation for your pets through Alcor's partner services.",
+          fileName: "PetSFInstruction.pdf",
+          pages: 3
+        }
+      ]
     }
   ];
 
@@ -389,6 +408,14 @@ const InformationDocumentsTab = () => {
                       {categoryIndex === 3 && (
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      )}
+                      {categoryIndex === 4 && (
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                       )}
                     </div>
@@ -476,6 +503,14 @@ const InformationDocumentsTab = () => {
                           {categoryIndex === 3 && (
                             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          )}
+                          {categoryIndex === 4 && (
+                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="9" cy="7" r="4"></circle>
+                              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                           )}
                         </div>

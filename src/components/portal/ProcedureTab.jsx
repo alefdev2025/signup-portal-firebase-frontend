@@ -1,24 +1,30 @@
 // Note: This component requires jsPDF to be installed:
 // npm install jspdf
 
+// Note: This component requires jsPDF to be installed:
+// npm install jspdf
+
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, Phone, User, FileText, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import alcorStar from '../../assets/images/alcor-star.png';
+//import alcorLogo from '../../assets/images/alcor-logo.png'; // You'll need to add this
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { sendProcedureNotificationEmail } from '../../services/auth'; 
+import { useUser } from '../../contexts/UserContext';
 
 
 const ProcedureTab = ({ contactId }) => {
   // Hardcoded wider setting - set to true to make desktop content 20% wider
   const wider = false;
   
-  // Get member data from context
-  const { memberInfoData, memberNumber } = useMemberPortal();
+  // Get member data from context - using the same pattern as sidebar
+  const { memberInfoData, memberNumber, salesforceCustomer, customerFirstName, memberInfoLoaded, refreshMemberInfo } = useMemberPortal();
+  const { currentUser } = useUser();
   
   const [formData, setFormData] = useState({
     // Member Information
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date().toISOString().split('T')[0] + ' - ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), // Date with timestamp
     memberName: '',
     alcorNumber: '',
     age: '',
@@ -53,18 +59,70 @@ const ProcedureTab = ({ contactId }) => {
   const [submittedPoaStatus, setSubmittedPoaStatus] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Prepopulate form with member data
+  // Load member info if not loaded
   useEffect(() => {
-    if (memberInfoData) {
-      const updates = {};
-      const fieldsToTouch = {};
-      
+    const loadMemberInfo = async () => {
+      if (!memberInfoLoaded && salesforceCustomer?.id && refreshMemberInfo) {
+        console.log('ProcedureTab: Loading member info for contactId:', salesforceCustomer.id);
+        try {
+          // This will trigger the member info load in the context
+          await refreshMemberInfo();
+        } catch (error) {
+          console.error('ProcedureTab: Error loading member info:', error);
+        }
+      }
+    };
+    
+    loadMemberInfo();
+  }, [salesforceCustomer?.id, memberInfoLoaded, refreshMemberInfo]);
+
+  // Prepopulate form with member data - using salesforceCustomer like the sidebar
+  useEffect(() => {
+    console.log('ProcedureTab - salesforceCustomer:', salesforceCustomer);
+    console.log('ProcedureTab - currentUser:', currentUser);
+    console.log('ProcedureTab - memberInfoData:', memberInfoData);
+    
+    const updates = {};
+    const fieldsToTouch = {};
+    
+    // First try to get data from salesforceCustomer (like sidebar does)
+    if (salesforceCustomer) {
       // Get member name
+      if (salesforceCustomer.firstName || salesforceCustomer.lastName) {
+        const firstName = salesforceCustomer.firstName || '';
+        const lastName = salesforceCustomer.lastName || '';
+        updates.memberName = `${firstName} ${lastName}`.trim();
+        fieldsToTouch.memberName = true;
+      }
+      
+      // Get Alcor number
+      if (salesforceCustomer.alcorId) {
+        updates.alcorNumber = salesforceCustomer.alcorId;
+        fieldsToTouch.alcorNumber = true;
+      }
+      
+      // Get email/phone if available
+      if (salesforceCustomer.email) {
+        // Store email for reference, though not directly used in form
+      }
+      
+      if (salesforceCustomer.phone) {
+        updates.phone = salesforceCustomer.phone;
+        fieldsToTouch.phone = true;
+      }
+    }
+    
+    // Also try to get additional data from memberInfoData if it's loaded
+    if (memberInfoData) {
+      // Override with more detailed info if available
       if (memberInfoData.personal?.data) {
         const personal = memberInfoData.personal.data.data || memberInfoData.personal.data;
-        const firstName = personal.firstName || '';
-        const lastName = personal.lastName || '';
-        if (firstName || lastName) {
+        console.log('Personal data found:', personal);
+        
+        // Update name if we have it
+        if (personal.firstName || personal.lastName) {
+          const firstName = personal.firstName || '';
+          const lastName = personal.lastName || '';
           updates.memberName = `${firstName} ${lastName}`.trim();
           fieldsToTouch.memberName = true;
         }
@@ -82,34 +140,51 @@ const ProcedureTab = ({ contactId }) => {
           fieldsToTouch.age = true;
         }
         
-        // Get Alcor number from personal info
+        // Get Alcor number from personal info if available
         if (personal.alcorId) {
           updates.alcorNumber = personal.alcorId;
           fieldsToTouch.alcorNumber = true;
         }
       }
       
-      // If Alcor number not found in personal, try memberNumber from context
-      if (!updates.alcorNumber && memberNumber) {
-        updates.alcorNumber = memberNumber;
-        fieldsToTouch.alcorNumber = true;
-      }
-      
       // Get address
       if (memberInfoData.addresses?.data) {
-        const addresses = memberInfoData.addresses.data.data || memberInfoData.addresses.data;
-        if (addresses.homeAddress) {
+        const addressData = memberInfoData.addresses.data;
+        console.log('Address data structure:', addressData);
+        
+        // Check if data property exists and has the actual data
+        const addresses = addressData.data || addressData;
+        
+        // Try home address first
+        if (addresses.homeAddress && addresses.homeAddress.street) {
           const addr = addresses.homeAddress;
           const addressParts = [
             addr.street,
             addr.city,
             addr.state,
-            addr.postalCode,
+            addr.postalCode || addr.postalcode,
             addr.country
           ].filter(Boolean);
           if (addressParts.length > 0) {
             updates.address = addressParts.join(', ');
             fieldsToTouch.address = true;
+            console.log('Using home address:', updates.address);
+          }
+        }
+        // Fall back to mailing address if no home address or home address is empty
+        else if (addresses.mailingAddress && addresses.mailingAddress.street) {
+          const addr = addresses.mailingAddress;
+          const addressParts = [
+            addr.street,
+            addr.city,
+            addr.state,
+            addr.postalCode || addr.postalcode,
+            addr.country
+          ].filter(Boolean);
+          if (addressParts.length > 0) {
+            updates.address = addressParts.join(', ');
+            fieldsToTouch.address = true;
+            console.log('Using mailing address:', updates.address);
           }
         }
       }
@@ -167,22 +242,35 @@ const ProcedureTab = ({ contactId }) => {
           fieldsToTouch.heightWeight = true;
         }
       }
-      
-      // Update form data with prepopulated values
-      if (Object.keys(updates).length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          ...updates
-        }));
-        
-        // Mark autopopulated fields as touched so they don't show as invalid
-        setTouchedFields(prev => ({
-          ...prev,
-          ...fieldsToTouch
-        }));
-      }
     }
-  }, [memberInfoData, memberNumber]);
+    
+    // If we still don't have a name, try currentUser
+    if (!updates.memberName && currentUser?.displayName) {
+      updates.memberName = currentUser.displayName;
+      fieldsToTouch.memberName = true;
+    }
+    
+    // If we still don't have Alcor number, try memberNumber from context
+    if (!updates.alcorNumber && memberNumber) {
+      updates.alcorNumber = memberNumber;
+      fieldsToTouch.alcorNumber = true;
+    }
+    
+    // Update form data with prepopulated values
+    if (Object.keys(updates).length > 0) {
+      console.log('Applying updates to form:', updates);
+      setFormData(prev => ({
+        ...prev,
+        ...updates
+      }));
+      
+      // Mark autopopulated fields as touched so they don't show as invalid
+      setTouchedFields(prev => ({
+        ...prev,
+        ...fieldsToTouch
+      }));
+    }
+  }, [salesforceCustomer, memberInfoData, memberNumber, currentUser]);
 
   // Add Helvetica font
   useEffect(() => {
@@ -248,6 +336,18 @@ const ProcedureTab = ({ contactId }) => {
         font-size: 0.875rem;
         margin-top: 0.25rem;
       }
+      /* Fix for Chrome autofill border disappearing */
+      .procedure-tab input:-webkit-autofill,
+      .procedure-tab input:-webkit-autofill:hover,
+      .procedure-tab input:-webkit-autofill:focus,
+      .procedure-tab input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px white inset !important;
+        box-shadow: 0 0 0 30px white inset !important;
+        border: 1px solid #d1d5db !important;
+      }
+      .procedure-tab input:-webkit-autofill:focus {
+        border: 2px solid #12243c !important;
+      }
     `;
     document.head.appendChild(style);
     
@@ -288,121 +388,178 @@ const ProcedureTab = ({ contactId }) => {
   const generatePDF = () => {
     const doc = new jsPDF();
     
-    // Add Portal Submission info in top left
-    doc.setFontSize(12);
+    // Add Portal Submission info in top left - MOVED UP
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0); // Black color
-    doc.text('Portal Submission', 20, 25);
-    
-    // Add date below Portal Submission
-    doc.setFontSize(11);
+    doc.text('Portal Submission', 20, 18);
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-    doc.text(dateStr, 20, 32);
+    doc.text(dateStr, 20, 23);
     
-    // Add ALCOR company info in top right
-    doc.setFontSize(11);
+    // TODO: Add ALCOR logo
+    // To add the logo, you need to convert it to base64 first
+    // Then use: doc.addImage(base64String, 'PNG', 20, 5, 40, 15);
+    
+    // Add ALCOR company info in top right - MOVED UP
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('ALCOR LIFE EXTENSION FOUNDATION', 200, 15, { align: 'right' });
+    doc.text('ALCOR LIFE EXTENSION FOUNDATION', 200, 10, { align: 'right' });
     
     // Add company address info
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', 200, 21, { align: 'right' });
-    doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', 200, 27, { align: 'right' });
+    doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', 200, 15, { align: 'right' });
+    doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', 200, 19, { align: 'right' });
     
     // Add tagline in italics
     doc.setFont('helvetica', 'italic');
-    doc.text('The World Leader in Cryonics • Est. 1972', 200, 35, { align: 'right' });
+    doc.setFontSize(8);
+    doc.text('The World Leader in Cryonics • Est. 1972', 200, 23, { align: 'right' });
     
-    // Reset text color and font
-    doc.setTextColor(0, 0, 0);
+    // Reset font
     doc.setFont('helvetica', 'normal');
     
-    // Add title
-    doc.setFontSize(14);
+    // Add title - CLOSER TO TOP
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('MEMBER INFORMATION', 105, 60, { align: 'center' });
+    doc.text('MEMBER INFORMATION', 105, 40, { align: 'center' });
     
-    // Create table for Member Information
-    let yPos = 70;
-    const lineHeight = 10;
+    // Initialize variables - VERY TIGHT SPACING
+    let yPos = 48; // Start much higher
+    const lineHeight = 7; // Very tight line height
     const leftMargin = 20;
-    const boxWidth = 170;
+    const rightMargin = 190;
+    const labelWidth = 50; // Slightly wider for labels
     
-    // Helper function to draw form fields
-    const drawField = (label, value, y) => {
+    // Helper function to draw table rows - CONDENSED
+    const drawTableRow = (label, value, height = lineHeight) => {
+      // Draw the row
+      doc.line(leftMargin, yPos, rightMargin, yPos);
+      doc.line(leftMargin, yPos, leftMargin, yPos + height);
+      doc.line(leftMargin + labelWidth, yPos, leftMargin + labelWidth, yPos + height);
+      doc.line(rightMargin, yPos, rightMargin, yPos + height);
+      
+      // Add text - SMALLER FONT
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(9);
+      doc.text(label, leftMargin + 1, yPos + 4.5); // Tighter positioning
       
-      // Check if label needs wrapping
-      const maxLabelWidth = 55; // Slightly less than 60 to provide padding
-      const labelLines = doc.splitTextToSize(label, maxLabelWidth);
-      const rowHeight = labelLines.length > 1 ? lineHeight * labelLines.length : lineHeight;
+      if (value) {
+        const valueWidth = rightMargin - (leftMargin + labelWidth) - 2;
+        const valueLines = doc.splitTextToSize(value.toString(), valueWidth);
+        if (valueLines.length === 1) {
+          doc.text(value.toString(), leftMargin + labelWidth + 1, yPos + 4.5);
+        } else {
+          // For multi-line values, use tight spacing
+          const actualHeight = valueLines.length * 5 + 2; // Very tight line spacing
+          // Redraw vertical lines with new height
+          doc.line(leftMargin, yPos, leftMargin, yPos + actualHeight);
+          doc.line(leftMargin + labelWidth, yPos, leftMargin + labelWidth, yPos + actualHeight);
+          doc.line(rightMargin, yPos, rightMargin, yPos + actualHeight);
+          
+          valueLines.forEach((line, index) => {
+            doc.text(line, leftMargin + labelWidth + 1, yPos + 4.5 + (index * 5));
+          });
+          yPos += actualHeight;
+          return;
+        }
+      }
       
-      // Draw boxes
-      doc.rect(leftMargin, y, 60, rowHeight);
-      doc.rect(leftMargin + 60, y, boxWidth - 60, rowHeight);
-      
-      // Draw label text (wrapped if needed)
-      let labelY = y + 7;
-      labelLines.forEach((line, index) => {
-        doc.text(line, leftMargin + 2, labelY + (index * 10));
-      });
-      
-      // Draw value
-      doc.text(value || '', leftMargin + 62, y + 7);
-      
-      return y + rowHeight;
+      yPos += height;
     };
     
-    // Member Information fields
-    yPos = drawField('Date', formData.date, yPos);
-    yPos = drawField('Member Name', formData.memberName, yPos);
-    yPos = drawField('Alcor Number', formData.alcorNumber || 'A', yPos);
-    yPos = drawField('Age', formData.age, yPos);
-    yPos = drawField('Address', formData.address, yPos);
-    yPos = drawField('Phone', formData.phone, yPos);
-    yPos = drawField('Emergency/POA Contact', formData.emergencyContact, yPos);
-    yPos = drawField('Height/Weight', formData.heightWeight, yPos);
+    // Draw Member Information fields
+    drawTableRow('Date', formData.date);
+    drawTableRow('Member Name', formData.memberName);
+    drawTableRow('Alcor Number', formData.alcorNumber || 'A-');
+    drawTableRow('Age', formData.age);
+    drawTableRow('Address', formData.address);
+    drawTableRow('Phone', formData.phone);
+    drawTableRow('Emergency/POA Contact', formData.emergencyContact);
+    drawTableRow('Height/Weight', formData.heightWeight);
     
-    // Medical Information section
-    yPos += 15;
-    doc.setFontSize(14);
+    // Draw bottom line
+    doc.line(leftMargin, yPos, rightMargin, yPos);
+    
+    // Add Medical Information section - MINIMAL SPACING
+    yPos += 8; // Very small gap
+    
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('MEDICAL INFORMATION', 105, yPos, { align: 'center' });
-    yPos += 10;
+    yPos += 8; // Minimal spacing after title
     
-    // Medical Information fields
-    // Add What's Going On if it has content
+    // Add "What's going on" if provided - REMOVED FROM MEDICAL INFO TABLE
+    // It will go in NOTES section as shown in the example
+    
+    // Draw Medical Information fields
+    drawTableRow('Medical Condition:', formData.medicalCondition);
+    drawTableRow('Facility Address:', formData.facilityAddress);
+    drawTableRow('Phone:', formData.facilityPhone);
+    drawTableRow('Fax:', formData.facilityFax);
+    drawTableRow('Date of Surgery:', formData.dateOfSurgery);
+    drawTableRow('Time Surgery to Start:', formData.surgeryStartTime);
+    drawTableRow('Time Surgery to End:', formData.surgeryEndTime);
+    drawTableRow('Type of Surgery:', formData.typeOfSurgery);
+    drawTableRow('Using Anesthesia:', formData.usingAnesthesia);
+    drawTableRow('Physician Name:', formData.physicianName);
+    drawTableRow('Physician Phone:', formData.physicianPhone);
+    
+    // Multi-line questions - CONDENSED
+    const multiLineQuestions = [
+      { label: 'Is physician aware of cryonics arrangements?', value: formData.physicianAwareOfCryonics },
+      { label: 'Can you send us a copy of your current POA for health care (if not already on file)?', value: formData.poaOnFile }
+    ];
+    
+    multiLineQuestions.forEach(({ label, value }) => {
+      const labelLines = doc.splitTextToSize(label, labelWidth - 2);
+      const rowHeight = labelLines.length * 5 + 2; // Very tight
+      
+      // Draw the row
+      doc.line(leftMargin, yPos, rightMargin, yPos);
+      doc.line(leftMargin, yPos, leftMargin, yPos + rowHeight);
+      doc.line(leftMargin + labelWidth, yPos, leftMargin + labelWidth, yPos + rowHeight);
+      doc.line(rightMargin, yPos, rightMargin, yPos + rowHeight);
+      
+      // Add text
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      labelLines.forEach((line, index) => {
+        doc.text(line, leftMargin + 1, yPos + 4.5 + (index * 5));
+      });
+      
+      doc.text(value || '', leftMargin + labelWidth + 1, yPos + 4.5);
+      
+      yPos += rowHeight;
+    });
+    
+    // Draw final bottom line
+    doc.line(leftMargin, yPos, rightMargin, yPos);
+    
+    // Add NOTES section - AS SHOWN IN EXAMPLE
+    yPos += 12; // Small gap before NOTES
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NOTES', 105, yPos, { align: 'center' });
+    
+    // Add empty space for notes area (as shown in your example)
+    // If whatsGoingOn has content, add it here
     if (formData.whatsGoingOn && formData.whatsGoingOn.trim()) {
-      yPos = drawField("In a few sentences, share what's going on?:", formData.whatsGoingOn, yPos);
+      yPos += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const noteLines = doc.splitTextToSize(formData.whatsGoingOn, rightMargin - leftMargin);
+      noteLines.forEach((line, index) => {
+        doc.text(line, leftMargin, yPos + (index * 6));
+      });
     }
-    yPos = drawField('Medical Condition:', formData.medicalCondition, yPos);
-    yPos = drawField('Facility Address:', formData.facilityAddress, yPos);
-    yPos = drawField('Phone:', formData.facilityPhone, yPos);
-    yPos = drawField('Fax:', formData.facilityFax, yPos);
-    
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-    
-    yPos = drawField('Date of Surgery:', formData.dateOfSurgery, yPos);
-    yPos = drawField('Time Surgery to Start:', formData.surgeryStartTime, yPos);
-    yPos = drawField('Time Surgery to End:', formData.surgeryEndTime, yPos);
-    yPos = drawField('Type of Surgery:', formData.typeOfSurgery, yPos);
-    yPos = drawField('Using Anesthesia:', formData.usingAnesthesia, yPos);
-    yPos = drawField('Physician Name:', formData.physicianName, yPos);
-    yPos = drawField('Physician Phone:', formData.physicianPhone, yPos);
-    yPos = drawField('Is physician aware of cryonics arrangements?', formData.physicianAwareOfCryonics, yPos);
-    yPos = drawField('Can you send us a copy of your current POA for health care (if not already on file)?', formData.poaOnFile, yPos);
     
     return doc;
   };
@@ -454,10 +611,12 @@ const ProcedureTab = ({ contactId }) => {
       const pdfDoc = generatePDF();
       const pdfBlob = pdfDoc.output('blob');
       
-      // Create filename with today's date
+      // Create filename with today's date hyphenated
       const today = new Date();
-      const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-      const pdfFileName = `procedure_submission_${dateStr}.pdf`;
+      const dateStr = today.getFullYear() + '-' + 
+                     String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(today.getDate()).padStart(2, '0');
+      const pdfFileName = `procedure-submission-${dateStr}.pdf`;
       
       // Convert blob to base64 for API
       const reader = new FileReader();
@@ -545,7 +704,7 @@ const ProcedureTab = ({ contactId }) => {
             const emergencyContact = formData.emergencyContact;
             
             setFormData({
-              date: new Date().toISOString().split('T')[0], // Today's date
+              date: new Date().toISOString().split('T')[0] + ' - ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), // Date with timestamp
               memberName: memberName,
               alcorNumber: alcorNumber,
               age: age,
@@ -638,8 +797,8 @@ const ProcedureTab = ({ contactId }) => {
 
   // Container classes that change based on wider setting
   const containerClasses = wider 
-    ? "procedure-tab w-full -mx-10"
-    : "procedure-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4";
+    ? "procedure-tab w-full -mx-10 pt-6"
+    : "procedure-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-11/12 md:pl-4 pt-6 md:pt-8";
 
   return (
     <div className={containerClasses}>
@@ -661,8 +820,10 @@ const ProcedureTab = ({ contactId }) => {
               {/* Success Content */}
               <div className="px-8 py-10 text-center">
                 <div className="mb-6">
-                  <div className="w-16 h-16 bg-white border-2 border-green-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <CheckCircle className="w-9 h-9 text-green-500" strokeWidth="1" fill="none" />
+                  <div className="w-12 h-12 border-2 border-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">Successfully Submitted!</h3>
                   <p className="text-gray-700 text-sm leading-relaxed font-normal mb-2">
@@ -729,8 +890,10 @@ const ProcedureTab = ({ contactId }) => {
             <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] slide-in" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               <div className={`${wider ? 'p-10' : 'p-8'} text-center`}>
                 <div className="max-w-md mx-auto">
-                  <div className="w-20 h-20 bg-white border-2 border-green-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
-                    <CheckCircle className="w-11 h-11 text-green-500" strokeWidth="1" fill="none" />
+                  <div className="w-16 h-16 border-2 border-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <h3 className="text-2xl font-semibold text-gray-900 mb-3">Successfully Submitted!</h3>
                   <p className="text-gray-700 text-base leading-relaxed font-normal mb-2">
@@ -1109,18 +1272,12 @@ const ProcedureTab = ({ contactId }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
                     <input
-                      type="date"
+                      type="text"
                       name="date"
                       value={formData.date}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                        isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
-                      }`}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                     />
-                    {isFieldInvalid('date') && (
-                      <p className="error-text">This field is required</p>
-                    )}
                   </div>
 
                   <div>
@@ -1587,18 +1744,12 @@ const ProcedureTab = ({ contactId }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Date <span className="text-red-500">*</span></label>
                         <input
-                          type="date"
+                          type="text"
                           name="date"
                           value={formData.date}
-                          onChange={handleInputChange}
-                          onBlur={handleBlur}
-                          className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
-                            isFieldInvalid('date') ? 'error-input' : 'border-gray-300'
-                          }`}
+                          readOnly
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                         />
-                        {isFieldInvalid('date') && (
-                          <p className="error-text">This field is required</p>
-                        )}
                       </div>
 
                       <div>

@@ -870,16 +870,16 @@ const NotificationsTab = () => {
       {/* Help Button - Desktop Only */}
       <div className="hidden lg:block fixed bottom-8 right-8 z-50">
         <button
-          className="w-14 h-14 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
-          onClick={() => setShowHelpPopup(!showHelpPopup)}
-        >
-          <svg 
-            className="w-7 h-7 text-white" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="1.8" 
-            viewBox="0 0 24 24"
+            className="w-16 h-16 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
+            onClick={() => setShowHelpPopup(!showHelpPopup)}
           >
+            <svg 
+              className="w-8 h-8 text-white" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1.8" 
+              viewBox="0 0 24 24"
+            >
             <path 
               strokeLinecap="round" 
               strokeLinejoin="round" 

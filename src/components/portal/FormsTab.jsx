@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, FileText, Shield, Clock } from 'lucide-react';
+import { Download, FileText, Shield, Clock, ExternalLink } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
@@ -210,6 +210,10 @@ const FormsTab = () => {
     }
   };
 
+  const handleOpenLink = (url) => {
+    window.open(url, '_blank');
+  };
+
   const formCategories = [
     {
       title: "Medical & Legal",
@@ -240,6 +244,12 @@ const FormsTab = () => {
           description: "Health information form for cryopreservation preparation.",
           fileName: "Health Survey.pdf",
           pages: 3
+        },
+        {
+          title: "Member Readiness Survey",
+          description: "Help us improve our services by sharing your feedback.",
+          link: "https://forms.office.com/Pages/ResponsePage.aspx?id=HMGj6sPh2U6GWDZglGgy2JNBhl79sWRFqRu60bw6hVRUQ1pSSkpPNTNFSzVFWTFITUFLVjhZU0NKMi4u",
+          isExternal: true
         }
       ]
     },
@@ -305,7 +315,7 @@ const FormsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-8 px-8">  {/* Change py-20 to a smaller value */}
+                <div className="py-8 px-8">
                   <div className="h-px rounded-full bg-gray-200"></div>
                 </div>
               )}
@@ -346,25 +356,37 @@ const FormsTab = () => {
                     </h4>
                     <p className="text-xs text-gray-700 mb-4 font-normal">{form.description}</p>
                     
-                    <button
-                      onClick={() => handleDownload(form.fileName)}
-                      disabled={downloading[form.fileName]}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {downloading[form.fileName] ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          <span>Downloading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          <span>Download</span>
-                        </>
-                      )}
-                    </button>
+                    {form.isExternal ? (
+                      <button
+                        onClick={() => handleOpenLink(form.link)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span>Open Survey</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDownload(form.fileName)}
+                        disabled={downloading[form.fileName]}
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {downloading[form.fileName] ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            <span>Downloading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Download</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -382,7 +404,7 @@ const FormsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-8">  {/* Change py-16 to a smaller value */}
+                <div className="py-8">
                   <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
                     background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
                   }}></div>
@@ -443,7 +465,7 @@ const FormsTab = () => {
               </div>
 
               {/* Forms Grid */}
-                              <div className={`${wider ? 'p-8' : 'p-8'} scroll-fade-in ${visibleSections.has(`form-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`form-grid-${categoryIndex}`}>
+              <div className={`${wider ? 'p-8' : 'p-8'} scroll-fade-in ${visibleSections.has(`form-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`form-grid-${categoryIndex}`}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
                   {category.forms.map((form, formIndex) => (
                     <div
@@ -456,28 +478,40 @@ const FormsTab = () => {
                             {form.title}
                           </h4>
                           <p className="text-sm text-gray-700 mb-2 font-normal">{form.description}</p>
-                          <p className="text-xs text-gray-500">{form.pages} pages</p>
+                          {form.pages && <p className="text-xs text-gray-500">{form.pages} pages</p>}
                         </div>
                         
-                        <button
-                          onClick={() => handleDownload(form.fileName)}
-                          disabled={downloading[form.fileName]}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                        >
-                          {downloading[form.fileName] ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                              <span>Downloading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              <span>Download</span>
-                            </>
-                          )}
-                        </button>
+                        {form.isExternal ? (
+                          <button
+                            onClick={() => handleOpenLink(form.link)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span>Open Survey</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDownload(form.fileName)}
+                            disabled={downloading[form.fileName]}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                          >
+                            {downloading[form.fileName] ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>Downloading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Download</span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

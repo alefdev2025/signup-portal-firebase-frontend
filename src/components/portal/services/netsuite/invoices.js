@@ -52,7 +52,7 @@ export const getCustomerInvoices = async (customerId, options = {}) => {
     const result = await response.json();
     
     // Debug log to see what we're getting
-    console.log('Customer invoices API response:', result);
+    //console.log('Customer invoices API response:', result);
     
     // Handle the response structure from the enhanced RESTlet
     if (result.error) {

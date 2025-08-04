@@ -89,14 +89,14 @@ export const formatActivity = (activity) => {
       // Unknown format, try to parse
       const testDate = new Date(dateValue);
       if (isNaN(testDate.getTime())) {
-        console.warn('Unable to parse date:', dateValue);
+        //console.warn('Unable to parse date:', dateValue);
         timestamp = new Date().toISOString();
       } else {
         timestamp = testDate.toISOString();
       }
     }
   } catch (err) {
-    console.error('Error processing activity date:', err);
+    //console.error('Error processing activity date:', err);
     timestamp = new Date().toISOString();
   }
   

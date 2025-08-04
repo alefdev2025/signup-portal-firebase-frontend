@@ -476,8 +476,30 @@ const ContactInfoSection = ({
   useEffect(() => {
     const style = animationStyles.injectStyles();
     
+    // Add slide-up animation CSS
+    const slideUpStyle = document.createElement('style');
+    slideUpStyle.innerHTML = `
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .animate-slideUp {
+        animation: slideUp 0.6s ease-out forwards;
+        opacity: 0;
+      }
+    `;
+    document.head.appendChild(slideUpStyle);
+    
     return () => {
       document.head.removeChild(style);
+      document.head.removeChild(slideUpStyle);
     };
   }, []);
 
@@ -611,7 +633,8 @@ const ContactInfoSection = ({
           <div className={styleConfig2.section.innerPadding}>
             {/* Header Section */}
             <div className={headerStyles.container}>
-              <div className="w-full">
+              {/* Add wrapper div with animation */}
+              <div className={`w-full ${hasLoaded && isVisible ? 'animate-slideUp' : 'opacity-0'}`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <div>

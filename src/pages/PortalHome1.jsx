@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
+import { logoutUser } from '../services/auth';
 import alcorWhiteLogo from '../assets/images/alcor-white-logo.png';
 import { markNotificationAsRead, markAllNotificationsAsRead } from '../services/notifications';
 
@@ -25,7 +27,6 @@ import ActivityLogTab from '../components/portal/ActivityLogTab';
 
 // Import all overview tab versions
 import OverviewTab from '../components/portal/OverviewTab';
-
 
 import ProcedureTab from '../components/portal/ProcedureTab';
 
@@ -62,11 +63,20 @@ const ResourcesTab = () => (
 );
 
 const PortalHome = () => {
+  const navigate = useNavigate();
+  const { memberInfoData, currentUser, customerId, salesforceContactId, salesforceCustomer, customerFirstName, notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
+  
+  // Debug logging
+  //console.log('PortalHome memberInfoData full structure:', JSON.stringify(memberInfoData, null, 2));
+  //console.log('PortalHome salesforceContactId:', salesforceContactId);
+  //console.log('PortalHome salesforceCustomer:', salesforceCustomer);
+  //console.log('PortalHome customerFirstName:', customerFirstName);
+  //console.log('PortalHome currentUser:', currentUser);
+  
   // Mobile notification bell component - based on working version
   // IMPORTANT: Define this OUTSIDE of PortalHome component
   const MobileNotificationBell = React.memo(({ activeTab, setActiveTab }) => {
     const [isOpen, setIsOpen] = React.useState(false);
-    const { notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
     const notificationRef = React.useRef(null);
     
     const unreadCount = notifications.filter(n => !n.read).length;
@@ -347,9 +357,6 @@ const PortalHome = () => {
   // Add state for showing overview selector
   const [showOverviewSelector, setShowOverviewSelector] = useState(false);
   
-  // Get the IDs from context
-  const { customerId, salesforceContactId } = useMemberPortal();
-  
   // Add mobile notification styles and rainbow gradient styles
   useEffect(() => {
     const style = document.createElement('style');
@@ -456,6 +463,31 @@ const PortalHome = () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+
+  // Add the logout handler
+  const handleLogout = async () => {
+    try {
+      //console.log('Starting logout process from PortalHome...');
+      
+      // Call the enhanced logout function
+      const result = await logoutUser({
+        callBackend: true,
+        logoutMethod: 'manual'
+      });
+      
+      if (result.success) {
+        //console.log('Logout successful, navigating to login page');
+        // Navigate to login page
+        navigate('/login', { replace: true });
+      } else {
+        console.error('Logout failed:', result.error);
+        alert('Failed to log out. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Failed to log out. Please try again.');
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -692,12 +724,6 @@ const PortalHome = () => {
         </div>
 
         {/* Sidebar - always positioned, z-index changes */}
-        {/* IMPORTANT: To make sidebar slide from RIGHT on mobile, update PortalSidebar component:
-            - For mobile: Change "left-0" to "right-0" 
-            - For mobile: Change "-translate-x-full" to "translate-x-full"
-            - For mobile: Keep "translate-x-0" for when it's open
-            - Example: className={`fixed top-0 right-0 ... ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
-            The sidebar should be positioned with "right-0" instead of "left-0" */}
         <div className={`relative ${activeTab !== 'overview' ? 'z-50' : ''} ${isMobileMenuOpen ? 'z-[70]' : ''}`}>
           <PortalSidebar
             activeTab={activeTab}
@@ -707,6 +733,9 @@ const PortalHome = () => {
             setIsMobileMenuOpen={setIsMobileMenuOpen}
             isElevated={activeTab !== 'overview'}
             layoutMode="floating"
+            memberData={memberInfoData?.personal || salesforceCustomer}
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
         </div>
       </div>
@@ -744,10 +773,6 @@ const PortalHome = () => {
       </div>
 
       {/* Sidebar - positioned on top with higher z-index */}
-      {/* Note: To make sidebar slide from right, update PortalSidebar component:
-          - Change "left-0" to "right-0"
-          - Change "-translate-x-full" to "translate-x-full"
-          - Keep "translate-x-0" for when it's open */}
       <div className={`relative z-50 ${isMobileMenuOpen ? 'z-[70]' : ''}`}>
         <PortalSidebar
           activeTab={activeTab}
@@ -757,6 +782,9 @@ const PortalHome = () => {
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           isElevated={false}
           layoutMode="traditional"
+          memberData={memberInfoData?.personal || salesforceCustomer}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
       </div>
     </div>

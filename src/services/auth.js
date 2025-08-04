@@ -2847,6 +2847,189 @@ export const validateAlcorId = (alcorId) => {
   };
 };
 
+// Add this enhanced logout function to your auth.js file
+
+/**
+ * Enhanced logout function with optional backend cleanup
+ * @param {Object} options - Logout options
+ * @param {boolean} options.callBackend - Whether to call backend logout function
+ * @param {string} options.logoutMethod - Method of logout ('manual', 'timeout', 'forced')
+ * @returns {Promise<Object>} Logout result
+ */
+ export const logoutUser = async (options = {}) => {
+  const { callBackend = true, logoutMethod = 'manual' } = options;
+  
+  console.log("Starting logout process", { callBackend, logoutMethod });
+  
+  try {
+    const currentUser = auth.currentUser;
+    
+    if (currentUser) {
+      console.log("Current user found:", currentUser.uid);
+      
+      // Calculate session duration if we have metadata
+      let sessionDuration = null;
+      if (currentUser.metadata?.lastSignInTime) {
+        sessionDuration = Date.now() - new Date(currentUser.metadata.lastSignInTime).getTime();
+      }
+      
+      // Call backend logout function if requested
+      if (callBackend) {
+        try {
+          console.log("Calling backend logout function");
+          const authCoreFn = httpsCallable(functions, 'authCore');
+          
+          const result = await authCoreFn({
+            action: 'logoutUser',
+            logoutMethod,
+            sessionDuration
+          });
+          
+          if (result.data?.success) {
+            console.log("Backend logout successful");
+          } else {
+            console.warn("Backend logout returned non-success:", result.data);
+          }
+        } catch (backendError) {
+          console.error("Backend logout error:", backendError);
+          // Continue with frontend logout even if backend fails
+        }
+      }
+      
+      // Sign out from Firebase Auth
+      await auth.signOut();
+      console.log("Firebase Auth signout successful");
+      
+    } else {
+      console.log("No user currently signed in");
+    }
+    
+    // Clear all local storage related to authentication
+    clearVerificationState();
+    localStorage.removeItem('signupState');
+    localStorage.removeItem('fresh_signup');
+    localStorage.removeItem('portalUser');
+    localStorage.removeItem('userProfile');
+    
+    // Clear any session storage
+    sessionStorage.clear();
+    
+    console.log("Local storage cleared");
+    
+    return { 
+      success: true,
+      message: 'Logout successful'
+    };
+    
+  } catch (error) {
+    console.error("Error during logout:", error);
+    
+    // Even if there's an error, try to clear local storage
+    try {
+      clearVerificationState();
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (clearError) {
+      console.error("Error clearing storage:", clearError);
+    }
+    
+    return {
+      success: false,
+      error: error.message || 'Logout failed'
+    };
+  }
+};
+
+/**
+ * Get user profile data including photo URL
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} User profile data
+ */
+export const getUserProfile = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    // First try to get from Firebase Auth
+    const user = auth.currentUser;
+    let photoURL = null;
+    let displayName = null;
+    
+    if (user && user.uid === userId) {
+      photoURL = user.photoURL;
+      displayName = user.displayName;
+      
+      // For Google users, photoURL is usually available
+      if (user.providerData && user.providerData.length > 0) {
+        const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+        if (googleProvider && googleProvider.photoURL) {
+          photoURL = googleProvider.photoURL;
+        }
+      }
+    }
+    
+    // Then get additional data from Firestore
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      
+      return {
+        success: true,
+        profile: {
+          photoURL: userData.photoURL || photoURL,
+          displayName: userData.name || userData.displayName || displayName || 'Member',
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          memberType: userData.memberType || userData.userType || 'Member',
+          alcorId: userData.alcorId,
+          isPortalUser: userData.isPortalUser || false,
+          isApplicant: userData.isApplicant || false,
+          twoFactorEnabled: userData.twoFactorEnabled || false
+        }
+      };
+    }
+    
+    // Return basic info if no Firestore document
+    return {
+      success: true,
+      profile: {
+        photoURL,
+        displayName: displayName || 'Member',
+        email: user?.email,
+        memberType: 'Member'
+      }
+    };
+    
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return {
+      success: false,
+      error: error.message,
+      profile: {
+        displayName: 'Member',
+        memberType: 'Member'
+      }
+    };
+  }
+};
+
+/**
+ * Force logout for session timeout
+ * @returns {Promise<Object>} Logout result
+ */
+export const forceLogoutForTimeout = async () => {
+  console.log("Forcing logout due to session timeout");
+  
+  return logoutUser({
+    callBackend: true,
+    logoutMethod: 'timeout'
+  });
+};
+
 /**
  * Format Alcor ID for display
  * Ensures consistent A-#### format
