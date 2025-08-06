@@ -41,6 +41,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isChecking2FA, setIsChecking2FA] = useState(false);
+
   // Clear auth state on component mount (unless in 2FA flow)
   useEffect(() => {
     // If user navigated to login page, sign out any existing session
@@ -77,7 +79,7 @@ const LoginPage = () => {
   
   // Navigate based on backend progress after successful login
   useEffect(() => {
-    if (currentUser && signupState && !userLoading && !loading && !show2FAForm) {
+    if (currentUser && signupState && !userLoading && !loading && !show2FAForm && !isChecking2FA) {
       console.log(`User logged in. Progress: ${signupState.signupProgress}, Step: ${signupState.signupStep}, Completed: ${signupState.signupCompleted}`);
       
       // If continuing signup
@@ -98,7 +100,7 @@ const LoginPage = () => {
         navigate('/portal-home', { replace: true });
       }
     }
-  }, [currentUser, signupState, userLoading, loading, navigate, isContinueSignup, show2FAForm]);
+  }, [currentUser, signupState, userLoading, loading, navigate, isContinueSignup, show2FAForm, isChecking2FA]);
   
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -241,6 +243,7 @@ const LoginPage = () => {
         setSuccessMessage('2FA verified successfully. Redirecting...');
         setShow2FAForm(false);
         setTwoFactorCode('');
+        setIsChecking2FA(false); // ADD THIS LINE - Clear the flag to allow navigation
         // Navigation will happen in useEffect above
       } else {
         setError(result.data?.error || 'Invalid 2FA code. Please try again.');
@@ -266,9 +269,59 @@ const LoginPage = () => {
     setTempAuthData(null);
     setError('');
     setSuccessMessage('');
+    setIsChecking2FA(false); // ADD THIS LINE
+  };
+
+
+  const handleGoogleSignInSuccess = async (result, isNewUser) => {
+    if (isNewUser) {
+      setShowNoAccountMessage(true);
+      return;
+    }
+    
+    // Set checking flag to prevent navigation
+    setIsChecking2FA(true);
+    
+    try {
+      const user = result.user;
+      
+      if (!user || !user.uid) {
+        console.log('No user in Google sign-in result');
+        setSuccessMessage("Successfully signed in with Google. Redirecting...");
+        setIsChecking2FA(false);
+        return;
+      }
+      
+      console.log('Checking 2FA for Google user:', user.uid);
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      console.log('Google user 2FA status:', userData?.twoFactorEnabled);
+      console.log('Google user has 2FA secret:', !!userData?.twoFactorSecret);
+      
+      if (userData?.twoFactorEnabled === true && userData?.twoFactorSecret) {
+        console.log('Google user has 2FA enabled, showing 2FA form');
+        
+        setTempAuthData({
+          email: user.email,
+          userId: user.uid
+        });
+        setShow2FAForm(true);
+        setSuccessMessage('Please enter your 2FA code to complete sign in.');
+        // Keep isChecking2FA true to prevent navigation
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking 2FA for Google user:', error);
+    }
+    
+    // No 2FA needed - allow navigation
+    setIsChecking2FA(false);
+    setSuccessMessage("Successfully signed in with Google. Redirecting...");
   };
   
-  const handleGoogleSignInSuccess = (result, isNewUser) => {
+  /*const handleGoogleSignInSuccess = (result, isNewUser) => {
     if (isNewUser) {
       setShowNoAccountMessage(true);
       return;
@@ -278,7 +331,7 @@ const LoginPage = () => {
     // This would need to be implemented in your Google sign-in flow
     setSuccessMessage("Successfully signed in with Google. Redirecting...");
     // Navigation will happen in useEffect above once backend data loads
-  };
+  };*/
   
   const handleGoogleSignInError = (errorMessage) => {
     setError(errorMessage);

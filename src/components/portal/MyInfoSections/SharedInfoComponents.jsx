@@ -86,7 +86,7 @@ export const InfoCard = ({ title, icon, children, sectionKey, hoveredSection, on
             </svg>
           </div>
           <div className={infoCardStyles.hoverIndicators.bottomRight.wrapper}>
-            <span className={infoCardStyles.hoverIndicators.bottomRight.text}>Click to edit</span>
+            <span className={infoCardStyles.hoverIndicators.bottomRight.text}>Click to view</span>
           </div>
         </>
       )}

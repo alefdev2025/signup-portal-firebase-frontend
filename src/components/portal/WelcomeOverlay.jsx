@@ -129,11 +129,40 @@ const WelcomeOverlay = ({ onClose }) => {
                   Your portal provides everything you need to manage your Alcor membership.
                 </p>
                 
-                <div className="space-y-4">
-                  <p className="text-gray-600 text-sm">
-                    You can now upload your video testimony and explore member information documents.
-                  </p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left">
+                  <h3 className="font-semibold text-gray-900 mb-4 text-lg text-center">New Features Available</h3>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 pl-4">
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">Membership status</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">Your information</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">Your member files</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">Video testimony</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">Most recent Alcor news</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span className="text-sm">View invoices</span>
+                    </div>
+                  </div>
+                  <p className="text-center text-sm text-gray-600 italic mt-3">And much more!</p>
                 </div>
+                
+                <p className="text-gray-600 text-sm mt-4">
+                  The member portal is new! If you discover any issues, please let us know at feedback@alcor.org
+                </p>
               </>
             )}
           </div>

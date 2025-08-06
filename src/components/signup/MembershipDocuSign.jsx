@@ -371,14 +371,14 @@ export default function MembershipDocuSign({
           'in_progress'
         );
       } catch (err) {
-        console.error('Error updating document status to in_progress:', err);
+        //console.error('Error updating document status to in_progress:', err);
       }
       
       // Use Firebase SDK to call the function
       const functions = getFunctions();
       const createEmbeddedEnvelope = httpsCallable(functions, 'createEmbeddedEnvelope');
       
-      console.log('📞 Calling Firebase function createEmbeddedEnvelope...');
+      //console.log('📞 Calling Firebase function createEmbeddedEnvelope...');
       
       // Create the request payload
       const requestPayload = {
@@ -388,19 +388,19 @@ export default function MembershipDocuSign({
         returnUrl: `${window.location.origin}/signup/membership`
       };
       
-      console.log('📤 SENDING TO FIREBASE - Full payload:', JSON.stringify(requestPayload, null, 2));
+      //console.log('📤 SENDING TO FIREBASE - Full payload:', JSON.stringify(requestPayload, null, 2));
       
       let result;
       try {
         result = await createEmbeddedEnvelope(requestPayload);
-        console.log('📨 Firebase function result:', result?.data);
+        //console.log('📨 Firebase function result:', result?.data);
       } catch (firebaseError) {
-        console.error('❌ Firebase function call failed:', firebaseError);
+        //console.error('❌ Firebase function call failed:', firebaseError);
         throw firebaseError;
       }
       
       if (result.data && result.data.signingUrl) {
-        console.log('✅ Got signing URL:', result.data.signingUrl);
+        //console.log('✅ Got signing URL:', result.data.signingUrl);
         setSigningUrl(result.data.signingUrl);
         setDocuSignStatus('signing');
         setupDocuSignMessageListener();
@@ -411,17 +411,17 @@ export default function MembershipDocuSign({
         }, 500);
         
       } else if (result.data && result.data.success === false) {
-        console.error('❌ Backend returned error:', result.data.error);
+        //console.error('❌ Backend returned error:', result.data.error);
         throw new Error(result.data.error || 'Failed to create DocuSign envelope');
       } else {
-        console.error('❌ Unexpected result structure:', result);
+        //console.error('❌ Unexpected result structure:', result);
         throw new Error('Unexpected response from DocuSign service');
       }
       
     } catch (err) {
-      console.error('❌ DocuSign error:', err);
-      console.error('❌ Error type:', err.constructor.name);
-      console.error('❌ Error stack:', err.stack);
+      //console.error('❌ DocuSign error:', err);
+      //console.error('❌ Error type:', err.constructor.name);
+      //console.error('❌ Error stack:', err.stack);
       
       retryCountRef.current += 1;
       

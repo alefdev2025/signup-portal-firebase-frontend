@@ -9,6 +9,17 @@ import { NETSUITE_API_BASE, REQUEST_TIMEOUT } from './config';
  */
 export const getCustomerInvoices = async (customerId, options = {}) => {
   try {
+    
+    if (!customerId || customerId === 'pending' || !/^\d{4,5}$/.test(customerId)) {
+      console.error('Invalid customer ID:', customerId);
+      return {
+        success: false,
+        error: 'Invalid customer ID',
+        invoices: [],
+        count: 0
+      };
+    }
+
     console.log(`Fetching invoices for customer ${customerId}`, options);
     
     // Build query parameters (without customerId since it's in the path)

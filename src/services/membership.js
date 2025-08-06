@@ -815,6 +815,66 @@ export const getReadyForDocuSign = async () => {
   }
 };
 
+export const getSignupPaymentHistory = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/signup-payment-history`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch signup payment history');
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error fetching signup payment history:', error);
+    throw error;
+  }
+};
+
+export const getSignupPaymentDetails = async (paymentIntentId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/membership/signup-payment-details/${paymentIntentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch payment details');
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error fetching payment details:', error);
+    throw error;
+  }
+};
+
 // Default export with all functions
 export default {
   saveMembershipSelection,
@@ -836,5 +896,7 @@ export default {
   getSalesforceStatus,
   getReadyForDocuSign,
   retrieveAndUploadDocuments,
-  updateMemberPaymentStatus
+  updateMemberPaymentStatus,
+  getSignupPaymentHistory,
+  getSignupPaymentDetails
 };

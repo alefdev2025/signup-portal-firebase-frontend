@@ -321,7 +321,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     };
     
     loadDataFromBackend();
-  }, [currentUser, initialData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   // Parse existing dateOfBirth into separate fields when loading the component
   useEffect(() => {

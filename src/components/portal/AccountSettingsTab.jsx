@@ -682,7 +682,7 @@ const handle2FAVerification = async (e) => {
        <div className="professional-card bg-white border border-gray-200 rounded-2xl overflow-hidden animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', animationDelay: '0.3s', opacity: 0 }}>
          <div className="px-8 py-6">
            <div className="flex items-center gap-4 mb-8">
-             <IconWrapper className="icon-luxury" size="large" color="purple">
+             <IconWrapper className="icon-luxury" size="large" color="navy">
                <ShieldIcon className={iconStyle.iconSizeLarge} />
              </IconWrapper>
              <h2 className="text-lg font-normal text-gray-800 card-title">Security</h2>
@@ -725,7 +725,7 @@ const handle2FAVerification = async (e) => {
                  checked={settings.twoFactorEnabled}
                  onChange={() => handleToggle('twoFactorEnabled')}
                  settingName="twoFactorEnabled"
-                 color="#7d4582"
+                 color="#374151"
                />
              </div>
            </div>

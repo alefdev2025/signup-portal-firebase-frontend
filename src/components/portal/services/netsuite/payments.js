@@ -9,7 +9,16 @@ import { NETSUITE_API_BASE, REQUEST_TIMEOUT } from './config';
  */
 export const getCustomerPayments = async (customerId, options = {}) => {
   try {
-    console.log(`Fetching payments for customer ${customerId}`, options);
+    //console.log(`Fetching payments for customer ${customerId}`, options);
+    if (!customerId || customerId === 'pending' || !/^\d{4,5}$/.test(customerId)) {
+      //console.error('Invalid customer ID:', customerId);
+      return {
+        success: false,
+        error: 'Invalid customer ID',
+        invoices: [],
+        count: 0
+      };
+    }
     
     // Build query parameters
     const queryParams = new URLSearchParams({

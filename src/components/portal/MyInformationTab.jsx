@@ -402,7 +402,7 @@ const MyInformationTab = () => {
         
         if (memberInfoData.cryo?.success && memberInfoData.cryo.data) {
           const cryoData = memberInfoData.cryo.data.data || memberInfoData.cryo.data;
-          console.log('🔍 Cached cryo data:', cryoData);
+          //console.log('🔍 Cached cryo data:', cryoData);
           
           const transformedCryo = {
             method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
@@ -434,9 +434,9 @@ const MyInformationTab = () => {
         
         if (memberInfoData.emergency?.success && memberInfoData.emergency.data) {
           const emergencyResponse = memberInfoData.emergency.data;
-          console.log('🔍 DEBUG: Cached emergency response:', emergencyResponse);
-          console.log('🔍 DEBUG: Type of emergencyResponse:', typeof emergencyResponse);
-          console.log('🔍 DEBUG: Keys in emergencyResponse:', Object.keys(emergencyResponse));
+          //console.log('🔍 DEBUG: Cached emergency response:', emergencyResponse);
+          //console.log('🔍 DEBUG: Type of emergencyResponse:', typeof emergencyResponse);
+          //console.log('🔍 DEBUG: Keys in emergencyResponse:', Object.keys(emergencyResponse));
           
           // Check different possible data structures
           const nextOfKinArray = emergencyResponse.data?.nextOfKin || 
@@ -444,13 +444,13 @@ const MyInformationTab = () => {
                                  emergencyResponse || // In case the response IS the array
                                  [];
           
-          console.log('🔍 DEBUG: nextOfKinArray:', nextOfKinArray);
-          console.log('🔍 DEBUG: Is array?', Array.isArray(nextOfKinArray));
-          console.log('🔍 DEBUG: Array length:', nextOfKinArray.length);
+          //console.log('🔍 DEBUG: nextOfKinArray:', nextOfKinArray);
+          //console.log('🔍 DEBUG: Is array?', Array.isArray(nextOfKinArray));
+          //console.log('🔍 DEBUG: Array length:', nextOfKinArray.length);
           
           if (Array.isArray(nextOfKinArray) && nextOfKinArray.length > 0) {
-            console.log('🔍 DEBUG: Processing', nextOfKinArray.length, 'NOK records');
-            console.log('🔍 DEBUG: First NOK record:', nextOfKinArray[0]);
+            //console.log('🔍 DEBUG: Processing', nextOfKinArray.length, 'NOK records');
+            //console.log('🔍 DEBUG: First NOK record:', nextOfKinArray[0]);
             
             const transformedList = nextOfKinArray.map(nok => ({
               id: nok.id,
@@ -480,15 +480,15 @@ const MyInformationTab = () => {
               nok.phone = nok.mobilePhone || nok.homePhone || '';
             });
             
-            console.log('🔍 DEBUG: Transformed list:', transformedList);
+            //console.log('🔍 DEBUG: Transformed list:', transformedList);
             setNextOfKinList(transformedList);
             setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
           } else {
-            console.log('🔍 DEBUG: No NOK records found or not an array');
+            //console.log('🔍 DEBUG: No NOK records found or not an array');
             setNextOfKinList([]);
           }
         } else {
-          console.log('🔍 DEBUG: No cached emergency data available');
+          //console.log('🔍 DEBUG: No cached emergency data available');
         }
         
 
@@ -529,7 +529,10 @@ const MyInformationTab = () => {
         }
         
         if (memberInfoData.category?.success && memberInfoData.category.data) {
-          setMemberCategory(memberInfoData.category.data.category);
+          // Note the double .data.data structure in your response
+          const categoryInfo = memberInfoData.category.data.data || memberInfoData.category.data;
+          console.log('📦 Category data:', categoryInfo);
+          setMemberCategory(categoryInfo.category); // This will set "CryoApplicant" etc
           setCategoryLoading(false);
         }
         
@@ -545,11 +548,11 @@ const MyInformationTab = () => {
     initializeData();
   }, [salesforceContactId, memberInfoLoaded, memberInfoData, initializedFromCache]);
 
-  useEffect(() => {
-    if (salesforceContactId) {
-      loadMemberCategory();
-    }
-  }, [salesforceContactId]);
+  //useEffect(() => {
+  //  if (salesforceContactId) {
+  //    loadMemberCategory();
+  //  }
+  //}, [salesforceContactId]);
   
   // Stagger section loading after data is loaded
   useEffect(() => {
@@ -701,23 +704,23 @@ const MyInformationTab = () => {
       // In the loadAllData function, update the Personal Info section:
       if (results.personalRes.success && results.personalRes.data) {
         const personalData = results.personalRes.data.data || results.personalRes.data;
-        console.log('🎯 === PERSONAL INFO DATA RECEIVED ===');
-        console.log('📦 Raw personal data from API:', personalData);
-        console.log('📋 Key fields:', {
+        //console.log('🎯 === PERSONAL INFO DATA RECEIVED ===');
+        //console.log('📦 Raw personal data from API:', personalData);
+        /*console.log('📋 Key fields:', {
           ethnicity: personalData.ethnicity,
           citizenship: personalData.citizenship,
           maritalStatus: personalData.maritalStatus,
           hasAgreement: personalData.hasAgreement
-        });
+        });*/
         
         const cleanedPersonal = cleanPersonData(personalData);
         
-        console.log('✨ After cleanPersonData:', {
+        /*console.log('✨ After cleanPersonData:', {
           ethnicity: cleanedPersonal.ethnicity,
           citizenship: cleanedPersonal.citizenship,
           maritalStatus: cleanedPersonal.maritalStatus
-        });
-        console.log('🎯 === END PERSONAL INFO ===\n');
+        });*/
+        //console.log('🎯 === END PERSONAL INFO ===\n');
         
         setPersonalInfo(cleanedPersonal);
         setOriginalData(prev => ({ ...prev, personal: cleanedPersonal }));
@@ -726,7 +729,7 @@ const MyInformationTab = () => {
       // Contact Info - Clean all contact data
       if (results.contactRes.success && results.contactRes.data) {
         const contactData = results.contactRes.data.data || results.contactRes.data;
-        console.log('Setting contact info data:', contactData);
+        //console.log('Setting contact info data:', contactData);
         
         // Clean contact data
         const cleanedContact = {
@@ -778,20 +781,12 @@ const MyInformationTab = () => {
       
       // Family Info - Clean all family data
       if (results.familyRes.success && results.familyRes.data) {
-        console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING START ===');
-        console.log('📦 Raw familyRes:', results.familyRes);
-        console.log('📦 familyRes.data:', results.familyRes.data);
+        //console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING START ===');
+        //console.log('📦 Raw familyRes:', results.familyRes);
+        //console.log('📦 familyRes.data:', results.familyRes.data);
         
         const familyData = results.familyRes.data.data || results.familyRes.data;
-        console.log('📦 Extracted familyData:', familyData);
-        console.log('📋 Family data type:', typeof familyData);
-        console.log('📋 Family data keys:', Object.keys(familyData || {}));
-        console.log('📋 Individual fields:');
-        console.log('  - fatherName:', familyData.fatherName);
-        console.log('  - fatherBirthplace:', familyData.fatherBirthplace);
-        console.log('  - motherMaidenName:', familyData.motherMaidenName);
-        console.log('  - motherBirthplace:', familyData.motherBirthplace);
-        console.log('  - spouseName:', familyData.spouseName);
+
         
         // Transform and clean family data
         const transformedFamily = {
@@ -802,30 +797,17 @@ const MyInformationTab = () => {
           spousesName: formatPersonName(familyData.spouseName)
         };
         
-        console.log('✨ Transformed family data:', transformedFamily);
-        console.log('📋 Transformed data keys:', Object.keys(transformedFamily));
-        console.log('📋 Transformed values:');
-        console.log('  - fathersName:', transformedFamily.fathersName);
-        console.log('  - fathersBirthplace:', transformedFamily.fathersBirthplace);
-        console.log('  - mothersMaidenName:', transformedFamily.mothersMaidenName);
-        console.log('  - mothersBirthplace:', transformedFamily.mothersBirthplace);
-        console.log('  - spousesName:', transformedFamily.spousesName);
-        
-        // Check if formatPersonName and formatCity are working
-        console.log('🔍 Testing format functions:');
-        console.log('  - formatPersonName("John Doe"):', formatPersonName("John Doe"));
-        console.log('  - formatCity("New York, NY, USA"):', formatCity("New York, NY, USA"));
         
         setFamilyInfo(transformedFamily);
         setOriginalData(prev => ({ ...prev, family: transformedFamily }));
         
-        console.log('✅ familyInfo state should now be set');
-        console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING END ===\n');
+        //console.log('✅ familyInfo state should now be set');
+        //console.log('👨‍👩‍👧‍👦 === FAMILY INFO DEBUGGING END ===\n');
       } else {
         console.log('❌ === FAMILY INFO FAILED TO LOAD ===');
-        console.log('❌ familyRes success:', results.familyRes.success);
-        console.log('❌ familyRes error:', results.familyRes.error);
-        console.log('❌ Full familyRes:', results.familyRes);
+        //console.log('❌ familyRes success:', results.familyRes.success);
+        //console.log('❌ familyRes error:', results.familyRes.error);
+        //console.log('❌ Full familyRes:', results.familyRes);
       }
       
       if (results.occupationRes.success && results.occupationRes.data) {
@@ -853,7 +835,7 @@ const MyInformationTab = () => {
                     ''
         };
         
-        console.log('🎖️ Setting occupation:', cleanedOccupation);
+        //console.log('🎖️ Setting occupation:', cleanedOccupation);
         safeSetState(setOccupation, cleanedOccupation, setOriginalData, 'occupation');
       }
       
@@ -870,7 +852,7 @@ const MyInformationTab = () => {
       
       if (results.cryoRes.success && results.cryoRes.data) {
         const cryoData = results.cryoRes.data.data || results.cryoRes.data;
-        console.log('🔍 Raw cryo data from API:', cryoData);
+        //console.log('🔍 Raw cryo data from API:', cryoData);
         
         // Transform and clean the data
         const transformedCryo = {
@@ -898,22 +880,22 @@ const MyInformationTab = () => {
           recipientAddress: cryoData.recipientAddress
         };
         
-        console.log('🔍 Transformed cryo data:', transformedCryo);
+        //c//onsole.log('🔍 Transformed cryo data:', transformedCryo);
         
         setCryoArrangements(transformedCryo);
         setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
         
         // NEW: Extract funding allocation fields with detailed logging
-        console.log('💰 === FUNDING ALLOCATIONS EXTRACTION START ===');
-        console.log('📦 Checking cryoData for funding allocation fields...');
+        //console.log('💰 === FUNDING ALLOCATIONS EXTRACTION START ===');
+        //console.log('📦 Checking cryoData for funding allocation fields...');
         
         // Log all fields in cryoData that might be funding-related
-        console.log('🔍 All fields containing "Trust", "Fund", "Individual", or "Other":');
+        //console.log('🔍 All fields containing "Trust", "Fund", "Individual", or "Other":');
         Object.keys(cryoData).forEach(key => {
           if (key.includes('Trust') || key.includes('Fund') || key.includes('Individual') || 
               key.includes('Other') || key.includes('Following') || key.includes('_OM') || 
               key.includes('Over_Minimum')) {
-            console.log(`  ${key}: ${cryoData[key] ?? 'undefined/null'}`);
+            //console.log(`  ${key}: ${cryoData[key] ?? 'undefined/null'}`);
           }
         });
         
@@ -943,28 +925,6 @@ const MyInformationTab = () => {
           otherOM: cryoData.Other_Over_Minimum__c || ''
         };
         
-        // Detailed logging of what we found
-        console.log('📊 Funding Allocation Fields Found:');
-        console.log('  Primary Allocations:');
-        console.log(`    - Patient_Care_Trust__c: ${cryoData.Patient_Care_Trust__c !== undefined ? cryoData.Patient_Care_Trust__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - General_Operating_Fund__c: ${cryoData.General_Operating_Fund__c !== undefined ? cryoData.General_Operating_Fund__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Alcor_Research_Fund__c: ${cryoData.Alcor_Research_Fund__c !== undefined ? cryoData.Alcor_Research_Fund__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Endowment_Fund__c: ${cryoData.Endowment_Fund__c !== undefined ? cryoData.Endowment_Fund__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Individuals__c: ${cryoData.Individuals__c !== undefined ? cryoData.Individuals__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Others__c: ${cryoData.Others__c !== undefined ? cryoData.Others__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Following_Person_s__c: "${cryoData.Following_Person_s__c || 'EMPTY/NOT FOUND'}"`);
-        console.log(`    - Other__c: "${cryoData.Other__c || 'EMPTY/NOT FOUND'}"`);
-        
-        console.log('  Over-Minimum Allocations:');
-        console.log(`    - Patient_Care_Trust_Over_Minimum__c: ${cryoData.Patient_Care_Trust_Over_Minimum__c !== undefined ? cryoData.Patient_Care_Trust_Over_Minimum__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - General_Operating_Fund_Over_Minimum__c: ${cryoData.General_Operating_Fund_Over_Minimum__c !== undefined ? cryoData.General_Operating_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Alcor_Research_Fund_Over_Minimum__c: ${cryoData.Alcor_Research_Fund_Over_Minimum__c !== undefined ? cryoData.Alcor_Research_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Endowment_Fund_Over_Minimum__c: ${cryoData.Endowment_Fund_Over_Minimum__c !== undefined ? cryoData.Endowment_Fund_Over_Minimum__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Individuals_OM__c: ${cryoData.Individuals_OM__c !== undefined ? cryoData.Individuals_OM__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Others_OM__c: ${cryoData.Others_OM__c !== undefined ? cryoData.Others_OM__c + '%' : 'NOT FOUND'}`);
-        console.log(`    - Following_Person_s_Over_Minimum__c: "${cryoData.Following_Person_s_Over_Minimum__c || 'EMPTY/NOT FOUND'}"`);
-        console.log(`    - Other_Over_Minimum__c: "${cryoData.Other_Over_Minimum__c || 'EMPTY/NOT FOUND'}"`);
-        
         // Check if we have ANY funding allocation data
         const hasPrimaryData = 
           cryoData.Patient_Care_Trust__c !== undefined ||
@@ -984,12 +944,6 @@ const MyInformationTab = () => {
         
         if (!hasPrimaryData && !hasOverMinData) {
           console.error('❌ === NO FUNDING ALLOCATION DATA FOUND ===');
-          console.error('❌ This could mean:');
-          console.error('❌ 1. The member has no Agreement__c record');
-          console.error('❌ 2. The Agreement__c record exists but funding fields are not populated');
-          console.error('❌ 3. The API query is not including these fields');
-          console.error('❌ 4. The field names in Salesforce are different than expected');
-          console.error('❌ Check the getMemberCryoArrangements API endpoint and SOQL query');
         } else {
           console.log('✅ Found funding allocation data');
           
@@ -1044,15 +998,15 @@ const MyInformationTab = () => {
                 (cryoData.Individuals_OM__c && cryoData.Individuals_OM__c > 0) ||
                 (cryoData.Others_OM__c && cryoData.Others_OM__c > 0)) {
               fundingAllocationsData.customOverMinimum = true;
-              console.log('  ✓ Custom over-minimum allocations detected (not default 50/50)');
+              //console.log('  ✓ Custom over-minimum allocations detected (not default 50/50)');
             } else {
               console.log('  ✓ Default over-minimum allocations (50/50 split)');
             }
           }
         }
         
-        console.log('📦 Final fundingAllocationsData:', fundingAllocationsData);
-        console.log('💰 === FUNDING ALLOCATIONS EXTRACTION END ===\n');
+        //console.log('📦 Final fundingAllocationsData:', fundingAllocationsData);
+        //console.log('💰 === FUNDING ALLOCATIONS EXTRACTION END ===\n');
         
         setFundingAllocations(fundingAllocationsData);
         setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
@@ -1061,7 +1015,7 @@ const MyInformationTab = () => {
       // Process Legal Info
       if (results.legalRes.success && results.legalRes.data) {
         const legalData = results.legalRes.data.data || results.legalRes.data;
-        console.log('Setting legal info data:', legalData);
+        //console.log('Setting legal info data:', legalData);
         
         const transformedLegal = {
           hasWill: legalData.hasWill || '',
@@ -1072,34 +1026,31 @@ const MyInformationTab = () => {
         setOriginalData(prev => ({ ...prev, legal: transformedLegal }));
       }
       
-      console.log('🔍 DEBUG: emergencyRes from Promise.allSettled:', emergencyRes);
+      //console.log('🔍 DEBUG: emergencyRes from Promise.allSettled:', emergencyRes);
       if (results.emergencyRes.success && results.emergencyRes.data) {
         const emergencyResponse = results.emergencyRes.data;
-        console.log('🔍 DEBUG: Emergency response structure:', emergencyResponse);
-        console.log('🔍 DEBUG: Type:', typeof emergencyResponse);
-        console.log('🔍 DEBUG: Keys:', Object.keys(emergencyResponse));
+        //console.log('🔍 DEBUG: Emergency response structure:', emergencyResponse);
+        //console.log('🔍 DEBUG: Type:', typeof emergencyResponse);
+        //console.log('🔍 DEBUG: Keys:', Object.keys(emergencyResponse));
         
         // Try different data structures
         let nextOfKinArray = [];
         
         // Check if the response has a success flag and nested data
         if (emergencyResponse.success && emergencyResponse.data) {
-          console.log('🔍 DEBUG: Found nested data structure');
+          //console.log('🔍 DEBUG: Found nested data structure');
           nextOfKinArray = emergencyResponse.data.nextOfKin || emergencyResponse.data || [];
         } else if (emergencyResponse.nextOfKin) {
-          console.log('🔍 DEBUG: Found direct nextOfKin property');
+          //console.log('🔍 DEBUG: Found direct nextOfKin property');
           nextOfKinArray = emergencyResponse.nextOfKin;
         } else if (Array.isArray(emergencyResponse)) {
-          console.log('🔍 DEBUG: Response is already an array');
+          //console.log('🔍 DEBUG: Response is already an array');
           nextOfKinArray = emergencyResponse;
         }
         
-        console.log('🔍 DEBUG: Final nextOfKinArray:', nextOfKinArray);
-        console.log('🔍 DEBUG: Is array?', Array.isArray(nextOfKinArray));
-        console.log('🔍 DEBUG: Length:', nextOfKinArray.length);
         
         if (Array.isArray(nextOfKinArray) && nextOfKinArray.length > 0) {
-          console.log('🔍 DEBUG: First NOK:', nextOfKinArray[0]);
+          //console.log('🔍 DEBUG: First NOK:', nextOfKinArray[0]);
           
           const transformedList = nextOfKinArray.map(nok => ({
             id: nok.id,
@@ -1123,18 +1074,18 @@ const MyInformationTab = () => {
             comments: cleanComments(nok.longComments || nok.comments || '')
           }));
           
-          console.log('🔍 DEBUG: Setting transformed list:', transformedList);
+          //console.log('🔍 DEBUG: Setting transformed list:', transformedList);
           setNextOfKinList(transformedList);
           setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
         } else {
-          console.log('🔍 DEBUG: No next of kin records found');
+          //console.log('🔍 DEBUG: No next of kin records found');
           setNextOfKinList([]);
           setOriginalData(prev => ({ ...prev, nextOfKin: [] }));
         }
       } else {
-        console.log('🔍 DEBUG: Failed to load emergency contacts');
-        console.log('🔍 DEBUG: Success:', results.emergencyRes?.success);
-        console.log('🔍 DEBUG: Error:', results.emergencyRes?.error);
+        //console.log('🔍 DEBUG: Failed to load emergency contacts');
+        //console.log('🔍 DEBUG: Success:', results.emergencyRes?.success);
+        //console.log('🔍 DEBUG: Error:', results.emergencyRes?.error);
         setNextOfKinList([]);
         setOriginalData(prev => ({ ...prev, nextOfKin: [] }));
       }
@@ -1294,19 +1245,19 @@ const loadMemberCategory = async () => {
   
   setCategoryLoading(true);
   try {
-    //console.log('🌐 Calling getMemberCategory API...');
+    console.log('🌐 Calling getMemberCategory API...');
     const result = await getMemberCategory(salesforceContactId);
-    //console.log('📦 API Response:', result);
+    console.log('📦 API Response:', result);
     
     if (result.success) {
-      //console.log('✅ Category determined:', result.data.category);
-      //console.log('📊 Details:', result.data.details);
-      //console.log('🔍 Debug info:', result.data.debug);
+      console.log('✅ Category determined:', result.data.category);
+      console.log('📊 Details:', result.data.details);
+      console.log('🔍 Debug info:', result.data.debug);
       
       setMemberCategory(result.data.category);
       
       // Log what sections will be visible
-      //console.log('\n📋 Section Visibility for', result.data.category + ':');
+      console.log('\n📋 Section Visibility for', result.data.category + ':');
       const config = memberCategoryConfig[result.data.category];
       if (config) {
         Object.keys(config.sections).forEach(section => {
@@ -1315,7 +1266,7 @@ const loadMemberCategory = async () => {
       }
     } else {
       console.error('❌ Failed to load member category:', result.error);
-      //console.log('⚠️ Defaulting to BasicMember');
+      console.log('⚠️ Defaulting to BasicMember');
       setMemberCategory('BasicMember');
     }
   } catch (error) {
@@ -2542,8 +2493,8 @@ const loadMemberCategory = async () => {
     setFieldErrors({});
     
     try {
-      console.log('🔵 === START saveOccupation ===');
-      console.log('📋 Raw occupation state:', JSON.stringify(occupation, null, 2));
+      //console.log('🔵 === START saveOccupation ===');
+      //console.log('📋 Raw occupation state:', JSON.stringify(occupation, null, 2));
       
       // Clean the occupation data
       const cleanedOccupation = cleanDataBeforeSave(occupation, 'occupation');
@@ -2658,7 +2609,7 @@ const loadMemberCategory = async () => {
     } finally {
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      console.log('🔵 === END saveOccupation ===');
+      //console.log('🔵 === END saveOccupation ===');
     }
   };
   
@@ -2725,12 +2676,12 @@ const loadMemberCategory = async () => {
     const previousCryoArrangements = { ...cryoArrangements };
     
     try {
-      console.log('🔵 === START saveCryoArrangements ===');
-      console.log('Current cryo arrangements:', cryoArrangements);
+      //console.log('🔵 === START saveCryoArrangements ===');
+      //console.log('Current cryo arrangements:', cryoArrangements);
       
       // Clean the cryo arrangements data
       const cleanedCryoArrangements = cleanDataBeforeSave(cryoArrangements, 'cryoArrangements');
-      console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
+      //console.log('Cleaned cryo arrangements:', cleanedCryoArrangements);
       
       // Build the update object
       const dataToSend = {};
@@ -2798,17 +2749,17 @@ const loadMemberCategory = async () => {
         dataToSend.recipientMailingCountry = cleanedCryoArrangements.recipientMailingCountry;
       }
       
-      console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
+      //console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
       
       const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
-      console.log('📨 Save result:', result);
+      //console.log('📨 Save result:', result);
       
       if (!result.success) {
         // Complete failure - rollback
         setCryoArrangements(previousCryoArrangements);
         setSaveMessage({ type: 'error', text: result.error || 'Failed to save cryopreservation arrangements' });
         setSavingSection('');
-        console.log('🔵 === END saveCryoArrangements (FAILURE) ===\n');
+        //console.log('🔵 === END saveCryoArrangements (FAILURE) ===\n');
         return false; // Return false on failure
       }
       
@@ -2830,7 +2781,7 @@ const loadMemberCategory = async () => {
         const freshData = await memberDataService.getCryoArrangements(salesforceContactId);
         if (freshData.success && freshData.data) {
           const cryoData = freshData.data.data || freshData.data;
-          console.log('🔍 Fresh cryo data from backend:', cryoData);
+          //console.log('🔍 Fresh cryo data from backend:', cryoData);
           
           const transformedCryo = {
             // Map preservation method from backend
@@ -2864,19 +2815,19 @@ const loadMemberCategory = async () => {
           setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
         }
       } catch (refreshError) {
-        console.error('Error refreshing cryo data:', refreshError);
+        //console.error('Error refreshing cryo data:', refreshError);
         // Non-critical error - data was saved successfully
       }
       
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
       
-      console.log('🔵 === END saveCryoArrangements (SUCCESS) ===\n');
+      //console.log('🔵 === END saveCryoArrangements (SUCCESS) ===\n');
       return true; // Return true on success
       
     } catch (error) {
@@ -2890,7 +2841,7 @@ const loadMemberCategory = async () => {
         text: 'Failed to save cryopreservation arrangements. Please try again or contact support.' 
       });
       
-      console.log('🔵 === END saveCryoArrangements (ERROR) ===\n');
+      //console.log('🔵 === END saveCryoArrangements (ERROR) ===\n');
       return false; // Return false on error
       
     } finally {
@@ -2904,11 +2855,11 @@ const saveFunding = async () => {
   setSaveMessage({ type: '', text: '' });
   
   try {
-    console.log('Saving funding for member category:', memberCategory);
+    //console.log('Saving funding for member category:', memberCategory);
     
     // Get required fields for this category
     const requiredFields = memberCategoryConfig[memberCategory]?.sections.funding?.requiredFields || [];
-    console.log('Required fields for funding section:', requiredFields);
+    //console.log('Required fields for funding section:', requiredFields);
     
     // Clean the funding data
     const cleanedFunding = cleanDataBeforeSave(funding, 'funding');
@@ -2981,7 +2932,7 @@ const saveFunding = async () => {
       // Refresh the cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
@@ -3044,19 +2995,19 @@ const saveFunding = async () => {
   const saveNextOfKin = async () => {
     // Add a timestamp to track multiple calls
     const callId = Date.now();
-    console.log(`🟦 === saveNextOfKin START [${callId}] ===`);
-    console.log(`[${callId}] Called from:`, new Error().stack.split('\n')[2]);
+    //console.log(`🟦 === saveNextOfKin START [${callId}] ===`);
+    //console.log(`[${callId}] Called from:`, new Error().stack.split('\n')[2]);
     
     setSavingSection('nextOfKin');
     setSaveMessage({ type: '', text: '' });
     setFieldErrors({}); // Clear any existing field errors
     
     try {
-      console.log(`[${callId}] 1. memberCategory:`, memberCategory);
-      console.log(`[${callId}] 2. memberCategoryConfig exists?`, !!memberCategoryConfig);
-      console.log(`[${callId}] 3. salesforceContactId:`, salesforceContactId);
-      console.log(`[${callId}] 4. nextOfKinList:`, nextOfKinList);
-      console.log(`[${callId}] 5. nextOfKinList details:`, JSON.stringify(nextOfKinList, null, 2));
+      //console.log(`[${callId}] 1. memberCategory:`, memberCategory);
+      //console.log(`[${callId}] 2. memberCategoryConfig exists?`, !!memberCategoryConfig);
+      //console.log(`[${callId}] 3. salesforceContactId:`, salesforceContactId);
+      //console.log(`[${callId}] 4. nextOfKinList:`, nextOfKinList);
+      //console.log(`[${callId}] 5. nextOfKinList details:`, JSON.stringify(nextOfKinList, null, 2));
       
       // Guard against missing memberCategory
       if (!memberCategory) {
@@ -3070,7 +3021,7 @@ const saveFunding = async () => {
       let requiredFields = [];
       try {
         requiredFields = memberCategoryConfig[memberCategory]?.sections?.nextOfKin?.requiredFields || [];
-        console.log(`[${callId}] 6. Required fields successfully retrieved:`, requiredFields);
+        //console.log(`[${callId}] 6. Required fields successfully retrieved:`, requiredFields);
       } catch (configError) {
         console.error(`[${callId}] ❌ Error accessing config:`, configError);
         requiredFields = [];
@@ -3080,73 +3031,73 @@ const saveFunding = async () => {
       const errors = [];
       const fieldErrorsToSet = {};
       
-      console.log(`[${callId}] 7. Starting validation for ${nextOfKinList.length} entries`);
+      //console.log(`[${callId}] 7. Starting validation for ${nextOfKinList.length} entries`);
       
       nextOfKinList.forEach((nok, index) => {
-        console.log(`[${callId}] 8. Validating NOK ${index + 1}:`, {
+        /*console.log(`[${callId}] 8. Validating NOK ${index + 1}:`, {
           firstName: nok.firstName,
           lastName: nok.lastName,
           relationship: nok.relationship,
           mobilePhone: nok.mobilePhone,
           homePhone: nok.homePhone,
           email: nok.email
-        });
+        });*/
         
         const nokErrors = [];
         
         // Validate required fields
         requiredFields.forEach(field => {
-          console.log(`[${callId}] 9. Checking field '${field}' for NOK ${index + 1}`);
+          //console.log(`[${callId}] 9. Checking field '${field}' for NOK ${index + 1}`);
           
           switch(field) {
             case 'firstName':
               if (!nok.firstName || nok.firstName.trim() === '') {
-                console.log(`[${callId}] ❌ First name missing for NOK ${index + 1}`);
+                //console.log(`[${callId}] ❌ First name missing for NOK ${index + 1}`);
                 nokErrors.push('First name is required');
                 fieldErrorsToSet[`nok_${index}_firstName`] = 'First name is required';
               } else {
-                console.log(`[${callId}] ✅ First name OK: ${nok.firstName}`);
+                //console.log(`[${callId}] ✅ First name OK: ${nok.firstName}`);
               }
               break;
             case 'lastName':
               if (!nok.lastName || nok.lastName.trim() === '') {
-                console.log(`[${callId}] ❌ Last name missing for NOK ${index + 1}`);
+                //console.log(`[${callId}] ❌ Last name missing for NOK ${index + 1}`);
                 nokErrors.push('Last name is required');
                 fieldErrorsToSet[`nok_${index}_lastName`] = 'Last name is required';
               } else {
-                console.log(`[${callId}] ✅ Last name OK: ${nok.lastName}`);
+                //console.log(`[${callId}] ✅ Last name OK: ${nok.lastName}`);
               }
               break;
             case 'relationship':
               if (!nok.relationship || nok.relationship.trim() === '') {
-                console.log(`[${callId}] ❌ Relationship missing for NOK ${index + 1}`);
+                //console.log(`[${callId}] ❌ Relationship missing for NOK ${index + 1}`);
                 nokErrors.push('Relationship is required');
                 fieldErrorsToSet[`nok_${index}_relationship`] = 'Relationship is required';
               } else {
-                console.log(`[${callId}] ✅ Relationship OK: ${nok.relationship}`);
+                //console.log(`[${callId}] ✅ Relationship OK: ${nok.relationship}`);
               }
               break;
             case 'mobilePhone':
               // At least one phone number required
               if (!nok.mobilePhone && !nok.homePhone) {
-                console.log(`[${callId}] ❌ No phone numbers for NOK ${index + 1}`);
+                //console.log(`[${callId}] ❌ No phone numbers for NOK ${index + 1}`);
                 nokErrors.push('At least one phone number is required');
                 fieldErrorsToSet[`nok_${index}_mobilePhone`] = 'At least one phone number is required';
               } else {
-                console.log(`[${callId}] ✅ Phone OK - Mobile: ${nok.mobilePhone}, Home: ${nok.homePhone}`);
+                //console.log(`[${callId}] ✅ Phone OK - Mobile: ${nok.mobilePhone}, Home: ${nok.homePhone}`);
               }
               break;
             case 'email':
               if (!nok.email || nok.email.trim() === '') {
-                console.log(`[${callId}] ❌ Email missing for NOK ${index + 1}`);
+                //console.log(`[${callId}] ❌ Email missing for NOK ${index + 1}`);
                 nokErrors.push('Email is required');
                 fieldErrorsToSet[`nok_${index}_email`] = 'Email is required';
               } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nok.email)) {
-                console.log(`[${callId}] ❌ Invalid email format for NOK ${index + 1}: ${nok.email}`);
+                //console.log(`[${callId}] ❌ Invalid email format for NOK ${index + 1}: ${nok.email}`);
                 nokErrors.push('Please enter a valid email address');
                 fieldErrorsToSet[`nok_${index}_email`] = 'Please enter a valid email address';
               } else {
-                console.log(`[${callId}] ✅ Email OK: ${nok.email}`);
+                //console.log(`[${callId}] ✅ Email OK: ${nok.email}`);
               }
               break;
             default:
@@ -3155,18 +3106,18 @@ const saveFunding = async () => {
           }
         });
         
-        console.log(`[${callId}] 10. NOK ${index + 1} errors:`, nokErrors);
+        //console.log(`[${callId}] 10. NOK ${index + 1} errors:`, nokErrors);
         
         if (nokErrors.length > 0) {
           errors.push(`Next of Kin ${index + 1}: ${nokErrors.join(', ')}`);
         }
       });
       
-      console.log(`[${callId}] 11. Total validation errors:`, errors);
-      console.log(`[${callId}] 11a. Field errors to set:`, fieldErrorsToSet);
+      //console.log(`[${callId}] 11. Total validation errors:`, errors);
+      //console.log(`[${callId}] 11a. Field errors to set:`, fieldErrorsToSet);
       
       if (errors.length > 0) {
-        console.log(`[${callId}] ❌ Validation failed, showing errors`);
+        //console.log(`[${callId}] ❌ Validation failed, showing errors`);
         
         // Set field-specific errors
         setFieldErrors(fieldErrorsToSet);
@@ -3177,7 +3128,7 @@ const saveFunding = async () => {
           text: 'Please fill in all required fields' 
         });
         setSavingSection('');
-        console.log(`[${callId}] 🟥 === saveNextOfKin END (VALIDATION FAILED) ===`);
+        //console.log(`[${callId}] 🟥 === saveNextOfKin END (VALIDATION FAILED) ===`);
         return;
       }
       
@@ -3192,33 +3143,33 @@ const saveFunding = async () => {
       
       const noksToDelete = originalNokIds.filter(id => !currentNokIds.includes(id));
       
-      console.log(`[${callId}] 12. NOKs to delete:`, noksToDelete);
-      console.log(`[${callId}]     Original NOK IDs:`, originalNokIds);
-      console.log(`[${callId}]     Current NOK IDs:`, currentNokIds);
-      console.log(`[${callId}]     Will delete ${noksToDelete.length} NOK(s)`);
+      //console.log(`[${callId}] 12. NOKs to delete:`, noksToDelete);
+      //console.log(`[${callId}]     Original NOK IDs:`, originalNokIds);
+      //console.log(`[${callId}]     Current NOK IDs:`, currentNokIds);
+      //console.log(`[${callId}]     Will delete ${noksToDelete.length} NOK(s)`);
       
       // If no Next of Kin and nothing to delete, just close edit mode
       if (nextOfKinList.length === 0 && noksToDelete.length === 0) {
-        console.log(`[${callId}] No NOK entries and nothing to delete, closing edit mode`);
+        //console.log(`[${callId}] No NOK entries and nothing to delete, closing edit mode`);
         setEditMode(prev => ({ ...prev, nextOfKin: false }));
         setSavingSection('');
         setFieldErrors({}); // Clear any field errors
-        console.log(`[${callId}] 🟥 === saveNextOfKin END (NO ENTRIES) ===`);
+        //console.log(`[${callId}] 🟥 === saveNextOfKin END (NO ENTRIES) ===`);
         return;
       }
       
-      console.log(`[${callId}] 13. Preparing to save ${nextOfKinList.length} entries and delete ${noksToDelete.length} entries`);
+      //console.log(`[${callId}] 13. Preparing to save ${nextOfKinList.length} entries and delete ${noksToDelete.length} entries`);
       
       // Process all operations - deletions, updates, and creates
       const promises = [];
       
       // Add deletion promises first
       noksToDelete.forEach(nokId => {
-        console.log(`[${callId}] 14. Adding delete operation for NOK ID: ${nokId}`);
+        //console.log(`[${callId}] 14. Adding delete operation for NOK ID: ${nokId}`);
         promises.push(
           deleteMemberEmergencyContact(salesforceContactId, nokId)
             .then(result => {
-              console.log(`[${callId}] ✅ Deleted NOK ${nokId}`);
+              //console.log(`[${callId}] ✅ Deleted NOK ${nokId}`);
               return result;
             })
             .catch(error => {
@@ -3230,9 +3181,9 @@ const saveFunding = async () => {
       
       // Then add create/update promises
       nextOfKinList.forEach((nok, idx) => {
-        console.log(`[${callId}] 15. Preparing NOK ${idx + 1} for API`);
-        console.log(`[${callId}]     ID: ${nok.id}`);
-        console.log(`[${callId}]     ID type: ${typeof nok.id}`);
+        //console.log(`[${callId}] 15. Preparing NOK ${idx + 1} for API`);
+        //console.log(`[${callId}]     ID: ${nok.id}`);
+        //console.log(`[${callId}]     ID type: ${typeof nok.id}`);
         
         // Ensure we have the computed fields for backend compatibility
         const fullName = `${nok.firstName || ''} ${nok.lastName || ''}`.trim();
@@ -3261,7 +3212,7 @@ const saveFunding = async () => {
           comments: cleanComments(nok.longComments || nok.comments || '')
         };
         
-        console.log(`[${callId}] 16. NOK ${idx + 1} data prepared:`, nokData);
+        //console.log(`[${callId}] 16. NOK ${idx + 1} data prepared:`, nokData);
         
         // FIX: Check if it's a valid Salesforce ID
         // Salesforce IDs are 15 or 18 characters, alphanumeric
@@ -3271,26 +3222,26 @@ const saveFunding = async () => {
                               !nok.id.startsWith('temp-') && 
                               !nok.id.startsWith('nok_');
         
-        console.log(`[${callId}]     Is Salesforce ID? ${isSalesforceId}`);
+        //console.log(`[${callId}]     Is Salesforce ID? ${isSalesforceId}`);
         
         if (isSalesforceId) {
-          console.log(`[${callId}] 17. Updating existing NOK ${idx + 1} with Salesforce ID: ${nok.id}`);
+          //console.log(`[${callId}] 17. Updating existing NOK ${idx + 1} with Salesforce ID: ${nok.id}`);
           promises.push(updateMemberEmergencyContact(salesforceContactId, nok.id, nokData));
         } else {
-          console.log(`[${callId}] 17. Creating new NOK ${idx + 1} (temporary ID: ${nok.id || 'none'})`);
+          //console.log(`[${callId}] 17. Creating new NOK ${idx + 1} (temporary ID: ${nok.id || 'none'})`);
           promises.push(createMemberEmergencyContact(salesforceContactId, nokData));
         }
       });
       
-      console.log(`[${callId}] 18. Executing ${promises.length} API calls (${noksToDelete.length} deletes, ${nextOfKinList.length} creates/updates)...`);
+      //console.log(`[${callId}] 18. Executing ${promises.length} API calls (${noksToDelete.length} deletes, ${nextOfKinList.length} creates/updates)...`);
       const results = await Promise.all(promises);
       
-      console.log(`[${callId}] 19. API results:`, results);
+      //console.log(`[${callId}] 19. API results:`, results);
       const allSuccessful = results.every(r => r.success);
-      console.log(`[${callId}] 20. All successful?`, allSuccessful);
+      //console.log(`[${callId}] 20. All successful?`, allSuccessful);
       
       if (allSuccessful) {
-        console.log(`[${callId}] ✅ All saves and deletes successful!`);
+        //console.log(`[${callId}] ✅ All saves and deletes successful!`);
         setSaveMessage({ type: 'success', text: 'Next of kin saved successfully!' });
         setEditMode(prev => ({ ...prev, nextOfKin: false }));
         
@@ -3301,8 +3252,8 @@ const saveFunding = async () => {
         memberDataService.clearCache(salesforceContactId);
         
         // Update originalData to match current state
-        console.log(`[${callId}] 21. Updating originalData to match current state`);
-        console.log(`[${callId}] 22. Current nextOfKinList has ${nextOfKinList.length} entries`);
+        //console.log(`[${callId}] 21. Updating originalData to match current state`);
+        //console.log(`[${callId}] 22. Current nextOfKinList has ${nextOfKinList.length} entries`);
         
         // The current nextOfKinList already has the correct data
         setOriginalData(prev => ({ ...prev, nextOfKin: [...nextOfKinList] }));
@@ -3310,7 +3261,7 @@ const saveFunding = async () => {
         // Try to fetch fresh data after a delay, but don't clear the list if it fails
         setTimeout(async () => {
           try {
-            console.log(`[${callId}] 23. Attempting to fetch fresh data (delayed)...`);
+            //console.log(`[${callId}] 23. Attempting to fetch fresh data (delayed)...`);
             const freshData = await memberDataService.getEmergencyContacts(salesforceContactId);
             
             if (freshData.success && freshData.data) {
@@ -3320,7 +3271,7 @@ const saveFunding = async () => {
                                      freshData.data || 
                                      [];
               
-              console.log(`[${callId}] 24. Fresh data received with ${Array.isArray(nextOfKinArray) ? nextOfKinArray.length : 'invalid'} NOKs`);
+              //console.log(`[${callId}] 24. Fresh data received with ${Array.isArray(nextOfKinArray) ? nextOfKinArray.length : 'invalid'} NOKs`);
               
               if (Array.isArray(nextOfKinArray) && nextOfKinArray.length >= 0) {
                 const transformedList = nextOfKinArray.map(nok => ({
@@ -3352,7 +3303,7 @@ const saveFunding = async () => {
                 setOriginalData(prev => ({ ...prev, nextOfKin: transformedList }));
               }
             } else {
-              console.log(`[${callId}] 26. Could not fetch fresh data, keeping current state`);
+              //console.log(`[${callId}] 26. Could not fetch fresh data, keeping current state`);
             }
           } catch (error) {
             console.log(`[${callId}] 27. Error fetching fresh data (non-critical):`, error.message);
@@ -3368,7 +3319,7 @@ const saveFunding = async () => {
           }, 2000); // Delay this even more
         }
       } else {
-        console.log(`[${callId}] ❌ Some saves/deletes failed`);
+        //console.log(`[${callId}] ❌ Some saves/deletes failed`);
         // Handle partial failures
         const errorMessages = results
           .map((r, i) => {
@@ -3394,7 +3345,7 @@ const saveFunding = async () => {
         // Don't clear field errors on failure
       }
       
-      console.log(`[${callId}] 🟦 === saveNextOfKin END (SUCCESS) ===`);
+      //console.log(`[${callId}] 🟦 === saveNextOfKin END (SUCCESS) ===`);
     } catch (error) {
       console.error(`[${callId}] ❌ Exception in saveNextOfKin:`, error);
       setSaveMessage({ 
@@ -3408,7 +3359,7 @@ const saveFunding = async () => {
   };
   
   // Show loading while we wait for salesforceContactId or data is loading
-  if (!salesforceContactId || isLoading || categoryLoading) {
+  if (!salesforceContactId || isLoading || categoryLoading || !memberCategory) {
     return <Loading text="Loading your information..." />;
   }
   
@@ -3443,6 +3394,12 @@ const saveFunding = async () => {
 
   return (
     <div className="my-information-tab relative min-h-screen">
+      {console.log('🚨 CRITICAL CHECK:', {
+      memberCategory,
+      isContactSectionVisible: isSectionVisible(memberCategory, 'contact'),
+      categoryLoading,
+      isLoading
+    })}
       {/* White Background - Mobile Only */}
       <div className="fixed inset-0 z-0 sm:hidden bg-white"></div>
       
@@ -3704,6 +3661,13 @@ const saveFunding = async () => {
   {/* Contact Information */}
   {isSectionVisible(memberCategory, 'contact') && (
     <>
+    {console.log('🚨 RENDER CHECK:', {
+      isSectionVisible: isSectionVisible(memberCategory, 'contact'),
+      sectionsLoaded_contact: sectionsLoaded.contact,
+      isLoading,
+      contactInfo: !!contactInfo,
+      personalInfo: !!personalInfo
+    })}
       {!sectionsLoaded.contact ? (
         <SectionSkeleton />
       ) : (

@@ -450,6 +450,12 @@ const ContactInfoSection = ({
   sectionImage,
   sectionLabel
 }) => {
+  console.log('🚨 ContactInfoSection received:', {
+    contactInfo,
+    personalInfo,
+    hasContactData: !!(contactInfo && Object.keys(contactInfo).length > 0),
+    hasPersonalData: !!(personalInfo && Object.keys(personalInfo).length > 0)
+  });
   // Ensure contactInfo and personalInfo are always objects
   const safeContactInfo = contactInfo || {};
   const safePersonalInfo = personalInfo || {};

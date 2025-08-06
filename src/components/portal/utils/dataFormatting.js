@@ -743,23 +743,23 @@ const cleanAddressObject = (address, country = 'US') => {
 // Clean person data - FIXED TO HANDLE CITIZENSHIP ARRAY
 const cleanPersonData = (person) => {
   if (!person) {
-    console.log('🧹 === cleanPersonData START ===');
-    console.log('⚠️ No person data provided, returning empty object');
-    console.log('🧹 === cleanPersonData END ===\n');
+    //console.log('🧹 === cleanPersonData START ===');
+    //console.log('⚠️ No person data provided, returning empty object');
+    //console.log('🧹 === cleanPersonData END ===\n');
     return {};
   }
 
-  console.log('🧹 === cleanPersonData START ===');
-  console.log('📥 Input data:', person);
+  //console.log('🧹 === cleanPersonData START ===');
+  //console.log('📥 Input data:', person);
   
   // Log the specific fields we're interested in
-  console.log('🔍 Key fields before cleaning:', {
+  /*console.log('🔍 Key fields before cleaning:', {
     ethnicity: person.ethnicity,
     citizenship: person.citizenship,
     maritalStatus: person.maritalStatus,
     race: person.race,
     gender: person.gender
-  });
+  });*/
   
   // Handle citizenship properly - it's an ARRAY
   let formattedCitizenship = person.citizenship;

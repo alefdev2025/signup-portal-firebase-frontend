@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../../services/firebase';
 import ReactDOM from 'react-dom';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { memberDataService } from './services/memberDataService';
@@ -27,7 +28,7 @@ const DocumentsTab = ({ contactId }) => {
   const [documentType, setDocumentType] = useState('');
   const [showDocumentTypeModal, setShowDocumentTypeModal] = useState(false);
 
-  console.log('[DocumentsTab] Component rendered with contactId:', contactId);
+  //console.log('[DocumentsTab] Component rendered with contactId:', contactId);
 
   // Add Helvetica font
   useEffect(() => {
@@ -192,7 +193,7 @@ const DocumentsTab = ({ contactId }) => {
   // Use preloaded documents on mount
   useEffect(() => {
     if (documentsLoaded && preloadedDocuments) {
-      console.log('[DocumentsTab] Using preloaded documents:', preloadedDocuments.length);
+      //console.log('[DocumentsTab] Using preloaded documents:', preloadedDocuments.length);
       setDocuments(preloadedDocuments);
       
       // Group documents by source
@@ -216,7 +217,7 @@ const DocumentsTab = ({ contactId }) => {
 
   // Only load documents if not preloaded
   useEffect(() => {
-    console.log('[DocumentsTab] useEffect triggered, contactId:', contactId, 'documentsLoaded:', documentsLoaded);
+    //console.log('[DocumentsTab] useEffect triggered, contactId:', contactId, 'documentsLoaded:', documentsLoaded);
     if (!documentsLoaded && contactId) {
       loadDocuments();
     } else if (!contactId) {
@@ -231,7 +232,7 @@ const DocumentsTab = ({ contactId }) => {
       setLoading(true);
       setError(null);
       
-      console.log('[DocumentsTab] Loading documents for contactId:', contactId);
+      //console.log('[DocumentsTab] Loading documents for contactId:', contactId);
       
       // Try to use the refresh function from context first
       if (refreshDocuments) {
@@ -243,7 +244,7 @@ const DocumentsTab = ({ contactId }) => {
       
       // Fallback to direct loading if refresh didn't work
       const result = await memberDataService.getDocuments(contactId);
-      console.log('[DocumentsTab] Raw result:', result);
+      //console.log('[DocumentsTab] Raw result:', result);
       
       if (result.success && result.data) {
         // Check if documents are directly in result.data or nested
@@ -251,9 +252,9 @@ const DocumentsTab = ({ contactId }) => {
                      result.data.documents || 
                      result.data.data?.documents || 
                      [];
-        console.log('[DocumentsTab] Documents received:', docs);
-        console.log('[DocumentsTab] Documents count:', docs.length);
-        console.log('[DocumentsTab] First document:', docs[0]);
+        //console.log('[DocumentsTab] Documents received:', docs);
+        //console.log('[DocumentsTab] Documents count:', docs.length);
+        //console.log('[DocumentsTab] First document:', docs[0]);
         
         // Filter out .snote files and video testimony files
         const filteredDocs = docs.filter(doc => {
@@ -274,74 +275,89 @@ const DocumentsTab = ({ contactId }) => {
           acc[groupName].push(doc);
           return acc;
         }, {});
-        console.log('[DocumentsTab] Grouped documents:', grouped);
+        //console.log('[DocumentsTab] Grouped documents:', grouped);
         setGroupedDocs(grouped);
       } else {
-        console.error('[DocumentsTab] Failed to load documents:', result.error);
+        //console.error('[DocumentsTab] Failed to load documents:', result.error);
         setError(result.error || 'Failed to load documents');
       }
     } catch (err) {
-      console.error('[DocumentsTab] Error loading documents:', err);
+      //console.error('[DocumentsTab] Error loading documents:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = async (doc) => {
-    try {
-      setDownloading(prev => ({ ...prev, [doc.id]: true }));
-      
-      // Direct download approach
-      const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
-      
-      // Determine the correct URL format based on document type
-      let url;
-      if (doc.source === 'Attachment' || doc.id.startsWith('00P')) {
-        url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${doc.id}?type=attachment`;
-      } else {
-        url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${doc.id}?type=file`;
-      }
-      
-      console.log('[Download] Direct download from:', url);
-      
-      // Method: Create an anchor tag and simulate a user click
-      // This works better across browsers including Safari and incognito
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = doc.name || 'download'; // Suggest a filename
-      link.rel = 'noopener noreferrer';
-      link.target = '_self'; // Use _self instead of _blank for better compatibility
-      
-      // Style it to be invisible but still clickable
-      link.style.position = 'absolute';
-      link.style.top = '-9999px';
-      link.style.left = '-9999px';
-      
-      // Append to body
-      document.body.appendChild(link);
-      
-      // Trigger click with a small delay to ensure it's in the DOM
-      setTimeout(() => {
-        link.click();
-        
-        // Remove the link after another small delay
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-        }, 100);
-      }, 10);
-      
-    } catch (err) {
-      console.error('Error downloading document:', err);
-    } finally {
-      // Clear downloading state after a delay
-      setTimeout(() => {
-        setDownloading(prev => ({ ...prev, [doc.id]: false }));
-      }, 3000);
+const handleDownload = async (doc) => {
+  try {
+    setDownloading(prev => ({ ...prev, [doc.id]: true }));
+    
+    // GET AUTH TOKEN FIRST
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setError('You must be logged in to download documents');
+      return;
     }
-  };
+    const token = await currentUser.getIdToken();
+    
+    // Direct download approach
+    const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+    
+    // Determine the correct URL format based on document type
+    let url;
+    if (doc.source === 'Attachment' || doc.id.startsWith('00P')) {
+      url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${doc.id}?type=attachment`;
+    } else {
+      url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${doc.id}?type=file`;
+    }
+    
+    //console.log('[Download] Direct download from:', url);
+    
+    // For authenticated downloads, we need to use fetch first
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+    
+    // Get the blob
+    const blob = await response.blob();
+    
+    // Create object URL from blob
+    const objectUrl = window.URL.createObjectURL(blob);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = doc.name || 'download';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+    }, 100);
+    
+  } catch (err) {
+    console.error('Error downloading document:', err);
+    setError('Failed to download document. Please try again.');
+  } finally {
+    // Clear downloading state after a delay
+    setTimeout(() => {
+      setDownloading(prev => ({ ...prev, [doc.id]: false }));
+    }, 3000);
+  }
+};
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -385,6 +401,14 @@ const DocumentsTab = ({ contactId }) => {
       setUploading(true);
       setShowDocumentTypeModal(false);
       
+      // GET AUTH TOKEN
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setError('You must be logged in to upload documents');
+        return;
+      }
+      const token = await currentUser.getIdToken();
+      
       // Use FormData like the video upload does
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -392,36 +416,36 @@ const DocumentsTab = ({ contactId }) => {
       // Create filename based on document type
       let titleWithPrefix;
       if (documentType === 'profile_picture') {
-        // Add timestamp for profile pictures
         const timestamp = Date.now();
         const fileExtension = selectedFile.name.split('.').pop();
         titleWithPrefix = `profile_picture_${timestamp}.${fileExtension}`;
       } else {
-        // For membership documents, use original filename
         titleWithPrefix = selectedFile.name;
       }
       
-      // Add the title to FormData
       formData.append('title', titleWithPrefix);
       formData.append('fileType', selectedFile.type || 'application/octet-stream');
       
-      console.log('[DocumentsTab] Uploading document:', titleWithPrefix);
+      //console.log('[DocumentsTab] Uploading document:', titleWithPrefix);
       
-      // Build the URL
       const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
       const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents`;
       
-      // Send the request using FormData (no Content-Type header needed)
+      // Send with auth header
       const response = await fetch(url, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type for FormData
+        },
         credentials: 'include',
-        body: formData  // FormData, not JSON!
+        body: formData
       });
       
       const responseData = await response.json();
       
       if (response.ok && responseData.success) {
-        console.log('[DocumentsTab] Upload successful!');
+        //console.log('[DocumentsTab] Upload successful!');
         
         // Clear form
         document.getElementById('file-upload').value = '';
@@ -434,7 +458,6 @@ const DocumentsTab = ({ contactId }) => {
         // Clear cache and reload
         memberDataService.clearCacheEntry(contactId, 'documents');
         
-        // Use context refresh if available
         if (refreshDocuments) {
           await refreshDocuments();
         } else {

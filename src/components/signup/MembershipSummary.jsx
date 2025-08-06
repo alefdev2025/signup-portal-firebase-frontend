@@ -13,7 +13,7 @@ export default function MembershipSummary({
   membershipData, 
   packageData, 
   contactData,
-  fundingData, // Add fundingData as a prop
+  fundingData,
   onBack,
   onSignAgreement 
 }) {
@@ -25,13 +25,13 @@ export default function MembershipSummary({
   const [showDocuSignOverlay, setShowDocuSignOverlay] = useState(false);
   const [smsPhoneNumber, setSmsPhoneNumber] = useState("");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [showSummaryIntroOverlay, setShowSummaryIntroOverlay] = useState(true); // Show intro overlay on mount
+  const [showSummaryIntroOverlay, setShowSummaryIntroOverlay] = useState(true);
   
   // Local state for editable membership details
   const [localIceCode, setLocalIceCode] = useState('');
   const [localIceCodeValid, setLocalIceCodeValid] = useState(null);
-  const [localIceDiscountPercent, setLocalIceDiscountPercent] = useState(null); // Added state for discount percentage
-  const [localIceDiscountAmount, setLocalIceDiscountAmount] = useState(null); // Added state for discount amount
+  const [localIceDiscountPercent, setLocalIceDiscountPercent] = useState(null);
+  const [localIceDiscountAmount, setLocalIceDiscountAmount] = useState(null);
   const [isValidatingIceCode, setIsValidatingIceCode] = useState(false);
   
   // CMS Waiver and Privacy states
@@ -92,7 +92,6 @@ export default function MembershipSummary({
           console.error("Error loading membership info:", err);
         }
         
-
         // 4. Get funding information
         let fundingDataFromBackend = null;
         try {
@@ -100,17 +99,14 @@ export default function MembershipSummary({
           console.log("Raw funding service response:", fundingResult);
           
           if (fundingResult.success) {
-            // Check if data exists in the response
             if (fundingResult.data) {
               console.log("Funding data found:", fundingResult.data);
               fundingDataFromBackend = {
-                // Just get the funding method
                 fundingMethod: fundingResult.data.fundingMethod || fundingResult.data.method
               };
               console.log("✅ Funding info mapped:", fundingDataFromBackend);
             } else {
               console.log("⚠️ No funding data in response, using prop fallback");
-              // Use the fundingData prop as fallback
               if (fundingData) {
                 fundingDataFromBackend = {
                   fundingMethod: fundingData.fundingMethod || fundingData.method
@@ -121,7 +117,6 @@ export default function MembershipSummary({
           }
         } catch (err) {
           console.error("Error loading funding info:", err);
-          // Use the fundingData prop as fallback
           if (fundingData) {
             fundingDataFromBackend = {
               fundingMethod: fundingData.fundingMethod || fundingData.method
@@ -130,7 +125,7 @@ export default function MembershipSummary({
           }
         }
         
-        // 5. Get pricing information (for annual cost)
+        // 5. Get pricing information
         let pricingData = null;
         try {
           const pricingResult = await getMembershipCost();
@@ -164,7 +159,7 @@ export default function MembershipSummary({
           contactData: contactDataFromBackend || contactData || {},
           packageData: packageDataFromBackend || packageData || {},
           membershipData: membershipDataFromBackend || membershipData || {},
-          fundingData: fundingDataFromBackend || fundingData || {}, // Add fallback to props
+          fundingData: fundingDataFromBackend || fundingData || {},
           calculatedCosts: {
             baseCost: annualCost,
             discountPercent: discountPercent,
@@ -179,7 +174,6 @@ export default function MembershipSummary({
       } catch (err) {
         console.error("Error loading summary:", err);
         setError("Failed to load membership summary. Please try again.");
-        // Use props as fallback
         setSummaryData({
           contactData: contactData || {},
           packageData: packageData || {},
@@ -207,10 +201,8 @@ export default function MembershipSummary({
 
   useEffect(() => {
     if (summaryData?.membershipData) {
-      // Keep the ICE code setup
       setLocalIceCode(summaryData.membershipData.iceCode || '');
       setLocalIceCodeValid(summaryData.membershipData.iceCodeValid || null);
-      // Set the discount percentage from loaded data
       setLocalIceDiscountPercent(summaryData.membershipData.iceCodeInfo?.discountPercent || null);
     }
   }, [summaryData]);
@@ -272,26 +264,20 @@ export default function MembershipSummary({
     console.log("   - localIceCodeValid:", localIceCodeValid);
     console.log("   - localIceDiscountPercent:", localIceDiscountPercent, "(type:", typeof localIceDiscountPercent, ")");
     
-    // Use the discount percentage from state (set by validation)
-    // Falls back to data from initial load, then to 25% as last resort
     const discountPercent = localIceDiscountPercent || 
                            summaryData?.membershipData?.iceCodeInfo?.discountPercent || 
                            (hasIceDiscount ? 25 : 0);
     
     console.log("🎯 Discount calculation:");
     console.log("   - Final discountPercent:", discountPercent, "(type:", typeof discountPercent, ")");
-    console.log("   - Calculation: ", annualCost, " * (", discountPercent, " / 100)");
-    console.log("   - Division result:", discountPercent / 100);
-    console.log("   - Multiplication result:", annualCost * (discountPercent / 100));
     
     const discountAmount = hasIceDiscount ? Math.round(annualCost * (discountPercent / 100)) : 0;
     
     console.log("   - Final discountAmount:", discountAmount);
-    console.log("   - Is this reasonable?", discountAmount <= annualCost ? "YES ✓" : "NO ✗ - DISCOUNT EXCEEDS TOTAL!");
     
     const isBasicMembership = summaryData?.packageData?.preservationType === 'basic' || packageData?.preservationType === 'basic';
     const applicationFee = isBasicMembership ? 0 : 300;
-    const cmsAnnualFee = cmsWaiver ? 200 : 0; // Add CMS fee if waiver is selected
+    const cmsAnnualFee = cmsWaiver ? 200 : 0;
     
     let paymentAmount = annualCost;
     let firstPaymentAmount = hasIceDiscount ? annualCost - discountAmount + applicationFee + cmsAnnualFee : annualCost + applicationFee + cmsAnnualFee;
@@ -300,7 +286,6 @@ export default function MembershipSummary({
     console.log("   - Payment amount:", paymentAmount);
     console.log("   - Application fee:", applicationFee);
     console.log("   - First payment amount:", firstPaymentAmount);
-    console.log("   - Breakdown: ", annualCost, " - ", discountAmount, " + ", applicationFee, " = ", firstPaymentAmount);
     
     console.log("💵 === CALCULATE LOCAL COSTS DEBUG END ===");
     
@@ -308,10 +293,10 @@ export default function MembershipSummary({
       paymentAmount,
       firstPaymentAmount,
       discountAmount,
-      discountPercent, // Include the percentage for display
+      discountPercent,
       hasIceDiscount,
       applicationFee,
-      cmsAnnualFee // Include CMS fee
+      cmsAnnualFee
     };
   };
 
@@ -331,32 +316,21 @@ export default function MembershipSummary({
       const result = await membershipService.validateIceCode(localIceCode);
       
       console.log("📦 Raw validation result:", result);
-      console.log("📊 Result structure:");
-      console.log("   - valid:", result.valid, "(type:", typeof result.valid, ")");
-      console.log("   - discountPercent:", result.discountPercent, "(type:", typeof result.discountPercent, ")");
-      console.log("   - educatorName:", result.educatorName);
-      console.log("   - Full result object:", JSON.stringify(result, null, 2));
       
-      // Check if the code is valid
       if (result.valid) {
         setLocalIceCodeValid(true);
         
-        // Get the discount percentage from the backend response
-        // The backend returns discountPercent (e.g., 10, 25, or 50)
         const discountPercent = result.discountPercent || 25;
         
         console.log("💰 Discount calculation:");
         console.log("   - Raw discountPercent from result:", result.discountPercent);
         console.log("   - Final discountPercent to use:", discountPercent);
-        console.log("   - Type of discountPercent:", typeof discountPercent);
         
-        // Ensure it's a number and within reasonable bounds
         const numericDiscount = Number(discountPercent);
         console.log("   - Numeric discount:", numericDiscount);
         
         if (isNaN(numericDiscount) || numericDiscount < 0 || numericDiscount > 100) {
           console.error("❌ Invalid discount percentage:", numericDiscount);
-          console.error("   Setting to default 25%");
           setLocalIceDiscountPercent(25);
           setLocalIceDiscountAmount(Math.round((summaryData?.calculatedCosts?.baseCost || 540) * 0.25));
         } else {
@@ -368,33 +342,19 @@ export default function MembershipSummary({
         console.log("✅ Valid ICE code!");
         console.log("   Educator:", result.educatorName);
         console.log("   Final Discount:", numericDiscount + "%");
-        
-        // Store any additional info if needed
-        const iceInfo = {
-          educatorName: result.educatorName,
-          educatorType: result.educatorType,
-          discountPercent: numericDiscount,
-          // Calculate discount amount based on current annual cost
-          discountAmount: Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (numericDiscount / 100))
-        };
-        
-        console.log("📋 ICE info object:", iceInfo);
-        console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
       } else {
-        // Invalid code
         setLocalIceCodeValid(false);
         setLocalIceDiscountPercent(null);
         setLocalIceDiscountAmount(null);
         
         console.log("❌ Invalid ICE code:", result.error || "Unknown error");
-        console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
       }
+      console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
     } catch (error) {
       console.error("Error validating ICE code:", error);
       setLocalIceCodeValid(false);
       setLocalIceDiscountPercent(null);
       setLocalIceDiscountAmount(null);
-      console.log("🔍 === ICE CODE VALIDATION DEBUG END ===");
     } finally {
       setIsValidatingIceCode(false);
     }
@@ -406,140 +366,123 @@ export default function MembershipSummary({
     setShowDocuSignOverlay(true);
   };
 
-// In MembershipSummary component (paste-3.txt)
-// Replace the entire handleProceedToDocuSign function with this:
-
-const handleProceedToDocuSign = async () => {
-  setIsSubmitting(true);
-  setError(null);
-  
-  try {
-    console.log("MembershipSummary: Proceeding to DocuSign...");
-    console.log("SMS Phone Number from overlay:", smsPhoneNumber); // Debug log
+  const handleProceedToDocuSign = async () => {
+    setIsSubmitting(true);
+    setError(null);
     
-    // Close the overlay first
-    setShowDocuSignOverlay(false);
-    
-    // Validate ICE code one final time if entered
-    let finalIceCode = '';
-    let finalIceDiscountAmount = 0;
-    
-    if (localIceCode && localIceCode.trim()) {
-      console.log("Validating ICE code before submission...");
-      const validationResult = await membershipService.validateIceCode(localIceCode.trim());
+    try {
+      console.log("MembershipSummary: Proceeding to DocuSign...");
+      console.log("SMS Phone Number from overlay:", smsPhoneNumber);
       
-      if (validationResult.valid) {
-        finalIceCode = localIceCode.trim();
-        const discountPercent = validationResult.discountPercent || 25;
-        finalIceDiscountAmount = Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (discountPercent / 100));
-        console.log("ICE code validated:", finalIceCode, "Discount amount:", finalIceDiscountAmount);
-      } else {
-        console.log("ICE code validation failed, proceeding without discount");
+      setShowDocuSignOverlay(false);
+      
+      let finalIceCode = '';
+      let finalIceDiscountAmount = 0;
+      
+      if (localIceCode && localIceCode.trim()) {
+        console.log("Validating ICE code before submission...");
+        const validationResult = await membershipService.validateIceCode(localIceCode.trim());
+        
+        if (validationResult.valid) {
+          finalIceCode = localIceCode.trim();
+          const discountPercent = validationResult.discountPercent || 25;
+          finalIceDiscountAmount = Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (discountPercent / 100));
+          console.log("ICE code validated:", finalIceCode, "Discount amount:", finalIceDiscountAmount);
+        } else {
+          console.log("ICE code validation failed, proceeding without discount");
+        }
       }
-    }
-    
-    // Get membership cost - don't proceed without it
-    const membershipCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost;
-    if (!membershipCost) {
-      console.error("Missing membership cost - cannot proceed");
-      setError("Membership cost not found. Please refresh and try again.");
-      return;
-    }
+      
+      const membershipCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost;
+      if (!membershipCost) {
+        console.error("Missing membership cost - cannot proceed");
+        setError("Membership cost not found. Please refresh and try again.");
+        return;
+      }
 
-    // Map funding method to correct values
-    const fundingMethod = summaryData?.fundingData?.fundingMethod || summaryData?.fundingData?.method || '';
-    let fundingChoice = 'other'; // default
-    if (fundingMethod === 'insurance') fundingChoice = 'insurance';
-    else if (fundingMethod === 'prepay') fundingChoice = 'prepay';
-    
-    // Get the data object that has all the contact information
-    const data = summaryData || {
-      contactData: contactData || {},
-      packageData: packageData || {},
-      membershipData: membershipData || {},
-      fundingData: {},
-      calculatedCosts: calculateCosts()
-    };
-    
-    // Create userFinalSelections object with ALL the contact data fields
-    const userFinalSelections = {
-      // Personal Information
-      firstName: data.contactData?.firstName || null,
-      lastName: data.contactData?.lastName || null,
-      fullName: `${data.contactData?.firstName || ''} ${data.contactData?.lastName || ''}`.trim(),
-      email: data.contactData?.email || user?.email || '',
-      sex: data.contactData?.sex || null,
-      dateOfBirth: data.contactData?.dateOfBirth || null,
+      const fundingMethod = summaryData?.fundingData?.fundingMethod || summaryData?.fundingData?.method || '';
+      let fundingChoice = 'other';
+      if (fundingMethod === 'insurance') fundingChoice = 'insurance';
+      else if (fundingMethod === 'prepay') fundingChoice = 'prepay';
       
-      // Phone Information
-      phoneType: data.contactData?.phoneType || null,
-      mobilePhone: data.contactData?.mobilePhone || null,
-      workPhone: data.contactData?.workPhone || null,
-      homePhone: data.contactData?.homePhone || null,
-      primaryPhone: data.contactData?.mobilePhone || data.contactData?.homePhone || data.contactData?.workPhone || null,
-      
-      // Home Address
-      streetAddress: data.contactData?.streetAddress || null,
-      city: data.contactData?.city || null,
-      region: data.contactData?.region || null,
-      postalCode: data.contactData?.postalCode || null,
-      country: data.contactData?.country || null,
-      cnty_hm: data.contactData?.cnty_hm || null,
-      fullHomeAddress: data.contactData?.streetAddress ? 
-        `${data.contactData.streetAddress}, ${data.contactData.city}, ${data.contactData.region} ${data.contactData.postalCode}, ${data.contactData.country}` : null,
-      
-      // Mailing Address
-      sameMailingAddress: data.contactData?.sameMailingAddress || 'Yes',
-      mailingStreetAddress: data.contactData?.mailingStreetAddress || null,
-      mailingCity: data.contactData?.mailingCity || null,
-      mailingRegion: data.contactData?.mailingRegion || null,
-      mailingPostalCode: data.contactData?.mailingPostalCode || null,
-      mailingCountry: data.contactData?.mailingCountry || null,
-      cnty_ml: data.contactData?.cnty_ml || null,
-      fullMailingAddress: data.contactData?.mailingStreetAddress ? 
-        `${data.contactData.mailingStreetAddress}, ${data.contactData.mailingCity}, ${data.contactData.mailingRegion} ${data.contactData.mailingPostalCode}, ${data.contactData.mailingCountry}` : null,
-      
-      // Membership selections
-      iceCode: finalIceCode,
-      iceCodeDiscountAmount: finalIceDiscountAmount,
-      membership: membershipCost,
-      submissionDate: new Date().toISOString(),
-      
-      // Preferences
-      cmsWaiver: cmsWaiver,
-      freelyReleaseName: freelyReleaseName,
-      maintainConfidentiality: maintainConfidentiality,
-      
-      // Package info
-      fundingChoice: fundingChoice,
-      preservationType: data.packageData?.preservationType || 'Not specified',
-      preservationEstimate: data.packageData?.preservationEstimate || 0
-    };
-    
-    console.log("User final selections:", userFinalSelections);
-    
-    // Pass the updated values back to parent INCLUDING THE SMS PHONE NUMBER
-    if (onSignAgreement) {
-      const updatedData = {
-        paymentFrequency: 'annually',
-        iceCode: localIceCode,
-        iceCodeValid: localIceCodeValid,
-        iceDiscountPercent: localIceDiscountPercent,
-        userFinalSelections: userFinalSelections,
-        docusignPhoneNumber: smsPhoneNumber // THIS IS THE KEY - PASS THE SMS PHONE NUMBER!
+      const data = summaryData || {
+        contactData: contactData || {},
+        packageData: packageData || {},
+        membershipData: membershipData || {},
+        fundingData: {},
+        calculatedCosts: calculateCosts()
       };
       
-      console.log("Passing to parent with docusignPhoneNumber:", updatedData.docusignPhoneNumber);
-      await onSignAgreement(updatedData);
+      const userFinalSelections = {
+        firstName: data.contactData?.firstName || null,
+        lastName: data.contactData?.lastName || null,
+        fullName: `${data.contactData?.firstName || ''} ${data.contactData?.lastName || ''}`.trim(),
+        email: data.contactData?.email || user?.email || '',
+        sex: data.contactData?.sex || null,
+        dateOfBirth: data.contactData?.dateOfBirth || null,
+        
+        phoneType: data.contactData?.phoneType || null,
+        mobilePhone: data.contactData?.mobilePhone || null,
+        workPhone: data.contactData?.workPhone || null,
+        homePhone: data.contactData?.homePhone || null,
+        primaryPhone: data.contactData?.mobilePhone || data.contactData?.homePhone || data.contactData?.workPhone || null,
+        
+        streetAddress: data.contactData?.streetAddress || null,
+        city: data.contactData?.city || null,
+        region: data.contactData?.region || null,
+        postalCode: data.contactData?.postalCode || null,
+        country: data.contactData?.country || null,
+        cnty_hm: data.contactData?.cnty_hm || null,
+        fullHomeAddress: data.contactData?.streetAddress ? 
+          `${data.contactData.streetAddress}, ${data.contactData.city}, ${data.contactData.region} ${data.contactData.postalCode}, ${data.contactData.country}` : null,
+        
+        sameMailingAddress: data.contactData?.sameMailingAddress || 'Yes',
+        mailingStreetAddress: data.contactData?.mailingStreetAddress || null,
+        mailingCity: data.contactData?.mailingCity || null,
+        mailingRegion: data.contactData?.mailingRegion || null,
+        mailingPostalCode: data.contactData?.mailingPostalCode || null,
+        mailingCountry: data.contactData?.mailingCountry || null,
+        cnty_ml: data.contactData?.cnty_ml || null,
+        fullMailingAddress: data.contactData?.mailingStreetAddress ? 
+          `${data.contactData.mailingStreetAddress}, ${data.contactData.mailingCity}, ${data.contactData.mailingRegion} ${data.contactData.mailingPostalCode}, ${data.contactData.mailingCountry}` : null,
+        
+        iceCode: finalIceCode,
+        iceCodeDiscountAmount: finalIceDiscountAmount,
+        membership: membershipCost,
+        submissionDate: new Date().toISOString(),
+        
+        cmsWaiver: cmsWaiver,
+        freelyReleaseName: freelyReleaseName,
+        maintainConfidentiality: maintainConfidentiality,
+        
+        fundingChoice: fundingChoice,
+        preservationType: data.packageData?.preservationType || 'Not specified',
+        preservationEstimate: data.packageData?.preservationEstimate || 0
+      };
+      
+      console.log("User final selections:", userFinalSelections);
+      
+      if (onSignAgreement) {
+        const updatedData = {
+          paymentFrequency: 'annually',
+          iceCode: localIceCode,
+          iceCodeValid: localIceCodeValid,
+          iceDiscountPercent: localIceDiscountPercent,
+          userFinalSelections: userFinalSelections,
+          docusignPhoneNumber: smsPhoneNumber
+        };
+        
+        console.log("Passing to parent with docusignPhoneNumber:", updatedData.docusignPhoneNumber);
+        await onSignAgreement(updatedData);
+      }
+    } catch (err) {
+      console.error("Error proceeding to DocuSign:", err);
+      setError("Failed to proceed to agreement signing. Please try again.");
+      setShowDocuSignOverlay(false);
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (err) {
-    console.error("Error proceeding to DocuSign:", err);
-    setError("Failed to proceed to agreement signing. Please try again.");
-    setShowDocuSignOverlay(false);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   if (isLoading) {
     return (
@@ -557,7 +500,6 @@ const handleProceedToDocuSign = async () => {
     calculatedCosts: calculateCosts()
   };
 
-  // Define isBasicMembership here to fix the scope issue
   const isBasicMembership = data.packageData?.preservationType === 'basic';
 
   return (
@@ -628,7 +570,6 @@ const handleProceedToDocuSign = async () => {
                   </p>
                 </div>
                 
-                {/* Phone Type Preference */}
                 {data.contactData?.phoneType && (
                   <div>
                     <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Preferred Contact Method</p>
@@ -638,7 +579,6 @@ const handleProceedToDocuSign = async () => {
                   </div>
                 )}
                 
-                {/* Same Mailing Address */}
                 <div>
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Same Mailing Address</p>
                   <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
@@ -646,7 +586,6 @@ const handleProceedToDocuSign = async () => {
                   </p>
                 </div>
                 
-                {/* Home Address */}
                 <div className="md:col-span-2">
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Home Address</p>
                   <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
@@ -663,7 +602,6 @@ const handleProceedToDocuSign = async () => {
                   </p>
                 </div>
                 
-                {/* Mailing Address (if different) */}
                 {data.contactData?.sameMailingAddress === 'No' && data.contactData?.mailingStreetAddress && (
                   <div className="md:col-span-2">
                     <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Mailing Address</p>
@@ -744,7 +682,6 @@ const handleProceedToDocuSign = async () => {
                   <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>Selected Funding Method</p>
                   <p className="text-gray-600 font-light mt-1" style={{ fontSize: '15px' }}>
                     {(() => {
-                      // Try multiple possible field names
                       const method = data.fundingData?.fundingMethod || 
                                   data.fundingData?.method || 
                                   data.fundingData?.funding_method ||
@@ -757,18 +694,15 @@ const handleProceedToDocuSign = async () => {
                       if (method === 'prepay') return 'Prepayment';
                       if (method === 'undecided') return 'Decide Later';
                       if (method === 'none') return 'Not Required (Basic Membership)';
-                      return method; // Show raw value if not matching expected values
+                      return method;
                     })()}
                   </p>
                   
-                  {/* Disclaimer text and conditional messages */}
                   <div className="mt-6 inline-block p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    {/* Show the Note for all funding methods */}
                     <p className="text-gray-700" style={{ fontSize: '14px' }}>
                       <strong>Note:</strong> This documents your intent for funding your cryopreservation and is not a commitment.
                     </p>
                     
-                    {/* Conditional messages based on funding method */}
                     {(data.fundingData?.fundingMethod === 'insurance' || data.fundingData?.method === 'insurance') && (
                       <p className="text-gray-700 mt-3" style={{ fontSize: '14px' }}>
                         No insurance fees will be applied at this stage.
@@ -858,9 +792,7 @@ const handleProceedToDocuSign = async () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - ICE Code Only */}
                 <div>
-                  {/* ICE Code Input */}
                   <div>
                     <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '16px' }}>ICE Discount Code</p>
                     <div className="flex items-start space-x-2">
@@ -871,14 +803,12 @@ const handleProceedToDocuSign = async () => {
                           const value = e.target.value.toUpperCase();
                           setLocalIceCode(value);
                           
-                          // Reset validation state immediately
                           if (!value.trim()) {
                             setLocalIceCodeValid(null);
                             setLocalIceDiscountPercent(null);
                             return;
                           }
                           
-                          // Debounce validation
                           clearTimeout(window.iceCodeTimeout);
                           window.iceCodeTimeout = setTimeout(() => {
                             handleIceCodeValidation();
@@ -909,7 +839,6 @@ const handleProceedToDocuSign = async () => {
                   </div>
                 </div>
                 
-                {/* Right Column - Pricing Summary */}
                 <div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '18px' }}>Payment Summary</p>
@@ -921,7 +850,6 @@ const handleProceedToDocuSign = async () => {
                         </p>
                       </div>
                       
-                      {/* Add Application Fee line for non-basic */}
                       {data.packageData?.preservationType !== 'basic' && (
                         <div className="flex justify-between items-center">
                           <p className="text-gray-600 text-sm font-light">Application Fee (one-time)</p>
@@ -1024,7 +952,6 @@ const handleProceedToDocuSign = async () => {
                         You'll only be charged for your membership {data.packageData?.preservationType !== 'basic' && 'and application fee'} today.
                       </p>
                       
-                      {/* Funding-specific messages */}
                       {(data.fundingData?.fundingMethod === 'insurance' || data.fundingData?.method === 'insurance') && (
                         <p className="text-gray-700 mt-3 font-light" style={{ fontSize: '16px' }}>
                           No insurance fees will be applied at this stage.
@@ -1050,283 +977,283 @@ const handleProceedToDocuSign = async () => {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-            <button
-              type="button"
-              onClick={onBack}
-              className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
-              style={{ fontFamily: SYSTEM_FONT }}
-              disabled={isSubmitting}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back
-            </button>
-              
-            <button
-              onClick={handleShowConfirmation}
-              disabled={isSubmitting}
-              className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
-                !isSubmitting ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              } disabled:opacity-70`}
-              style={{ fontFamily: SYSTEM_FONT }}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Sign Agreement
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </>
-              )}
-            </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-{/* DocuSign Confirmation Overlay - Using createPortal to render directly to document.body */}
-{showDocuSignOverlay && createPortal(
-  <div 
-    onClick={() => setShowDocuSignOverlay(false)} // Click outside to close
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999999,
-      padding: '0.5rem', // Reduced padding for more width on mobile
-      fontFamily: SYSTEM_FONT
-    }}
-  >
-    <div 
-      className="bg-white rounded-xl shadow-2xl p-7 sm:p-8 mx-2 sm:mx-4 max-w-2xl w-full"
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
-    >
-      <div className="text-center">
-        {/* DocuSign Icon */}
-        <div className="mx-auto mb-6 w-16 h-16 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </div>
-        
-        {/* Title */}
-        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5">Confirm Your Information</h3>
-        
-        {/* Important Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-left">
-              <h4 className="text-sm sm:text-base font-semibold text-blue-800 mb-1.5">Ready to Proceed?</h4>
-              <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
-                Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        {/* SMS Verification Notice */}
-        <div className="text-left bg-gray-50 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <div>
-              <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
-              <p className="text-gray-700 text-xs sm:text-sm mb-3 leading-relaxed">
-                DocuSign will send an SMS verification code to validate your identity for electronic signature.
-              </p>
-              
-              {/* Phone Number Display/Edit */}
-              <div className="bg-white rounded-lg p-3 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-gray-600 font-medium text-xs sm:text-sm">SMS will be sent to:</label>
-                  <button
-                    onClick={() => setIsEditingPhone(!isEditingPhone)}
-                    className="text-[#775684] hover:text-[#664573] font-medium text-xs sm:text-sm"
-                  >
-                    {isEditingPhone ? 'Cancel' : 'Change'}
-                  </button>
-                </div>
+              <button
+                type="button"
+                onClick={onBack}
+                className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
+                style={{ fontFamily: SYSTEM_FONT }}
+                disabled={isSubmitting}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Back
+              </button>
                 
-                {isEditingPhone ? (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="tel"
-                      value={smsPhoneNumber}
-                      onChange={(e) => setSmsPhoneNumber(e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded-md text-sm sm:text-base"
-                      placeholder="Enter phone number"
-                    />
-                    <button
-                      onClick={() => setIsEditingPhone(false)}
-                      className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-xs sm:text-sm"
-                    >
-                      Save
-                    </button>
-                  </div>
+              <button
+                onClick={handleShowConfirmation}
+                disabled={isSubmitting}
+                className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
+                  !isSubmitting ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                } disabled:opacity-70`}
+                style={{ fontFamily: SYSTEM_FONT }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
                 ) : (
-                  <p className="text-gray-900 text-base sm:text-lg font-medium">
-                    {smsPhoneNumber || 'No phone number provided'}
-                  </p>
+                  <>
+                    Sign Agreement
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </>
                 )}
-              </div>
+              </button>
             </div>
           </div>
         </div>
-        
-        {/* Buttons - Single button on mobile, two on desktop */}
-        <div className="flex justify-center">
-          {/* Cancel button - hidden on mobile */}
-          <button
-            onClick={() => setShowDocuSignOverlay(false)}
-            className="hidden sm:block px-6 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-base hover:bg-gray-50 transition-all duration-300 mr-4"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          
-          {/* Proceed button - full width on mobile, taller */}
-          <button
-            onClick={handleProceedToDocuSign}
-            disabled={isSubmitting || !smsPhoneNumber}
-            className={`w-full sm:w-auto px-8 py-5 sm:py-4 rounded-full font-semibold text-sm sm:text-base flex items-center justify-center transition-all duration-300 ${
-              !isSubmitting && smsPhoneNumber
-                ? "bg-[#775684] text-white hover:bg-[#664573]" 
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            } disabled:opacity-70`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              "Proceed to DocuSign"
-            )}
-          </button>
-        </div>
       </div>
-    </div>
-  </div>,
-  document.body
-)}
 
-{/* Summary Introduction Overlay - Shows when page first loads */}
-{showSummaryIntroOverlay && createPortal(
-  <div 
-    onClick={() => setShowSummaryIntroOverlay(false)} // Click outside to close
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999999,
-      padding: '1rem',
-      fontFamily: SYSTEM_FONT
-    }}
-  >
-    <div 
-      className="bg-white rounded-xl shadow-2xl p-6 sm:p-7 mx-2 sm:mx-4 max-w-xl w-full"
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
-    >
-      <div className="text-center">
-        {/* Review Icon */}
-        <div className="mx-auto mb-4 w-14 h-14 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-          </svg>
-        </div>
-        
-        {/* Title */}
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Review Your Membership Summary</h2>
-        
-        {/* Main Message */}
-        <p className="text-gray-700 text-sm sm:text-base mb-5 leading-relaxed">
-          You're almost done! This page shows a complete summary of your membership selections.
-        </p>
-        
-        {/* Checklist */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-5 mb-5 text-left">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Please verify the following:</h3>
-          <div className="space-y-2">
-            <div className="flex items-start">
-              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-              <p className="text-gray-700 text-sm">Your contact information is correct</p>
-            </div>
-            <div className="flex items-start">
-              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-              <p className="text-gray-700 text-sm">Your selected package type matches your preference</p>
-            </div>
-            {data.packageData?.preservationType !== 'basic' && (
-              <div className="flex items-start">
-                <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+      {/* DocuSign Confirmation Overlay */}
+      {showDocuSignOverlay && createPortal(
+        <div 
+          onClick={() => setShowDocuSignOverlay(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '0.5rem',
+            fontFamily: SYSTEM_FONT
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-7 sm:p-8 mx-2 sm:mx-4 max-w-2xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              {/* DocuSign Icon */}
+              <div className="mx-auto mb-6 w-16 h-16 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p className="text-gray-700 text-sm">Your funding method selection is accurate</p>
               </div>
-            )}
-            <div className="flex items-start">
-              <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-              <p className="text-gray-700 text-sm">The payment amount is what you expect</p>
+              
+              {/* Title */}
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5">Confirm Your Information</h3>
+              
+              {/* Important Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-left">
+                    <h4 className="text-sm sm:text-base font-semibold text-blue-800 mb-1.5">Ready to Proceed?</h4>
+                    <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
+                      Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* SMS Verification Notice */}
+              <div className="text-left bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
+                    <p className="text-gray-700 text-xs sm:text-sm mb-3 leading-relaxed">
+                      DocuSign will send an SMS verification code to validate your identity for electronic signature.
+                    </p>
+                    
+                    {/* Phone Number Display/Edit */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-gray-600 font-medium text-xs sm:text-sm">SMS will be sent to:</label>
+                        <button
+                          onClick={() => setIsEditingPhone(!isEditingPhone)}
+                          className="text-[#775684] hover:text-[#664573] font-medium text-xs sm:text-sm"
+                        >
+                          {isEditingPhone ? 'Cancel' : 'Change'}
+                        </button>
+                      </div>
+                      
+                      {isEditingPhone ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="tel"
+                            value={smsPhoneNumber}
+                            onChange={(e) => setSmsPhoneNumber(e.target.value)}
+                            className="flex-1 p-2 border border-gray-300 rounded-md text-sm sm:text-base"
+                            placeholder="Enter phone number"
+                          />
+                          <button
+                            onClick={() => setIsEditingPhone(false)}
+                            className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-xs sm:text-sm"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-gray-900 text-base sm:text-lg font-medium">
+                          {smsPhoneNumber || 'No phone number provided'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
+                {/* Cancel button - hidden on mobile */}
+                <button
+                  onClick={() => setShowDocuSignOverlay(false)}
+                  className="hidden sm:block px-6 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-base hover:bg-gray-50 transition-all duration-300"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                
+                {/* Proceed button - full width on mobile */}
+                <button
+                  onClick={handleProceedToDocuSign}
+                  disabled={isSubmitting || !smsPhoneNumber}
+                  className={`w-full sm:w-auto px-8 py-5 sm:py-4 rounded-full font-semibold text-sm sm:text-base flex items-center justify-center transition-all duration-300 ${
+                    !isSubmitting && smsPhoneNumber
+                      ? "bg-[#775684] text-white hover:bg-[#664573] shadow-md hover:shadow-lg transform hover:scale-[1.02]" 
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  } disabled:opacity-70`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Proceed to DocuSign"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* ICE Code Reminder */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5">
-          <p className="text-blue-800 text-xs sm:text-sm">
-            <strong>Have an ICE discount code?</strong> You can enter it in the Membership Details section below to reduce your first-year dues.
-          </p>
-        </div>
-        
-        {/* Button */}
-        <button
+        </div>,
+        document.body
+      )}
+ 
+      {/* Summary Introduction Overlay */}
+      {showSummaryIntroOverlay && createPortal(
+        <div 
           onClick={() => setShowSummaryIntroOverlay(false)}
-          className="w-full sm:w-auto px-6 py-3 bg-[#775684] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#664573] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '1rem',
+            fontFamily: SYSTEM_FONT
+          }}
         >
-          Review My Summary
-        </button>
-      </div>
-    </div>
-  </div>,
-  document.body
-)}
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 sm:p-7 mx-2 sm:mx-4 max-w-xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              {/* Review Icon */}
+              <div className="mx-auto mb-4 w-14 h-14 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Review Your Membership Summary</h2>
+              
+              {/* Main Message */}
+              <p className="text-gray-700 text-sm sm:text-base mb-5 leading-relaxed">
+                You're almost done! This page shows a complete summary of your membership selections.
+              </p>
+              
+              {/* Checklist */}
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-5 mb-5 text-left">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Please verify the following:</h3>
+                <div className="space-y-2">
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-gray-700 text-sm">Your contact information is correct</p>
+                  </div>
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-gray-700 text-sm">Your selected package type matches your preference</p>
+                  </div>
+                  {data.packageData?.preservationType !== 'basic' && (
+                    <div className="flex items-start">
+                      <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <p className="text-gray-700 text-sm">Your funding method selection is accurate</p>
+                    </div>
+                  )}
+                  <div className="flex items-start">
+                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-gray-700 text-sm">The payment amount is what you expect</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* ICE Code Reminder */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5">
+                <p className="text-blue-800 text-xs sm:text-sm">
+                  <strong>Have an ICE discount code?</strong> You can enter it in the Membership Details section below to reduce your first-year dues.
+                </p>
+              </div>
+              
+              {/* Button */}
+              <button
+                onClick={() => setShowSummaryIntroOverlay(false)}
+                className="w-full sm:w-auto px-6 py-3 bg-[#775684] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#664573] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+              >
+                Review My Summary
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
-}
+ }

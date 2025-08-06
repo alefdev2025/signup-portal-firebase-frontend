@@ -11,6 +11,7 @@ import podcastImage from '../../assets/images/podcast-image2.png';
 import { getContactActivities, formatActivity, filterDuplicateInvoiceActivities } from '../../services/activity';
 import analytics from '../../services/analytics';
 import WelcomeOverlay from './WelcomeOverlay';
+import { backgroundDataLoader } from '../../services/backgroundDataLoader';
 
 // Global toggle for Quick Actions colors
 const USE_GRADIENT_COLORS = true;

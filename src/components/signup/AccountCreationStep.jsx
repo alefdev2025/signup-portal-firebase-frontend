@@ -261,32 +261,6 @@ const AccountCreationStep = () => {
     </div>
   );
 
-  // SIMPLIFIED SUCCESS SETUP
-  const redirectToSuccessPage = async () => {
-    console.log("=== CLEANING UP AFTER SUCCESSFUL AUTH ===");
-    
-    try {
-      // 1. Clear verification state
-      console.log("Step 1: Clearing verification state");
-      clearVerificationState();
-      setAccountCreated(true);
-      
-      // 2. Reset form state
-      console.log("Step 2: Resetting form state");
-      setVerificationStep("initial");
-      setFormData(prev => ({
-        ...prev,
-        verificationCode: "",
-        verificationId: ""
-      }));
-      
-      console.log("Step 3: Cleanup complete - UserContext should have already detected flags and transitioned");
-      
-    } catch (error) {
-      console.error("Error during cleanup:", error);
-      setIsNavigatingPostVerification(false);
-    }
-  };
 
   // HANDLER FUNCTIONS (rest remain the same)
   const handleChange = (e) => {
@@ -577,11 +551,15 @@ const AccountCreationStep = () => {
             if (authResult.success) {
               console.log("Authentication successful, setup complete");
               
-              // NOW show the navigation overlay after auth completes
+              // Show the navigation overlay
               setIsNavigatingPostVerification(true);
               
-              // SIMPLIFIED: Just wait for UserContext to detect the flags and handle transition
-              await redirectToSuccessPage();
+              // Clear sensitive data
+              setPasswordState('');
+              setConfirmPasswordState('');
+              
+              // That's it! Let UserContext detect the flags and handle navigation
+              // Don't clear any flags or call redirectToSuccessPage
               
             } else {
               console.error("Authentication result indicated failure:", authResult);

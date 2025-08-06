@@ -1,9 +1,12 @@
-// App.jsx - Updated with Staff Routes
+// App.jsx - With Debug Logging
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { UserProvider } from "./contexts/UserContext";
 import { SignupFlowProvider } from "./contexts/SignupFlowContext";
 import { MemberPortalProvider } from "./contexts/MemberPortalProvider";
+
+// Import the new ProtectedRoute component
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Import pages and components
 import WelcomePage from "./pages/WelcomePage";
@@ -14,54 +17,88 @@ import StandalonePaymentPage from './pages/PaymentPageBackup';
 import WelcomeMember from './pages/WelcomeMember';
 import DemoPasswordPage from './pages/DemoPasswordPage';
 import PortalHome from './pages/PortalHome';
-import StaffPage from './pages/StaffPage'; // Add this import
+import StaffPage from './pages/StaffPage';
 import StaffPasswordReset from './pages/StaffPasswordReset';
 import PortalSetupPage from './pages/PortalSetupPage';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
 
-// Protected route wrapper for member portal
+// Debug wrapper to track component mounting
+const DebugWrapper = ({ name, children }) => {
+  React.useEffect(() => {
+    console.log(`[DEBUG] ${name} mounted`);
+    return () => console.log(`[DEBUG] ${name} unmounted`);
+  }, [name]);
+  
+  return children;
+};
+
+// Protected route wrapper for member portal - now includes authentication check
 const MemberPortalRoute = ({ children }) => {
   return (
-    <MemberPortalProvider>
-      {children}
-    </MemberPortalProvider>
+    <DebugWrapper name="MemberPortalRoute">
+      <ProtectedRoute requirePortalAccess={true}>
+        <MemberPortalProvider>
+          {children}
+        </MemberPortalProvider>
+      </ProtectedRoute>
+    </DebugWrapper>
   );
 };
 
 function App() {
-  console.log('[APP] App component rendering');
+  // Track renders with a ref
+  const renderCount = React.useRef(0);
+  renderCount.current += 1;
   
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [hasCheckedOnce, setHasCheckedOnce] = useState(false); // Prevent re-checking
+  // Add instance ID to track if component is remounting
+  const instanceId = React.useRef(Math.random().toString(36).substr(2, 9));
   
-  // Environment check - enable password protection for demo/staging
-  const isProduction = import.meta.env.MODE === 'production';
-  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || 
-                     window.location.hostname.includes('demo') ||
-                     window.location.hostname.includes('staging') ||
-                     window.location.hostname.includes('client') ||
-                     window.location.hostname.includes('preview');
+  console.log(`[APP] Render #${renderCount.current} - Instance: ${instanceId.current}`);
   
-  const shouldProtect = isDemoMode || !isProduction;
+  // Calculate these values once and memoize them
+  const isProduction = React.useMemo(() => {
+    const val = import.meta.env.MODE === 'production';
+    console.log(`[APP] isProduction calculated: ${val}`);
+    return val;
+  }, []);
+  
+  const isDemoMode = React.useMemo(() => {
+    const val = import.meta.env.VITE_DEMO_MODE === 'true' || 
+      window.location.hostname.includes('demo') ||
+      window.location.hostname.includes('staging') ||
+      window.location.hostname.includes('client') ||
+      window.location.hostname.includes('preview');
+    console.log(`[APP] isDemoMode calculated: ${val}`);
+    return val;
+  }, []);
+  
+  const shouldProtect = React.useMemo(() => {
+    const val = isDemoMode || !isProduction;
+    console.log(`[APP] shouldProtect calculated: ${val}`);
+    return val;
+  }, [isDemoMode, isProduction]);
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    console.log('[APP] Initial isAuthenticated state: false');
+    return false;
+  });
+  
+  const [checkingAuth, setCheckingAuth] = useState(() => {
+    console.log('[APP] Initial checkingAuth state: true');
+    return true;
+  });
 
   // Check if user is already authenticated on app load
   useEffect(() => {
-    // Only check once on mount
-    if (hasCheckedOnce) {
-      console.log('[APP] Already checked auth, skipping');
-      return;
-    }
-
+    console.log(`[APP] Auth check useEffect running - Instance: ${instanceId.current}`);
+    
     const checkAuth = async () => {
       if (!shouldProtect) {
-        // If not in demo mode, skip auth check
         console.log('[APP] Not in demo mode, skipping auth check');
         setIsAuthenticated(true);
         setCheckingAuth(false);
-        setHasCheckedOnce(true);
         return;
       }
 
@@ -81,16 +118,26 @@ function App() {
         console.log('[APP] Demo auth check failed:', err.message);
         setIsAuthenticated(false);
       } finally {
+        console.log('[APP] Setting checkingAuth to false');
         setCheckingAuth(false);
-        setHasCheckedOnce(true);
       }
     };
 
     checkAuth();
-  }, [shouldProtect, hasCheckedOnce]); // Add hasCheckedOnce to deps
+    
+    return () => {
+      console.log(`[APP] Auth check useEffect cleanup - Instance: ${instanceId.current}`);
+    };
+  }, [shouldProtect, instanceId]);
+
+  // Log state changes
+  useEffect(() => {
+    console.log(`[APP] State changed - isAuthenticated: ${isAuthenticated}, checkingAuth: ${checkingAuth}`);
+  }, [isAuthenticated, checkingAuth]);
 
   // Show loading state while checking authentication
   if (checkingAuth) {
+    console.log('[APP] Rendering loading state');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -103,15 +150,13 @@ function App() {
 
   // Show password page if protection is enabled and user is not authenticated
   if (shouldProtect && !isAuthenticated) {
+    console.log('[APP] Rendering demo password page');
     return (
       <DemoPasswordPage 
         onAuthenticated={async () => {
           console.log('[APP] Demo authentication successful');
-          
-          // Small delay to ensure cookie is set
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          // Verify auth actually worked
           try {
             const checkResult = await checkDemoAuth();
             if (checkResult.success && checkResult.authenticated) {
@@ -119,12 +164,10 @@ function App() {
               setIsAuthenticated(true);
             } else {
               console.error('[APP] Auth verification failed after login');
-              // The cookie might not be set yet, just trust the login worked
               setIsAuthenticated(true);
             }
           } catch (err) {
             console.error('[APP] Error verifying auth:', err);
-            // Still set authenticated since login succeeded
             setIsAuthenticated(true);
           }
         }} 
@@ -132,67 +175,81 @@ function App() {
     );
   }
 
+  console.log('[APP] Rendering main app routes');
+
   // Main app - only renders after authentication (or if protection is disabled)
   return (
-    <BrowserRouter>
-      <UserProvider>
-        <Routes>
-          {/* Welcome page at root */}
-          <Route path="/" element={<WelcomePage />} />
-          
-          {/* Login and auth pages */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/__/auth/action" element={<ResetPasswordPage />} />
-          <Route path="/portal-setup" element={<PortalSetupPage />} />
+    <DebugWrapper name="App-Main">
+      <BrowserRouter>
+        <UserProvider>
+          <Routes>
+            {/* Public routes - no authentication required */}
+            <Route path="/" element={<DebugWrapper name="WelcomePage"><WelcomePage /></DebugWrapper>} />
+            <Route path="/login" element={<DebugWrapper name="LoginPage"><LoginPage /></DebugWrapper>} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/__/auth/action" element={<ResetPasswordPage />} />
+            <Route path="/portal-setup" element={<PortalSetupPage />} />
 
-          {/* Payment page (used in signup flow) */}
-          <Route path="/payment" element={<StandalonePaymentPage />} />
-          
-          {/* Staff Portal Routes */}
-          <Route path="/staff" element={<StaffPage />} />
-          <Route path="/staff/reset-password" element={<StaffPasswordReset />} />
-          <Route path="/staff/*" element={<StaffPage />} />
-          
-          {/* Member-only routes wrapped with MemberPortalProvider */}
-          <Route path="/welcome-member" element={
-            <MemberPortalRoute>
-              <WelcomeMember />
-            </MemberPortalRoute>
-          } />
-          
-          <Route path="/portal-home" element={
-            <MemberPortalRoute>
-              <PortalHome />
-            </MemberPortalRoute>
-          } />
-          
-          {/* Add other member portal routes here */}
-          <Route path="/portal/*" element={
-            <MemberPortalRoute>
-              <PortalHome />
-            </MemberPortalRoute>
-          } />
-          
-          {/* Isolated signup flow - all signup paths go to the same component */}
-          <Route path="/signup/*" element={
-            <SignupFlowProvider>
-              <SinglePageSignup />
-            </SignupFlowProvider>
-          } />
-          
-          {/* 404 page */}
-          <Route path="*" element={
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">404 - Page Not Found</h1>
-                <a href="/" className="text-blue-600 hover:underline">Go back to home</a>
+            {/* Payment page - protected but doesn't require full portal access */}
+            <Route path="/payment" element={
+              <ProtectedRoute>
+                <StandalonePaymentPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Staff Portal Routes - protected */}
+            <Route path="/staff" element={
+              <ProtectedRoute>
+                <StaffPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff/reset-password" element={<StaffPasswordReset />} />
+            <Route path="/staff/*" element={
+              <ProtectedRoute>
+                <StaffPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Member Portal Routes - FULLY PROTECTED with portal access check */}
+            <Route path="/welcome-member" element={
+              <MemberPortalRoute>
+                <WelcomeMember />
+              </MemberPortalRoute>
+            } />
+            
+            <Route path="/portal-home" element={
+              <MemberPortalRoute>
+                <PortalHome />
+              </MemberPortalRoute>
+            } />
+            
+            {/* All other portal routes */}
+            <Route path="/portal/*" element={
+              <MemberPortalRoute>
+                <PortalHome />
+              </MemberPortalRoute>
+            } />
+            
+            {/* Signup flow - protected but special handling */}
+            <Route path="/signup/*" element={
+              <SignupFlowProvider>
+                <SinglePageSignup />
+              </SignupFlowProvider>
+            } />
+            
+            {/* 404 page */}
+            <Route path="*" element={
+              <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold text-gray-800 mb-4">404 - Page Not Found</h1>
+                  <a href="/" className="text-blue-600 hover:underline">Go back to home</a>
+                </div>
               </div>
-            </div>
-          } />
-        </Routes>
-      </UserProvider>
-    </BrowserRouter>
+            } />
+          </Routes>
+        </UserProvider>
+      </BrowserRouter>
+    </DebugWrapper>
   );
 }
 

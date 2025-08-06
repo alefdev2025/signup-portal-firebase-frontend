@@ -1,28 +1,42 @@
 // src/components/portal/services/salesforce/memberInfo.js
+import { auth } from '../../../../services/firebase';
+
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 
-// Helper function for API calls
+// Helper function for API calls - FIXED TO INCLUDE AUTH
 const apiCall = async (endpoint, options = {}) => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    //console.log('[Salesforce Member API] Calling:', url);
+    
+    // Get the current user's auth token
+    let authHeader = {};
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        const token = await currentUser.getIdToken();
+        authHeader = { 'Authorization': `Bearer ${token}` };
+      } catch (tokenError) {
+        console.error('[Salesforce Member API] Failed to get auth token:', tokenError);
+        throw new Error('Authentication required');
+      }
+    } else {
+      console.error('[Salesforce Member API] No authenticated user');
+      throw new Error('Authentication required');
+    }
     
     const response = await fetch(url, {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader,  // <-- AUTH HEADER ADDED HERE
         ...options.headers
       },
       credentials: 'include',
       body: options.body ? JSON.stringify(options.body) : undefined
     });
-
-    //console.log('[Salesforce Member API] Response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      //console.error('[Salesforce Member API] Error response:', errorText);
-      
       return {
         success: false,
         error: `API call failed: ${response.statusText}`,
@@ -31,14 +45,12 @@ const apiCall = async (endpoint, options = {}) => {
     }
 
     const data = await response.json();
-    //console.log('[Salesforce Member API] Success - Data received');
     return {
       success: true,
       data: data,
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    //console.error('[Salesforce Member API] Error:', error);
     return {
       success: false,
       error: error.message,
@@ -225,32 +237,42 @@ export const getMemberAgreement = async (contactId, agreementId) => {
   return apiCall(`/api/salesforce/member/${contactId}/agreements/${agreementId}`);
 };
 
-// Documents
+// Documents - FIXED VERSION
 export const getMemberDocuments = async (contactId) => {
-  console.log('[getMemberDocuments] 1. Starting with contactId:', contactId);
+  //console.log('[getMemberDocuments] 1. Starting with contactId:', contactId);
   
   try {
+    // GET AUTH TOKEN FIRST
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      //console.error('[getMemberDocuments] No authenticated user');
+      throw new Error('Authentication required');
+    }
+    const token = await currentUser.getIdToken();
+    //console.log('[getMemberDocuments] Got auth token');
+    
     const endpoint = `/api/salesforce/member/${contactId}/documents`;
     const url = `${API_BASE_URL}${endpoint}`;
     
-    console.log('[getMemberDocuments] 2. Calling URL:', url);
+    //console.log('[getMemberDocuments] 2. Calling URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // <-- ADD AUTH HEADER
       },
       credentials: 'include',
     });
 
-    console.log('[getMemberDocuments] 3. Response received:', response);
-    console.log('[getMemberDocuments] 4. Response status:', response.status);
-    console.log('[getMemberDocuments] 5. Response headers:', response.headers);
+    //console.log('[getMemberDocuments] 3. Response received:', response);
+    //console.log('[getMemberDocuments] 4. Response status:', response.status);
+    //console.log('[getMemberDocuments] 5. Response headers:', response.headers);
     
     if (!response.ok) {
-      console.log('[getMemberDocuments] 6. Response NOT OK');
+      //console.log('[getMemberDocuments] 6. Response NOT OK');
       const errorText = await response.text();
-      console.error('[getMemberDocuments] 7. Error text:', errorText);
+      //console.error('[getMemberDocuments] 7. Error text:', errorText);
       
       return {
         success: false,
@@ -259,9 +281,9 @@ export const getMemberDocuments = async (contactId) => {
       };
     }
 
-    console.log('[getMemberDocuments] 8. Response OK, parsing JSON...');
+    //console.log('[getMemberDocuments] 8. Response OK, parsing JSON...');
     const data = await response.json();
-    console.log('[getMemberDocuments] 9. Data parsed:', data);
+    //console.log('[getMemberDocuments] 9. Data parsed:', data);
     
     const result = {
       success: true,
@@ -269,12 +291,12 @@ export const getMemberDocuments = async (contactId) => {
       timestamp: new Date().toISOString()
     };
     
-    console.log('[getMemberDocuments] 10. Returning result:', result);
+    //console.log('[getMemberDocuments] 10. Returning result:', result);
     return result;
     
   } catch (error) {
-    console.error('[getMemberDocuments] 11. CAUGHT ERROR:', error);
-    console.error('[getMemberDocuments] 12. Error stack:', error.stack);
+    //console.error('[getMemberDocuments] 11. CAUGHT ERROR:', error);
+    //console.error('[getMemberDocuments] 12. Error stack:', error.stack);
     return {
       success: false,
       error: error.message,
@@ -283,13 +305,21 @@ export const getMemberDocuments = async (contactId) => {
   }
 };
 
+// FIXED VERSION
 export const getMemberDocument = async (contactId, documentId, documentType = 'attachment') => {
-  // For downloading files, we need special handling
   try {
+    // GET AUTH TOKEN
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
+    
     const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents/${documentId}?type=${documentType}`;
     
     const response = await fetch(url, {
       method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`  // <-- ADD AUTH
+      },
       credentials: 'include',
     });
 
@@ -317,7 +347,6 @@ export const getMemberDocument = async (contactId, documentId, documentType = 'a
       return data;
     }
   } catch (error) {
-    //console.error('[Salesforce Member API] Error downloading document:', error);
     return {
       success: false,
       error: error.message,
@@ -326,14 +355,23 @@ export const getMemberDocument = async (contactId, documentId, documentType = 'a
   }
 };
 
+// FIXED VERSION
 export const uploadMemberDocument = async (contactId, formData) => {
   try {
+    // GET AUTH TOKEN
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
+    
     const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents`;
     
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`  // <-- ADD AUTH, NO Content-Type for FormData
+      },
       credentials: 'include',
-      body: formData // Send FormData directly, don't JSON.stringify
+      body: formData
     });
 
     if (!response.ok) {
@@ -344,7 +382,6 @@ export const uploadMemberDocument = async (contactId, formData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    //console.error('[Salesforce Member API] Error uploading document:', error);
     return {
       success: false,
       error: error.message,
@@ -364,22 +401,27 @@ export const getMemberVideoTestimony = async (contactId) => {
   return apiCall(`/api/salesforce/member/${contactId}/video-testimony`);
 };
 
+// FIXED VERSION
 export const uploadMemberVideoTestimony = async (contactId, formData) => {
   try {
-    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`;
+    // GET AUTH TOKEN
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
     
-    //console.log('[VideoTestimony] Uploading video testimony for contact:', contactId);
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`;
     
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`  // <-- ADD AUTH
+      },
       credentials: 'include',
       body: formData
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      //console.error('[VideoTestimony] Upload error:', errorText);
-      
       return {
         success: false,
         error: `Failed to upload video testimony: ${response.statusText}`,
@@ -388,10 +430,8 @@ export const uploadMemberVideoTestimony = async (contactId, formData) => {
     }
 
     const data = await response.json();
-    //console.log('[VideoTestimony] Upload successful');
     return data;
   } catch (error) {
-    //console.error('[VideoTestimony] Upload error:', error);
     return {
       success: false,
       error: error.message,
@@ -406,21 +446,26 @@ export const deleteMemberVideoTestimony = async (contactId) => {
   });
 };
 
+// FIXED VERSION
 export const downloadMemberVideoTestimony = async (contactId) => {
   try {
-    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`;
+    // GET AUTH TOKEN
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
     
-    //console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`;
     
     const response = await fetch(url, {
       method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`  // <-- ADD AUTH
+      },
       credentials: 'include',
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      //console.error('[VideoTestimony] Download error:', errorText);
-      
       return {
         success: false,
         error: `Failed to download video testimony: ${response.statusText}`,
@@ -442,7 +487,7 @@ export const downloadMemberVideoTestimony = async (contactId) => {
 
     const blob = await response.blob();
     
-    console.log('[VideoTestimony] Download successful');
+    //console.log('[VideoTestimony] Download successful');
     return {
       success: true,
       data: blob,
@@ -450,7 +495,7 @@ export const downloadMemberVideoTestimony = async (contactId) => {
       contentType: contentType
     };
   } catch (error) {
-    console.error('[VideoTestimony] Download error:', error);
+    //console.error('[VideoTestimony] Download error:', error);
     return {
       success: false,
       error: error.message,
@@ -459,80 +504,20 @@ export const downloadMemberVideoTestimony = async (contactId) => {
   }
 };
 
+// These can use apiCall since it now has auth
 export const getMemberCategory = async (contactId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/category`, {
-      method: 'GET'
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching member category:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to fetch member category'
-    };
-  }
+  return apiCall(`/api/salesforce/member/${contactId}/category`);
 };
 
-/**
- * Get member funding information
- */
- export async function getMemberFundingInfo(contactId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/funding-info`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include'
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch funding information');
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error fetching member funding info:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to fetch funding information'
-    };
-  }
+export async function getMemberFundingInfo(contactId) {
+  return apiCall(`/api/salesforce/member/${contactId}/funding-info`);
 }
 
-/**
- * Update member funding information
- */
 export async function updateMemberFundingInfo(contactId, fundingData) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/funding-info`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(fundingData)
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to update funding information');
-    }
-
-    return data;
-  } catch (error) {
-    //console.error('Error updating member funding info:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to update funding information'
-    };
-  }
+  return apiCall(`/api/salesforce/member/${contactId}/funding-info`, {
+    method: 'PUT',
+    body: fundingData
+  });
 }
 
 export const getMemberNextOfKin = getMemberEmergencyContacts;

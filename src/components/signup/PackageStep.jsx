@@ -114,73 +114,62 @@ const PackageStep = () => {
     
     // Cleanup function to prevent memory leaks
     return () => {
-      LOG_TO_TERMINAL("Unmounting component");
+      //LOG_TO_TERMINAL("Unmounting component");
     };
   }, [currentUser, navigateToStep]);
   
   // Handle going back to previous step
   const handleBack = () => {
     if (!isReady) {
-      LOG_TO_TERMINAL("Component not ready, ignoring back button");
+      //LOG_TO_TERMINAL("Component not ready, ignoring back button");
       return;
     }
     
-    LOG_TO_TERMINAL("PackageStep: Back button clicked");
+    //LOG_TO_TERMINAL("PackageStep: Back button clicked");
     
     // Use SignupFlow navigation system
     navigateToStep(2, { reason: 'user_back_button' }); // Go back to contact step
   };
   
-  // Handle form submission and proceeding to next step
-// In PackageStep.jsx - Update the handleNext function
+// File: pages/signup/PackageStep.jsx - FIXED VERSION
 const handleNext = async (stepData) => {
   if (!currentUser || !isReady) {
-    LOG_TO_TERMINAL(`Cannot proceed - currentUser: ${!!currentUser}, isReady: ${isReady}`);
+    //LOG_TO_TERMINAL(`Cannot proceed - currentUser: ${!!currentUser}, isReady: ${isReady}`);
     return false;
   }
   
   try {
-    LOG_TO_TERMINAL("Saving package info and proceeding to next step");
+    //LOG_TO_TERMINAL("Saving package info and proceeding to next step");
     
     // Save form data locally
     saveFormData("package", stepData);
-    LOG_TO_TERMINAL("Form data saved locally");
+    //LOG_TO_TERMINAL("Form data saved locally");
     
     // Update progress via API
-    LOG_TO_TERMINAL("Updating progress via API...");
+    //LOG_TO_TERMINAL("Updating progress via API...");
     const progressResult = await updateSignupProgressAPI("funding", 4);
     
     if (!progressResult.success) {
       throw new Error(progressResult.error || "Failed to update progress");
     }
     
-    LOG_TO_TERMINAL("Progress updated successfully");
+    //LOG_TO_TERMINAL("Progress updated successfully");
     
-    // CRITICAL: Refresh user progress BEFORE navigating
-    if (typeof refreshUserProgress === 'function') {
-      LOG_TO_TERMINAL("Refreshing user progress...");
-      await refreshUserProgress();
-      LOG_TO_TERMINAL("User progress refreshed");
-      
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    // REMOVED: refreshUserProgress() call
+    // Just navigate immediately like ContactInfoStep does
     
     // Navigate to next step
     const navigationSuccess = goToNextStep();
     
     if (navigationSuccess) {
-      LOG_TO_TERMINAL("Navigation to next step successful");
+      //LOG_TO_TERMINAL("Navigation to next step successful");
       return true;
     } else {
-      LOG_TO_TERMINAL("Navigation failed - likely due to progress not updated yet");
-      // Try one more time after a delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const retryNavigation = goToNextStep();
-      return retryNavigation;
+      //LOG_TO_TERMINAL("Navigation failed");
+      return false;
     }
   } catch (error) {
-    LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
+    //LOG_TO_TERMINAL(`Error in handleNext: ${error.message}`);
     console.error("Error saving package info:", error);
     return false;
   }

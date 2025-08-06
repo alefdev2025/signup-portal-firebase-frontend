@@ -10,9 +10,9 @@ import AccountCreationSuccess from "../../components/signup/AccountCreationSucce
 
 const AccountSuccessStep = () => {
   const { goToNextStep, navigateToStep } = useSignupFlow();
-  const { currentUser, refreshUserProgress } = useUser();
+  const { currentUser } = useUser();  // Removed refreshUserProgress
   const [loading, setLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false); // Track if we're ready for navigation
+  const [isReady, setIsReady] = useState(false);
   
   // Add debugging
   useEffect(() => {
@@ -56,10 +56,6 @@ const AccountSuccessStep = () => {
           }, { merge: true });
           
           console.log("Database updated with success step completion");
-          
-          // IMPORTANT: Refresh the user context to ensure it has the latest state
-          await refreshUserProgress();
-          console.log("User progress refreshed");
         } else if (userDoc.exists()) {
           console.log("User document exists:", userDoc.data());
         }
@@ -80,9 +76,9 @@ const AccountSuccessStep = () => {
     if (currentUser) {
       checkAuth();
     }
-  }, [currentUser, navigateToStep, refreshUserProgress]);
+  }, [currentUser, navigateToStep]);  // Removed refreshUserProgress from dependencies
   
-  // Handle continue button click
+  // Handle continue button click - FIXED VERSION
   const handleContinue = async () => {
     if (!currentUser || !isReady) {
       console.log("Cannot continue - currentUser:", !!currentUser, "isReady:", isReady);
@@ -102,8 +98,10 @@ const AccountSuccessStep = () => {
       
       console.log("API update successful, navigating to contact step");
       
-      // Navigate to the next step
+      // REMOVED: await refreshUserProgress();
+      // Navigate immediately like ContactInfoStep does
       goToNextStep();
+      
     } catch (error) {
       console.error("Error updating progress:", error);
     }

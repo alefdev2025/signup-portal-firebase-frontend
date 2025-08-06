@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RecordRTC from 'recordrtc';
 import { memberDataService } from './services/memberDataService';
+import { auth } from '../../services/firebase'; // Add this if not already there
+
+// Global configuration for video overlay
+const SHOW_VIDEO_OVERLAY = false; // Set to false to disable overlay
+const VIDEO_OVERLAY_GRADIENT = 'linear-gradient(to bottom right, rgba(18, 36, 60, 0.95) 0%, rgba(110, 67, 118, 0.9) 40%, rgba(156, 116, 144, 0.75) 70%, rgba(178, 138, 172, 0.65) 100%)';
 
 const VideoTestimonyTab = ({ contactId }) => {
   const [testimony, setTestimony] = useState(null);
@@ -122,7 +127,7 @@ const VideoTestimonyTab = ({ contactId }) => {
           setTestimony(result);
         } else {
           // If download failed, don't show the video player view
-          console.log('[VideoTestimony] Video download failed - showing upload view');
+          //console.log('[VideoTestimony] Video download failed - showing upload view');
           setTestimony(null);
         }
       } else {
@@ -131,11 +136,11 @@ const VideoTestimonyTab = ({ contactId }) => {
           setError(result.error || 'Failed to load video testimony');
         }
         // If no video testimony found, that's okay - user can upload one
-        console.log('[VideoTestimony] No existing video testimony found for member');
+        //console.log('[VideoTestimony] No existing video testimony found for member');
         setTestimony(null);
       }
     } catch (err) {
-      console.error('Error loading testimony:', err);
+      //console.error('Error loading testimony:', err);
       // Only show error for actual failures, not missing testimony
       if (err.message && !err.message.includes('not found') && !err.message.includes('No video testimony')) {
         setError('Failed to load video testimony');
@@ -149,20 +154,20 @@ const VideoTestimonyTab = ({ contactId }) => {
   const downloadVideoForPlayback = async () => {
     try {
       setDownloadingVideo(true);
-      console.log('[VideoTestimony] Downloading video for playback...');
+      //console.log('[VideoTestimony] Downloading video for playback...');
       
       const result = await memberDataService.downloadVideoTestimony(contactId);
       
       if (result.success && result.data) {
         // Debug: Check what we received
-        console.log('[VideoTestimony] Download result details:', {
+        /*console.log('[VideoTestimony] Download result details:', {
           dataType: typeof result.data,
           dataLength: result.data.length || result.data.size,
           isBlob: result.data instanceof Blob,
           blobSize: result.data.size,
           blobType: result.data.type,
           contentType: result.contentType
-        });
+        });*/
         
         // Create a blob if we don't have one
         let blob;
@@ -171,7 +176,7 @@ const VideoTestimonyTab = ({ contactId }) => {
           if (result.data.type !== 'video/mp4' && result.data.type !== 'video/quicktime') {
             const arrayBuffer = await result.data.arrayBuffer();
             blob = new Blob([arrayBuffer], { type: 'video/mp4' });
-            console.log('[VideoTestimony] Recreated blob with video/mp4 type');
+            //console.log('[VideoTestimony] Recreated blob with video/mp4 type');
           } else {
             blob = result.data;
           }
@@ -202,10 +207,10 @@ const VideoTestimonyTab = ({ contactId }) => {
           blob = new Blob([result.data], { type: 'video/mp4' });
         }
         
-        console.log('[VideoTestimony] Created blob:', {
+        /*console.log('[VideoTestimony] Created blob:', {
           size: blob.size,
           type: blob.type
-        });
+        });*/
         
         // For Safari, we need to ensure the video is properly loaded
         // Create a blob URL
@@ -222,20 +227,20 @@ const VideoTestimonyTab = ({ contactId }) => {
           
           testVideo.onloadedmetadata = () => {
             clearTimeout(loadTimeout);
-            console.log('[VideoTestimony] Test video metadata loaded successfully');
+            //console.log('[VideoTestimony] Test video metadata loaded successfully');
             resolve(true);
           };
           
           testVideo.onerror = (e) => {
             clearTimeout(loadTimeout);
-            console.error('[VideoTestimony] Test video error:', e);
+            //console.error('[VideoTestimony] Test video error:', e);
             // Even if there's an error, we'll still try to display it
             resolve(false);
           };
           
           // Safari sometimes needs more time
           loadTimeout = setTimeout(() => {
-            console.log('[VideoTestimony] Test video load timeout - proceeding anyway');
+            //console.log('[VideoTestimony] Test video load timeout - proceeding anyway');
             resolve(false);
           }, 5000);
         });
@@ -249,14 +254,14 @@ const VideoTestimonyTab = ({ contactId }) => {
         // Set the URL regardless of test result
         setDownloadedVideoUrl(url);
         
-        console.log('[VideoTestimony] Video URL set:', url);
+        //console.log('[VideoTestimony] Video URL set:', url);
         return true;
       } else {
-        console.error('[VideoTestimony] Failed to download video for playback');
+        //console.error('[VideoTestimony] Failed to download video for playback');
         return false;
       }
     } catch (err) {
-      console.error('[VideoTestimony] Error downloading video for playback:', err);
+      //console.error('[VideoTestimony] Error downloading video for playback:', err);
       return false;
     } finally {
       setDownloadingVideo(false);
@@ -341,7 +346,7 @@ const VideoTestimonyTab = ({ contactId }) => {
     return new Promise((resolve, reject) => {
       try {
         setIsConverting(true);
-        console.log('[VideoTestimony] Starting WebM to MP4 conversion...');
+        //console.log('[VideoTestimony] Starting WebM to MP4 conversion...');
         
         // RecordRTC can handle conversion internally
         // For now, we'll just rename the file extension as most modern browsers/servers can handle WebM
@@ -351,11 +356,11 @@ const VideoTestimonyTab = ({ contactId }) => {
         // For true conversion, you'd need something like ffmpeg.wasm
         const mp4Blob = new Blob([blob], { type: 'video/mp4' });
         
-        console.log('[VideoTestimony] Conversion complete (mime type changed)');
+        //console.log('[VideoTestimony] Conversion complete (mime type changed)');
         setIsConverting(false);
         resolve(mp4Blob);
       } catch (error) {
-        console.error('[VideoTestimony] Conversion error:', error);
+        //console.error('[VideoTestimony] Conversion error:', error);
         setIsConverting(false);
         reject(error);
       }
@@ -369,6 +374,14 @@ const VideoTestimonyTab = ({ contactId }) => {
       setUploading(true);
       setError(null);
       setUploadProgress(0);
+  
+      // GET AUTH TOKEN FIRST
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setError('You must be logged in to upload video testimony');
+        return;
+      }
+      const token = await currentUser.getIdToken();
   
       const formData = new FormData();
       formData.append('file', selectedVideo);
@@ -407,7 +420,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                 // Reload the testimony
                 await loadTestimony();
               } catch (err) {
-                console.error('Error reloading testimony after upload:', err);
+                //console.error('Error reloading testimony after upload:', err);
                 setLoading(false);
               }
             }, 1000);
@@ -427,10 +440,14 @@ const VideoTestimonyTab = ({ contactId }) => {
   
       xhr.open('POST', `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`);
       xhr.withCredentials = true;
+      
+      // ADD AUTH HEADER!
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
       xhr.send(formData);
   
     } catch (err) {
-      console.error('Error uploading video:', err);
+      //console.error('Error uploading video:', err);
       setError(err.message || 'Failed to upload video testimony');
       setUploading(false);
     }
@@ -468,7 +485,7 @@ const VideoTestimonyTab = ({ contactId }) => {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Error deleting testimony:', err);
+      //console.error('Error deleting testimony:', err);
       
       // If it's a "not found" error, treat it as success
       if (err.message && err.message.includes('No video testimony found')) {
@@ -508,7 +525,7 @@ const VideoTestimonyTab = ({ contactId }) => {
         setError('Failed to download video testimony');
       }
     } catch (err) {
-      console.error('Error downloading video:', err);
+      //console.error('Error downloading video:', err);
       setError('Failed to download video testimony');
     }
   };
@@ -537,7 +554,7 @@ const VideoTestimonyTab = ({ contactId }) => {
         audio: true 
       });
       
-      console.log('[VideoTestimony] Got media stream:', mediaStream);
+      //console.log('[VideoTestimony] Got media stream:', mediaStream);
       
       // Only set previewing true if we successfully got the stream
       setIsPreviewing(true);
@@ -546,20 +563,20 @@ const VideoTestimonyTab = ({ contactId }) => {
       // Use setTimeout to ensure DOM is ready
       setTimeout(() => {
         if (videoRef.current) {
-          console.log('[VideoTestimony] Setting video source');
+          //console.log('[VideoTestimony] Setting video source');
           videoRef.current.srcObject = mediaStream;
           
           // Force play
           videoRef.current.play().then(() => {
-            console.log('[VideoTestimony] Video preview playing');
+            //console.log('[VideoTestimony] Video preview playing');
           }).catch(err => {
-            console.error('[VideoTestimony] Error playing video:', err);
+            //console.error('[VideoTestimony] Error playing video:', err);
           });
         }
       }, 100);
       
     } catch (err) {
-      console.error('[VideoTestimony] Error accessing camera:', err);
+      //console.error('[VideoTestimony] Error accessing camera:', err);
       setIsPreviewing(false);
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -577,7 +594,7 @@ const VideoTestimonyTab = ({ contactId }) => {
   const startRecording = async () => {
     try {
       if (!stream) {
-        console.error('[VideoTestimony] No stream available');
+        //console.error('[VideoTestimony] No stream available');
         return;
       }
       
@@ -588,7 +605,7 @@ const VideoTestimonyTab = ({ contactId }) => {
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isChrome = /chrome/i.test(navigator.userAgent);
       
-      console.log('[VideoTestimony] Browser detection:', { isSafari, isChrome });
+      //console.log('[VideoTestimony] Browser detection:', { isSafari, isChrome });
       
       // Force MP4 output for all browsers using Canvas recording
       const options = {
@@ -620,14 +637,14 @@ const VideoTestimonyTab = ({ contactId }) => {
       // Alternative: Use MediaStreamRecorder with video/mp4 mime type
       // Some browsers might support this directly
       if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('video/mp4')) {
-        console.log('[VideoTestimony] Browser supports MP4 recording directly');
+        //console.log('[VideoTestimony] Browser supports MP4 recording directly');
         options.mimeType = 'video/mp4';
         options.recorderType = RecordRTC.MediaStreamRecorder;
       } else {
-        console.log('[VideoTestimony] Using Canvas recorder for MP4 output');
+        //console.log('[VideoTestimony] Using Canvas recorder for MP4 output');
       }
       
-      console.log('[VideoTestimony] Starting RecordRTC with options:', options);
+      //console.log('[VideoTestimony] Starting RecordRTC with options:', options);
       
       // Create RecordRTC instance
       const recorder = new RecordRTC(stream, options);
@@ -651,17 +668,17 @@ const VideoTestimonyTab = ({ contactId }) => {
         });
       }, 1000);
       
-      console.log('[VideoTestimony] Recording started with MP4 format');
+      //console.log('[VideoTestimony] Recording started with MP4 format');
       
     } catch (err) {
-      console.error('[VideoTestimony] Error starting recording:', err);
+      //console.error('[VideoTestimony] Error starting recording:', err);
       setError(`Unable to start recording: ${err.message}`);
     }
   };
 
   const stopRecording = () => {
     if (!recorderRef.current) {
-      console.error('[VideoTestimony] No recorder available');
+      //console.error('[VideoTestimony] No recorder available');
       return;
     }
     
@@ -672,11 +689,11 @@ const VideoTestimonyTab = ({ contactId }) => {
     }
     
     recorderRef.current.stopRecording(async () => {
-      console.log('[VideoTestimony] Recording stopped');
+      //console.log('[VideoTestimony] Recording stopped');
       
       // Get the blob
       let blob = recorderRef.current.getBlob();
-      console.log('[VideoTestimony] Got blob:', blob.size, 'bytes, type:', blob.type);
+      //console.log('[VideoTestimony] Got blob:', blob.size, 'bytes, type:', blob.type);
       
       // Force MP4 extension for all recordings since we're using MP4 format
       let extension = 'mp4';
@@ -686,7 +703,7 @@ const VideoTestimonyTab = ({ contactId }) => {
       if (!blob.type || blob.type === 'video/webm') {
         // If the blob somehow still has WebM type, recreate it with MP4 type
         finalBlob = new Blob([blob], { type: 'video/mp4' });
-        console.log('[VideoTestimony] Corrected blob MIME type to video/mp4');
+        //console.log('[VideoTestimony] Corrected blob MIME type to video/mp4');
       }
       
       // Create URL for preview
@@ -700,14 +717,14 @@ const VideoTestimonyTab = ({ contactId }) => {
         lastModified: Date.now()
       });
       
-      console.log('[VideoTestimony] Created MP4 file:', file.name, file.size, file.type);
+      //console.log('[VideoTestimony] Created MP4 file:', file.name, file.size, file.type);
       setSelectedVideo(file);
       
       // Clean up
       if (stream) {
         stream.getTracks().forEach(track => {
           track.stop();
-          console.log('[VideoTestimony] Stopped track:', track.kind);
+          //console.log('[VideoTestimony] Stopped track:', track.kind);
         });
       }
       
@@ -740,7 +757,7 @@ const VideoTestimonyTab = ({ contactId }) => {
     if (stream) {
       stream.getTracks().forEach(track => {
         track.stop();
-        console.log('[VideoTestimony] Stopped track on cancel:', track.kind);
+        //console.log('[VideoTestimony] Stopped track on cancel:', track.kind);
       });
     }
     
@@ -818,7 +835,7 @@ const VideoTestimonyTab = ({ contactId }) => {
           {!testimony || !testimony.data || !downloadedVideoUrl ? (
             // Show upload section when no video exists
             <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-              <h3 className="text-xl font-medium text-gray-800 mb-6 flex items-center gap-3 flex-wrap">
+              <h3 className="text-xl font-medium text-gray-800 mb-12 flex items-center gap-3 flex-wrap">
                 <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
                   <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -828,12 +845,12 @@ const VideoTestimonyTab = ({ contactId }) => {
               </h3>
                   
               {!selectedVideo && !isRecording && !isPreviewing ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-12 text-center">
-                  <svg className="mx-auto h-12 w-12 sm:h-16 sm:w-16 mb-4" fill="none" stroke="#6e4376" strokeWidth="0.75" viewBox="0 0 24 24">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-14 text-center">
+                  <svg className="mx-auto h-14 w-14 sm:h-18 sm:w-18 mb-6" fill="none" stroke="#6e4376" strokeWidth="0.75" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                       
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {/* Upload and Record Options - Responsive Layout */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3">
                       <input
@@ -851,7 +868,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                           
                     <label
                       htmlFor="video-upload"
-                      className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 border border-yellow-500 text-yellow-600 rounded-lg transition-colors text-sm font-medium w-full sm:w-auto"
+                      className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-yellow-500 text-yellow-600 rounded-lg text-sm font-medium w-full sm:w-auto"
                     >
                       <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -863,7 +880,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                           
                       <button
                         onClick={initializeCamera}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-yellow-500 text-yellow-600 rounded-lg transition-colors text-sm font-medium w-full sm:w-auto"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-yellow-500 text-yellow-600 rounded-lg text-sm font-medium w-full sm:w-auto"
                       >
                         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -875,7 +892,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                     <div className="text-gray-500 font-light sm:hidden">or</div>
                   </div>
                       
-                  <p className="mt-4 text-xs sm:text-sm text-gray-500 font-light">
+                  <p className="mt-6 text-xs sm:text-sm text-gray-500 font-light">
                     Maximum file size: 2GB • Maximum duration: 60 seconds • Supported formats: MP4, MOV, AVI, WMV, WebM, OGG
                   </p>
                 </div>
@@ -963,66 +980,72 @@ const VideoTestimonyTab = ({ contactId }) => {
                     </div>
                   </div>
                       
-                  <div className="bg-blue-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="border border-gray-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
                     <div className="flex items-center gap-3">
                       <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-blue-700 font-medium text-sm sm:text-base">Camera preview - Ready to record</span>
+                      <span className="text-gray-700 font-medium text-sm sm:text-base">Camera preview - Ready to record</span>
                     </div>
                     <div className="flex gap-3 w-full sm:w-auto">
                       <button
                         onClick={startRecording}
-                        className="px-4 py-2 bg-gradient-to-r from-[#0a1628] to-[#1e3a5f] text-white rounded-lg hover:from-[#081220] hover:to-[#15304d] transition-all flex items-center justify-center gap-2 text-sm font-medium flex-1 sm:flex-initial shadow-md hover:shadow-lg"
+                        className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all flex items-center justify-center gap-2 text-sm font-medium flex-1 sm:flex-initial"
                       >
-                        <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-[#6b5b7e] rounded-full flex-shrink-0"></div>
                         Start Recording
                       </button>
                       <button
                         onClick={cancelRecording}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex-1 sm:flex-initial"
+                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium flex-1 sm:flex-initial"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
                       
-                  <p className="text-xs sm:text-sm text-gray-500 font-light text-center">
+                  <p className="text-xs sm:text-sm text-gray-500 font-light text-center mt-6">
                     Position yourself with good lighting. When ready, click "Start Recording" to begin. <span className="font-medium">Maximum recording time: 60 seconds.</span>
                   </p>
                   
-                  {/* Mobile Script Guide - Big and Visible */}
-                  <div className="lg:hidden bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl p-6 border-2 border-purple-300 shadow-lg">
-                    <div className="flex items-center gap-3 mb-4">
-                      <svg className="w-8 h-8 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                      <h3 className="text-xl font-bold text-purple-800">What to Say</h3>
+                  {/* Mobile Script Guide - Improved to match desktop style */}
+                  <div className="lg:hidden bg-white rounded-2xl border border-gray-200 shadow-lg mt-8">
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg shadow-md">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                          </svg>
+                        </div>
+                        <h3 className="text-base font-medium text-gray-800">Speaking Points</h3>
+                      </div>
                     </div>
                     
-                    <div className="space-y-4">
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">1</div>
-                          <p className="font-semibold text-gray-900">Your Name</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"My name is [Your Full Legal Name]"</p>
+                    <div className="p-4 space-y-2">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">1. State Your Full Name</p>
+                        <p className="text-xs text-gray-600 font-light pl-4">"My name is [Your Full Legal Name]"</p>
                       </div>
                       
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">2</div>
-                          <p className="font-semibold text-gray-900">Membership</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"I am a member of Alcor"</p>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">2. Confirm Membership</p>
+                        <p className="text-xs text-gray-600 font-light pl-4">"I am a member of Alcor Life Extension Foundation"</p>
                       </div>
                       
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">3</div>
-                          <p className="font-semibold text-gray-900">Your Wishes</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"I wish to be cryopreserved"</p>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">3. State Your Intention</p>
+                        <p className="text-xs text-gray-600 font-light pl-4">"It is my wish and intention to be cryopreserved upon my legal death"</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">4. Confirm Arrangements</p>
+                        <p className="text-xs text-gray-600 font-light pl-4">"I have made arrangements with Alcor for this purpose"</p>
+                      </div>
+                      
+                      <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-600 font-light">
+                          <span className="font-medium">Optional:</span> Share why cryopreservation is important to you
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1089,10 +1112,10 @@ const VideoTestimonyTab = ({ contactId }) => {
                     </div>
                   </div>
                       
-                  <div className="bg-red-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="border border-gray-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse flex-shrink-0"></div>
-                      <span className="text-red-700 font-medium text-sm sm:text-base">Recording in progress...</span>
+                      <span className="text-gray-700 font-medium text-sm sm:text-base">Recording in progress...</span>
                       <span className="text-red-700 font-bold text-lg">
                         {formatTime(recordingTime)} / 1:00
                       </span>
@@ -1100,57 +1123,22 @@ const VideoTestimonyTab = ({ contactId }) => {
                     <div className="flex gap-3 w-full sm:w-auto">
                       <button
                         onClick={stopRecording}
-                        className="px-4 py-2 bg-gradient-to-r from-[#0a1628] to-[#1e3a5f] text-white rounded-lg hover:from-[#081220] hover:to-[#15304d] transition-all text-sm font-medium flex-1 sm:flex-initial shadow-md hover:shadow-lg"
+                        className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all text-sm font-medium flex-1 sm:flex-initial"
                       >
                         Stop Recording
                       </button>
                       <button
                         onClick={cancelRecording}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex-1 sm:flex-initial"
+                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium flex-1 sm:flex-initial"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
                   
-                  {/* Mobile Script Guide - Big and Visible */}
-                  <div className="lg:hidden bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl p-6 border-2 border-purple-300 shadow-lg">
-                    <div className="flex items-center gap-3 mb-4">
-                      <svg className="w-8 h-8 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                      <h3 className="text-xl font-bold text-purple-800">What to Say</h3>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">1</div>
-                          <p className="font-semibold text-gray-900">Your Name</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"My name is [Your Full Legal Name]"</p>
-                      </div>
-                      
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">2</div>
-                          <p className="font-semibold text-gray-900">Membership</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"I am a member of Alcor"</p>
-                      </div>
-                      
-                      <div className="bg-white/80 rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">3</div>
-                          <p className="font-semibold text-gray-900">Your Wishes</p>
-                        </div>
-                        <p className="text-gray-700 ml-11">"I wish to be cryopreserved"</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Video Preview */}
                   <div className="bg-black rounded-xl overflow-hidden w-full max-w-2xl">
                     <video
@@ -1171,7 +1159,7 @@ const VideoTestimonyTab = ({ contactId }) => {
 
                   {/* Converting message if needed */}
                   {isConverting && (
-                    <div className="bg-blue-50 rounded-xl p-4 flex items-center gap-3">
+                    <div className="bg-blue-50 rounded-xl p-4 flex items-center gap-3 mt-6">
                       <div className="w-16 h-16 relative">
                         <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
                         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
@@ -1184,7 +1172,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                   )}
 
                   {/* Selected File Info */}
-                  <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
+                  <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm mt-6">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-800 text-lg truncate">{selectedVideo.name}</p>
@@ -1207,7 +1195,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                   </div>
 
                   {/* Checklist before upload */}
-                  <div className="bg-white rounded-2xl border border-gray-200 p-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 mt-6" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg shadow-md">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1234,14 +1222,14 @@ const VideoTestimonyTab = ({ contactId }) => {
 
                  {/* Upload Progress */}
                  {uploading && (
-                   <div className="space-y-2">
+                   <div className="space-y-2 mt-6">
                      <div className="flex justify-between text-sm text-gray-500 font-light">
                        <span>Uploading...</span>
                        <span>{uploadProgress}%</span>
                      </div>
                      <div className="w-full bg-gray-200 rounded-full h-2">
                        <div
-                         className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                         className="bg-gradient-to-r from-[#6b5b7e] to-[#4a4266] h-2 rounded-full transition-all duration-300"
                          style={{ width: `${uploadProgress}%` }}
                        />
                      </div>
@@ -1252,9 +1240,9 @@ const VideoTestimonyTab = ({ contactId }) => {
                  {!uploading && !isConverting && (
                    <button
                      onClick={handleUpload}
-                     className="px-6 py-3 bg-gradient-to-r from-[#0a1628] to-[#1e3a5f] text-white rounded-lg hover:from-[#081220] hover:to-[#15304d] transition-all flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
+                     className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all flex items-center justify-center gap-2 text-sm font-medium mt-6"
                    >
-                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                      </svg>
                      Upload Video Testimony
@@ -1266,7 +1254,7 @@ const VideoTestimonyTab = ({ contactId }) => {
          ) : (
            // Show current video when testimony exists
            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-             <h3 className="text-xl font-medium text-gray-800 mb-6 flex items-center gap-3 flex-wrap">
+             <h3 className="text-xl font-medium text-gray-800 mb-12 flex items-center gap-3 flex-wrap">
                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1276,7 +1264,7 @@ const VideoTestimonyTab = ({ contactId }) => {
              </h3>
                  
              {/* Video Player with enhanced debugging */}
-             <div className="bg-black rounded-xl overflow-hidden mb-6 w-full max-w-2xl">
+             <div className="bg-black rounded-xl overflow-hidden mb-12 w-full max-w-2xl relative">
                {downloadingVideo ? (
                  <div className="flex items-center justify-center h-64 bg-gray-900">
                    <div className="text-center">
@@ -1288,53 +1276,93 @@ const VideoTestimonyTab = ({ contactId }) => {
                    </div>
                  </div>
                ) : downloadedVideoUrl ? (
-                 <video
-                   key={downloadedVideoUrl}
-                   controls
-                   className="w-full"
-                   preload="metadata"
-                   playsInline
-                   muted={false}
-                   autoPlay={false}
-                   onLoadedMetadata={(e) => {
-                     console.log('[Video] Metadata loaded:', {
-                       duration: e.target.duration,
-                       videoWidth: e.target.videoWidth,
-                       videoHeight: e.target.videoHeight,
-                       readyState: e.target.readyState
-                     });
-                   }}
-                   onCanPlay={() => console.log('[Video] Can play')}
-                   onCanPlayThrough={() => console.log('[Video] Can play through')}
-                   onError={(e) => {
-                     console.error('[Video] Error:', {
-                       error: e.target.error,
-                       errorCode: e.target.error?.code,
-                       errorMessage: e.target.error?.message,
-                       src: e.target.src
-                     });
-                         
-                     const errorMessages = {
-                       1: 'Video loading aborted',
-                       2: 'Network error while loading video',
-                       3: 'Video decoding error - corrupt or unsupported format',
-                       4: 'Video format not supported'
-                     };
-                         
-                     const errorCode = e.target.error?.code;
-                     if (errorCode) {
-                       console.error(`[Video] ${errorMessages[errorCode] || 'Unknown error'}`);
-                       setError(errorMessages[errorCode] || 'Failed to play video');
-                     }
-                   }}
-                   onLoadStart={() => console.log('[Video] Load started')}
-                   onProgress={(e) => console.log('[Video] Loading progress:', e)}
-                 >
-                   <source src={downloadedVideoUrl} type="video/mp4" />
-                   <source src={downloadedVideoUrl} type="video/quicktime" />
-                   <source src={downloadedVideoUrl} />
-                   Your browser does not support the video tag.
-                 </video>
+                 <div className="relative">
+                   <video
+                     key={downloadedVideoUrl}
+                     controls
+                     className="w-full"
+                     preload="metadata"
+                     playsInline
+                     muted={false}
+                     autoPlay={false}
+                     onPlay={() => {
+                       // Hide overlay when video starts playing
+                       if (SHOW_VIDEO_OVERLAY) {
+                         const overlay = document.getElementById('video-overlay');
+                         if (overlay) {
+                           overlay.style.display = 'none';
+                         }
+                       }
+                     }}
+                     onPause={() => {
+                       // Show overlay when video is paused
+                       if (SHOW_VIDEO_OVERLAY) {
+                         const overlay = document.getElementById('video-overlay');
+                         if (overlay) {
+                           overlay.style.display = 'flex';
+                         }
+                       }
+                     }}
+                     onLoadedMetadata={(e) => {
+                       console.log('[Video] Metadata loaded:', {
+                         duration: e.target.duration,
+                         videoWidth: e.target.videoWidth,
+                         videoHeight: e.target.videoHeight,
+                         readyState: e.target.readyState
+                       });
+                     }}
+                     onCanPlay={() => console.log('[Video] Can play')}
+                     onCanPlayThrough={() => console.log('[Video] Can play through')}
+                     onError={(e) => {
+                       console.error('[Video] Error:', {
+                         error: e.target.error,
+                         errorCode: e.target.error?.code,
+                         errorMessage: e.target.error?.message,
+                         src: e.target.src
+                       });
+                           
+                       const errorMessages = {
+                         1: 'Video loading aborted',
+                         2: 'Network error while loading video',
+                         3: 'Video decoding error - corrupt or unsupported format',
+                         4: 'Video format not supported'
+                       };
+                           
+                       const errorCode = e.target.error?.code;
+                       if (errorCode) {
+                         //console.error(`[Video] ${errorMessages[errorCode] || 'Unknown error'}`);
+                         setError(errorMessages[errorCode] || 'Failed to play video');
+                       }
+                     }}
+                     onLoadStart={() => console.log('[Video] Load started')}
+                     onProgress={(e) => console.log('[Video] Loading progress:', e)}
+                   >
+                     <source src={downloadedVideoUrl} type="video/mp4" />
+                     <source src={downloadedVideoUrl} type="video/quicktime" />
+                     <source src={downloadedVideoUrl} />
+                     Your browser does not support the video tag.
+                   </video>
+                   {/* Dark overlay with text */}
+                   {SHOW_VIDEO_OVERLAY && (
+                     <div 
+                       id="video-overlay"
+                       className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+                       style={{ 
+                         display: 'flex',
+                         background: VIDEO_OVERLAY_GRADIENT
+                       }}
+                     >
+                       <div className="flex flex-col items-center gap-4">
+                         <div className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                           <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                             <path d="M8 5v14l11-7z" />
+                           </svg>
+                         </div>
+                         <p className="text-white text-xl font-medium">Your Current Video Testimony</p>
+                       </div>
+                     </div>
+                   )}
+                 </div>
                ) : (
                  <div className="flex items-center justify-center h-64 bg-gray-900">
                    <p className="text-gray-400 font-light">Video unavailable</p>
@@ -1344,7 +1372,7 @@ const VideoTestimonyTab = ({ contactId }) => {
 
              {/* Video Info */}
              {testimony.data.createdDate && testimony.data.size ? (
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
                  <div className="bg-gray-50 rounded-xl p-4 outline outline-1 outline-gray-200 shadow-sm">
                    <p className="text-sm text-gray-500 mb-1 font-light">Uploaded on</p>
                    <p className="font-medium text-gray-800 text-lg">{formatDate(testimony.data.createdDate)}</p>
@@ -1360,9 +1388,9 @@ const VideoTestimonyTab = ({ contactId }) => {
              <div className="flex flex-col sm:flex-row gap-3">
                <button
                  onClick={handleDownload}
-                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                 className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all flex items-center justify-center gap-2 text-sm font-medium"
                >
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                  </svg>
                  Download Video
@@ -1372,7 +1400,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                    setError(null); // Clear any existing errors
                    setShowDeleteConfirm(true);
                  }}
-                 className="px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                 className="px-4 py-2 bg-white border border-yellow-500 text-yellow-600 rounded-lg text-sm font-medium"
                >
                  Replace Video
                </button>
@@ -1395,6 +1423,7 @@ const VideoTestimonyTab = ({ contactId }) => {
              lighting, indicate your full name, and detail your specific contact with Alcor and your wishes for cryopreservation.
            </p>
          </div>
+         <div className="h-4 md:h-12"></div>
        </div>
      </div>
 
@@ -1485,13 +1514,13 @@ const VideoTestimonyTab = ({ contactId }) => {
            <div className="flex gap-3">
              <button
                onClick={handleDelete}
-               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+               className="flex-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all text-sm font-medium"
              >
                Yes, Replace
              </button>
              <button
                onClick={() => setShowDeleteConfirm(false)}
-               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+               className="flex-1 px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium"
              >
                Cancel
              </button>

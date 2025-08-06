@@ -1,4 +1,5 @@
 // src/components/portal/services/memberDataService.js
+import { auth } from '../../../services/firebase'; // ADD THIS IMPORT!
 import { 
   getMemberPersonalInfo,
   getMemberContactInfo,
@@ -204,16 +205,26 @@ class MemberDataService {
     }
   }
 
+  // FIXED: Added auth to downloadVideoTestimony
   async downloadVideoTestimony(contactId) {
     try {
       //console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
+      
+      // GET AUTH TOKEN - THIS IS THE FIX!
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Authentication required');
+      }
+      const token = await currentUser.getIdToken();
+      //console.log('[VideoTestimony] Got auth token for download');
       
       // Use the full backend URL
       const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`, {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Accept': 'video/mp4, video/*'
+          'Accept': 'video/mp4, video/*',
+          'Authorization': `Bearer ${token}` // ADD AUTH HEADER!
         }
       });
   

@@ -176,7 +176,7 @@ const MembershipStatusTab = () => {
     if (cryoArrangements?.methodOfPreservation?.includes('Whole Body')) {
       return 'Whole Body Cryopreservation Member';
     } else if (cryoArrangements?.methodOfPreservation?.includes('Neuro')) {
-      return 'Neurocryopreservation Member';
+      return 'Neuropreservation Member';
     }
     return 'Basic Membership';
   };
