@@ -839,7 +839,6 @@ function CheckoutForm({ userData, paymentLineItems }) {
                             >
                               privacy policy
                             </span>.
-                            Your membership will be activated immediately upon successful payment.
                           </p>
                         </div>
                       </form>

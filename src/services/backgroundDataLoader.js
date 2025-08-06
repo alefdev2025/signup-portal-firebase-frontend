@@ -4,7 +4,7 @@ import { paymentDataService } from '../components/portal/services/paymentDataSer
 import { getMemberCategory } from '../components/portal/services/salesforce/memberInfo';
 import { getDocuments } from '../components/portal/services/salesforce/memberDocuments';
 import { getNotifications } from './notifications';
-import { fetchCustomerInvoices } from '../components/portal/services/netsuite';
+//import { fetchCustomerInvoices } from '../components/portal/services/netsuite';
 
 
 class BackgroundDataLoader {
@@ -34,7 +34,8 @@ class BackgroundDataLoader {
     const batch1 = [
       this.loadPersonalInfo(salesforceContactId),
       this.loadContactInfo(salesforceContactId),
-      this.loadCategory(salesforceContactId)
+      this.loadCategory(salesforceContactId),
+      this.loadNotifications()
     ];
 
     // Batch 2: Important data (load after 500ms)
@@ -43,7 +44,8 @@ class BackgroundDataLoader {
       this.loadMedicalInfo(salesforceContactId),
       this.loadEmergencyContacts(salesforceContactId),
       this.loadInsurance(salesforceContactId),
-      this.loadDocuments(salesforceContactId)
+      this.loadDocuments(salesforceContactId),
+      //this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadInvoices(netsuiteCustomerId) : Promise.resolve() // ADD THIS
     ]);
 
     // Batch 3: Additional data (load after 1 second)
@@ -67,13 +69,13 @@ class BackgroundDataLoader {
     try {
       // Start batch 1 immediately
       await Promise.all(batch1);
-      console.log('[BackgroundLoader] Batch 1 complete (personal, contact, category)');
+      console.log('[BackgroundLoader] Batch 1 complete (personal, contact, category, notifications)');
 
       // Start batch 2 after short delay
       setTimeout(async () => {
         try {
           await batch2();
-          console.log('[BackgroundLoader] Batch 2 complete (addresses, medical, emergency, insurance)');
+          console.log('[BackgroundLoader] Batch 2 complete (addresses, medical, emergency, insurance, documents)');
         } catch (error) {
           console.error('[BackgroundLoader] Batch 2 error:', error);
         }
@@ -110,6 +112,33 @@ class BackgroundDataLoader {
 
   isValidNetsuiteId(id) {
     return id && id !== 'null' && id !== 'undefined' && id !== '' && id !== null && id !== undefined;
+  }
+
+  // Add notifications loader
+  async loadNotifications() {
+    try {
+      console.log('[BackgroundLoader] Loading notifications...');
+      const data = await getNotifications();
+      this.loadedData.set('notifications', data);
+      this.notifyDataLoaded('notifications', data);
+    } catch (error) {
+      console.error('[BackgroundLoader] Error loading notifications:', error);
+      // Still notify with empty array so UI knows loading is complete
+      this.notifyDataLoaded('notifications', []);
+    }
+  }
+
+  // Add invoices loader
+  async loadInvoices(netsuiteCustomerId) {
+    try {
+      console.log('[BackgroundLoader] Loading invoices...');
+      const data = await fetchCustomerInvoices(netsuiteCustomerId);
+      this.loadedData.set('invoices', data);
+      this.notifyDataLoaded('invoices', data);
+    } catch (error) {
+      console.error('[BackgroundLoader] Error loading invoices:', error);
+      this.notifyDataLoaded('invoices', { success: false, data: [] });
+    }
   }
 
   async loadDocuments(salesforceContactId) {

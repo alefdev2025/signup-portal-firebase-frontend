@@ -7,6 +7,7 @@ import darkLogo from "../assets/images/alcor-white-logo.png";
 import PasswordField, { checkPasswordStrength } from '../components/signup/PasswordField';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
+import { sendPortalWelcomeNotification } from '../services/notifications';
 import { 
   requestPortalEmailVerification,
   verifyPortalCode,
@@ -360,6 +361,7 @@ const PortalSetupPage = () => {
         } else {
           // Success - redirect to login
           setSuccessMessage('Portal account created successfully! Redirecting to login...');
+
           setTimeout(() => {
             navigate('/login?portal=true&setup=complete');
           }, 2000);
@@ -403,8 +405,10 @@ const PortalSetupPage = () => {
       
       if (result.data?.success) {
         setSuccessMessage('Two-factor authentication enabled successfully!');
+
         // Clear the code
         setTwoFactorCode('');
+
         // Wait a bit to show success message
         setTimeout(() => {
           navigate('/login?portal=true&setup=complete&2fa=enabled');

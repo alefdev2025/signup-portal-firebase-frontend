@@ -1,4 +1,4 @@
-// App.jsx - With Debug Logging
+// App.jsx - With Unprotected Staff Routes
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { UserProvider } from "./contexts/UserContext";
@@ -197,18 +197,10 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Staff Portal Routes - protected */}
-            <Route path="/staff" element={
-              <ProtectedRoute>
-                <StaffPage />
-              </ProtectedRoute>
-            } />
+            {/* Staff Portal Routes - NOW UNPROTECTED */}
+            <Route path="/staff" element={<StaffPage />} />
             <Route path="/staff/reset-password" element={<StaffPasswordReset />} />
-            <Route path="/staff/*" element={
-              <ProtectedRoute>
-                <StaffPage />
-              </ProtectedRoute>
-            } />
+            <Route path="/staff/*" element={<StaffPage />} />
             
             {/* Member Portal Routes - FULLY PROTECTED with portal access check */}
             <Route path="/welcome-member" element={

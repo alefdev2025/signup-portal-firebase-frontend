@@ -126,8 +126,8 @@ const ResponsiveBanner = ({
     const targetStepIndex = getStepPathFromProgressIndex(progressIndex);
     const finalTargetStep = progressIndex === 0 && maxCompletedStep >= 1 ? 1 : targetStepIndex;
     
-    console.log(`Banner step click: progressIndex ${progressIndex} -> step ${finalTargetStep}`);
-    console.log(`maxCompletedStep: ${maxCompletedStep}, canAccess: ${canAccessStep ? canAccessStep(finalTargetStep) : 'unknown'}`);
+    //console.log(`Banner step click: progressIndex ${progressIndex} -> step ${finalTargetStep}`);
+    //console.log(`maxCompletedStep: ${maxCompletedStep}, canAccess: ${canAccessStep ? canAccessStep(finalTargetStep) : 'unknown'}`);
     
     if (finalTargetStep <= maxCompletedStep || (canAccessStep && canAccessStep(finalTargetStep))) {
       console.log(`Navigating to step ${finalTargetStep} via SignupFlowContext`);
