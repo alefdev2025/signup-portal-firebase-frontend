@@ -24,6 +24,7 @@ import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
 import ActivityLogTab from '../components/portal/ActivityLogTab';
+import PaymentContentWrapper from '../components/PaymentContentWrapper'
 
 // Import all overview tab versions
 import OverviewTab from '../components/portal/OverviewTab';
@@ -239,7 +240,7 @@ const PortalHome = () => {
             setIsOpen(!isOpen);
           }}
         >
-          <svg className="w-7 h-7" fill="none" stroke="#f7cd46" strokeWidth="1.5" viewBox="0 0 24 24" style={{filter: 'drop-shadow(0 0 1px #794384)'}}>
+         <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           {unreadCount > 0 && (
@@ -544,15 +545,27 @@ const PortalHome = () => {
       case 'documents-information':
         return <InformationDocumentsTab />;
       
-      // Payments subtabs
-      case 'payments':
-        return <PaymentsTab />;
-      case 'payments-history':
-        return <PaymentHistoryTab customerId={customerId} />;
+      // Replace these cases in your renderActiveTab function:
       case 'payments-methods':
-        return <PaymentMethodsTab customerId={customerId} />;
-      case 'payments-invoices':
-        return <InvoicesTab customerId={customerId} />;
+        return (
+          <PaymentContentWrapper>
+            <PaymentMethodsTab />
+          </PaymentContentWrapper>
+        );
+
+        case 'payments-history':
+          return (
+            <PaymentContentWrapper>
+              <PaymentHistoryTab />
+            </PaymentContentWrapper>
+          );
+        
+        case 'payments-invoices':
+          return (
+            <PaymentContentWrapper>
+              <InvoicesTab customerId={customerId} />
+            </PaymentContentWrapper>
+          );
       
       // Resources subtabs
       case 'resources-media':
@@ -619,7 +632,12 @@ const PortalHome = () => {
               background: 'linear-gradient(135deg, #0a1628 0%, #1a2744 25%, #3c305b 50%, #533966 75%, #6e4376 100%)'
             }}
           >
-            <img src={alcorWhiteLogo} alt="Alcor" className="h-16 w-auto" />
+            <button 
+              onClick={() => handleTabChange('overview')}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <img src={alcorWhiteLogo} alt="Alcor" className="h-16 w-auto" />
+            </button>
             <div className="flex items-center gap-3">
               <MobileNotificationBell 
                 activeTab={activeTab} 
@@ -649,7 +667,12 @@ const PortalHome = () => {
               background: 'linear-gradient(135deg, #0f1a2b 0%, #1a2744 20%, #2a3a5a 50%, #3d3960 75%, #4a3d6b 90%, #5a4076 100%)'
             }}
           >
-            <img src={alcorWhiteLogo} alt="Alcor" className="h-14 w-auto" />
+            <button 
+              onClick={() => handleTabChange('overview')}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <img src={alcorWhiteLogo} alt="Alcor" className="h-14 w-auto" />
+            </button>
             <div className="flex items-center gap-3">
               <MobileNotificationBell 
                 activeTab={activeTab} 

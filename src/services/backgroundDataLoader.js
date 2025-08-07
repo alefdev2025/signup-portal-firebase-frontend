@@ -5,6 +5,9 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 import { getDocuments } from '../components/portal/services/salesforce/memberDocuments';
 import { getNotifications } from './notifications';
 //import { fetchCustomerInvoices } from '../components/portal/services/netsuite';
+import { getCustomerInvoices } from '../components/portal/services/netsuite/invoices';
+import { getCustomerPayments } from '../components/portal/services/netsuite/payments';
+
 
 
 class BackgroundDataLoader {
@@ -44,8 +47,7 @@ class BackgroundDataLoader {
       this.loadMedicalInfo(salesforceContactId),
       this.loadEmergencyContacts(salesforceContactId),
       this.loadInsurance(salesforceContactId),
-      this.loadDocuments(salesforceContactId),
-      //this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadInvoices(netsuiteCustomerId) : Promise.resolve() // ADD THIS
+      this.loadDocuments(salesforceContactId)
     ]);
 
     // Batch 3: Additional data (load after 1 second)
@@ -54,7 +56,9 @@ class BackgroundDataLoader {
       this.loadOccupation(salesforceContactId),
       this.loadCryoArrangements(salesforceContactId),
       this.loadLegalInfo(salesforceContactId),
-      this.loadFundingInfo(salesforceContactId)
+      this.loadFundingInfo(salesforceContactId),
+      this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadInvoices(netsuiteCustomerId) : Promise.resolve(),
+      this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadPayments(netsuiteCustomerId) : Promise.resolve()
     ]);
 
     // Batch 4: Payment data if available (load after 1.5 seconds)
@@ -128,16 +132,27 @@ class BackgroundDataLoader {
     }
   }
 
-  // Add invoices loader
   async loadInvoices(netsuiteCustomerId) {
     try {
       console.log('[BackgroundLoader] Loading invoices...');
-      const data = await fetchCustomerInvoices(netsuiteCustomerId);
+      const data = await getCustomerInvoices(netsuiteCustomerId, { limit: 100 });
       this.loadedData.set('invoices', data);
       this.notifyDataLoaded('invoices', data);
     } catch (error) {
       console.error('[BackgroundLoader] Error loading invoices:', error);
       this.notifyDataLoaded('invoices', { success: false, data: [] });
+    }
+  }
+  
+  async loadPayments(netsuiteCustomerId) {
+    try {
+      console.log('[BackgroundLoader] Loading payments...');
+      const data = await getCustomerPayments(netsuiteCustomerId, { limit: 100 });
+      this.loadedData.set('payments', data);
+      this.notifyDataLoaded('payments', data);
+    } catch (error) {
+      console.error('[BackgroundLoader] Error loading payments:', error);
+      this.notifyDataLoaded('payments', { success: false, data: [] });
     }
   }
 
@@ -322,3 +337,8 @@ class BackgroundDataLoader {
 
 // Export singleton instance
 export const backgroundDataLoader = new BackgroundDataLoader();
+
+// Make it available globally for CustomerDataContext
+if (typeof window !== 'undefined') {
+  window.backgroundDataLoader = backgroundDataLoader;
+}

@@ -40,6 +40,31 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     }
   });
 
+// In CustomerDataContext.jsx
+useEffect(() => {
+  // Check if data was already loaded by backgroundDataLoader
+  if (window.backgroundDataLoader && customerId) {
+    const loadedData = window.backgroundDataLoader.getLoadedData();
+    
+    if (loadedData?.invoices) {
+      console.log('[CustomerDataContext] Found preloaded invoices:', loadedData.invoices);
+      setData(prev => ({
+        ...prev,
+        invoices: loadedData.invoices,
+        lastFetch: { ...prev.lastFetch, invoices: Date.now() }
+      }));
+    }
+    
+    if (loadedData?.payments) {
+      console.log('[CustomerDataContext] Found preloaded payments:', loadedData.payments);
+      setData(prev => ({
+        ...prev,
+        payments: loadedData.payments,
+        lastFetch: { ...prev.lastFetch, payments: Date.now() }
+      }));
+    }
+  }
+}, [customerId]); // Add customerId as dependency
   // Check if data is stale
   const isDataStale = (dataType) => {
     const lastFetch = data.lastFetch[dataType];

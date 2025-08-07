@@ -137,6 +137,15 @@ const NotificationsTab = () => {
   }, [notifications]);
 
   const handleNotificationClick = async (notification) => {
+    console.log('🔍 DEBUG: Notification clicked:', {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      metadata: notification.metadata,
+      actionUrl: notification.actionUrl,
+      read: notification.read
+    });
+
     if (!notification.read) {
       try {
         await markNotificationAsRead(notification.id);
@@ -146,30 +155,67 @@ const NotificationsTab = () => {
       }
     }
 
-    if (notification.type === 'message' && notification.metadata?.messageId) {
-      setLoadingMessage(true);
-      try {
-        const messageDoc = await getDoc(doc(db, 'staff_messages', notification.metadata.messageId));
-        if (messageDoc.exists()) {
-          setMessageContent({
-            id: messageDoc.id,
-            ...messageDoc.data()
-          });
-          setSelectedMessage(notification);
+    // Check if it's a message type first
+    if (notification.type === 'message') {
+      console.log('📧 DEBUG: Message type detected');
+      
+      // Check if it has a messageId for Firestore fetch
+      if (notification.metadata?.messageId) {
+        console.log('📧 DEBUG: Has messageId:', notification.metadata.messageId);
+        setLoadingMessage(true);
+        try {
+          console.log('📄 DEBUG: Fetching message from Firestore...');
+          const messageDoc = await getDoc(doc(db, 'staff_messages', notification.metadata.messageId));
+          console.log('📄 DEBUG: Message doc exists?', messageDoc.exists());
+          
+          if (messageDoc.exists()) {
+            const messageData = messageDoc.data();
+            console.log('📄 DEBUG: Message data:', messageData);
+            
+            setMessageContent({
+              id: messageDoc.id,
+              ...messageData
+            });
+            setSelectedMessage(notification);
+            
+            console.log('✅ DEBUG: State updated - selectedMessage:', notification);
+            console.log('✅ DEBUG: State updated - messageContent:', {
+              id: messageDoc.id,
+              ...messageData
+            });
+          } else {
+            console.error('❌ DEBUG: Message document does not exist in Firestore');
+          }
+        } catch (error) {
+          console.error('❌ DEBUG: Error fetching message:', error);
+          console.error('Error details:', error.message, error.stack);
+        } finally {
+          setLoadingMessage(false);
+          console.log('🔄 DEBUG: Loading state set to false');
         }
-      } catch (error) {
-        console.error('Error fetching message:', error);
-      } finally {
-        setLoadingMessage(false);
+      } else {
+        console.log('⚠️ DEBUG: Message type but no messageId in metadata');
+        // For messages without messageId (like welcome messages), show in modal with just the content
+        setMessageContent({
+          subject: notification.title,
+          content: notification.content,
+          createdAt: notification.createdAt
+        });
+        setSelectedMessage(notification);
+        console.log('✅ DEBUG: Showing message without Firestore fetch');
       }
     } else if (notification.actionUrl) {
+      console.log('🔗 DEBUG: ActionUrl detected:', notification.actionUrl);
       if (notification.actionUrl.startsWith('http') || notification.actionType === 'external') {
         window.open(notification.actionUrl, '_blank');
       } else {
         console.log('Navigate to:', notification.actionUrl);
       }
     } else if (notification.metadata?.link) {
+      console.log('🔗 DEBUG: Metadata link detected:', notification.metadata.link);
       window.open(notification.metadata.link, '_blank');
+    } else {
+      console.log('⚠️ DEBUG: No action defined for this notification');
     }
   };
 
@@ -618,9 +664,7 @@ const NotificationsTab = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-${Math.min(index + 1, 3)} ${
-                  !notification.read ? 'border-l-4 border-l-purple-500' : ''
-                }`}
+                className={`bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-${Math.min(index + 1, 3)}`}
                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}
               >
                 <div className="p-4">
@@ -634,20 +678,6 @@ const NotificationsTab = () => {
                         <h3 className={`text-sm ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-900`}>
                           {notification.title}
                         </h3>
-                        
-                        <div className="relative dropdown-menu-container">
-                          <button 
-                            className="p-1 rounded hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuId(openMenuId === notification.id ? null : notification.id);
-                            }}
-                          >
-                            <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                            </svg>
-                          </button>
-                        </div>
                       </div>
                       
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">
@@ -657,6 +687,26 @@ const NotificationsTab = () => {
                       <p className="text-xs text-gray-500 mt-2">
                         {formatDate(notification.createdAt)}
                       </p>
+                    </div>
+                    
+                    <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                      <div className="relative dropdown-menu-container">
+                        <button 
+                          className="p-1 rounded hover:bg-gray-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === notification.id ? null : notification.id);
+                          }}
+                        >
+                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {!notification.read && (
+                        <span className="w-2 h-2 rounded-full bg-purple-500 block"></span>
+                      )}
                     </div>
                   </div>
                 </div>

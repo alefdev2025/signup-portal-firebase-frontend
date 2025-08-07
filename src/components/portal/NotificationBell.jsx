@@ -28,6 +28,9 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
     notifications: notifications
   });
   
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
   // Memoize the displayed notifications to prevent excessive re-renders
   const displayedNotifications = useMemo(() => {
     return notifications.slice(0, 10).map(notification => ({
@@ -57,16 +60,15 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
 
     console.log('📌 [NotificationBell] Adding event listeners');
     
-    // Add listeners after a small delay to avoid immediate closing
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside, true);
-      document.addEventListener('keydown', handleEscapeKey);
-    }, 100);
+    // Use mousedown/touchstart for better mobile support
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
 
     return () => {
-      clearTimeout(timeoutId);
       console.log('🧹 [NotificationBell] Removing event listeners');
-      document.removeEventListener('click', handleClickOutside, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen]);
@@ -230,7 +232,8 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#9662a2] text-white text-xs rounded-full flex items-center justify-center font-bold">
+          <span className="absolute top-0 right-0 h-4 w-4 bg-[#9662a2] text-white text-[10px] rounded-full flex items-center justify-center font-bold"
+                style={{ top: '-2px', right: '-2px' }}>
             {unreadCount}
           </span>
         )}
@@ -238,87 +241,98 @@ const NotificationBell = ({ activeTab, setActiveTab }) => {
 
       {/* Dropdown */}
       {isOpen && (
-        <div 
-          className="absolute right-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
-        >
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Notifications</h3>
-            {unreadCount > 0 && (
-              <button 
-                onClick={handleMarkAllAsRead}
-                className="text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
-              >
-                Mark all as read
-              </button>
-            )}
-          </div>
-
-          {/* Notification List */}
-          <div className="max-h-96 overflow-y-auto">
-            {!notificationsLoaded ? (
-              <div className="px-4 py-8 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                Loading notifications...
-              </div>
-            ) : error ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-red-500 mb-2">{error}</p>
+        <>
+          {/* Invisible overlay to catch clicks outside */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => {
+              console.log('🔄 [NotificationBell] Overlay clicked, closing dropdown');
+              setIsOpen(false);
+            }}
+          />
+          
+          <div 
+            className="absolute right-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+          >
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
                 <button 
-                  onClick={refreshNotifications}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  onClick={handleMarkAllAsRead}
+                  className="text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
                 >
-                  Try again
+                  Mark all as read
                 </button>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500">
-                No notifications
-              </div>
-            ) : (
-              displayedNotifications.map((notification, index) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                    !notification.read ? 'bg-[#3f2541]/5' : ''
-                  }`}
-                  title={`ID: ${notification.id}, Type: ${notification.type}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`${getTypeColor(notification.type)}`}>
-                      {getIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
-                          {notification.title}
-                        </p>
-                        {!notification.read && (
-                          <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
-                        )}
+              )}
+            </div>
+
+            {/* Notification List */}
+            <div className="max-h-96 overflow-y-auto">
+              {!notificationsLoaded ? (
+                <div className="px-4 py-8 text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                  Loading notifications...
+                </div>
+              ) : error ? (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-red-500 mb-2">{error}</p>
+                  <button 
+                    onClick={refreshNotifications}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-500">
+                  No notifications
+                </div>
+              ) : (
+                displayedNotifications.map((notification, index) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                      !notification.read ? 'bg-[#3f2541]/5' : ''
+                    }`}
+                    title={`ID: ${notification.id}, Type: ${notification.type}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`${getTypeColor(notification.type)}`}>
+                        {getIcon(notification.type)}
                       </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {notification.formattedTime}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
+                            {notification.title}
+                          </p>
+                          {!notification.read && (
+                            <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-0.5">{notification.content}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {notification.formattedTime}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
 
-          {/* Footer */}
-          <div className="px-4 py-3 border-t border-gray-200">
-            <button 
-              onClick={handleViewAllNotifications}
-              className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
-            >
-              View all notifications ({notifications.length} total)
-            </button>
+            {/* Footer */}
+            <div className="px-4 py-3 border-t border-gray-200">
+              <button 
+                onClick={handleViewAllNotifications}
+                className="w-full text-center text-sm text-[#5b2f4b] hover:text-[#3f2541] font-medium"
+              >
+                View all notifications ({notifications.length} total)
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

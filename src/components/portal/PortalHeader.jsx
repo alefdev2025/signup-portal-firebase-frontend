@@ -111,6 +111,13 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
 
   const badgeSize = variant === 'compact' ? 'h-4 w-4 text-[10px]' : 'h-5 w-5 text-xs';
 
+  // Truncate content for preview
+  const truncateContent = (content, maxLength = 50) => {
+    if (!content) return '';
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
+  };
+
   return (
     <div className="relative">
       <button 
@@ -121,15 +128,15 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className={`absolute -top-0.5 -right-0.5 ${badgeSize} bg-[#9662a2] text-white rounded-full flex items-center justify-center font-bold`}>
+          <span className={`absolute -top-[3px] right-0.5 ${badgeSize} bg-[#9662a2] text-white rounded-full flex items-center justify-center font-bold`}>
             {unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown - Fixed positioning and width */}
       {isOpen && (
-        <div className={`notification-dropdown absolute right-0 md:-right-16 xl:-right-40 2xl:-right-48 mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]`}>
+        <div className={`notification-dropdown absolute right-0 md:-right-16 lg:-right-24 mt-2 w-80 md:w-[360px] bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]`}>
           <div className={`px-4 py-3 border-b border-gray-200 flex items-center justify-between`}>
             <div className="flex items-center gap-0.5">
               <h3 className={`font-semibold text-gray-900`}>Notifications</h3>
@@ -175,7 +182,9 @@ const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = '
                           <span className="flex-shrink-0 w-2 h-2 bg-[#9662a2] rounded-full mt-1.5"></span>
                         )}
                       </div>
-                      <p className={`text-sm mt-0.5 text-gray-600`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>{notification.content}</p>
+                      <p className={`text-sm mt-0.5 text-gray-600 truncate`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>
+                        {truncateContent(notification.content)}
+                      </p>
                       <p className={`text-xs mt-1 text-gray-400`} style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>{formatNotificationTime(notification.createdAt)}</p>
                     </div>
                   </div>
@@ -310,6 +319,18 @@ const PortalHeader = ({
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
+          </button>
+          
+          {/* Mobile Logo - navigates to home */}
+          <button 
+            onClick={() => setActiveTab('overview')}
+            className="md:hidden hover:opacity-80 transition-opacity"
+          >
+            <img 
+              src={navyALogo} 
+              alt="Alcor Logo" 
+              className="h-8"
+            />
           </button>
           
           {activeTab !== 'overview' && (
