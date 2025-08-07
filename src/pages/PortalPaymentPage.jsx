@@ -8,6 +8,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { createInvoicePaymentIntent, confirmInvoicePayment, updateStripeAutopay } from '../services/payment';
 import { getStripeIntegrationStatus } from '../components/portal/services/netsuite/payments';
+import { getPaymentMethods } from '../services/paymentMethods';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
 
 // Import logos
@@ -56,6 +57,12 @@ function InvoicePaymentForm({ invoice, onBack }) {
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('ready');
   
+  // Saved payment methods states
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [useNewCard, setUseNewCard] = useState(true);
+  const [loadingSavedCards, setLoadingSavedCards] = useState(true);
+  
   // Additional form fields
   const [cardholderName, setCardholderName] = useState(
     salesforceCustomer?.name || invoice.billingAddress?.addressee || ''
@@ -73,6 +80,39 @@ function InvoicePaymentForm({ invoice, onBack }) {
   const [customerAutopayStatus, setCustomerAutopayStatus] = useState(null);
   const [loadingAutopayStatus, setLoadingAutopayStatus] = useState(true);
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
+  
+  // Fetch saved payment methods
+  useEffect(() => {
+    const fetchSavedPaymentMethods = async () => {
+      console.log('Starting to fetch saved payment methods...');
+      try {
+        const data = await getPaymentMethods();
+        console.log('Payment methods response:', data);
+        
+        if (data.paymentMethods && data.paymentMethods.length > 0) {
+          console.log('Found saved payment methods:', data.paymentMethods);
+          setSavedPaymentMethods(data.paymentMethods);
+          
+          // Default to using the default payment method if available
+          const defaultMethod = data.paymentMethods.find(m => m.id === data.defaultPaymentMethodId);
+          if (defaultMethod) {
+            setSelectedPaymentMethod(defaultMethod.id);
+            setUseNewCard(false);
+            setCardComplete(true); // Consider card complete if using saved card
+          }
+        } else {
+          console.log('No saved payment methods found');
+        }
+      } catch (error) {
+        console.error('Error fetching saved payment methods:', error);
+      } finally {
+        setLoadingSavedCards(false);
+        console.log('Loading saved cards complete');
+      }
+    };
+    
+    fetchSavedPaymentMethods();
+  }, []);
   
   // Check customer's current autopay status
   useEffect(() => {
@@ -127,12 +167,25 @@ function InvoicePaymentForm({ invoice, onBack }) {
     }
   }, []);
 
+  // Handle payment method selection change
+  const handlePaymentMethodChange = (value) => {
+    if (value === 'new') {
+      setUseNewCard(true);
+      setSelectedPaymentMethod('');
+      setCardComplete(false);
+    } else {
+      setUseNewCard(false);
+      setSelectedPaymentMethod(value);
+      setCardComplete(true); // Card is complete when using saved method
+    }
+  };
+
   // Clear error when user types
   useEffect(() => {
-    if (error && cardholderName && billingZip) {
+    if (error && cardholderName && (useNewCard ? billingZip : true)) {
       setError(null);
     }
-  }, [cardholderName, billingZip, error]);
+  }, [cardholderName, billingZip, error, useNewCard]);
 
   // Process payment
   const handleSubmit = useCallback(async (event) => {
@@ -144,10 +197,29 @@ function InvoicePaymentForm({ invoice, onBack }) {
       return;
     }
 
-    if (!stripe || !elements || !cardComplete || !cardholderName || !billingZip) {
-      if (!cardholderName) setError('Please enter the cardholder name');
-      else if (!billingZip) setError('Please enter the billing zip code');
-      else setError('Please complete your payment information');
+    // Validation
+    if (!stripe || !elements) {
+      setError('Payment system not ready');
+      return;
+    }
+
+    if (!cardholderName) {
+      setError('Please enter the cardholder name');
+      return;
+    }
+
+    // If using new card, validate card completion and billing zip
+    if (useNewCard) {
+      if (!cardComplete) {
+        setError('Please complete your card information');
+        return;
+      }
+      if (!billingZip) {
+        setError('Please enter the billing zip code');
+        return;
+      }
+    } else if (!selectedPaymentMethod) {
+      setError('Please select a payment method');
       return;
     }
 
@@ -156,44 +228,52 @@ function InvoicePaymentForm({ invoice, onBack }) {
     setError(null);
 
     try {
-      // Get card element
-      const cardElement = paymentElementRef.current || elements.getElement(CardElement);
-      if (!cardElement) {
-        throw new Error('Payment form not ready');
+      let paymentMethodId;
+      
+      // If using saved payment method
+      if (!useNewCard && selectedPaymentMethod) {
+        paymentMethodId = selectedPaymentMethod;
+        console.log('Using saved payment method:', paymentMethodId);
+      } else {
+        // Create new payment method
+        const cardElement = paymentElementRef.current || elements.getElement(CardElement);
+        if (!cardElement) {
+          throw new Error('Payment form not ready');
+        }
+
+        console.log('Creating payment method...');
+        const { error: pmError, paymentMethod: pm } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: {
+            name: cardholderName,
+            email: salesforceCustomer?.email || '',
+            address: {
+              postal_code: billingZip,
+              ...(invoice.billingAddress ? {
+                line1: invoice.billingAddress.addr1,
+                line2: invoice.billingAddress.addr2,
+                city: invoice.billingAddress.city,
+                state: invoice.billingAddress.state,
+                country: 'US',
+              } : {})
+            }
+          },
+        });
+
+        if (pmError) {
+          throw new Error(pmError.message);
+        }
+
+        paymentMethodId = pm.id;
+        console.log('Payment method created:', paymentMethodId);
       }
-
-      // Create payment method
-      console.log('Creating payment method...');
-      const { error: pmError, paymentMethod: pm } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: cardholderName,
-          email: salesforceCustomer?.email || '',
-          address: {
-            postal_code: billingZip,
-            ...(invoice.billingAddress ? {
-              line1: invoice.billingAddress.addr1,
-              line2: invoice.billingAddress.addr2,
-              city: invoice.billingAddress.city,
-              state: invoice.billingAddress.state,
-              country: 'US',
-            } : {})
-          }
-        },
-      });
-
-      if (pmError) {
-        throw new Error(pmError.message);
-      }
-
-      console.log('Payment method created:', pm.id);
 
       // Create invoice payment intent
       const paymentData = {
         amount: Math.round(invoice.amountRemaining * 100),
         currency: invoice.currency || 'usd',
-        paymentMethodId: pm.id,
+        paymentMethodId: paymentMethodId,
         invoiceId: invoice.internalId,
         invoiceNumber: invoice.id,
         customerId: salesforceCustomer?.id || '',
@@ -201,7 +281,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
           email: salesforceCustomer?.email || '',
           name: salesforceCustomer?.name || invoice.billingAddress?.addressee || '',
         },
-        savePaymentMethod: saveCard || enrollInAutopay, // Save card if enrolling in autopay
+        savePaymentMethod: useNewCard ? (saveCard || enrollInAutopay) : false, // Only save if it's a new card
         netsuiteCustomerId: netsuiteCustomerId,
         setupFutureUsage: enrollInAutopay ? 'off_session' : null
       };
@@ -240,7 +320,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
       } else if (intentResult.status === 'succeeded') {
         // Payment succeeded immediately
         finalPaymentIntentId = intentResult.paymentIntentId;
-        savedPaymentMethodId = intentResult.paymentMethodId || pm.id;
+        savedPaymentMethodId = intentResult.paymentMethodId || paymentMethodId;
         console.log('Payment succeeded immediately:', finalPaymentIntentId);
         
       } else if (intentResult.clientSecret) {
@@ -248,7 +328,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
         console.log('Confirming payment with client secret...');
         const { error: confirmError, paymentIntent: confirmedIntent } = await stripe.confirmCardPayment(
           intentResult.clientSecret,
-          { payment_method: pm.id }
+          { payment_method: paymentMethodId }
         );
 
         if (confirmError) {
@@ -261,7 +341,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
       } else {
         // Fallback - use the payment intent ID from the response
         finalPaymentIntentId = intentResult.paymentIntentId;
-        savedPaymentMethodId = intentResult.paymentMethodId || pm.id;
+        savedPaymentMethodId = intentResult.paymentMethodId || paymentMethodId;
         console.log('Using payment intent ID from response:', finalPaymentIntentId);
       }
 
@@ -287,7 +367,6 @@ function InvoicePaymentForm({ invoice, onBack }) {
       } catch (confirmError) {
         console.error('Warning: Payment succeeded but NetSuite confirmation failed:', confirmError);
         // Don't throw error here - payment was successful even if NetSuite update failed
-        // The payment went through on Stripe, we just couldn't record it in NetSuite
       }
 
       // Handle autopay enrollment if selected
@@ -326,7 +405,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
-  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt]);
+  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt, useNewCard, selectedPaymentMethod]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -365,22 +444,11 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="flex items-start justify-center pt-8 lg:pt-10 px-4">
+      <div className="flex items-start justify-center px-4">
         <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-0">
-          {/* Back button */}
-          <button 
-            onClick={onBack}
-            className="flex items-center gap-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors mb-6 text-sm group"
-          >
-            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Invoice
-          </button>
-
-          {/* Migration Banner */}
+          {/* Migration Banner - reduced margin top */}
           {showMigrationPrompt && ENABLE_STRIPE_MIGRATION && (
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm">
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm mt-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
                   <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +473,8 @@ function InvoicePaymentForm({ invoice, onBack }) {
             </div>
           )}
 
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto">
+          {/* Main payment card - reduced margin top */}
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
           
               {/* LEFT SIDE - Invoice Summary */}
@@ -573,59 +642,84 @@ function InvoicePaymentForm({ invoice, onBack }) {
                         />
                       </div>
 
-                      {/* Card Information */}
+                      {/* Card Information with Dropdown */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Card Information
                         </label>
-                        <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
-                          <CardElement 
-                            options={CARD_ELEMENT_OPTIONS}
-                            onReady={handleCardReady}
-                            onChange={handleCardChange}
-                          />
-                        </div>
                         
-                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-start">
-                            <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div className="text-xs text-blue-700">
-                              <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                        {/* Saved Cards Dropdown */}
+                        {!loadingSavedCards && savedPaymentMethods.length > 0 && (
+                          <select
+                            value={useNewCard ? 'new' : selectedPaymentMethod}
+                            onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                            className="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent mb-3"
+                          >
+                            <option value="">Select a payment method</option>
+                            {savedPaymentMethods.map(method => (
+                              <option key={method.id} value={method.id}>
+                                •••• {method.card.last4} - {method.card.brand.charAt(0).toUpperCase() + method.card.brand.slice(1)} (Expires {String(method.card.exp_month).padStart(2, '0')}/{method.card.exp_year})
+                              </option>
+                            ))}
+                            <option value="new">──────── Add new card ────────</option>
+                          </select>
+                        )}
+                        
+                        {/* New Card Input - Only show if using new card or no saved cards */}
+                        {(useNewCard || savedPaymentMethods.length === 0) && (
+                          <>
+                            <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
+                              <CardElement 
+                                options={CARD_ELEMENT_OPTIONS}
+                                onReady={handleCardReady}
+                                onChange={handleCardChange}
+                              />
                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Save Card Option - Enhanced */}
-                      <div className={`border rounded-lg p-4 ${showMigrationPrompt ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
-                        <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={saveCard}
-                            onChange={(e) => {
-                              setSaveCard(e.target.checked);
-                              // If unchecking save card, also uncheck autopay
-                              if (!e.target.checked) {
-                                setEnrollInAutopay(false);
-                              }
-                            }}
-                            className="w-4 h-4 text-[#13273f] border-gray-300 rounded focus:ring-[#13273f]"
-                          />
-                          <span className="ml-3 text-gray-700 font-medium text-sm">
-                            Save this card for future payments
-                          </span>
-                        </label>
-                        {showMigrationPrompt && (
-                          <p className="mt-2 text-xs text-purple-700 ml-7">
-                            Required to upgrade from legacy autopay
-                          </p>
+                            
+                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-start">
+                                <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="text-xs text-blue-700">
+                                  <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                                </div>
+                              </div>
+                            </div>
+                          </>
                         )}
                       </div>
 
+                      {/* Save Card Option - Only show for new cards */}
+                      {useNewCard && (
+                        <div className={`border rounded-lg p-4 ${showMigrationPrompt ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={saveCard}
+                              onChange={(e) => {
+                                setSaveCard(e.target.checked);
+                                // If unchecking save card, also uncheck autopay
+                                if (!e.target.checked) {
+                                  setEnrollInAutopay(false);
+                                }
+                              }}
+                              className="w-4 h-4 text-[#13273f] border-gray-300 rounded focus:ring-[#13273f]"
+                            />
+                            <span className="ml-3 text-gray-700 font-medium text-sm">
+                              Save this card for future payments
+                            </span>
+                          </label>
+                          {showMigrationPrompt && (
+                            <p className="mt-2 text-xs text-purple-700 ml-7">
+                              Required to upgrade from legacy autopay
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {/* Autopay Enrollment Option */}
-                      {showAutopayOption && saveCard && (
+                      {showAutopayOption && (saveCard || !useNewCard) && (
                         <div className={`border rounded-lg p-4 ${enrollInAutopay ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'} transition-colors`}>
                           <label className="flex items-start cursor-pointer">
                             <input
@@ -739,6 +833,17 @@ function InvoicePaymentForm({ invoice, onBack }) {
               </div>
             </div>
           </div>
+          
+          {/* Back button - at bottom */}
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 text-[#6b5b7e] hover:text-[#4a4266] transition-colors mt-6 mb-8 text-sm group"
+          >
+            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Invoice
+          </button>
         </div>
       </div>
     </div>

@@ -1,54 +1,113 @@
 import React from 'react';
 
 const InvoiceListItem = ({ invoice, onViewInvoice, isLoading, animationDelay }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount || 0);
+  };
+
+  const getStatusBadge = (status) => {
+    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+    
+    switch(status) {
+      case 'Paid In Full':
+        return `${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-200`;
+      case 'Open':
+      case 'Payment Due':
+        return `${baseClasses} bg-amber-50 text-amber-700 border border-amber-200`;
+      case 'Pending Payment':
+        return `${baseClasses} bg-violet-50 text-violet-700 border border-violet-200`;
+      case 'Overdue':
+        return `${baseClasses} bg-rose-50 text-rose-700 border border-rose-200`;
+      default:
+        return `${baseClasses} bg-slate-50 text-slate-700 border border-slate-200`;
+    }
+  };
+
   return (
-    <div className="relative p-6 pl-10 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all animate-fadeInUp" style={{animationDelay: `${animationDelay}ms`}}>
-      {/* Vertical line - on the edge */}
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#785683] rounded-l-lg"></div>
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div 
+      className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200 animate-fadeIn"
+      style={{ animationDelay: `${animationDelay}ms` }}
+    >
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {/* Left Section - Invoice Info */}
         <div className="flex-1">
-          <div className="flex items-start justify-between sm:justify-start sm:items-center gap-4 mb-3">
-            <h3 className="text-base font-semibold text-gray-900">{invoice.id}</h3>
-            <span className={`px-3 py-1 text-xs font-medium rounded-lg ${
-              invoice.status === 'Paid' 
-                ? 'bg-[#e5d4f1] text-[#6b5b7e]' 
-                : invoice.status === 'Payment Pending'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-[#fef3e2] text-[#d09163]'
-            }`}>
-              {invoice.status === 'Paid' ? 'Paid' : 
-               invoice.status === 'Payment Pending' ? `Payment Pending #${invoice.unapprovedPaymentNumber}` :
-               'Payment Due'}
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Invoice #{invoice.documentNumber}
+            </h3>
+            <span className={getStatusBadge(invoice.status)}>
+              {invoice.status}
             </span>
           </div>
-          <p className="text-sm text-gray-600 mb-2 font-light">{invoice.description}</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 font-light">
-            <span>{new Date(invoice.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-            <span>Due: {new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <p className="text-xl font-semibold text-gray-900">${invoice.amount.toFixed(2)}</p>
-            {invoice.amountRemaining > 0 && invoice.amountRemaining < invoice.amount && (
-              <p className="text-xs text-orange-600 mt-1 font-medium">Due: ${invoice.amountRemaining.toFixed(2)}</p>
+          
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            <span className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {formatDate(invoice.date)}
+            </span>
+            {invoice.dueDate && (
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Due: {formatDate(invoice.dueDate)}
+              </span>
             )}
           </div>
-          <button 
+        </div>
+
+        {/* Right Section - Amount and Actions */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="text-right">
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(invoice.amount)}
+            </p>
+            {invoice.amountRemaining > 0 && invoice.status !== 'Paid In Full' && (
+              <p className="text-sm text-gray-600">
+                Balance: {formatCurrency(invoice.amountRemaining)}
+              </p>
+            )}
+          </div>
+
+          <button
             onClick={() => onViewInvoice(invoice)}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-light text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed w-[80px] h-[32px] justify-center"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#525278] border border-[#525278] rounded-lg 
+                     hover:bg-[#525278] hover:text-white transition-all duration-200 
+                     disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading...</span>
+              </>
             ) : (
               <>
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span>View</span>
+                <span>View Invoice</span>
               </>
             )}
           </button>

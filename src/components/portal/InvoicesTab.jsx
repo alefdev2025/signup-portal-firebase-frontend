@@ -22,9 +22,49 @@ import { handlePrintInvoice, handleDownloadInvoice } from './InvoicesComponents/
 
 // Feature flags
 const SHOW_LEGACY_AUTOPAY_BANNER = true;
-const DEBUG_TIMING = true; // Set to false in production
+const DEBUG_TIMING = false;
 
-const InvoicesTab = ({ customerId }) => {
+// Empty state component that matches InvoiceList styling
+const EmptyInvoiceListView = () => (
+  <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeIn" 
+       style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+    
+    {/* Header Section - matches InvoiceList */}
+    <div className="p-10 border-b border-gray-100">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] border-2 border-[#C084FC] shadow-lg hover:shadow-xl">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Invoice History</h2>
+          </div>
+          <p className="text-gray-700 text-sm leading-relaxed font-normal max-w-xl">
+            View and manage all your invoices. Download PDFs or make payments directly from this page.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* Empty State Content */}
+    <div className="p-8">
+      <div className="text-center py-16 animate-fadeIn">
+        <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p className="text-gray-700 text-base">No invoices available at this time.</p>
+      </div>
+    </div>
+  </div>
+);
+
+const InvoicesTab = () => {
+  const { customerId } = useMemberPortal();
+  
   // Debug timing on every render
   if (DEBUG_TIMING) {
     console.log('🕐 InvoicesTab Render:', {
@@ -44,7 +84,6 @@ const InvoicesTab = ({ customerId }) => {
                            /^\d{4,5}$/.test(customerId);
   
   // Don't pass null to hooks if customer ID is still loading
-  // This prevents the hooks from initializing with null and then not re-fetching
   const shouldFetchData = isValidCustomerId;
   
   // Hooks - only fetch when we have a valid customer ID
@@ -70,6 +109,8 @@ const InvoicesTab = ({ customerId }) => {
   const [loadingInvoiceId, setLoadingInvoiceId] = useState(null);
   const [mostRecentBillingAddress, setMostRecentBillingAddress] = useState(null);
   const [customerInfo, setCustomerInfo] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   
   // Autopay status state
   const [customerAutopayStatus, setCustomerAutopayStatus] = useState(null);
@@ -93,6 +134,35 @@ const InvoicesTab = ({ customerId }) => {
   const [notificationEmail, setNotificationEmail] = useState('');
   const [loadingNotificationSettings, setLoadingNotificationSettings] = useState(true);
   const [savingNotificationSettings, setSavingNotificationSettings] = useState(false);
+
+  // Set timeout for loading state
+  useEffect(() => {
+    if (isCustomerIdLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimedOut(true);
+      }, 5000); // 5 second timeout
+      
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimedOut(false);
+    }
+  }, [isCustomerIdLoading]);
+
+  // In InvoicesTab
+  useEffect(() => {
+    if (showPaymentPage) {
+      // Hide sidebar when payment page is shown
+      document.body.classList.add('payment-page-active');
+    } else {
+      // Show sidebar when payment page is hidden
+      document.body.classList.remove('payment-page-active');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('payment-page-active');
+    };
+  }, [showPaymentPage]);
 
   // Debug data flow
   useEffect(() => {
@@ -137,7 +207,7 @@ const InvoicesTab = ({ customerId }) => {
     }
   }, [isValidCustomerId, customerId, invoicesLoading, invoicesData, refetchInvoices, fetchInvoices]);
 
-  // Add Helvetica font with lighter weights
+  // Add Helvetica font with lighter weights and fix dropdown styling
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -167,6 +237,55 @@ const InvoicesTab = ({ customerId }) => {
       }
       .invoice-page .text-xs {
         font-weight: 400 !important;
+      }
+      
+      /* Center text in select dropdown and fix arrow spacing */
+      .invoice-page select {
+        text-align: center !important;
+        text-align-last: center !important;
+        padding-right: 2.5rem !important;
+      }
+      
+      /* Style the dropdown arrow */
+      .invoice-page select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-size: 1.5em 1.5em;
+        background-repeat: no-repeat;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+      
+      /* Hide sidebar when payment page is active - Desktop only */
+      @media (min-width: 1280px) {
+        /* Hide the sidebar container */
+        body.payment-page-active .relative.z-50 > div:first-child,
+        body.payment-page-active [class*="w-[280px]"] {
+          display: none !important;
+        }
+        
+        /* Remove sidebar spacer */
+        body.payment-page-active .w-\\[240px\\],
+        body.payment-page-active .w-\\[280px\\] {
+          width: 0 !important;
+        }
+        
+        /* Make main content full width */
+        body.payment-page-active main {
+          margin-left: 0 !important;
+        }
+        
+        /* Make the content area full width */
+        body.payment-page-active .flex-1.flex.flex-col {
+          margin-left: 0 !important;
+        }
+        
+        /* Ensure payment page takes full width */
+        body.payment-page-active .invoice-page {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -367,20 +486,39 @@ const InvoicesTab = ({ customerId }) => {
 
   // Fetch billing address from most recent invoice
   useEffect(() => {
-    if (invoices.length > 0 && !mostRecentBillingAddress && !billingAddressFetchedRef.current) {
-      billingAddressFetchedRef.current = true;
-      
+    if (invoices.length > 0 && !mostRecentBillingAddress) {
       const sortedByDate = [...invoices].sort((a, b) => 
         new Date(b.date) - new Date(a.date)
       );
       
-      const mostRecent = sortedByDate[0];
-      if (mostRecent.billingAddress) {
-        setMostRecentBillingAddress(mostRecent.billingAddress);
-        console.log('Using billing address from invoice list');
+      // Try to find the first invoice with a billing address
+      for (const invoice of sortedByDate) {
+        if (invoice.billingAddress) {
+          setMostRecentBillingAddress(invoice.billingAddress);
+          console.log('Found billing address from invoice:', invoice.id);
+          break;
+        }
+      }
+      
+      // If no invoices have billing address in the list data, 
+      // we might need to fetch details for the most recent invoice
+      if (!mostRecentBillingAddress && sortedByDate[0]?.internalId && !billingAddressFetchedRef.current) {
+        billingAddressFetchedRef.current = true;
+        console.log('No billing address in list, fetching details for most recent invoice');
+        
+        getInvoiceDetails(sortedByDate[0].internalId)
+          .then(details => {
+            if (details?.invoice?.billingAddress) {
+              setMostRecentBillingAddress(details.invoice.billingAddress);
+              console.log('Got billing address from invoice details');
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching invoice details for billing address:', err);
+          });
       }
     }
-  }, [invoices, mostRecentBillingAddress]);
+  }, [invoices]); // Remove mostRecentBillingAddress from dependencies to avoid infinite loop
 
   // Fetch customer information from Salesforce
   useEffect(() => {
@@ -534,8 +672,13 @@ const InvoicesTab = ({ customerId }) => {
   // Handle refresh
   const handleRefresh = async () => {
     if (isValidCustomerId) {
-      console.log('🔄 Manual refresh triggered');
-      await fetchInvoices({ forceRefresh: true });
+      setIsRefreshing(true);
+      try {
+        console.log('🔄 Manual refresh triggered');
+        await fetchInvoices({ forceRefresh: true });
+      } finally {
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -543,8 +686,26 @@ const InvoicesTab = ({ customerId }) => {
   const isInitialLoading = invoicesLoading && !invoices.length && isValidCustomerId;
   const isDataLoading = invoicesLoading || paymentsLoading;
 
-  // Show loading if customer ID is still loading
-  if (isCustomerIdLoading) {
+  // Show empty state if customer ID is invalid or loading timed out
+  if ((!isValidCustomerId && !isCustomerIdLoading) || loadingTimedOut) {
+    console.log('⚠️ No valid customer ID or loading timeout - showing empty state');
+    return (
+      <div className="invoice-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="h-8"></div>
+        <div className="px-4 md:px-0">
+          <EmptyInvoiceListView />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <InvoiceSummary invoices={[]} />
+            <BillingInformation billingAddress={null} isLoading={false} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading if customer ID is still loading (but not timed out)
+  if (isCustomerIdLoading && !loadingTimedOut) {
     console.log('⏳ Showing loading - Customer ID is still loading');
     return <LoadingState />;
   }
@@ -564,12 +725,30 @@ const InvoicesTab = ({ customerId }) => {
   // Show payment page if active
   if (showPaymentPage && invoiceForPayment) {
     return (
-      <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-        <PortalPaymentPage 
-          invoice={invoiceForPayment} 
-          onBack={handleBackFromPayment}
-        />
-      </div>
+      <>
+        {/* Add styles to hide sidebar on desktop */}
+        <style>
+          {`
+            @media (min-width: 1280px) {
+              .hide-sidebar-for-payment [class*="PortalSidebar"],
+              .hide-sidebar-for-payment .relative.z-50 > div:first-child {
+                display: none !important;
+              }
+              .hide-sidebar-for-payment main {
+                margin-left: 0 !important;
+              }
+            }
+          `}
+        </style>
+        <div className="hide-sidebar-for-payment">
+          <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            <PortalPaymentPage 
+              invoice={invoiceForPayment} 
+              onBack={handleBackFromPayment}
+            />
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -626,7 +805,7 @@ const InvoicesTab = ({ customerId }) => {
           {/* Show empty state if no valid customer ID or no invoices */}
           {(!isValidCustomerId || invoices.length === 0) ? (
             <>
-              <EmptyInvoiceState />
+              <EmptyInvoiceListView />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                 <InvoiceSummary invoices={[]} />
@@ -653,9 +832,11 @@ const InvoicesTab = ({ customerId }) => {
                 onFilterChange={setFilterValue}
                 onInvoiceSelect={handleViewInvoice}
                 loadingInvoiceId={loadingInvoiceId}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                 <InvoiceSummary invoices={invoices} />
                 <BillingInformation 
                   billingAddress={mostRecentBillingAddress} 
