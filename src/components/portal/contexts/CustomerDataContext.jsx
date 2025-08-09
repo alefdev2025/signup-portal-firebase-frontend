@@ -3,7 +3,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getCustomerPayments, getPaymentSummary } from '../services/netsuite/payments';
 import { getCustomerInvoices, getInvoiceDetails } from '../services/netsuite/invoices';
 import { getSalesOrders } from '../services/netsuite/salesOrders';
-import { getCustomerAutopayStatus, updateCustomerAutopayStatus } from '../services/netsuite/autopay';
+import { 
+  getCustomerAutopayStatus, 
+  updateCustomerAutopayStatus,
+  getCustomerBillingSummary,
+  getCustomerPaymentMethod,
+  verifyAutopayEligibility,
+  getCustomerAutopayHistory
+} from '../services/netsuite/autopay';
 
 const CustomerDataContext = createContext();
 
@@ -17,54 +24,71 @@ export const CustomerDataProvider = ({ children, customerId }) => {
     salesOrders: null,
     paymentSummary: null,
     autopayStatus: null,
+    billingSummary: null,       // NEW
+    paymentMethod: null,        // NEW
+    autopayEligibility: null,   // NEW
+    autopayHistory: null,       // NEW
     isLoading: {
       payments: false,
       invoices: false,
       salesOrders: false,
       paymentSummary: false,
-      autopayStatus: false
+      autopayStatus: false,
+      billingSummary: false,    // NEW
+      paymentMethod: false,     // NEW
+      autopayEligibility: false,// NEW
+      autopayHistory: false     // NEW
     },
     errors: {
       payments: null,
       invoices: null,
       salesOrders: null,
       paymentSummary: null,
-      autopayStatus: null
+      autopayStatus: null,
+      billingSummary: null,     // NEW
+      paymentMethod: null,      // NEW
+      autopayEligibility: null, // NEW
+      autopayHistory: null      // NEW
     },
     lastFetch: {
       payments: null,
       invoices: null,
       salesOrders: null,
       paymentSummary: null,
-      autopayStatus: null
+      autopayStatus: null,
+      billingSummary: null,     // NEW
+      paymentMethod: null,      // NEW
+      autopayEligibility: null, // NEW
+      autopayHistory: null      // NEW
     }
   });
 
-// In CustomerDataContext.jsx
-useEffect(() => {
-  // Check if data was already loaded by backgroundDataLoader
-  if (window.backgroundDataLoader && customerId) {
-    const loadedData = window.backgroundDataLoader.getLoadedData();
-    
-    if (loadedData?.invoices) {
-      console.log('[CustomerDataContext] Found preloaded invoices:', loadedData.invoices);
-      setData(prev => ({
-        ...prev,
-        invoices: loadedData.invoices,
-        lastFetch: { ...prev.lastFetch, invoices: Date.now() }
-      }));
+  // In CustomerDataContext.jsx
+  useEffect(() => {
+    // Check if data was already loaded by backgroundDataLoader
+    if (window.backgroundDataLoader && customerId) {
+      const loadedData = window.backgroundDataLoader.getLoadedData();
+      
+      if (loadedData?.invoices) {
+        console.log('[CustomerDataContext] Found preloaded invoices:', loadedData.invoices);
+        setData(prev => ({
+          ...prev,
+          invoices: loadedData.invoices,
+          lastFetch: { ...prev.lastFetch, invoices: Date.now() }
+        }));
+      }
+      
+      if (loadedData?.payments) {
+        console.log('[CustomerDataContext] Found preloaded payments:', loadedData.payments);
+        setData(prev => ({
+          ...prev,
+          payments: loadedData.payments,
+          lastFetch: { ...prev.lastFetch, payments: Date.now() }
+        }));
+      }
     }
-    
-    if (loadedData?.payments) {
-      console.log('[CustomerDataContext] Found preloaded payments:', loadedData.payments);
-      setData(prev => ({
-        ...prev,
-        payments: loadedData.payments,
-        lastFetch: { ...prev.lastFetch, payments: Date.now() }
-      }));
-    }
-  }
-}, [customerId]); // Add customerId as dependency
+  }, [customerId]); // Add customerId as dependency
+
   // Check if data is stale
   const isDataStale = (dataType) => {
     const lastFetch = data.lastFetch[dataType];
@@ -172,14 +196,75 @@ useEffect(() => {
     }, options);
   }, [customerId, fetchData]);
 
-  // Fetch autopay status
+  // UPDATED: Fetch autopay status using sales order analysis
   const fetchAutopayStatus = useCallback(async (options = {}) => {
     return fetchData('autopayStatus', async () => {
-      return await getCustomerAutopayStatus(customerId);
+      // Fetch autopay analysis from sales orders
+      const autopayResult = await getCustomerAutopayStatus(customerId);
+      
+      // Also fetch billing summary and payment method for complete picture
+      const [billingSummary, paymentMethod] = await Promise.all([
+        getCustomerBillingSummary(customerId).catch(err => {
+          console.warn('Failed to fetch billing summary:', err);
+          return null;
+        }),
+        getCustomerPaymentMethod(customerId).catch(err => {
+          console.warn('Failed to fetch payment method:', err);
+          return null;
+        })
+      ]);
+      
+      // Store billing summary and payment method in state as well
+      if (billingSummary) {
+        setData(prev => ({
+          ...prev,
+          billingSummary: billingSummary.summary || billingSummary,
+          lastFetch: { ...prev.lastFetch, billingSummary: Date.now() }
+        }));
+      }
+      
+      if (paymentMethod) {
+        setData(prev => ({
+          ...prev,
+          paymentMethod: paymentMethod,
+          lastFetch: { ...prev.lastFetch, paymentMethod: Date.now() }
+        }));
+      }
+      
+      return autopayResult;
     }, options);
   }, [customerId, fetchData]);
 
-  // Update autopay status (no caching for mutations)
+  // NEW: Fetch billing summary
+  const fetchBillingSummary = useCallback(async (options = {}) => {
+    return fetchData('billingSummary', async () => {
+      const result = await getCustomerBillingSummary(customerId);
+      return result.summary || result;
+    }, options);
+  }, [customerId, fetchData]);
+
+  // NEW: Fetch payment method
+  const fetchPaymentMethod = useCallback(async (options = {}) => {
+    return fetchData('paymentMethod', async () => {
+      return await getCustomerPaymentMethod(customerId);
+    }, options);
+  }, [customerId, fetchData]);
+
+  // NEW: Fetch autopay eligibility
+  const fetchAutopayEligibility = useCallback(async (options = {}) => {
+    return fetchData('autopayEligibility', async () => {
+      return await verifyAutopayEligibility(customerId);
+    }, options);
+  }, [customerId, fetchData]);
+
+  // NEW: Fetch autopay history
+  const fetchAutopayHistory = useCallback(async (options = {}) => {
+    return fetchData('autopayHistory', async () => {
+      return await getCustomerAutopayHistory(customerId, options);
+    }, options);
+  }, [customerId, fetchData]);
+
+  // UPDATED: Update autopay status (now includes new analysis)
   const updateAutopay = useCallback(async (enabled) => {
     // Set loading state
     setData(prev => ({
@@ -192,17 +277,23 @@ useEffect(() => {
       const result = await updateCustomerAutopayStatus(customerId, enabled);
       
       if (result.success) {
-        // Update the cached autopay status
+        // Update the cached autopay status with the new analysis
         setData(prev => ({
           ...prev,
-          autopayStatus: {
+          autopayStatus: result.autopayAnalysis || {
             ...prev.autopayStatus,
-            autopayEnabled: result.currentStatus,
+            autopayEnabled: result.actualAutopayStatus,
             lastChecked: new Date().toISOString()
           },
           lastFetch: { ...prev.lastFetch, autopayStatus: Date.now() },
           isLoading: { ...prev.isLoading, autopayStatus: false }
         }));
+        
+        // Refresh billing summary as it might have changed
+        fetchBillingSummary({ forceRefresh: true });
+        
+        // Also refresh eligibility
+        fetchAutopayEligibility({ forceRefresh: true });
       }
       
       return result;
@@ -217,7 +308,7 @@ useEffect(() => {
       
       throw error;
     }
-  }, [customerId]);
+  }, [customerId, fetchBillingSummary, fetchAutopayEligibility]);
 
   // Prefetch all data on mount
   useEffect(() => {
@@ -228,11 +319,11 @@ useEffect(() => {
         fetchInvoices().catch(err => console.error('Failed to prefetch invoices:', err)),
         //fetchSalesOrders().catch(err => console.error('Failed to prefetch sales orders:', err)),
         fetchPaymentSummary().catch(err => console.error('Failed to prefetch payment summary:', err)),
-        //fetchAutopayStatus().catch(err => console.error('Failed to prefetch autopay status:', err))
+        fetchAutopayStatus().catch(err => console.error('Failed to prefetch autopay status:', err))
+        // Note: billing summary and payment method are fetched as part of autopay status
       ]);
     }
   }, [customerId]);
-  
 
   // Refresh all data
   const refreshAllData = useCallback(async () => {
@@ -243,9 +334,13 @@ useEffect(() => {
       fetchInvoices(options),
       //fetchSalesOrders(options),
       fetchPaymentSummary(options),
-      fetchAutopayStatus(options)
+      fetchAutopayStatus(options),
+      fetchBillingSummary(options),
+      fetchPaymentMethod(options),
+      fetchAutopayEligibility(options)
     ]);
-  }, [fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, fetchAutopayStatus]);
+  }, [fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, fetchAutopayStatus, 
+      fetchBillingSummary, fetchPaymentMethod, fetchAutopayEligibility]);
 
   // Get specific data type with automatic refresh if stale
   const getData = useCallback((dataType) => {
@@ -267,6 +362,18 @@ useEffect(() => {
         case 'autopayStatus':
           fetchAutopayStatus();
           break;
+        case 'billingSummary':
+          fetchBillingSummary();
+          break;
+        case 'paymentMethod':
+          fetchPaymentMethod();
+          break;
+        case 'autopayEligibility':
+          fetchAutopayEligibility();
+          break;
+        case 'autopayHistory':
+          fetchAutopayHistory();
+          break;
       }
     }
     
@@ -275,7 +382,9 @@ useEffect(() => {
       isLoading: data.isLoading[dataType],
       error: data.errors[dataType]
     };
-  }, [data, fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, fetchAutopayStatus]);
+  }, [data, fetchPaymentsWithDetails, fetchInvoices, fetchPaymentSummary, 
+      fetchAutopayStatus, fetchBillingSummary, fetchPaymentMethod, 
+      fetchAutopayEligibility, fetchAutopayHistory]);
 
   const value = {
     // Direct data access
@@ -284,6 +393,10 @@ useEffect(() => {
     salesOrders: data.salesOrders,
     paymentSummary: data.paymentSummary,
     autopayStatus: data.autopayStatus,
+    billingSummary: data.billingSummary,         // NEW
+    paymentMethod: data.paymentMethod,           // NEW
+    autopayEligibility: data.autopayEligibility, // NEW
+    autopayHistory: data.autopayHistory,         // NEW
     
     // Loading states
     isLoading: data.isLoading,
@@ -299,6 +412,10 @@ useEffect(() => {
     //fetchSalesOrders,
     fetchPaymentSummary,
     fetchAutopayStatus,
+    fetchBillingSummary,        // NEW
+    fetchPaymentMethod,         // NEW
+    fetchAutopayEligibility,    // NEW
+    fetchAutopayHistory,        // NEW
     updateAutopay,
     
     // Utility
@@ -342,13 +459,53 @@ export const usePaymentSummary = () => {
   return getData('paymentSummary');
 };
 
-// New autopay hook
+// ENHANCED: Autopay hook with complete data
 export const useAutopay = () => {
-  const { getData, updateAutopay } = useCustomerData();
+  const { 
+    getData, 
+    updateAutopay, 
+    fetchAutopayEligibility,
+    fetchAutopayHistory,
+    billingSummary,
+    paymentMethod,
+    autopayEligibility
+  } = useCustomerData();
+  
   const autopayData = getData('autopayStatus');
+  const eligibilityData = getData('autopayEligibility');
+  const historyData = getData('autopayHistory');
   
   return {
     ...autopayData,
-    updateAutopay
+    updateAutopay,
+    verifyEligibility: fetchAutopayEligibility,
+    fetchHistory: fetchAutopayHistory,
+    billingSummary,
+    paymentMethod,
+    eligibility: eligibilityData.data,
+    history: historyData.data,
+    // Convenience getters from sales order analysis
+    isOnAutopay: autopayData.data?.autopayEnabled || false,
+    confidence: autopayData.data?.confidence || 0,
+    autopayStatus: autopayData.data?.autopayStatus || 'UNKNOWN',
+    cardDetails: autopayData.data?.cardDetails || null,
+    billingSchedule: autopayData.data?.billingSchedule || 'UNKNOWN',
+    evidence: autopayData.data?.evidence || [],
+    // Eligibility shortcuts
+    canEnableAutopay: eligibilityData.data?.eligible || false,
+    eligibilityReason: eligibilityData.data?.reason || null,
+    requiresStaffIntervention: eligibilityData.data?.requiresStaffIntervention || false
   };
+};
+
+// NEW: Billing summary hook
+export const useBillingSummary = () => {
+  const { getData } = useCustomerData();
+  return getData('billingSummary');
+};
+
+// NEW: Payment method hook
+export const usePaymentMethod = () => {
+  const { getData } = useCustomerData();
+  return getData('paymentMethod');
 };

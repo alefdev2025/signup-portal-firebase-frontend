@@ -210,3 +210,37 @@ export const updateAutoPaySettings = async (settings) => {
     throw error;
   }
 };
+
+export const savePaymentMethod = async (paymentMethodData) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_BASE_URL}/paymentMethods/save-payment-method`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        paymentMethodId: paymentMethodData.paymentMethodId
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save payment method');
+    }
+    
+    const result = await response.json();
+    return result;
+    
+  } catch (error) {
+    console.error("Error saving payment method:", error);
+    return { success: false, error: error.message };
+  }
+};

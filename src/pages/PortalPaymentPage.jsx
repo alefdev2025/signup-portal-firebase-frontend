@@ -18,6 +18,7 @@ import whiteALogoNoText from '../assets/images/alcor-white-logo-no-text.png';
 // Feature flags
 const ENABLE_STRIPE_MIGRATION = true; // Toggle to enable/disable migration prompts
 const ENABLE_AUTOPAY_ENROLLMENT = true; // Toggle to enable/disable autopay enrollment during payment
+const ENABLE_PROCESSING_FEE = true; // Toggle to enable/disable Stripe processing fee
 
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
@@ -80,6 +81,14 @@ function InvoicePaymentForm({ invoice, onBack }) {
   const [customerAutopayStatus, setCustomerAutopayStatus] = useState(null);
   const [loadingAutopayStatus, setLoadingAutopayStatus] = useState(true);
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
+  
+  // Calculate processing fee if enabled
+  const processingFeeRate = 0.029; // 2.9%
+  const processingFeeFixed = 0.30; // $0.30
+  const processingFee = ENABLE_PROCESSING_FEE 
+    ? (invoice.amountRemaining * processingFeeRate) + processingFeeFixed
+    : 0;
+  const totalAmount = invoice.amountRemaining + processingFee;
   
   // Fetch saved payment methods
   useEffect(() => {
@@ -271,7 +280,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
       // Create invoice payment intent
       const paymentData = {
-        amount: Math.round(invoice.amountRemaining * 100),
+        amount: Math.round(totalAmount * 100),
         currency: invoice.currency || 'usd',
         paymentMethodId: paymentMethodId,
         invoiceId: invoice.internalId,
@@ -405,37 +414,49 @@ function InvoicePaymentForm({ invoice, onBack }) {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
-  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt, useNewCard, selectedPaymentMethod]);
+  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt, useNewCard, selectedPaymentMethod, totalAmount]);
 
   const formatCurrency = (amount) => {
+    // Handle 'USA' currency code by converting to 'USD'
+    const currencyCode = invoice.currency === 'USA' ? 'USD' : (invoice.currency || 'USD');
+    
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: invoice.currency || 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      currencyDisplay: 'symbol'
     }).format(amount);
   };
 
   if (paymentStatus === 'completed') {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-auto">
-          <div className="bg-gradient-to-r from-green-400 to-green-500 rounded-full p-4 mb-6 mx-auto w-20 h-20 flex items-center justify-center shadow-lg">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+      <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="bg-white border-2 border-purple-200 rounded-xl p-8 text-center max-w-md mx-auto w-full">
+          <div className="border-2 border-blue-200 rounded-full p-3 mb-6 mx-auto w-16 h-16 flex items-center justify-center bg-blue-50">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Payment Complete!</h2>
-          <p className="text-base text-gray-600 mb-4">
-            Your payment of {formatCurrency(invoice.amountRemaining)} for invoice {invoice.id} has been processed.
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Payment Successful</h2>
+          <p className="text-sm text-gray-600 mb-1">
+            {formatCurrency(totalAmount)} has been charged
+          </p>
+          <p className="text-xs text-gray-500 mb-4">
+            Invoice #{invoice.id}
           </p>
           {enrollInAutopay && (
-            <p className="text-sm text-green-600 mb-4">
-              ✓ Automatic payments have been enabled for future invoices
-            </p>
+            <div className="border border-purple-200 bg-purple-50 rounded-lg px-4 py-2 mb-4">
+              <p className="text-xs text-purple-700 flex items-center justify-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Autopay enabled for future invoices
+              </p>
+            </div>
           )}
-          <div className="animate-pulse text-sm text-gray-500">
-            Returning to invoices...
+          <div className="text-xs text-gray-400 mt-6">
+            Redirecting to invoices...
           </div>
         </div>
       </div>
@@ -444,8 +465,8 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="flex items-start justify-center px-4">
-        <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-0">
+      <div className="flex items-start justify-center px-4 sm:px-4">
+        <div className="w-full max-w-5xl px-0 sm:px-6 lg:px-0">
           {/* Migration Banner - reduced margin top */}
           {showMigrationPrompt && ENABLE_STRIPE_MIGRATION && (
             <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm mt-4">
@@ -474,7 +495,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
           )}
 
           {/* Main payment card - reduced margin top */}
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] max-w-sm sm:max-w-none mx-auto mt-4">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] w-full mx-auto mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
           
               {/* LEFT SIDE - Invoice Summary */}
@@ -534,24 +555,45 @@ function InvoicePaymentForm({ invoice, onBack }) {
                     </div>
 
                     {/* Payment Summary */}
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 space-y-3">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 space-y-2">
+                      {!ENABLE_PROCESSING_FEE && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-white/80">Original Amount</span>
+                            <span className="text-xs text-white/90">{formatCurrency(invoice.amount)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-white/80">Amount Paid</span>
+                            <span className="text-xs text-white/90">
+                              {formatCurrency(invoice.amount - invoice.amountRemaining)}
+                            </span>
+                          </div>
+                          <hr className="border-white/20" />
+                        </>
+                      )}
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-white/80">Original Amount</span>
-                        <span className="text-sm text-white/90">{formatCurrency(invoice.amount)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-white/80">Amount Paid</span>
-                        <span className="text-sm text-white/90">
-                          {formatCurrency(invoice.amount - invoice.amountRemaining)}
-                        </span>
-                      </div>
-                      <hr className="border-white/20" />
-                      <div className="flex justify-between items-center">
-                        <span className="text-base font-semibold text-white">Amount Due</span>
-                        <span className="text-lg font-bold text-white">
+                        <span className="text-sm font-semibold text-white">Invoice Balance</span>
+                        <span className="text-sm font-bold text-white">
                           {formatCurrency(invoice.amountRemaining)}
                         </span>
                       </div>
+                      {ENABLE_PROCESSING_FEE && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-white/80">Processing Fee</span>
+                            <span className="text-xs text-white/90">
+                              {formatCurrency(processingFee)}
+                            </span>
+                          </div>
+                          <hr className="border-white/20" />
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-semibold text-white">Total Amount</span>
+                            <span className="text-base font-bold text-white">
+                              {formatCurrency(totalAmount)}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Current Autopay Status */}
@@ -653,7 +695,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           <select
                             value={useNewCard ? 'new' : selectedPaymentMethod}
                             onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                            className="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent mb-3"
+                            className="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-0 focus:border-gray-200 mb-3"
                           >
                             <option value="">Select a payment method</option>
                             {savedPaymentMethods.map(method => (
@@ -661,14 +703,14 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                 •••• {method.card.last4} - {method.card.brand.charAt(0).toUpperCase() + method.card.brand.slice(1)} (Expires {String(method.card.exp_month).padStart(2, '0')}/{method.card.exp_year})
                               </option>
                             ))}
-                            <option value="new">──────── Add new card ────────</option>
+                            <option value="new">───── Add new card ─────</option>
                           </select>
                         )}
                         
                         {/* New Card Input - Only show if using new card or no saved cards */}
                         {(useNewCard || savedPaymentMethods.length === 0) && (
                           <>
-                            <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-[#13273f] focus-within:ring-2 focus-within:ring-[#13273f] focus-within:ring-opacity-20 transition-all duration-200">
+                            <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-gray-200 focus-within:ring-0 transition-all duration-200">
                               <CardElement 
                                 options={CARD_ELEMENT_OPTIONS}
                                 onReady={handleCardReady}
@@ -795,8 +837,8 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           <span className="flex items-center">
                             <img src={alcorStar} alt="" className="h-4 mr-1" />
                             {enrollInAutopay 
-                              ? `Pay ${formatCurrency(invoice.amountRemaining)} & Enable Autopay`
-                              : `Complete Payment • ${formatCurrency(invoice.amountRemaining)}`
+                              ? `Pay ${formatCurrency(totalAmount)} & Enable Autopay`
+                              : `Complete Payment • ${formatCurrency(totalAmount)}`
                             }
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />

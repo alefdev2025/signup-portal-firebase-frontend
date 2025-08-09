@@ -404,6 +404,8 @@ export const setupSepaDebit = async (sepaData) => {
   }
 };
 
+
+// TO SET THOSE FLAGS ON THE CUSTOMER IN NETSUITE INDICATING THEY ARE ON STRIPE AUTOPAY
 /**
  * Update Stripe autopay settings for a customer
  * @param {string} netsuiteCustomerId - NetSuite customer ID
@@ -411,7 +413,7 @@ export const setupSepaDebit = async (sepaData) => {
  * @param {object} options - Additional options
  * @returns {Promise<object>} Update result
  */
-export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options = {}) => {
+ export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options = {}) => {
   try {
     const user = auth.currentUser;
     if (!user) {
@@ -427,6 +429,7 @@ export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options =
       updateLegacy: options.syncLegacy || false
     };
     
+    // ✅ Include paymentMethodId if provided
     if (options.paymentMethodId) {
       requestBody.paymentMethodId = options.paymentMethodId;
     }
@@ -469,6 +472,53 @@ export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options =
       success: false,
       error: error.message
     };
+  }
+};
+
+/**
+ * Get Stripe integration status for a customer
+ * @param {string} netsuiteCustomerId - NetSuite customer ID
+ * @returns {Promise<object>} Stripe integration status
+ */
+ export const getStripeIntegrationStatus = async (netsuiteCustomerId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated to get Stripe status");
+    }
+    
+    const token = await user.getIdToken();
+    
+    console.log("Fetching Stripe integration status for customer:", netsuiteCustomerId);
+    
+    const fetchPromise = fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
+      )
+    ]);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+      throw new Error(errorData.error || `Failed to get Stripe status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log('✅ Stripe integration status:', result);
+    
+    return result;
+  } catch (error) {
+    console.error("Error fetching Stripe integration status:", error);
+    throw error;
   }
 };
 

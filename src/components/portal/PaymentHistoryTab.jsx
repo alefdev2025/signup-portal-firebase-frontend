@@ -24,8 +24,31 @@ const PaymentHistoryTab = () => {
  const customerId = USE_TEST_CUSTOMER_ID ? TEST_CUSTOMER_ID : 
                    (isValidCustomerId ? contextCustomerId : null);
  
+ // Track loading states properly
+ const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+ const [signupPaymentsLoaded, setSignupPaymentsLoaded] = useState(false);
+ const [netsuitePaymentsLoaded, setNetsuitePaymentsLoaded] = useState(false);
+ 
  // CRITICAL: Only fetch NetSuite data if we have a valid customer ID
- const { data: paymentsData, isLoading, error } = customerId ? usePayments() : { data: null, isLoading: false, error: null };
+ const { 
+   data: paymentsData, 
+   isLoading, 
+   error,
+   refetch: refetchPayments
+ } = customerId ? usePayments() : { data: null, isLoading: false, error: null, refetch: null };
+ 
+ // Debug log the hook response
+ useEffect(() => {
+   console.log('usePayments hook response:', {
+     customerId,
+     paymentsData,
+     isLoading,
+     error,
+     dataType: typeof paymentsData,
+     dataKeys: paymentsData ? Object.keys(paymentsData) : null
+   });
+ }, [customerId, paymentsData, isLoading, error]);
+ 
  const { data: summaryData } = customerId ? usePaymentSummary() : { data: null };
  const { fetchPaymentsWithDetails } = useCustomerData();
  
@@ -60,7 +83,7 @@ const PaymentHistoryTab = () => {
  const [showSignupDetails, setShowSignupDetails] = useState(false);
  const [selectedSignupPayment, setSelectedSignupPayment] = useState(null);
 
- // Add Helvetica font with lighter weights
+ // Add Helvetica font with lighter weights - matching invoice tab
  useEffect(() => {
    const style = document.createElement('style');
    style.innerHTML = `
@@ -114,11 +137,28 @@ const PaymentHistoryTab = () => {
        setSignupError(error.message);
      } finally {
        setLoadingSignup(false);
+       setSignupPaymentsLoaded(true);
      }
    };
    
    fetchSignupPayments();
  }, []);
+
+ // Track when NetSuite payments are loaded
+ useEffect(() => {
+   if (!customerId) {
+     setNetsuitePaymentsLoaded(true); // No customer ID, so no NetSuite data to load
+   } else if (!isLoading && (paymentsData !== undefined || error)) {
+     setNetsuitePaymentsLoaded(true);
+   }
+ }, [customerId, isLoading, paymentsData, error]);
+
+ // Set initial load complete when both are done
+ useEffect(() => {
+   if (signupPaymentsLoaded && netsuitePaymentsLoaded) {
+     setInitialLoadComplete(true);
+   }
+ }, [signupPaymentsLoaded, netsuitePaymentsLoaded]);
 
  // Add click outside handler for dropdown
  useEffect(() => {
@@ -136,7 +176,6 @@ const PaymentHistoryTab = () => {
 
  // Handle navigation to payment methods
  const handleNavigateToPaymentMethods = () => {
-   // Use the same navigation method that's used in the portal
    window.location.hash = 'payments-methods';
  };
 
@@ -149,10 +188,7 @@ const PaymentHistoryTab = () => {
      const result = await updateAutopay(!autopayStatus.autopayEnabled);
      
      if (result.success) {
-       // Close modal
        setShowAutopayModal(false);
-       
-       // Show success message (you might want to use a toast library)
        alert(`Autopay has been ${result.currentStatus ? 'enabled' : 'disabled'} successfully`);
      } else {
        throw new Error(result.error || 'Failed to update autopay status');
@@ -188,9 +224,31 @@ const PaymentHistoryTab = () => {
 
  // Process payments when data changes
  const payments = React.useMemo(() => {
-   if (!paymentsData?.payments) return [];
+   console.log('Processing payments data:', {
+     paymentsData,
+     hasData: !!paymentsData,
+     dataArray: paymentsData?.data,
+     paymentsArray: paymentsData?.payments,
+     rawData: paymentsData
+   });
    
-   return paymentsData.payments.map(payment => ({
+   // Try different possible data structures
+   let paymentArray = [];
+   if (paymentsData) {
+     if (Array.isArray(paymentsData)) {
+       paymentArray = paymentsData;
+     } else if (paymentsData.data && Array.isArray(paymentsData.data)) {
+       paymentArray = paymentsData.data;
+     } else if (paymentsData.payments && Array.isArray(paymentsData.payments)) {
+       paymentArray = paymentsData.payments;
+     }
+   }
+   
+   console.log('Payment array to process:', paymentArray);
+   
+   if (!paymentArray || paymentArray.length === 0) return [];
+   
+   return paymentArray.map(payment => ({
      id: payment.id,
      internalId: payment.internalId,
      date: formatDate(payment.date),
@@ -214,7 +272,6 @@ const PaymentHistoryTab = () => {
      const averagePayment = totalSpent / payments.length;
      const lastPayment = payments[0].amount;
 
-     // Calculate yearly totals
      const yearTotals = {};
      payments.forEach(payment => {
        const year = new Date(payment.rawDate).getFullYear();
@@ -242,13 +299,11 @@ const PaymentHistoryTab = () => {
  // Export payments
  const handleExportPayments = () => {
    try {
-     // If no payments, alert user
      if (!filteredPayments || filteredPayments.length === 0) {
        alert('No payments found to export');
        return;
      }
 
-     // Convert payments to CSV format
      const csvHeaders = [
        'Date',
        'Payment #',
@@ -259,9 +314,7 @@ const PaymentHistoryTab = () => {
        'Status'
      ];
 
-     // Create CSV rows
      const csvRows = filteredPayments.map(payment => {
-       // Format status for export
        let exportStatus = payment.status;
        if (payment.status === 'Deposited') exportStatus = 'Completed';
        else if (payment.status === 'Not Deposited') exportStatus = 'Processing';
@@ -278,13 +331,11 @@ const PaymentHistoryTab = () => {
        ];
      });
 
-     // Combine headers and rows
      const csvContent = [
        csvHeaders,
        ...csvRows
      ].map(row => 
        row.map(cell => {
-         // Escape quotes and wrap in quotes if contains comma, newline, or quotes
          const cellStr = String(cell);
          if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
            return `"${cellStr.replace(/"/g, '""')}"`;
@@ -293,12 +344,10 @@ const PaymentHistoryTab = () => {
        }).join(',')
      ).join('\n');
 
-     // Create blob and download
      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
      const link = document.createElement('a');
      const url = URL.createObjectURL(blob);
      
-     // Generate filename with date
      const today = new Date().toISOString().split('T')[0];
      const filename = selectedYear !== 'All'
        ? `payments_${customerId || 'unknown'}_${selectedYear}.csv`
@@ -312,7 +361,6 @@ const PaymentHistoryTab = () => {
      link.click();
      document.body.removeChild(link);
      
-     // Clean up
      URL.revokeObjectURL(url);
 
    } catch (error) {
@@ -324,7 +372,16 @@ const PaymentHistoryTab = () => {
  // Handle refresh
  const handleRefresh = async () => {
    if (customerId) {
-     await fetchPaymentsWithDetails({ forceRefresh: true });
+     console.log('Refreshing payments for customer:', customerId);
+     try {
+       await fetchPaymentsWithDetails({ forceRefresh: true });
+       // Also try to refetch through the hook if available
+       if (typeof refetchPayments === 'function') {
+         await refetchPayments();
+       }
+     } catch (error) {
+       console.error('Error refreshing payments:', error);
+     }
    }
  };
 
@@ -334,29 +391,18 @@ const PaymentHistoryTab = () => {
    setShowSignupDetails(true);
  };
 
- // Check if we have any payment data at all
- const hasSignupPaymentData = signupPayments.length > 0 && signupPayments.some(p => p.status === 'completed');
+ // Check if we have any payment data at all - EXCLUDING zero amount payments
+ const hasCompletedSignupPayment = signupPayments.length > 0 && 
+   signupPayments.some(p => p.status === 'completed' && p.amount > 0);
  const hasNetSuitePayments = payments.length > 0;
 
- // Initial loading state - only show if loading signup payments
- if (loadingSignup && !hasSignupPaymentData) {
+ // Show loading state until both data sources have been checked
+ if (!initialLoadComplete) {
    return (
      <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen flex items-center justify-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
        <div className="text-center">
          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6b5b7e] mx-auto mb-4"></div>
          <p className="text-[#6b7280]">Loading payment history...</p>
-       </div>
-     </div>
-   );
- }
-
- // If we're waiting for customer ID, show a waiting message
- if (!customerId && !hasSignupPaymentData) {
-   return (
-     <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen flex items-center justify-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-       <div className="text-center">
-         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6b5b7e] mx-auto mb-4"></div>
-         <p className="text-[#6b7280]">Loading member information...</p>
        </div>
      </div>
    );
@@ -391,13 +437,13 @@ const PaymentHistoryTab = () => {
        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 mx-4 md:mx-0 animate-fadeIn">
          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
            <div className="flex items-center gap-3">
-             <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] border-2 border-[#3B82F6] shadow-lg hover:shadow-xl">
-               <svg className="w-6 h-6 text-white stroke-[0.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <div className="p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#1a3552] via-[#13283f] to-[#0a1825] border-2 border-[#3B82F6] shadow-lg hover:shadow-xl">
+               <svg className="w-7 h-7 text-white stroke-[0.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="0.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                </svg>
              </div>
              <div>
-               <h3 className="text-lg font-semibold text-gray-900">Automatic Payments</h3>
+               <h3 className="text-xl font-semibold text-gray-900">Automatic Payments</h3>
                <p className="text-sm text-gray-600">
                  {autopayLoading ? (
                    <span className="flex items-center gap-2">
@@ -547,54 +593,54 @@ const PaymentHistoryTab = () => {
 
              {/* Amount Breakdown */}
              {selectedSignupPayment.breakdown && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Breakdown</h4>
-              <dl className="border border-gray-200 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Base Membership Cost</dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {formatCurrency(selectedSignupPayment.breakdown.baseCost)}
-                  </dd>
-                </div>
-                {/* Only show application fee for cryopreservation members */}
-                {selectedSignupPayment.breakdown.applicationFee > 0 && 
-                (selectedSignupPayment.membershipDetails?.preservationType && 
-                  !selectedSignupPayment.membershipDetails.isBasicMembership) && (
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-gray-500">
-                      Application Fee
-                      <span className="text-xs text-gray-400 block">Cryopreservation members only</span>
-                    </dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {formatCurrency(selectedSignupPayment.breakdown.applicationFee)}
-                    </dd>
-                  </div>
-                )}
-                {selectedSignupPayment.breakdown.cmsAnnualFee > 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-gray-500">CMS Annual Fee</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {formatCurrency(selectedSignupPayment.breakdown.cmsAnnualFee)}
-                    </dd>
-                  </div>
-                )}
-                {selectedSignupPayment.breakdown.iceDiscount > 0 && (
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-gray-500">ICE Code Discount</dt>
-                    <dd className="text-sm font-medium text-green-600">
-                      -{formatCurrency(selectedSignupPayment.breakdown.iceDiscount)}
-                    </dd>
-                  </div>
-                )}
-                <div className="flex justify-between pt-2 border-t border-gray-200">
-                  <dt className="text-sm font-medium text-gray-900">Total Paid</dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {formatCurrency(selectedSignupPayment.amount)}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          )}
+               <div>
+                 <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Breakdown</h4>
+                 <dl className="border border-gray-200 rounded-lg p-4 space-y-2">
+                   <div className="flex justify-between">
+                     <dt className="text-sm text-gray-500">Base Membership Cost</dt>
+                     <dd className="text-sm font-medium text-gray-900">
+                       {formatCurrency(selectedSignupPayment.breakdown.baseCost)}
+                     </dd>
+                   </div>
+                   {/* Only show application fee for cryopreservation members */}
+                   {selectedSignupPayment.breakdown.applicationFee > 0 && 
+                   (selectedSignupPayment.membershipDetails?.preservationType && 
+                     !selectedSignupPayment.membershipDetails.isBasicMembership) && (
+                     <div className="flex justify-between">
+                       <dt className="text-sm text-gray-500">
+                         Application Fee
+                         <span className="text-xs text-gray-400 block">Cryopreservation members only</span>
+                       </dt>
+                       <dd className="text-sm font-medium text-gray-900">
+                         {formatCurrency(selectedSignupPayment.breakdown.applicationFee)}
+                       </dd>
+                     </div>
+                   )}
+                   {selectedSignupPayment.breakdown.cmsAnnualFee > 0 && (
+                     <div className="flex justify-between">
+                       <dt className="text-sm text-gray-500">CMS Annual Fee</dt>
+                       <dd className="text-sm font-medium text-gray-900">
+                         {formatCurrency(selectedSignupPayment.breakdown.cmsAnnualFee)}
+                       </dd>
+                     </div>
+                   )}
+                   {selectedSignupPayment.breakdown.iceDiscount > 0 && (
+                     <div className="flex justify-between">
+                       <dt className="text-sm text-gray-500">ICE Code Discount</dt>
+                       <dd className="text-sm font-medium text-green-600">
+                         -{formatCurrency(selectedSignupPayment.breakdown.iceDiscount)}
+                       </dd>
+                     </div>
+                   )}
+                   <div className="flex justify-between pt-2 border-t border-gray-200">
+                     <dt className="text-sm font-medium text-gray-900">Total Paid</dt>
+                     <dd className="text-sm font-medium text-gray-900">
+                       {formatCurrency(selectedSignupPayment.amount)}
+                     </dd>
+                   </div>
+                 </dl>
+               </div>
+             )}
 
              {/* Membership Details */}
              {selectedSignupPayment.membershipDetails && (
@@ -650,157 +696,156 @@ const PaymentHistoryTab = () => {
      )}
 
      <div className="px-4 md:px-0">
-       {/* Initial Signup Payment Section - Updated with better styling */}
-{/* Initial Signup Payment Section - Updated with better styling */}
-{hasSignupPaymentData && (
-  <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 md:p-10 mb-6 md:mb-8 animate-fadeIn" 
-       style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6 md:mb-12">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Initial Membership Payment</h2>
-    </div>
-    
-    {/* Updated design without light blue background */}
-    {signupPayments.filter(p => p.status === 'completed').map((payment) => {
-      // Determine if this was a cryopreservation member based on presence of application fee or preservation type
-      const isCryoMember = payment.breakdown?.applicationFee > 0 || 
-                          (payment.membershipDetails?.preservationType && 
-                           ['neuro', 'wholebody', 'whole-body', 'neurocryopreservation', 'wholebody-cryopreservation'].includes(payment.membershipDetails.preservationType.toLowerCase()));
-      
-      return (
-        <div key={payment.id}>
-          {/* Desktop view - Table-like layout */}
-          <div className="hidden sm:block overflow-x-auto -mx-6 md:mx-0">
-            <div className="min-w-[600px] px-6 md:px-0">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Date</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Transaction ID</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Type</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider hidden md:table-cell">Method</th>
-                    <th className="text-right py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Amount</th>
-                    <th className="text-center py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white">
-                    <td className="py-6 px-6 text-base text-[#2a2346] font-light">{formatDate(payment.date)}</td>
-                    <td className="py-6 px-6 text-base font-medium text-[#6b5b7e] font-mono text-sm">
-                      {payment.paymentIntentId ? payment.paymentIntentId.substring(0, 16) + '...' : payment.id}
-                    </td>
-                    <td className="py-6 px-6">
-                      <div>
-                        <p className="text-sm text-[#2a2346] font-medium">
-                          Membership Activation
-                        </p>
-                        {payment.membershipDetails && (
-                          <p className="text-xs text-[#6b7280] mt-1">
-                            {payment.membershipDetails.preservationType === 'basic' ? 'Basic Membership' : 
-                             payment.membershipDetails.preservationType === 'neuro' ? 'Neurocryopreservation' :
-                             payment.membershipDetails.preservationType === 'wholebody' ? 'Whole Body Cryopreservation' :
-                             payment.membershipDetails.preservationType || 'Standard'} • {payment.membershipDetails.paymentFrequency || 'Annual'}
-                          </p>
-                        )}
-                        {payment.breakdown && payment.breakdown.iceDiscount > 0 && (
-                          <p className="text-xs text-green-600 mt-1">
-                            ICE discount: -{formatCurrency(payment.breakdown.iceDiscount)}
-                          </p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-6 px-6 text-base text-[#4a3d6b] font-light hidden md:table-cell">
-                      {payment.paymentMethod || 'Card'}
-                    </td>
-                    <td className="py-6 px-6 text-right">
-                      <div>
-                        <p className="text-xl font-semibold text-[#2a2346]">
-                          {formatCurrency(payment.amount)}
-                        </p>
-                        {payment.breakdown && (
-                          <div className="text-xs text-[#6b7280] mt-1">
-                            {/* Only show application fee for cryopreservation members */}
-                            {payment.breakdown.applicationFee > 0 && isCryoMember && (
-                              <div>Includes {formatCurrency(payment.breakdown.applicationFee)} app fee (cryo)</div>
-                            )}
-                            {payment.breakdown.cmsAnnualFee > 0 && (
-                              <div>Includes {formatCurrency(payment.breakdown.cmsAnnualFee)} CMS fee</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-6 px-6 text-center">
-                      <span className="text-xs px-3 py-1 rounded-lg font-medium bg-[#e5d4f1] text-[#6b5b7e]">
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+       {/* Initial Signup Payment Section - Only show if has completed payments */}
+       {hasCompletedSignupPayment && (
+         <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-4 sm:p-6 md:p-10 mb-6 md:mb-8 animate-fadeIn" 
+              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6 md:mb-12">
+             <h2 className="text-xl font-semibold text-gray-900">Initial Membership Payment</h2>
+           </div>
+           
+           {/* Updated design without light blue background */}
+           {signupPayments.filter(p => p.status === 'completed' && p.amount > 0).map((payment) => {
+             // Determine if this was a cryopreservation member based on presence of application fee or preservation type
+             const isCryoMember = payment.breakdown?.applicationFee > 0 || 
+                                 (payment.membershipDetails?.preservationType && 
+                                  ['neuro', 'wholebody', 'whole-body', 'neurocryopreservation', 'wholebody-cryopreservation'].includes(payment.membershipDetails.preservationType.toLowerCase()));
+             
+             return (
+               <div key={payment.id}>
+                 {/* Desktop view - Table-like layout */}
+                 <div className="hidden sm:block overflow-x-auto -mx-6 md:mx-0">
+                   <div className="min-w-[600px] px-6 md:px-0">
+                     <table className="w-full">
+                       <thead>
+                         <tr className="border-b-2 border-gray-200">
+                           <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Date</th>
+                           <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Transaction ID</th>
+                           <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Type</th>
+                           <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider hidden md:table-cell">Method</th>
+                           <th className="text-right py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Amount</th>
+                           <th className="text-center py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Status</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white">
+                           <td className="py-6 px-6 text-base text-gray-900 font-normal">{formatDate(payment.date)}</td>
+                           <td className="py-6 px-6 text-base font-medium text-[#6b5b7e] font-mono text-sm">
+                             {payment.paymentIntentId ? payment.paymentIntentId.substring(0, 16) + '...' : payment.id}
+                           </td>
+                           <td className="py-6 px-6">
+                             <div>
+                               <p className="text-sm text-gray-900 font-medium">
+                                 Membership Activation
+                               </p>
+                               {payment.membershipDetails && (
+                                 <p className="text-xs text-gray-600 mt-1 font-normal">
+                                   {payment.membershipDetails.preservationType === 'basic' ? 'Basic Membership' : 
+                                    payment.membershipDetails.preservationType === 'neuro' ? 'Neurocryopreservation' :
+                                    payment.membershipDetails.preservationType === 'wholebody' ? 'Whole Body Cryopreservation' :
+                                    payment.membershipDetails.preservationType || 'Standard'} • {payment.membershipDetails.paymentFrequency || 'Annual'}
+                                 </p>
+                               )}
+                               {payment.breakdown && payment.breakdown.iceDiscount > 0 && (
+                                 <p className="text-xs text-green-600 mt-1 font-normal">
+                                   ICE discount: -{formatCurrency(payment.breakdown.iceDiscount)}
+                                 </p>
+                               )}
+                             </div>
+                           </td>
+                           <td className="py-6 px-6 text-base text-gray-700 font-normal hidden md:table-cell">
+                             {payment.paymentMethod || 'Card'}
+                           </td>
+                           <td className="py-6 px-6 text-right">
+                             <div>
+                               <p className="text-xl font-bold text-gray-900">
+                                 {formatCurrency(payment.amount)}
+                               </p>
+                               {payment.breakdown && (
+                                 <div className="text-xs text-gray-600 mt-1 font-normal">
+                                   {/* Only show application fee for cryopreservation members */}
+                                   {payment.breakdown.applicationFee > 0 && isCryoMember && (
+                                     <div>Includes {formatCurrency(payment.breakdown.applicationFee)} app fee (cryo)</div>
+                                   )}
+                                   {payment.breakdown.cmsAnnualFee > 0 && (
+                                     <div>Includes {formatCurrency(payment.breakdown.cmsAnnualFee)} CMS fee</div>
+                                   )}
+                                 </div>
+                               )}
+                             </div>
+                           </td>
+                           <td className="py-6 px-6 text-center">
+                             <span className="text-xs px-3 py-1 rounded-lg font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                               Completed
+                             </span>
+                           </td>
+                         </tr>
+                       </tbody>
+                     </table>
+                   </div>
+                 </div>
 
-          {/* Mobile view - Card layout */}
-          <div className="sm:hidden">
-            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{formatDate(payment.date)}</p>
-                  <p className="text-base font-medium text-[#6b5b7e]">Membership Activation</p>
-                </div>
-                <p className="text-xl font-semibold text-[#2a2346]">{formatCurrency(payment.amount)}</p>
-              </div>
-              <div className="space-y-2 mb-3">
-                <p className="text-xs text-gray-600">
-                  Transaction: {payment.paymentIntentId ? payment.paymentIntentId.substring(0, 16) + '...' : payment.id}
-                </p>
-                {payment.membershipDetails && (
-                  <p className="text-xs text-gray-600">
-                    <span className="font-medium">
-                      {payment.membershipDetails.preservationType === 'basic' ? 'Basic Membership' : 
-                       payment.membershipDetails.preservationType === 'neuro' ? 'Neurocryopreservation' :
-                       payment.membershipDetails.preservationType === 'wholebody' ? 'Whole Body Cryopreservation' :
-                       payment.membershipDetails.preservationType || 'Standard'}
-                    </span> • {payment.membershipDetails.paymentFrequency || 'Annual'}
-                  </p>
-                )}
-                {payment.breakdown && payment.breakdown.iceDiscount > 0 && (
-                  <p className="text-xs text-green-600">
-                    ICE discount applied: -{formatCurrency(payment.breakdown.iceDiscount)}
-                  </p>
-                )}
-                {/* Only show application fee for cryopreservation members */}
-                {payment.breakdown && payment.breakdown.applicationFee > 0 && isCryoMember && (
-                  <p className="text-xs text-gray-600">
-                    Includes {formatCurrency(payment.breakdown.applicationFee)} application fee (cryopreservation)
-                  </p>
-                )}
-                {payment.breakdown && payment.breakdown.cmsAnnualFee > 0 && (
-                  <p className="text-xs text-gray-600">
-                    Includes {formatCurrency(payment.breakdown.cmsAnnualFee)} CMS annual fee
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                <p className="text-sm text-gray-600">Method: {payment.paymentMethod || 'Card'}</p>
-                <span className="text-xs px-2 py-1 rounded bg-[#e5d4f1] text-[#6b5b7e]">
-                  Completed
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)}
+                 {/* Mobile view - Card layout */}
+                 <div className="sm:hidden">
+                   <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                     <div className="flex justify-between items-start mb-3">
+                       <div>
+                         <p className="text-sm text-gray-600 mb-1 font-normal">{formatDate(payment.date)}</p>
+                         <p className="text-base font-medium text-[#6b5b7e]">Membership Activation</p>
+                       </div>
+                       <p className="text-xl font-bold text-gray-900">{formatCurrency(payment.amount)}</p>
+                     </div>
+                     <div className="space-y-2 mb-3">
+                       <p className="text-xs text-gray-600 font-normal">
+                         Transaction: {payment.paymentIntentId ? payment.paymentIntentId.substring(0, 16) + '...' : payment.id}
+                       </p>
+                       {payment.membershipDetails && (
+                         <p className="text-xs text-gray-600 font-normal">
+                           <span className="font-medium">
+                             {payment.membershipDetails.preservationType === 'basic' ? 'Basic Membership' : 
+                              payment.membershipDetails.preservationType === 'neuro' ? 'Neurocryopreservation' :
+                              payment.membershipDetails.preservationType === 'wholebody' ? 'Whole Body Cryopreservation' :
+                              payment.membershipDetails.preservationType || 'Standard'}
+                           </span> • {payment.membershipDetails.paymentFrequency || 'Annual'}
+                         </p>
+                       )}
+                       {payment.breakdown && payment.breakdown.iceDiscount > 0 && (
+                         <p className="text-xs text-green-600 font-normal">
+                           ICE discount applied: -{formatCurrency(payment.breakdown.iceDiscount)}
+                         </p>
+                       )}
+                       {/* Only show application fee for cryopreservation members */}
+                       {payment.breakdown && payment.breakdown.applicationFee > 0 && isCryoMember && (
+                         <p className="text-xs text-gray-600 font-normal">
+                           Includes {formatCurrency(payment.breakdown.applicationFee)} application fee (cryopreservation)
+                         </p>
+                       )}
+                       {payment.breakdown && payment.breakdown.cmsAnnualFee > 0 && (
+                         <p className="text-xs text-gray-600 font-normal">
+                           Includes {formatCurrency(payment.breakdown.cmsAnnualFee)} CMS annual fee
+                         </p>
+                       )}
+                     </div>
+                     <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                       <p className="text-sm text-gray-600 font-normal">Method: {payment.paymentMethod || 'Card'}</p>
+                       <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                         Completed
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             );
+           })}
+         </div>
+       )}
 
        {/* NetSuite Payment History - Only show if has payments AND valid customer ID */}
        {hasNetSuitePayments && customerId && (
-         <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 md:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100" 
-              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+         <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-4 sm:p-6 md:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100" 
+              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6 md:mb-12">
-             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Payment History</h2>
+             <h2 className="text-xl font-semibold text-gray-900">Payment History</h2>
              <div className="hidden sm:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                <select 
                  value={selectedYear}
@@ -826,7 +871,7 @@ const PaymentHistoryTab = () => {
 
            {filteredPayments.length === 0 ? (
              <div className="text-center py-8 sm:py-16">
-               <p className="text-[#4a3d6b] text-base sm:text-lg">
+               <p className="text-gray-700 text-base sm:text-lg font-normal">
                  No payments found {selectedYear !== 'All' ? `for ${selectedYear}` : ''}
                </p>
              </div>
@@ -839,22 +884,22 @@ const PaymentHistoryTab = () => {
                      <div key={payment.id} className="bg-gray-50 rounded-lg p-5 border border-gray-200">
                        <div className="flex justify-between items-start mb-3">
                          <div>
-                           <p className="text-sm text-gray-600 mb-1">{new Date(payment.rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                           <p className="text-sm text-gray-600 mb-1 font-normal">{new Date(payment.rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                            <p className="text-base font-medium text-[#6b5b7e]">#{payment.documentNumber}</p>
                          </div>
-                         <p className="text-xl font-semibold text-[#2a2346]">${payment.amount.toFixed(2)}</p>
+                         <p className="text-xl font-bold text-gray-900">${payment.amount.toFixed(2)}</p>
                        </div>
-                       <p className="text-sm text-[#2a2346] mb-3">{payment.description || 'Payment'}</p>
+                       <p className="text-sm text-gray-900 mb-3 font-normal">{payment.description || 'Payment'}</p>
                        <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                         <p className="text-sm text-gray-600">Method: {payment.method}</p>
+                         <p className="text-sm text-gray-600 font-normal">Method: {payment.method}</p>
                          <span className={`text-xs px-2 py-1 rounded ${
                            payment.status === 'Deposited' 
-                             ? 'bg-[#e5d4f1] text-[#6b5b7e]'
+                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                              : payment.status === 'Not Deposited'
-                             ? 'bg-blue-100 text-blue-700'
+                             ? 'bg-blue-100 text-blue-700 border border-blue-200'
                              : payment.status === 'Unapplied' || payment.status === 'Unapproved' || payment.status === 'Unapproved Payment'
-                             ? 'bg-blue-50 text-blue-600'
-                             : 'bg-gray-100 text-gray-700'
+                             ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                             : 'bg-gray-100 text-gray-700 border border-gray-200'
                          }`}>
                            {payment.status === 'Deposited' ? 'Completed' : 
                             payment.status === 'Not Deposited' ? 'Processing' :
@@ -896,29 +941,29 @@ const PaymentHistoryTab = () => {
                    <table className="w-full">
                      <thead>
                        <tr className="border-b-2 border-gray-200">
-                         <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Date</th>
-                         <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Payment #</th>
-                         <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Description</th>
-                         <th className="text-left py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider hidden md:table-cell">Method</th>
-                         <th className="text-right py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Amount</th>
-                         <th className="text-center py-4 px-6 text-sm font-medium text-[#6b7280] uppercase tracking-wider">Status</th>
+                         <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                         <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Payment #</th>
+                         <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Description</th>
+                         <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider hidden md:table-cell">Method</th>
+                         <th className="text-right py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Amount</th>
+                         <th className="text-center py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Status</th>
                        </tr>
                      </thead>
                      <tbody>
                        {filteredPayments.map((payment, index) => (
                          <tr key={payment.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                           <td className="py-6 px-6 text-base text-[#2a2346] font-light">{payment.date}</td>
+                           <td className="py-6 px-6 text-base text-gray-900 font-normal">{payment.date}</td>
                            <td className="py-6 px-6 text-base font-medium text-[#6b5b7e]">
                              {payment.documentNumber}
                            </td>
                            <td className="py-6 px-6">
-                             <p className="text-sm text-[#2a2346] font-medium">
+                             <p className="text-sm text-gray-900 font-medium">
                                {payment.description || 'Payment'}
                              </p>
                              {payment.invoiceDetails && payment.invoiceDetails.length > 0 && (
                                <div className="mt-2 space-y-1">
                                  {payment.invoiceDetails.map((invoice, idx) => (
-                                   <div key={idx} className="text-sm text-[#6b7280] font-light">
+                                   <div key={idx} className="text-sm text-gray-600 font-normal">
                                      <span className="font-medium">{invoice.transactionName}:</span>{' '}
                                      {invoice.description && (
                                        <span>{invoice.description}</span>
@@ -928,19 +973,19 @@ const PaymentHistoryTab = () => {
                                </div>
                              )}
                            </td>
-                           <td className="py-6 px-6 text-base text-[#4a3d6b] font-light hidden md:table-cell">{payment.method}</td>
-                           <td className="py-6 px-6 text-xl font-semibold text-[#2a2346] text-right">
+                           <td className="py-6 px-6 text-base text-gray-700 font-normal hidden md:table-cell">{payment.method}</td>
+                           <td className="py-6 px-6 text-xl font-bold text-gray-900 text-right">
                              ${payment.amount.toFixed(2)}
                            </td>
                            <td className="py-6 px-6 text-center">
                              <span className={`text-xs px-3 py-1 rounded-lg font-medium ${
                                payment.status === 'Deposited' 
-                                 ? 'bg-[#e5d4f1] text-[#6b5b7e]'
+                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                  : payment.status === 'Not Deposited'
-                                 ? 'bg-blue-100 text-blue-700'
+                                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
                                  : payment.status === 'Unapplied' || payment.status === 'Unapproved' || payment.status === 'Unapproved Payment'
-                                 ? 'bg-blue-50 text-blue-600'
-                                 : 'bg-gray-100 text-gray-700'
+                                 ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                                 : 'bg-gray-100 text-gray-700 border border-gray-200'
                              }`}>
                                {payment.status === 'Deposited' ? 'Completed' : 
                                 payment.status === 'Not Deposited' ? 'Processing' :
@@ -960,27 +1005,29 @@ const PaymentHistoryTab = () => {
        )}
 
        {/* Show empty state only if no data at all */}
-       {!hasSignupPaymentData && !hasNetSuitePayments && !isLoading && !loadingSignup && (
-         <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-6 text-center">
+       {!hasCompletedSignupPayment && !hasNetSuitePayments && initialLoadComplete && (
+         <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-8 mb-6 text-center" 
+              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
            </svg>
-           <h3 className="text-lg font-medium text-gray-900 mb-2">No payment history</h3>
-           <p className="text-sm text-gray-500">No payments have been recorded yet.</p>
+           <h3 className="text-lg font-medium text-gray-900 mb-2">No payment history available</h3>
+           <p className="text-sm text-gray-500 font-normal">Unable to load payments at this time.</p>
          </div>
        )}
 
        {/* Annual Summary and Payment Records - Always show, even if empty */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8 md:mb-16">
          {/* Annual Summary Box */}
-         <div className="w-full bg-white rounded-2xl border border-gray-200 p-5 md:p-8 animate-fadeIn animation-delay-200 relative" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+         <div className="w-full bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-5 md:p-8 animate-fadeIn animation-delay-200 relative" 
+              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
            <div className="flex items-center gap-3 mb-6">
-             <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] border-2 border-[#C084FC] shadow-lg hover:shadow-xl">
-               <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <div className="p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#525278] via-[#404060] to-[#303048] border-2 border-[#C084FC] shadow-lg hover:shadow-xl">
+               <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                </svg>
              </div>
-             <h3 className="text-lg md:text-xl font-semibold text-gray-900">Annual Summary</h3>
+             <h3 className="text-xl font-semibold text-gray-900">Annual Summary</h3>
            </div>
            {Object.keys(stats.yearTotals).length > 0 ? (
              <div className="space-y-4 pb-12">
@@ -990,10 +1037,10 @@ const PaymentHistoryTab = () => {
                  .map(([year, total]) => (
                    <div key={year}>
                      <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                       <span className="text-gray-500 text-sm font-light">{year}</span>
+                       <span className="text-gray-700 text-sm font-normal">{year}</span>
                        <div className="text-right">
                          <span className="font-semibold text-gray-900 text-lg">${total.toFixed(2)}</span>
-                         <p className="text-xs text-gray-500 font-light">
+                         <p className="text-xs text-gray-500 font-normal">
                            {payments.filter(p => new Date(p.rawDate).getFullYear() === parseInt(year)).length} payments
                          </p>
                        </div>
@@ -1003,14 +1050,14 @@ const PaymentHistoryTab = () => {
              </div>
            ) : (
              <div className="pb-12">
-               <p className="text-[#6b7280] text-base font-light">No payment data available</p>
+               <p className="text-gray-700 text-base font-normal">No payment data available</p>
              </div>
            )}
            {customerId && (
              <button 
                onClick={handleRefresh}
                disabled={isLoading}
-               className="absolute bottom-6 right-6 flex items-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-[#3e466d] bg-white hover:bg-gray-50 border border-[#3e466d] rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+               className="absolute bottom-6 right-6 flex items-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm text-[#525278] bg-white hover:bg-gray-50 border border-[#525278] rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
              >
                <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1021,34 +1068,31 @@ const PaymentHistoryTab = () => {
          </div>
 
          {/* Payment Records Box */}
-         <div className="w-full bg-white rounded-2xl border border-gray-200 p-5 md:p-8 animate-fadeIn animation-delay-300" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+         <div className="w-full bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-5 md:p-8 animate-fadeIn animation-delay-300" 
+              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
            <div className="flex items-center gap-3 mb-6">
-             <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] border-2 border-[#E879F9] shadow-lg hover:shadow-xl">
-               <svg className="w-6 h-6 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <div className="p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] border-2 border-[#E879F9] shadow-lg hover:shadow-xl">
+               <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                </svg>
              </div>
-             <h3 className="text-lg md:text-xl font-semibold text-gray-900">Payment Records</h3>
+             <h3 className="text-xl font-semibold text-gray-900">Payment Records</h3>
            </div>
-           <p className="text-sm text-gray-500 mb-6 font-light">
+           <p className="text-sm text-gray-500 mb-6 font-normal">
              This shows all recent payments recorded for your account.
            </p>
            <div className="space-y-4">
              <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-               <span className="text-gray-500 text-sm font-light">Customer ID</span>
-               <span className="font-semibold text-gray-900 text-base md:text-lg">{customerId || 'Loading...'}</span>
-             </div>
-             <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-               <span className="text-gray-500 text-sm font-light">Total Payments</span>
+               <span className="text-gray-700 text-sm font-normal">Customer ID</span>
                <span className="font-semibold text-gray-900 text-base md:text-lg">
-                 {(payments.length + (hasSignupPaymentData ? 1 : 0))}
+                 {(payments.length + (hasCompletedSignupPayment ? 1 : 0))}
                </span>
              </div>
              <div className="flex justify-between items-center">
-               <span className="text-gray-500 text-sm font-light">Last Payment</span>
+               <span className="text-gray-700 text-sm font-normal">Last Payment</span>
                <span className="font-semibold text-gray-900 text-base md:text-lg">
                  {payments.length > 0 ? payments[0].date : 
-                  hasSignupPaymentData ? formatDate(signupPayments[0].date) : 'N/A'}
+                  hasCompletedSignupPayment ? formatDate(signupPayments[0].date) : 'N/A'}
                </span>
              </div>
            </div>

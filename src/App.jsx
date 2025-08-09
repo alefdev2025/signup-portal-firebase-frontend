@@ -20,6 +20,8 @@ import PortalHome from './pages/PortalHome';
 import StaffPage from './pages/StaffPage';
 import StaffPasswordReset from './pages/StaffPasswordReset';
 import PortalSetupPage from './pages/PortalSetupPage';
+import PaymentSetup from './components/portal/PaymentSetupSubscriptionNotUsing';
+import PaymentContentWrapper from './components/PaymentContentWrapper';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -196,6 +198,7 @@ function App() {
                 <StandalonePaymentPage />
               </ProtectedRoute>
             } />
+
             
             {/* Staff Portal Routes - NOW UNPROTECTED */}
             <Route path="/staff" element={<StaffPage />} />
