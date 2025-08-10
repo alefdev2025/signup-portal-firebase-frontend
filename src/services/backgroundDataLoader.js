@@ -61,13 +61,14 @@ class BackgroundDataLoader {
       this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadPayments(netsuiteCustomerId) : Promise.resolve()
     ]);
 
+    // TURN OFF DUE TO RATE LIMITING
     // Batch 4: Payment data if available (load after 1.5 seconds)
-    const batch4 = () => {
-      if (this.isValidNetsuiteId(netsuiteCustomerId)) {
-        return this.loadPaymentData(netsuiteCustomerId);
-      }
-      return Promise.resolve();
-    };
+    //const batch4 = () => {
+    //  if (this.isValidNetsuiteId(netsuiteCustomerId)) {
+    //    return this.loadPaymentData(netsuiteCustomerId);
+    //  }
+    //  return Promise.resolve();
+    //};
 
     // Execute batches with delays
     try {

@@ -187,6 +187,53 @@ export const getPaymentDetails = async (paymentId) => {
   }
 };
 
+// Add this to your netsuite/payments service file (e.g., services/netsuite/payments.js)
+
+/**
+ * Get all payment-related data in a single API call
+ * This prevents multiple API calls and rate limiting issues
+ */
+ export const getConsolidatedPaymentData = async (customerId) => {
+  try {
+    const response = await fetch(`${NETSUITE_API_BASE}/customers/${customerId}/payment-data`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch payment data');
+    }
+    
+    return {
+      success: true,
+      payments: data.payments || [],
+      paymentSummary: data.paymentSummary || null,
+      autopayStatus: data.autopayStatus || null,
+      signupPayments: data.signupPayments || []
+    };
+  } catch (error) {
+    console.error('Error fetching consolidated payment data:', error);
+    return {
+      success: false,
+      error: error.message,
+      payments: [],
+      paymentSummary: null,
+      autopayStatus: null,
+      signupPayments: []
+    };
+  }
+};
+
 /**
  * Get payment summary statistics for a customer
  * @param {string} customerId - NetSuite customer ID

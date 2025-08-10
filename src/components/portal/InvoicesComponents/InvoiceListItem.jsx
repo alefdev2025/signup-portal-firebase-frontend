@@ -2,6 +2,7 @@ import React from 'react';
 
 const InvoiceListItem = ({ invoice, onViewInvoice, isLoading, animationDelay }) => {
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -19,99 +20,126 @@ const InvoiceListItem = ({ invoice, onViewInvoice, isLoading, animationDelay }) 
     }).format(amount || 0);
   };
 
-  const getStatusBadge = (status) => {
-    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+  // Determine the display status
+  const getStatusDisplay = () => {
+    // If there's an unapproved payment, always show "Payment Submitted"
+    if (invoice.hasUnapprovedPayment) {
+      return {
+        text: 'Payment Submitted',
+        className: 'bg-violet-100 text-violet-800'
+      };
+    }
     
-    switch(status) {
-      case 'Paid In Full':
-        return `${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-200`;
+    // Otherwise show the regular status
+    switch (invoice.status) {
+      case 'Paid':
+        return {
+          text: 'Paid',
+          className: 'bg-green-100 text-green-800'
+        };
+      case 'Unpaid':
       case 'Open':
-      case 'Payment Due':
-        return `${baseClasses} bg-amber-50 text-amber-700 border border-amber-200`;
-      case 'Pending Payment':
-        return `${baseClasses} bg-violet-50 text-violet-700 border border-violet-200`;
+        return {
+          text: 'Unpaid',
+          className: 'bg-orange-100 text-orange-800'
+        };
+      case 'Partially Paid':
+        return {
+          text: 'Partially Paid',
+          className: 'bg-blue-100 text-blue-800'
+        };
       case 'Overdue':
-        return `${baseClasses} bg-rose-50 text-rose-700 border border-rose-200`;
+        return {
+          text: 'Overdue',
+          className: 'bg-red-100 text-red-800'
+        };
       default:
-        return `${baseClasses} bg-slate-50 text-slate-700 border border-slate-200`;
+        return {
+          text: invoice.status || 'Unknown',
+          className: 'bg-gray-100 text-gray-800'
+        };
     }
   };
 
+  const statusDisplay = getStatusDisplay();
+
   return (
     <div 
-      className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all duration-200 animate-fadeIn"
-      style={{ animationDelay: `${animationDelay}ms` }}
+      className={`bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer animate-fadeIn`}
+      style={{ 
+        animationDelay: `${animationDelay}ms`,
+        transform: isLoading ? 'scale(0.98)' : 'scale(1)',
+        opacity: isLoading ? 0.7 : 1
+      }}
+      onClick={() => !isLoading && onViewInvoice(invoice)}
     >
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Left Section - Invoice Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Left side - Invoice info */}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Invoice #{invoice.documentNumber}
-            </h3>
-            <span className={getStatusBadge(invoice.status)}>
-              {invoice.status}
+            <span className="text-sm text-gray-500">{formatDate(invoice.date)}</span>
+            <span className="text-gray-300">•</span>
+            {/* Show proper invoice number */}
+            <span className="text-sm font-medium text-[#6b5b7e]">
+              Invoice #{invoice.documentNumber || invoice.tranid || invoice.id}
             </span>
           </div>
           
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {formatDate(invoice.date)}
-            </span>
-            {invoice.dueDate && (
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Due: {formatDate(invoice.dueDate)}
-              </span>
-            )}
-          </div>
+          <p className="text-gray-900 font-medium mb-1">
+            {invoice.memo || invoice.description || `Invoice for ${formatDate(invoice.date)}`}
+          </p>
+          
+          {/* Show unapproved payment info if exists */}
+          {invoice.hasUnapprovedPayment && (
+            <p className="text-xs text-violet-600 mt-1">
+              Payment #{invoice.unapprovedPaymentNumber} pending approval 
+              ({formatCurrency(invoice.unapprovedPaymentAmount)})
+            </p>
+          )}
         </div>
 
-        {/* Right Section - Amount and Actions */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        {/* Right side - Amount and status */}
+        <div className="flex flex-col sm:items-end gap-2">
           <div className="text-right">
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(invoice.amount)}
+              {formatCurrency(invoice.amount || invoice.total)}
             </p>
-            {invoice.amountRemaining > 0 && invoice.status !== 'Paid In Full' && (
-              <p className="text-sm text-gray-600">
-                Balance: {formatCurrency(invoice.amountRemaining)}
+            {invoice.amountRemaining > 0 && invoice.amountRemaining < invoice.amount && (
+              <p className="text-sm text-gray-500">
+                {formatCurrency(invoice.amountRemaining)} remaining
               </p>
             )}
           </div>
-
-          <button
-            onClick={() => onViewInvoice(invoice)}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#525278] border border-[#525278] rounded-lg 
-                     hover:bg-[#525278] hover:text-white transition-all duration-200 
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                <span>Loading...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span>View Invoice</span>
-              </>
-            )}
-          </button>
+          
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.className}`}>
+            {statusDisplay.text}
+          </span>
         </div>
+      </div>
+
+      {/* Action button */}
+      <div className="mt-4 flex justify-end">
+        <button
+          className="text-sm text-[#6b5b7e] hover:text-[#4a4266] font-medium transition-colors flex items-center gap-1"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading...
+            </>
+          ) : (
+            <>
+              View Details
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

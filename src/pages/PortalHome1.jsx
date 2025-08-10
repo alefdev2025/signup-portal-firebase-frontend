@@ -435,6 +435,26 @@ const PortalHome = () => {
       setIsTransitioning(true);
       setTimeout(() => setIsTransitioning(false), 50);
       
+      // Scroll to top when changing tabs
+      const scrollToTop = () => {
+        // Find the main content area and scroll it to top
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+        
+        // Also try window scroll for mobile
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+      
+      // Execute scroll immediately
+      scrollToTop();
+      
+      // Also execute after transition completes
+      setTimeout(scrollToTop, 60);
+      
       // Just update the hash - this automatically creates a history entry
       window.location.hash = newTab;
       // The hashchange event listener will handle updating the activeTab

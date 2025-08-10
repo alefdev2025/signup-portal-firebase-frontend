@@ -1,212 +1,304 @@
 // services/paymentDataService.js
-import { getCustomerPayments, getPaymentSummary } from './netsuite/payments';
-import { getInvoiceDetails } from './netsuite/invoices';
+const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
 
 class PaymentDataService {
- constructor() {
-   this.cache = {
-     payments: null,
-     lastFetch: null,
-     isLoading: false,
-     loadPromise: null,
-     subscribers: new Set()
-   };
-   
-   // Cache duration - 30 minutes for payment data
-   this.CACHE_DURATION = 30 * 60 * 1000;
-   
-   // Track if user has made changes
-   this.hasUserMadeChanges = false;
- }
+  /**
+   * Fetch with retry logic
+   * @private
+   */
+  async fetchWithRetry(url, options, maxRetries = 5) {
+    let lastError;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch(url, options);
+        
+        if (response.status === 429) {
+          const retryAfter = parseInt(response.headers.get('Retry-After') || '5');
+          const waitTime = Math.min(retryAfter * 1000, 30000);
+          console.log(`⏳ Rate limited. Waiting ${waitTime}ms before retry ${i + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        
+        return response;
+      } catch (error) {
+        lastError = error;
+        if (i < maxRetries - 1) {
+          const waitTime = Math.min(1000 * Math.pow(2, i), 10000);
+          console.log(`🔄 Network error. Retrying in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    
+    throw lastError || new Error('Max retries exceeded');
+  }
 
- // Subscribe to updates
- subscribe(callback) {
-   this.cache.subscribers.add(callback);
-   return () => this.cache.subscribers.delete(callback);
- }
+  /**
+   * Get all payment data using the consolidated endpoint
+   * @param {string} customerId - Customer ID
+   * @param {boolean} includeLineItems - Whether to include invoice line items (slower)
+   * @returns {Promise<object>} Fresh payment data
+   */
+  async getPaymentData(customerId, includeLineItems = false) {
+    // Validate customer ID
+    if (!customerId || customerId === 'pending' || customerId === 'undefined') {
+      console.warn('Invalid customer ID for payment data:', customerId);
+      return {
+        payments: [],
+        paymentSummary: null,
+        autopayStatus: null,
+        signupPayments: [],
+        invoiceDetailsMap: null
+      };
+    }
+    
+    console.log(`💰 Fetching payment data from consolidated endpoint for customer ${customerId}`);
+    console.log(`   Include line items: ${includeLineItems}`);
+    
+    try {
+      // Build URL with query parameters
+      const params = new URLSearchParams({
+        includeInvoiceDetailsInPayments: 'true',
+        includeLineItems: includeLineItems.toString()
+      });
+      
+      const response = await this.fetchWithRetry(
+        `${API_BASE_URL}/netsuite/customers/${customerId}/invoice-data?${params}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        }
+      );
 
- // Notify all subscribers
- notifySubscribers() {
-   this.cache.subscribers.forEach(callback => callback({
-     payments: this.cache.payments,
-     isLoading: this.cache.isLoading,
-     lastFetch: this.cache.lastFetch
-   }));
- }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to load payment data: ${response.status} ${errorText}`);
+      }
 
- // Check if cache is valid
- isCacheValid() {
-   if (!this.cache.payments || !this.cache.lastFetch) return false;
-   if (this.hasUserMadeChanges) return false;
-   
-   const age = Date.now() - this.cache.lastFetch;
-   return age < this.CACHE_DURATION;
- }
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load payment data');
+      }
 
- // Mark that user made changes (like a payment)
- markUserChange() {
-   this.hasUserMadeChanges = true;
-   this.cache.payments = null; // Clear cache
- }
+      // Debug log the structure
+      console.log('✅ Consolidated data structure:', {
+        hasPayments: !!result.payments,
+        paymentsType: typeof result.payments,
+        paymentsKeys: result.payments ? Object.keys(result.payments) : [],
+        hasRecords: !!(result.payments?.records),
+        recordsLength: result.payments?.records?.length || 0,
+        samplePayment: result.payments?.records?.[0]
+      });
 
- // Get payments with smart caching
- async getPayments(customerId, options = {}) {
-   // Add validation at the beginning
-   if (!customerId) {
-     console.warn('No customer ID provided to getPayments');
-     return {
-       payments: [],
-       isLoading: false,
-       fromCache: false,
-       error: 'Customer ID is required'
-     };
-   }
-   
-   const { forceRefresh = false, silent = false } = options;
+      // Extract the actual payments array from the nested structure
+      let paymentsArray = [];
+      
+      // Handle different possible response structures
+      if (result.payments) {
+        if (Array.isArray(result.payments)) {
+          // Direct array
+          paymentsArray = result.payments;
+        } else if (result.payments.records && Array.isArray(result.payments.records)) {
+          // Nested in records property (most likely)
+          paymentsArray = result.payments.records;
+        } else if (result.payments.data && Array.isArray(result.payments.data)) {
+          // Nested in data property
+          paymentsArray = result.payments.data;
+        }
+      }
 
-   // If we have valid cache and not forcing refresh, return it
-   if (this.isCacheValid() && !forceRefresh) {
-     return {
-       payments: this.cache.payments,
-       isLoading: false,
-       fromCache: true
-     };
-   }
+      console.log(`✅ Extracted ${paymentsArray.length} payments from response`);
 
-   // If already loading, return the existing promise
-   if (this.cache.isLoading && this.cache.loadPromise) {
-     return this.cache.loadPromise;
-   }
+      // Process payments to ensure consistent structure
+      const payments = this.processPayments(paymentsArray);
+      
+      // Calculate payment summary from the data
+      const paymentSummary = this.calculatePaymentSummary(payments);
+      
+      // Extract autopay status - handle different structures
+      let autopayStatus = null;
+      if (result.stripeIntegration) {
+        autopayStatus = result.stripeIntegration;
+      } else if (result.autopayStatus) {
+        autopayStatus = result.autopayStatus;
+      }
+      
+      // Get invoice details map if it was included
+      const invoiceDetailsMap = result.invoiceDetailsMap || null;
 
-   // Start loading
-   this.cache.isLoading = true;
-   if (!silent) {
-     this.notifySubscribers();
-   }
+      return {
+        payments: payments,
+        paymentSummary: paymentSummary,
+        autopayStatus: autopayStatus,
+        signupPayments: [], // Not included in consolidated endpoint
+        invoiceDetailsMap: invoiceDetailsMap
+      };
+      
+    } catch (error) {
+      console.error('Error fetching payment data:', error);
+      throw error;
+    }
+  }
 
-   // Create the load promise
-   this.cache.loadPromise = this._fetchPayments(customerId)
-     .then(payments => {
-       this.cache.payments = payments;
-       this.cache.lastFetch = Date.now();
-       this.cache.isLoading = false;
-       this.hasUserMadeChanges = false;
-       this.notifySubscribers();
-       
-       return {
-         payments: this.cache.payments,
-         isLoading: false,
-         fromCache: false
-       };
-     })
-     .catch(error => {
-       this.cache.isLoading = false;
-       this.notifySubscribers();
-       throw error;
-     })
-     .finally(() => {
-       this.cache.loadPromise = null;
-     });
+  /**
+   * Process payments to ensure consistent structure
+   * @private
+   */
+  processPayments(payments) {
+    if (!Array.isArray(payments)) {
+      console.warn('Payments is not an array:', payments);
+      return [];
+    }
 
-   return this.cache.loadPromise;
- }
+    return payments.map(payment => {
+      // Ensure all expected fields exist
+      const processed = {
+        ...payment,
+        id: payment.id || payment.internalId,
+        documentNumber: payment.documentNumber || `PYMT-${payment.id}`,
+        date: payment.date,
+        amount: parseFloat(payment.amount) || 0,
+        unapplied: parseFloat(payment.unapplied) || 0,
+        status: payment.status || 'Unknown',
+        paymentMethod: payment.paymentMethod || 'Unknown',
+        memo: payment.memo || '',
+        currency: payment.currency || 'USD',
+        appliedTo: payment.appliedTo || []
+      };
 
- // Internal fetch method
- async _fetchPayments(customerId) {
-   // Add validation
-   if (!customerId) {
-     console.warn('No customer ID provided to _fetchPayments');
-     return [];
-   }
-   
-   console.log('Fetching payments from NetSuite...');
-   const startTime = Date.now();
-   
-   try {
-     // Fetch payments
-     const result = await getCustomerPayments(customerId, { limit: 100 });
-     
-     if (!result.success || !result.payments) {
-       throw new Error(result.error || 'Failed to load payments');
-     }
+      // Process applied invoices to ensure they have invoice details
+      processed.appliedTo = processed.appliedTo.map(applied => ({
+        ...applied,
+        transactionId: applied.transactionId,
+        transactionName: applied.transactionName || 'Unknown',
+        amount: parseFloat(applied.amount) || 0,
+        // Invoice details should already be attached by the RESTlet
+        invoiceDetails: applied.invoiceDetails || null
+      }));
 
-     // Process payments in parallel for better performance
-     const paymentsWithDetails = await this._enrichPaymentsWithInvoiceDetails(result.payments);
-     
-     console.log(`Payments fetched in ${Date.now() - startTime}ms`);
-     
-     return paymentsWithDetails;
-   } catch (error) {
-     console.error('Error fetching payments:', error);
-     throw error;
-   }
- }
+      return processed;
+    });
+  }
 
- // Enrich payments with invoice details
- async _enrichPaymentsWithInvoiceDetails(payments) {
-   // Batch process invoice details to improve performance
-   const invoiceCache = new Map();
-   
-   const enrichedPayments = await Promise.all(
-     payments.map(async (payment) => {
-       const invoiceDetails = await Promise.all(
-         (payment.appliedTo || []).map(async (applied) => {
-           try {
-             if (!applied.transactionId) return applied;
-             
-             // Check cache first
-             if (invoiceCache.has(applied.transactionId)) {
-               return invoiceCache.get(applied.transactionId);
-             }
-             
-             // Fetch if not cached
-             const details = await getInvoiceDetails(applied.transactionId);
-             if (details.invoice) {
-               const enriched = {
-                 ...applied,
-                 description: details.invoice.memo || details.invoice.description || 'Invoice',
-                 invoiceDate: details.invoice.date || details.invoice.trandate,
-                 items: details.invoice.items || []
-               };
-               invoiceCache.set(applied.transactionId, enriched);
-               return enriched;
-             }
-           } catch (err) {
-             console.warn(`Could not fetch details for invoice ${applied.transactionId}:`, err);
-           }
-           return applied;
-         })
-       );
-       
-       return { ...payment, invoiceDetails };
-     })
-   );
-   
-   return enrichedPayments;
- }
+  /**
+   * Calculate payment summary from payments array
+   * @private
+   */
+  calculatePaymentSummary(payments) {
+    if (!payments || payments.length === 0) {
+      return null;
+    }
 
- // Preload in background (called from login)
- async preloadInBackground(customerId) {
-   // Add validation
-   if (!customerId) {
-     console.log('No customer ID for payment preload - skipping');
-     return;
-   }
-   
-   // Don't show loading state for background preload
-   return this.getPayments(customerId, { silent: true }).catch(err => {
-     console.warn('Background payment preload failed:', err);
-   });
- }
+    const summary = {
+      totalPayments: payments.length,
+      totalAmount: 0,
+      totalUnapplied: 0,
+      recentPayments: 0,
+      paymentMethods: {},
+      lastPaymentDate: null,
+      averagePaymentAmount: 0
+    };
 
- // Clear cache
- clearCache() {
-   this.cache.payments = null;
-   this.cache.lastFetch = null;
-   this.hasUserMadeChanges = false;
-   this.notifySubscribers();
- }
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    let mostRecentDate = null;
+
+    payments.forEach(payment => {
+      const amount = parseFloat(payment.amount) || 0;
+      const unapplied = parseFloat(payment.unapplied) || 0;
+      
+      summary.totalAmount += amount;
+      summary.totalUnapplied += unapplied;
+      
+      // Track most recent payment date
+      if (payment.date) {
+        const paymentDate = new Date(payment.date);
+        if (!mostRecentDate || paymentDate > mostRecentDate) {
+          mostRecentDate = paymentDate;
+          summary.lastPaymentDate = payment.date;
+        }
+        
+        // Count recent payments
+        if (paymentDate >= thirtyDaysAgo) {
+          summary.recentPayments++;
+        }
+      }
+      
+      // Group by payment method
+      const method = payment.paymentMethod || 'Unknown';
+      if (!summary.paymentMethods[method]) {
+        summary.paymentMethods[method] = {
+          count: 0,
+          total: 0
+        };
+      }
+      summary.paymentMethods[method].count++;
+      summary.paymentMethods[method].total += amount;
+    });
+
+    // Calculate average
+    summary.averagePaymentAmount = summary.totalAmount / payments.length;
+
+    return summary;
+  }
+
+  /**
+   * Get payments only - for backward compatibility
+   */
+  async getPayments(customerId) {
+    const data = await this.getPaymentData(customerId);
+    return {
+      payments: data.payments,
+      isLoading: false,
+      fromCache: false
+    };
+  }
+
+  /**
+   * Get payment by ID
+   */
+  async getPaymentById(paymentId) {
+    // Since we don't have a specific endpoint for single payment,
+    // this would need to be implemented based on your needs
+    throw new Error('getPaymentById not implemented - use getPaymentData instead');
+  }
+
+  /**
+   * Clear any cached data (for future caching implementation)
+   */
+  clearCache() {
+    console.log('🧹 Clearing payment data cache');
+    // Implement when caching is added
+  }
+
+  /**
+   * Check if invoice details are available for a payment
+   */
+  hasInvoiceDetails(payment) {
+    return payment.appliedTo?.some(applied => 
+      applied.invoiceDetails && applied.invoiceDetails.detailLevel
+    ) || false;
+  }
+
+  /**
+   * Get invoice details level for a payment
+   */
+  getInvoiceDetailsLevel(payment) {
+    const levels = new Set();
+    payment.appliedTo?.forEach(applied => {
+      if (applied.invoiceDetails?.detailLevel) {
+        levels.add(applied.invoiceDetails.detailLevel);
+      }
+    });
+    return Array.from(levels);
+  }
 }
 
-// Export singleton instance
 export const paymentDataService = new PaymentDataService();

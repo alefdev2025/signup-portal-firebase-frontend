@@ -261,7 +261,7 @@ const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopa
   };
 
   return (
-    <div className={`border rounded-lg p-6 hover:shadow-md transition-all ${
+    <div className={`border rounded-lg p-6 hover:shadow-md transition-all h-[120px] ${
       isAutopayCard ? 'border-gray-300 shadow-sm' : 'border-gray-200 bg-white'
     }`}>
       <div className="flex justify-between items-start">
@@ -548,9 +548,9 @@ const AutopaySection = ({ customerId, stripePaymentMethods, onRefresh, onAddPaym
                 return (
                   <div 
                     key={method.id} 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors h-[72px] ${
                       isCurrentAutopayCard 
-                        ? 'border-green-300 bg-green-50' 
+                        ? 'border-gray-400' 
                         : 'border-gray-200 hover:border-[#6b5b7e]'
                     }`}
                   >
@@ -569,7 +569,7 @@ const AutopaySection = ({ customerId, stripePaymentMethods, onRefresh, onAddPaym
                         Expires {String(method.card?.exp_month).padStart(2, '0')}/{method.card?.exp_year}
                       </span>
                       {isCurrentAutopayCard && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                           Current
                         </span>
                       )}
@@ -874,7 +874,7 @@ const AutopaySection = ({ customerId, stripePaymentMethods, onRefresh, onAddPaym
                   Select a payment method to use for autopay:
                 </p>
                 {stripePaymentMethods.map((method) => (
-                  <div key={method.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#6b5b7e] transition-colors">
+                  <div key={method.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#6b5b7e] transition-colors h-[72px]">
                     <div className="flex items-center gap-3">
                       {method.card?.brand && (
                         <img 
@@ -893,7 +893,13 @@ const AutopaySection = ({ customerId, stripePaymentMethods, onRefresh, onAddPaym
                     <button
                       onClick={() => handleEnableAutopay(method.id)}
                       disabled={updatingPaymentMethodId !== null}
-                      className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors disabled:opacity-50`}
+                      className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors ${
+                        updatingPaymentMethodId === method.id 
+                          ? 'opacity-50' 
+                          : updatingPaymentMethodId !== null 
+                            ? 'opacity-50' 
+                            : 'hover:bg-[#6b5b7e] hover:text-white'
+                      }`}
                     >
                       {updatingPaymentMethodId === method.id ? 'Enabling...' : 'Use for Autopay'}
                     </button>
