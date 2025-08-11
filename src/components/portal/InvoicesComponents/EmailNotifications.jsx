@@ -11,7 +11,7 @@ const EmailNotifications = ({
   onToggleNotification 
 }) => {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 mt-10 mb-16 animate-fadeIn animation-delay-700" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
+    <div className="bg-white rounded-2xl border border-gray-200 p-8 mt-6 mb-16 animate-fadeIn animation-delay-700" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
       <div className="flex flex-col gap-4 lg:gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">Email Notifications</h3>

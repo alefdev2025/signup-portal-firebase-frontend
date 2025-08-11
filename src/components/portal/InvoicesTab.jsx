@@ -5,7 +5,7 @@ import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import PortalPaymentPage from '../../pages/PortalPaymentPage';
 import { invoiceNotificationsApi } from '../../services/invoiceNotificationsApi';
 
-// Import the new service
+// Import the new service - UPDATED PATH
 import { invoiceDataService } from './services/invoiceDataService';
 
 // Component imports
@@ -17,12 +17,14 @@ import InvoiceList from './InvoicesComponents/InvoiceList';
 import InvoiceSummary from './InvoicesComponents/InvoiceSummary';
 import BillingInformation from './InvoicesComponents/BillingInformation';
 import EmailNotifications from './InvoicesComponents/EmailNotifications';
+import StripeAutopayBanner from './InvoicesComponents/StripeAutopayBanner';
 
 // Utils
 import { processInvoices, filterInvoices } from './InvoicesComponents/utils/invoiceHelpers';
 import { handlePrintInvoice, handleDownloadInvoice } from './InvoicesComponents/utils/pdfGenerator';
 
 // Feature flags
+const SHOW_STRIPE_AUTOPAY_BANNER = true;
 const SHOW_LEGACY_AUTOPAY_BANNER = true;
 
 // Empty state component
@@ -61,8 +63,14 @@ const EmptyInvoiceListView = () => (
   </div>
 );
 
-const InvoicesTab = () => {
-  const { customerId, salesforceContactId } = useMemberPortal();
+const InvoicesTab = ({ setActiveTab }) => { 
+  // NOW call the hook inside the component
+  const { 
+    customerId, 
+    salesforceContactId, 
+    salesforceCustomer,
+    customerName 
+  } = useMemberPortal();
   
   // State management - ALL data in one place
   const [data, setData] = useState(null); // null = not loaded yet
@@ -208,13 +216,26 @@ const InvoicesTab = () => {
       
       // Get ALL data in one call
       const result = await invoiceDataService.getInvoiceData(customerId, {
-        forceRefresh: true
+        forceRefresh: true,
+        salesforceContactId: salesforceContactId
       });
       
       console.log('Got complete data:', {
         invoices: result.invoices?.length || 0,
-        payments: result.payments?.length || 0
+        payments: result.payments?.length || 0,
+        hasSalesOrderAnalysis: !!result.salesOrderAnalysis,
+        hasNotificationSettings: !!result.notificationSettings
       });
+      
+      // Log sales order analysis if present
+      if (result.salesOrderAnalysis) {
+        console.log('Sales Order Analysis received:', {
+          hasOrders: result.salesOrderAnalysis.hasOrders,
+          autopayStatus: result.salesOrderAnalysis.analysis?.autopayStatus,
+          canEnableAutopay: result.salesOrderAnalysis.canEnableAutopay,
+          billingPattern: result.salesOrderAnalysis.billingPattern?.type
+        });
+      }
       
       // Process invoices with payments to get correct statuses
       let processedInvoices = [];
@@ -233,12 +254,20 @@ const InvoicesTab = () => {
         autopayStatus: result.autopayStatus || null,
         customerInfo: result.customerInfo || null,
         emailNotificationSettings: result.emailNotificationSettings || null,
+        salesOrderAnalysis: result.salesOrderAnalysis || null,
         billingAddress: result.customerInfo?.billingAddress || 
                        processedInvoices.find(inv => inv.billingAddress)?.billingAddress || null
       });
       
-      // Set email notification settings
-      if (result.emailNotificationSettings) {
+      // Set email notification settings - UPDATED TO USE notificationSettings
+      if (result.notificationSettings) {
+        console.log('Setting notification settings from API:', result.notificationSettings);
+        setNewInvoiceAlerts(result.notificationSettings.newInvoiceAlerts || false);
+        setPaymentFailureAlerts(result.notificationSettings.paymentFailureAlerts || false);
+        setNotificationEmail(result.notificationSettings.notificationEmail || '');
+      } else if (result.emailNotificationSettings) {
+        // Fallback to emailNotificationSettings if notificationSettings is not available
+        console.log('Using fallback emailNotificationSettings');
         setNewInvoiceAlerts(result.emailNotificationSettings.newInvoiceAlerts || false);
         setPaymentFailureAlerts(result.emailNotificationSettings.paymentFailureAlerts || false);
         setNotificationEmail(result.emailNotificationSettings.notificationEmail || '');
@@ -250,7 +279,7 @@ const InvoicesTab = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [customerId]);
+  }, [customerId, salesforceContactId]);
 
   // Fetch data when customer ID is ready
   useEffect(() => {
@@ -321,7 +350,6 @@ const InvoicesTab = () => {
     }
   };
 
-    // Handle viewing invoice details
   // Handle viewing invoice details
   const handleViewInvoice = useCallback(async (invoice) => {
     setLoadingInvoiceId(invoice.id);
@@ -334,50 +362,41 @@ const InvoicesTab = () => {
     );
     
     try {
-      // NO NEED FOR ANOTHER API CALL - WE ALREADY HAVE THE DATA!
-      
       // Find the full invoice from our already-loaded data
       const fullInvoice = data.rawInvoices.find(inv => 
         inv.id === invoice.id || inv.internalId === invoice.internalId
       );
       
+      // Clean the invoice number (remove INV prefix)
+      const cleanInvoiceNumber = (invoice.documentNumber || invoice.tranid || invoice.id).replace(/^INV[-\s]*/i, '');
+      
       let detailedInvoice = {
         ...(fullInvoice || invoice),
+        // Map the fields correctly from backend response
+        id: cleanInvoiceNumber, // Use clean invoice number for display
+        internalId: invoice.id || invoice.internalId, // Keep internal ID for API calls
+        documentNumber: invoice.documentNumber || invoice.tranid,
         billingAddress: invoice.billingAddress || data?.billingAddress,
-        amount: parseFloat(invoice.amount) || 0,
-        subtotal: parseFloat(invoice.subtotal) || parseFloat(invoice.amount) || 0,
-        taxTotal: parseFloat(invoice.taxTotal) || 0,
+        // IMPORTANT: Use 'total' not 'amount' - this is what backend returns
+        amount: parseFloat(invoice.total) || 0,
+        subtotal: parseFloat(invoice.subtotal) || parseFloat(invoice.total) || 0,
+        taxTotal: parseFloat(invoice.taxTotal || invoice.taxtotal) || 0,
         discountTotal: parseFloat(invoice.discountTotal) || 0,
         amountRemaining: parseFloat(invoice.amountRemaining) || 0,
-        amountPaid: (parseFloat(invoice.amount) || 0) - (parseFloat(invoice.amountRemaining) || 0),
+        amountPaid: (parseFloat(invoice.total) || 0) - (parseFloat(invoice.amountRemaining) || 0),
         // Keep the processed status from processInvoices
         status: invoice.status,
         hasUnapprovedPayment: invoice.hasUnapprovedPayment,
         unapprovedPaymentNumber: invoice.unapprovedPaymentNumber,
-        unapprovedPaymentAmount: invoice.unapprovedPaymentAmount
+        unapprovedPaymentAmount: invoice.unapprovedPaymentAmount,
+        // Add other fields that might be needed
+        description: invoice.description || invoice.memo,
+        date: invoice.date || invoice.trandate,
+        dueDate: invoice.dueDate,
+        currency: invoice.currency || 'USD',
+        terms: invoice.terms,
+        subsidiary: invoice.subsidiary
       };
-      
-      // REMOVE THIS ENTIRE BLOCK - NO MORE API CALLS!
-      /*
-      if (invoice.internalId) {
-        try {
-          const result = await invoiceDataService.getInvoiceDetails(invoice.internalId);
-          
-          if (result && result.invoice) {
-            detailedInvoice = {
-              ...detailedInvoice,
-              ...result.invoice,
-              status: invoice.status,
-              hasUnapprovedPayment: invoice.hasUnapprovedPayment,
-              unapprovedPaymentNumber: invoice.unapprovedPaymentNumber,
-              unapprovedPaymentAmount: invoice.unapprovedPaymentAmount
-            };
-          }
-        } catch (detailError) {
-          console.error('Failed to fetch invoice details:', detailError);
-        }
-      }
-      */
       
       setSelectedInvoice(detailedInvoice);
     } finally {
@@ -486,16 +505,15 @@ const InvoicesTab = () => {
     <div className="invoice-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       <div className="h-8"></div>
 
-      {/* Legacy Autopay Banner */}
-      {data?.autopayStatus?.legacy?.autopayEnabled && !data?.autopayStatus?.stripe?.autopayEnabled && SHOW_LEGACY_AUTOPAY_BANNER && (
-        <LegacyAutopayBanner />
-      )}
-
       {/* Invoice Detail or List */}
       {selectedInvoice ? (
         <InvoiceDetail 
           invoice={selectedInvoice}
-          customerInfo={data?.customerInfo}
+          customerInfo={{
+            name: customerName,
+            alcorId: data?.customerInfo?.alcorId || data?.alcorId || 'N/A',
+            subsidiary: data?.customerInfo?.subsidiary || selectedInvoice.subsidiary || ''
+          }}
           onClose={handleCloseInvoice}
           onPrint={(invoice) => handlePrintInvoice(invoice, data?.customerInfo)}
           onDownload={(invoice) => handleDownloadInvoice(invoice, data?.customerInfo)}
@@ -512,6 +530,25 @@ const InvoicesTab = () => {
                 <InvoiceSummary invoices={[]} />
                 <BillingInformation billingAddress={null} isLoading={false} />
               </div>
+
+              {/* Autopay Banners for Empty State - REMOVED wrapper div with mt-12 md:mt-16 */}
+              {/* Legacy Autopay Banner */}
+              {data?.salesOrderAnalysis?.analysis?.autopayStatus === 'ON_AUTOPAY' && 
+              SHOW_LEGACY_AUTOPAY_BANNER && (
+                <LegacyAutopayBanner 
+                  salesOrderAnalysis={data?.salesOrderAnalysis}
+                  setActiveTab={setActiveTab}
+                />
+              )}
+
+              {/* Stripe Autopay Banner */}
+              {data?.salesOrderAnalysis?.analysis?.autopayStatus !== 'ON_AUTOPAY' && 
+              SHOW_STRIPE_AUTOPAY_BANNER && (
+                <StripeAutopayBanner 
+                  stripeAutopayStatus={data?.autopayStatus?.stripe}
+                  setActiveTab={setActiveTab}
+                />
+              )}
 
               <EmailNotifications 
                 newInvoiceAlerts={newInvoiceAlerts}
@@ -541,6 +578,23 @@ const InvoicesTab = () => {
                   isLoading={false} 
                 />
               </div>
+
+              {/* Autopay Banners - Above Email Notifications */}
+              {data?.salesOrderAnalysis?.analysis?.autopayStatus === 'ON_AUTOPAY' && 
+              SHOW_LEGACY_AUTOPAY_BANNER && (
+                <LegacyAutopayBanner 
+                  salesOrderAnalysis={data?.salesOrderAnalysis}
+                  setActiveTab={setActiveTab}
+                />
+              )}
+
+              {data?.salesOrderAnalysis?.analysis?.autopayStatus !== 'ON_AUTOPAY' && 
+              SHOW_STRIPE_AUTOPAY_BANNER && (
+                <StripeAutopayBanner 
+                  stripeAutopayStatus={data?.autopayStatus?.stripe}
+                  setActiveTab={setActiveTab}
+                />
+              )}
 
               <EmailNotifications 
                 newInvoiceAlerts={newInvoiceAlerts}

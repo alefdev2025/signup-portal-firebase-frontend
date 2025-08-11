@@ -25,12 +25,13 @@ const InvoiceDetail = ({ invoice, customerInfo, onClose, onPrint, onDownload, on
             <span className={`self-start px-4 py-2 text-sm font-medium rounded-lg mt-4 sm:mt-0 ${
               invoice.status === 'Paid' 
                 ? 'bg-green-100 text-green-700' 
-                : invoice.status === 'Payment Pending'
+                : invoice.status === 'Pending' || invoice.status === 'Payment Processing'
                 ? 'bg-blue-100 text-blue-700'
                 : 'bg-orange-100 text-orange-700'
             }`}>
               {invoice.status === 'Paid' ? 'Paid' : 
-               invoice.status === 'Payment Pending' ? 'Payment Pending' :
+               invoice.status === 'Pending' ? 'Payment Pending' :
+               invoice.status === 'Payment Processing' ? 'Processing' :
                'Payment Due'}
             </span>
           </div>
@@ -140,6 +141,26 @@ const InvoiceDetail = ({ invoice, customerInfo, onClose, onPrint, onDownload, on
             </div>
           </div>
 
+          {/* Status Message for Pending Payments */}
+          {invoice.status === 'Pending' && (
+            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">Payment Pending</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Your payment has been submitted and is awaiting approval. 
+                    {invoice.unappliedPaymentNumber && (
+                      <span> Payment reference: {invoice.unappliedPaymentNumber}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-8 border-t border-gray-200">
             <button 
@@ -164,7 +185,10 @@ const InvoiceDetail = ({ invoice, customerInfo, onClose, onPrint, onDownload, on
               <span>Download PDF</span>
             </button>
             
-            {invoice.status !== 'Paid' && invoice.status !== 'Payment Pending' && (
+            {/* Only show Pay button if invoice is NOT Paid, Pending, or Processing */}
+            {invoice.status !== 'Paid' && 
+             invoice.status !== 'Pending' && 
+             invoice.status !== 'Payment Processing' && (
               <button 
                 onClick={() => onPay(invoice)}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#12243c] to-[#1a2f4a] text-white rounded-lg hover:from-[#1a2f4a] hover:to-[#12243c] transition-all duration-200 font-medium text-sm"

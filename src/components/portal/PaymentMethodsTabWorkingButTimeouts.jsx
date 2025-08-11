@@ -1,17 +1,15 @@
 // File: components/portal/PaymentMethodsTab.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPaymentMethods, savePaymentMethod, removePaymentMethod as removePaymentMethodService } from '../../services/paymentMethods';
-import { updateStripeAutopay } from '../../services/payment';
+import { updateStripeAutopay, getStripeIntegrationStatus } from '../../services/payment';
+import { useAutopay, usePaymentMethod } from './contexts/CustomerDataContext';
 import { auth } from '../../services/firebase';
 import { toast } from 'react-hot-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useCustomerData } from './contexts/CustomerDataContext';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
-import { getCountries } from './utils/countries';
-
-// Import the new data service
-import { paymentMethodsDataService } from './services/paymentMethodsDataService';
 
 // Import card logos
 import visaLogo from '../../assets/images/cards/visa.png';
@@ -23,384 +21,173 @@ import discoverLogo from '../../assets/images/cards/discover.png';
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 
 const CARD_ELEMENT_OPTIONS = {
-    style: {
-      base: {
-        fontSize: '16px',
-        color: '#424770',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        '::placeholder': {
-          color: '#aab7c4',
-        },
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#424770',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      '::placeholder': {
+        color: '#aab7c4',
       },
-      invalid: {
-        color: '#dc3545',
-        iconColor: '#dc3545'
-      },
-      complete: {
-        iconColor: '#28a745'
-      }
     },
-    hidePostalCode: true, // Since you're collecting it separately
+    invalid: {
+      color: '#9e2146',
+    },
+  },
+};
+
+// Payment Setup Form Component
+const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { refreshAllData } = useCustomerData();
+  const { salesforceCustomer, netsuiteCustomerId } = useMemberPortal();
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [enableAutopay, setEnableAutopay] = useState(autopayOnly || false);
+  const [cardholderName, setCardholderName] = useState(salesforceCustomer?.name || '');
+
+  const handleCardChange = (event) => {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setError(event.error.message);
+    } else {
+      setError(null);
+    }
   };
 
-// Payment Setup Form Component with international support
-const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false }) => {
-    const stripe = useStripe();
-    const elements = useElements();
-    const { salesforceCustomer, currentUser } = useMemberPortal();
-    const [cardError, setCardError] = useState(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState(null);
-    const [cardComplete, setCardComplete] = useState(false);
-    
-    // Form fields - MUST BE DEFINED BEFORE USING IN selectedCountry
-    const [cardholderName, setCardholderName] = useState(salesforceCustomer?.name || '');
-    const [email, setEmail] = useState(currentUser?.email || salesforceCustomer?.email || '');
-    const [phone, setPhone] = useState(salesforceCustomer?.phone || '');
-    const [billingAddress, setBillingAddress] = useState({
-      line1: salesforceCustomer?.mailingAddress?.street || '',
-      line2: '',
-      city: salesforceCustomer?.mailingAddress?.city || '',
-      state: salesforceCustomer?.mailingAddress?.state || '',
-      postal_code: salesforceCustomer?.mailingAddress?.postalCode || '',
-      country: salesforceCustomer?.mailingAddress?.country || 'US'
-    });
+    if (!stripe || !elements) {
+      return;
+    }
   
-    // Get countries list and selected country
-    const countries = useMemo(() => getCountries(), []);
-    const selectedCountry = countries.find(c => c.code === billingAddress.country) || countries[0];
+    if (!cardholderName) {
+      setError('Please enter the cardholder name');
+      return;
+    }
   
-    const handleCardChange = (event) => {
-        setCardComplete(event.complete);
-        
-        if (event.error) {
-          setCardError(event.error.message);
-          // Don't set the main error here - only on submit
-        } else {
-          setCardError(null);
+    if (!cardComplete) {
+      setError('Please complete your card information');
+      return;
+    }
+  
+    setIsProcessing(true);
+    setError(null);
+  
+    try {
+      // Create payment method
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: elements.getElement(CardElement),
+        billing_details: {
+          name: cardholderName,
         }
-        
-        // Clear any submit errors when user starts typing again
-        if (error && event.error?.message !== error) {
-          setError(null);
-        }
-      };
+      });
   
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      
-      if (!stripe || !elements) {
-        return;
+      if (pmError) {
+        throw new Error(pmError.message);
       }
-    
-      // Validate required fields
-      if (!cardholderName.trim()) {
-        setError('Please enter the cardholder name');
-        return;
+  
+      console.log('Payment method created:', paymentMethod.id);
+      
+      // Save the payment method using the service function
+      const saveResult = await savePaymentMethod({ paymentMethodId: paymentMethod.id });
+      
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || 'Failed to save payment method');
       }
       
-      if (!email.trim()) {
-        setError('Please enter your email address');
-        return;
-      }
+      // Store the returned customer ID if it was created
+      const stripeCustomerId = saveResult.customerId;
+      console.log('Payment method saved, Stripe customer ID:', stripeCustomerId);
       
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError('Please enter a valid email address');
-        return;
-      }
-    
-      if (!cardComplete) {
-        setError('Please complete your card information');
-        return;
-      }
+      toast.success('Payment method saved successfully!');
       
-      // Validate address fields
-      if (!billingAddress.line1.trim() || !billingAddress.city.trim() || !billingAddress.postal_code.trim()) {
-        setError('Please complete all required billing address fields');
-        return;
-      }
+      // Refresh customer data
+      await refreshAllData();
       
-      // Only require state for countries that have states
-      if (selectedCountry.hasStates && !billingAddress.state.trim()) {
-        setError(`Please enter your ${selectedCountry.stateLabel.toLowerCase()}`);
-        return;
-      }
-    
-      setIsProcessing(true);
-      setError(null);
-    
-      try {
-        // Build billing details object
-        const billingDetails = {
-          name: cardholderName.trim(),
-          email: email.trim(),
-          phone: phone.trim() || null,
-          address: {
-            line1: billingAddress.line1.trim(),
-            city: billingAddress.city.trim(),
-            postal_code: billingAddress.postal_code.trim(),
-            country: billingAddress.country
-          }
-        };
-        
-        // Add optional fields
-        if (billingAddress.line2.trim()) {
-          billingDetails.address.line2 = billingAddress.line2.trim();
-        }
-        
-        // Only add state if it exists (not all countries have states)
-        if (billingAddress.state.trim()) {
-          billingDetails.address.state = billingAddress.state.trim();
-        }
-        
-        // Create payment method
-        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-          type: 'card',
-          card: elements.getElement(CardElement),
-          billing_details: billingDetails
-        });
-    
-        if (pmError) {
-          throw new Error(pmError.message);
-        }
-    
-        console.log('Payment method created:', paymentMethod.id);
-        
-        // Save the payment method
-        const saveResult = await savePaymentMethod({ 
-          paymentMethodId: paymentMethod.id,
-          customerInfo: {
-            email: email.trim(),
-            phone: phone.trim() || null,
-            name: cardholderName.trim()
-          }
-        });
-        
-        if (!saveResult.success) {
-          throw new Error(saveResult.error || 'Failed to save payment method');
-        }
-        
-        console.log('Payment method saved, Stripe customer ID:', saveResult.customerId);
-        
-        toast.success('Payment method saved successfully!');
-        
-        // Call success callback
-        onSuccess({
-          success: true,
-          autopayEnabled: false
-        });
-        
-      } catch (error) {
-        console.error('Error setting up payment method:', error);
-        setError(error.message || 'Failed to set up payment method. Please try again.');
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-  
-    return (
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Cardholder Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Cardholder Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-            value={cardholderName}
-            onChange={(e) => setCardholderName(e.target.value)}
-            placeholder="John Doe"
-          />
-        </div>
-  
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="john@example.com"
-          />
-          <p className="text-xs text-gray-500 mt-1">Receipt will be sent to this email</p>
-        </div>
-  
-        {/* Phone (Optional) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-  
-        {/* Billing Address Section */}
-        <div className="border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Billing Address</h4>
-          
-          {/* Country */}
-          <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-              value={billingAddress.country}
-              onChange={(e) => {
-                setBillingAddress({...billingAddress, country: e.target.value, state: ''});
-              }}
-            >
-              {countries.map(country => (
-                <option key={country.code} value={country.code}>
-                  {country.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Street Address */}
-          <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Street Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-              value={billingAddress.line1}
-              onChange={(e) => setBillingAddress({...billingAddress, line1: e.target.value})}
-              placeholder="123 Main Street"
-            />
-          </div>
-  
-          {/* Address Line 2 (Optional) */}
-          <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Apartment, suite, etc.
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-              value={billingAddress.line2}
-              onChange={(e) => setBillingAddress({...billingAddress, line2: e.target.value})}
-              placeholder="Apt 4B"
-            />
-          </div>
-  
-          {/* City and State/Province */}
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                City <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-                value={billingAddress.city}
-                onChange={(e) => setBillingAddress({...billingAddress, city: e.target.value})}
-                placeholder={selectedCountry.code === 'GB' ? 'London' : 'New York'}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {selectedCountry.stateLabel} {selectedCountry.hasStates && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="text"
-                required={selectedCountry.hasStates}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-                value={billingAddress.state}
-                onChange={(e) => setBillingAddress({...billingAddress, state: e.target.value})}
-                placeholder={selectedCountry.code === 'GB' ? 'Greater London' : selectedCountry.code === 'CA' ? 'ON' : 'NY'}
-                maxLength={selectedCountry.code === 'US' || selectedCountry.code === 'CA' ? '2' : '50'}
-              />
-            </div>
-          </div>
-  
-          {/* Postal Code */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {selectedCountry.zipLabel} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-              value={billingAddress.postal_code}
-              onChange={(e) => setBillingAddress({...billingAddress, postal_code: e.target.value})}
-              placeholder={selectedCountry.zipPlaceholder || '10001'}
-            />
-          </div>
-        </div>
-  
-        {/* Card Details */}
-        <div className="border-t pt-4">
+      // Call success callback
+      onSuccess({
+        success: true,
+        autopayEnabled: false
+      });
+      
+    } catch (error) {
+      console.error('Error setting up payment method:', error);
+      setError(error.message || 'Failed to set up payment method. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-            Card Details <span className="text-red-500">*</span>
+          Cardholder Name
         </label>
-        <div className={`px-3 py-2 border rounded-lg transition-colors ${
-            cardError ? 'border-red-300 bg-red-50' : 'border-gray-300'
-        } focus-within:ring-2 focus-within:ring-[#6b5b7e] focus-within:border-transparent`}>
-            <CardElement 
+        <input
+          type="text"
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
+          value={cardholderName}
+          onChange={(e) => setCardholderName(e.target.value)}
+          placeholder="John Doe"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Card Details
+        </label>
+        <div className="px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-[#6b5b7e] focus-within:border-transparent">
+          <CardElement 
             options={CARD_ELEMENT_OPTIONS} 
             onChange={handleCardChange}
-            />
+          />
         </div>
-        {cardError && (
-            <p className="text-xs text-red-600 mt-1">{cardError}</p>
-        )}
+      </div>
+
+
+
+      {autopayOnly && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            This card will be used for automatic invoice payments
+          </p>
         </div>
-  
-        {autopayOnly && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
-              This card will be used for automatic invoice payments
-            </p>
-          </div>
-        )}
-  
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-  
-        <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-            disabled={isProcessing}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!stripe || isProcessing || !cardComplete || !cardholderName || !email}
-            className="flex-1 bg-[#6b5b7e] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#5a4a6d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isProcessing ? 'Processing...' : (autopayOnly ? 'Save & Enable Autopay' : 'Save Card')}
-          </button>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <p className="text-sm text-red-800">{error}</p>
         </div>
-      </form>
-    );
-  };
+      )}
+
+      <div className="flex gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          disabled={isProcessing}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!stripe || isProcessing || !cardComplete || !cardholderName}
+          className="flex-1 bg-[#6b5b7e] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#5a4a6d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isProcessing ? 'Processing...' : (autopayOnly ? 'Save & Enable Autopay' : 'Save Card')}
+        </button>
+      </div>
+    </form>
+  );
+};
 
 // Payment Source Component
 const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopay, onRemove, updatingPaymentMethodId }) => {
@@ -542,26 +329,25 @@ const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopa
 };
 
 // Autopay Status Section
-const AutopaySection = ({ 
-  customerId, 
-  stripePaymentMethods, 
-  autopayData,
-  onRefresh, 
-  onAddPaymentMethod
-}) => {
+const AutopaySection = ({ customerId, stripePaymentMethods, onRefresh, onAddPaymentMethod, onStatusUpdate }) => {
   const navigate = useNavigate();
   const [updatingPaymentMethodId, setUpdatingPaymentMethodId] = useState(null);
   const [showChangePaymentMethodForm, setShowChangePaymentMethodForm] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
+  
+  const autopayData = useAutopay();
+  const {
+    isOnAutopay: isOnLegacyAutopay = false,
+    autopayStatus = 'UNKNOWN',
+    confidence = 0,
+    cardDetails = null,
+    billingSchedule = 'UNKNOWN',
+    isLoading: isLoadingLegacy = false
+  } = autopayData || {};
+  
   const [confirmDisable, setConfirmDisable] = useState(false);
-
-  // Extract data from the consolidated response
-  const isOnLegacyAutopay = autopayData?.legacyAutopay || false;
-  const isOnStripeAutopay = autopayData?.stripeAutopay || false;
-  const stripePaymentMethodId = autopayData?.stripeIntegration?.stripe?.defaultPaymentMethodId || 
-                                autopayData?.autopayStatus?.stripe?.defaultPaymentMethodId;
-  const salesOrderAnalysis = autopayData?.salesOrderAnalysis;
-  const cardDetails = salesOrderAnalysis?.analysis?.cardDetails;
 
   // Add click outside handler
   useEffect(() => {
@@ -578,6 +364,32 @@ const AutopaySection = ({
     }
   }, [showOptionsDropdown]);
 
+  // Fetch Stripe integration status
+  useEffect(() => {
+    const fetchStripeStatus = async () => {
+      try {
+        setIsLoadingStatus(true);
+        const data = await getStripeIntegrationStatus(customerId);
+        console.log('Stripe Status Response:', data); // Debug log
+        setStripeStatus(data);
+        if (onStatusUpdate) {
+          onStatusUpdate(data);
+        }
+      } catch (error) {
+        console.error('Error fetching Stripe status:', error);
+      } finally {
+        setIsLoadingStatus(false);
+      }
+    };
+
+    if (customerId) {
+      fetchStripeStatus();
+    }
+  }, [customerId, onStatusUpdate]);
+
+  const isOnStripeAutopay = stripeStatus?.stripe?.autopayEnabled || false;
+  const stripePaymentMethodId = stripeStatus?.stripe?.defaultPaymentMethodId;
+
   const handleEnableAutopay = async (paymentMethodId) => {
     setUpdatingPaymentMethodId(paymentMethodId);
     try {
@@ -588,7 +400,18 @@ const AutopaySection = ({
       if (result.success) {
         toast.success('Autopay enabled successfully!');
         
-        // Refresh data
+        // Update the local state immediately
+        setStripeStatus(prevStatus => ({
+          ...prevStatus,
+          stripe: {
+            ...prevStatus?.stripe,
+            autopayEnabled: true,
+            defaultPaymentMethodId: paymentMethodId,
+            hasPaymentMethod: true
+          }
+        }));
+        
+        // Refresh parent data but don't re-fetch stripe status
         await onRefresh();
       } else {
         toast.error(result.error || 'Failed to enable autopay');
@@ -617,11 +440,27 @@ const AutopaySection = ({
       
       if (enableResult.success) {
         toast.success('Payment method updated successfully!');
+        setStripeStatus(prevStatus => ({
+          ...prevStatus,
+          stripe: {
+            ...prevStatus?.stripe,
+            autopayEnabled: true,
+            paymentMethodId: newPaymentMethodId,
+            hasPaymentMethod: true
+          }
+        }));
+        
         setShowChangePaymentMethodForm(false);
         
         // Refresh data
         setTimeout(async () => {
           await onRefresh();
+          try {
+            const data = await getStripeIntegrationStatus(customerId);
+            setStripeStatus(data);
+          } catch (error) {
+            console.error('Error refreshing Stripe status:', error);
+          }
         }, 1000);
       } else {
         throw new Error(enableResult.error || 'Failed to update payment method');
@@ -640,6 +479,13 @@ const AutopaySection = ({
       
       if (result.success) {
         toast.success('Autopay disabled');
+        setStripeStatus(prevStatus => ({
+          ...prevStatus,
+          stripe: {
+            ...prevStatus?.stripe,
+            autopayEnabled: false
+          }
+        }));
         await onRefresh();
       } else {
         throw new Error(result.error || 'Failed to disable autopay');
@@ -650,6 +496,17 @@ const AutopaySection = ({
       setUpdatingPaymentMethodId(null);
     }
   };
+
+  if (isLoadingStatus || isLoadingLegacy) {
+    return (
+      <div className="bg-white rounded-[1.25rem] border border-gray-200 p-10">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Show change payment method form if active
   if (showChangePaymentMethodForm) {
@@ -718,15 +575,15 @@ const AutopaySection = ({
                       )}
                     </div>
                     {!isCurrentAutopayCard && (
-                    <button
+                      <button
                         onClick={() => handleChangePaymentMethod(method.id)}
-                        disabled={updatingPaymentMethodId === method.id} // Only disable the clicked button
-                        className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors ${
-                            updatingPaymentMethodId === method.id ? 'opacity-50' : ''
+                        disabled={updatingPaymentMethodId !== null}
+                        className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                          updatingPaymentMethodId === method.id ? 'opacity-50' : ''
                         }`}
-                        >
+                      >
                         {updatingPaymentMethodId === method.id ? 'Updating...' : 'Use This Card'}
-                    </button>
+                      </button>
                     )}
                   </div>
                 );
@@ -1033,18 +890,20 @@ const AutopaySection = ({
                         Expires {String(method.card?.exp_month).padStart(2, '0')}/{method.card?.exp_year}
                       </span>
                     </div>
-                        <button
-                            onClick={() => handleEnableAutopay(method.id)}
-                            disabled={updatingPaymentMethodId === method.id} // Only disable the clicked button
-                            className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors ${
-                                updatingPaymentMethodId === method.id 
-                                ? 'opacity-50' 
-                                : 'hover:bg-[#6b5b7e] hover:text-white'
-                            }`}
-                            >
-                            {updatingPaymentMethodId === method.id ? 'Enabling...' : 'Use for Autopay'}
-                        </button>
-                    </div>
+                    <button
+                      onClick={() => handleEnableAutopay(method.id)}
+                      disabled={updatingPaymentMethodId !== null}
+                      className={`text-sm px-4 py-2 text-[#6b5b7e] bg-white border border-[#6b5b7e] rounded-lg font-medium transition-colors ${
+                        updatingPaymentMethodId === method.id 
+                          ? 'opacity-50' 
+                          : updatingPaymentMethodId !== null 
+                            ? 'opacity-50' 
+                            : 'hover:bg-[#6b5b7e] hover:text-white'
+                      }`}
+                    >
+                      {updatingPaymentMethodId === method.id ? 'Enabling...' : 'Use for Autopay'}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -1058,23 +917,24 @@ const AutopaySection = ({
 };
 
 const PaymentMethodsTab = () => {
-  const { customerId: contextCustomerId } = useMemberPortal();
-  
-  // State management
-  const [data, setData] = useState(null);
   const [stripePaymentMethods, setStripePaymentMethods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [customerId, setCustomerId] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState(null);
   
-  // Validate customer ID
-  const customerId = contextCustomerId && 
-                    contextCustomerId !== 'pending' && 
-                    contextCustomerId !== 'undefined' &&
-                    contextCustomerId !== 'null' &&
-                    !isNaN(contextCustomerId) ? contextCustomerId : null;
-
+  const { data: paymentMethod, isLoading: isLoadingPaymentMethod } = usePaymentMethod();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedCustomerId = sessionStorage.getItem('customerId') || 
+                           localStorage.getItem('customerId') ||
+                           window.customerId || 
+                           '4666';
+    setCustomerId(storedCustomerId);
+  }, []);
 
   // Add Helvetica font
   useEffect(() => {
@@ -1115,53 +975,37 @@ const PaymentMethodsTab = () => {
     };
   }, []);
 
-  // Fetch all data
-  const fetchAllData = async () => {
-    if (!customerId) {
-      console.log('No valid customer ID, skipping data fetch');
-      setIsLoading(false);
-      return;
-    }
-
+  const fetchStripePaymentMethods = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch autopay status from consolidated endpoint
-      console.log('Fetching payment method data for customer:', customerId);
-      const autopayData = await paymentMethodsDataService.getPaymentMethodData(customerId);
+      const data = await getPaymentMethods();
+      setStripePaymentMethods(data.paymentMethods || []);
       
-      console.log('Autopay data received:', {
-        legacyAutopay: autopayData.legacyAutopay,
-        stripeAutopay: autopayData.stripeAutopay,
-        hasStripeIntegration: !!autopayData.stripeIntegration,
-        hasSalesOrderAnalysis: !!autopayData.salesOrderAnalysis
-      });
-      
-      setData(autopayData);
-
-      // Fetch actual Stripe payment methods using the service function
-      const stripeData = await getPaymentMethods();
-      console.log('Stripe payment methods received:', stripeData.paymentMethods?.length || 0);
-      
-      setStripePaymentMethods(stripeData.paymentMethods || []);
-      
+      // Also fetch stripe status
+      if (customerId) {
+        try {
+          const statusData = await getStripeIntegrationStatus(customerId);
+          setStripeStatus(statusData);
+        } catch (err) {
+          console.error('Error fetching stripe status:', err);
+        }
+      }
     } catch (err) {
-      console.error('Error fetching data:', err);
       setError('Failed to load payment information');
+      console.error('Error fetching data:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
-    fetchAllData();
-  }, [customerId]);
+    fetchStripePaymentMethods();
+  }, [refreshKey]);
 
   const handleRefresh = () => {
-    console.log('Refreshing payment method data...');
-    fetchAllData();
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleRemovePaymentMethod = async (paymentMethodId) => {
@@ -1184,25 +1028,16 @@ const PaymentMethodsTab = () => {
     setShowAddPaymentForm(true);
   };
 
-  const handlePaymentFormSuccess = async () => {
-    try {
-      // Fetch the new data first while still showing the form
-      await fetchAllData();
-      
-      // Only hide the form after data is successfully loaded
-      setShowAddPaymentForm(false);
-    } catch (error) {
-      // If refresh fails, still hide the form but the error will be shown
-      console.error('Error refreshing after adding payment method:', error);
-      setShowAddPaymentForm(false);
-    }
+  const handlePaymentFormSuccess = () => {
+    setShowAddPaymentForm(false);
+    handleRefresh();
   };
 
   const handlePaymentFormCancel = () => {
     setShowAddPaymentForm(false);
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingPaymentMethod) {
     return (
       <div className="payment-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -1213,11 +1048,13 @@ const PaymentMethodsTab = () => {
     );
   }
 
-  // All payment methods including legacy if exists
-  const allPaymentMethods = stripePaymentMethods.map(method => ({ 
-    ...method, 
-    source: 'stripe' 
-  }));
+  const allPaymentMethods = [
+    ...stripePaymentMethods.map(method => ({ ...method, source: 'stripe' })),
+    ...(paymentMethod?.hasCardOnFile && paymentMethod?.paymentMethod?.cardDetails ? [{
+      ...paymentMethod.paymentMethod,
+      source: 'merchantE'
+    }] : [])
+  ];
 
   // If showing add payment form, render that instead
   if (showAddPaymentForm) {
@@ -1328,11 +1165,7 @@ const PaymentMethodsTab = () => {
                     key={method.id || `method-${index}`}
                     paymentMethod={method}
                     source={method.source}
-                    isAutopayCard={
-                      method.source === 'stripe' && 
-                      method.id === (data?.stripeIntegration?.stripe?.defaultPaymentMethodId || 
-                                    data?.autopayStatus?.stripe?.defaultPaymentMethodId)
-                    }
+                    isAutopayCard={method.source === 'stripe' && method.id === stripeStatus?.stripe?.defaultPaymentMethodId}
                     onRemove={handleRemovePaymentMethod}
                   />
                 ))}
@@ -1351,15 +1184,13 @@ const PaymentMethodsTab = () => {
         </div>
 
         {/* Autopay Section - moved to bottom */}
-        {customerId && (
-          <AutopaySection 
-            customerId={customerId} 
-            stripePaymentMethods={stripePaymentMethods}
-            autopayData={data}
-            onRefresh={handleRefresh}
-            onAddPaymentMethod={handleAddPaymentMethod}
-          />
-        )}
+        <AutopaySection 
+          customerId={customerId} 
+          stripePaymentMethods={stripePaymentMethods}
+          onRefresh={handleRefresh}
+          onAddPaymentMethod={handleAddPaymentMethod}
+          onStatusUpdate={setStripeStatus}
+        />
       </div>
     </div>
   );

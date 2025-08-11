@@ -407,72 +407,162 @@ export const setupSepaDebit = async (sepaData) => {
 
 // TO SET THOSE FLAGS ON THE CUSTOMER IN NETSUITE INDICATING THEY ARE ON STRIPE AUTOPAY
 /**
- * Update Stripe autopay settings for a customer
+ * Update Stripe autopay settings for a customer with retry logic
  * @param {string} netsuiteCustomerId - NetSuite customer ID
  * @param {boolean} enabled - Enable/disable autopay
  * @param {object} options - Additional options
  * @returns {Promise<object>} Update result
  */
  export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options = {}) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error("User must be authenticated to update autopay settings");
+  const MAX_RETRIES = 5;
+  const BASE_DELAY = 2000; // 2 seconds
+  const MAX_DELAY = 30000; // 30 seconds
+  
+  let lastError = null;
+  let lastResponse = null;
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User must be authenticated to update autopay settings");
+      }
+      
+      const token = await user.getIdToken();
+      
+      console.log(`🔄 Attempt ${attempt + 1} of ${MAX_RETRIES} for updateStripeAutopay`);
+      console.log("Updating Stripe autopay:", { netsuiteCustomerId, enabled, options });
+      
+      const requestBody = {
+        enabled,
+        updateLegacy: options.syncLegacy || false
+      };
+      
+      // Include paymentMethodId if provided
+      if (options.paymentMethodId) {
+        requestBody.paymentMethodId = options.paymentMethodId;
+      }
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe/autopay`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // If successful response, return
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Autopay update response:', result);
+          
+          return {
+            success: result.success,
+            stripeAutopay: result.stripeAutopay,
+            legacyUpdated: result.legacyUpdated,
+            message: result.message,
+            error: result.error
+          };
+        }
+        
+        // Handle rate limiting
+        if (response.status === 429) {
+          const retryAfter = parseInt(response.headers.get('Retry-After') || '5');
+          const waitTime = Math.min(retryAfter * 1000, MAX_DELAY);
+          console.log(`⏳ Rate limited. Waiting ${waitTime}ms before retry...`);
+          lastResponse = response;
+          
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        }
+        
+        // Handle server errors that should be retried
+        if (response.status >= 500) {
+          console.log(`🚨 Server error (${response.status}) - will retry`);
+          lastResponse = response;
+          
+          const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+          lastError = new Error(errorData.error || `Failed to update autopay: ${response.status}`);
+          
+          if (attempt < MAX_RETRIES - 1) {
+            const waitTime = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
+            console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        }
+        
+        // Client errors (4xx except 429) should not be retried
+        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        throw new Error(errorData.error || `Failed to update autopay: ${response.status}`);
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        // Handle timeout specifically
+        if (fetchError.name === 'AbortError') {
+          console.error(`⏱️ Request timeout after ${TIMEOUT_MS}ms`);
+          lastError = new Error('Request timeout - NetSuite may be slow');
+          
+          if (attempt < MAX_RETRIES - 1) {
+            const waitTime = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
+            console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else {
+          // Network errors
+          console.error(`🌐 Network error:`, fetchError.message);
+          lastError = fetchError;
+          
+          if (attempt < MAX_RETRIES - 1) {
+            const waitTime = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
+            console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error(`Error on attempt ${attempt + 1}:`, error);
+      lastError = error;
+      
+      // Don't retry on authentication errors
+      if (error.message.includes("authenticated")) {
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+      
+      // For other errors, retry if we have attempts left
+      if (attempt < MAX_RETRIES - 1) {
+        const waitTime = Math.min(BASE_DELAY * Math.pow(2, attempt), MAX_DELAY);
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
     }
-    
-    const token = await user.getIdToken();
-    
-    console.log("Updating Stripe autopay:", { netsuiteCustomerId, enabled, options });
-    
-    const requestBody = {
-      enabled,
-      updateLegacy: options.syncLegacy || false
-    };
-    
-    // ✅ Include paymentMethodId if provided
-    if (options.paymentMethodId) {
-      requestBody.paymentMethodId = options.paymentMethodId;
-    }
-    
-    const fetchPromise = fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe/autopay`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-    
-    const response = await Promise.race([
-      fetchPromise,
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS)
-      )
-    ]);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-      throw new Error(errorData.error || `Failed to update autopay: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    console.log('✅ Autopay update response:', result);
-    
-    return {
-      success: result.success,
-      stripeAutopay: result.stripeAutopay,
-      legacyUpdated: result.legacyUpdated,
-      message: result.message,
-      error: result.error
-    };
-  } catch (error) {
-    console.error("Error updating Stripe autopay:", error);
-    return {
-      success: false,
-      error: error.message
-    };
   }
+  
+  // All retries exhausted
+  console.error('❌ All retry attempts failed for updateStripeAutopay');
+  return {
+    success: false,
+    error: lastError?.message || 'Failed to update autopay after multiple attempts'
+  };
 };
 
 /**

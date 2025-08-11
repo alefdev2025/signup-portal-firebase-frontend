@@ -13,7 +13,7 @@ import MyInformationTab from '../components/portal/MyInformationTab';
 import ContractsTab from '../components/portal/ContractsTab';
 import FormsTab from '../components/portal/FormsTab';
 import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
-import PaymentMethodsTab from '../components/portal/PaymentMethodsTab';
+import PaymentMethodsTab from '../components/portal/PaymentMethodsTabWorkingButTimeouts';
 import InvoicesTab from '../components/portal/InvoicesTab';
 import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';

@@ -2,7 +2,6 @@
 // Enhanced version with Alcor ID fetching
 
 import { getMemberProfile } from './salesforce/memberInfo';
-import { invoiceNotificationsApi } from '../../../services/invoiceNotificationsApi';
 
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
 
@@ -16,7 +15,7 @@ const RETRY_CONFIG = {
   NETWORK_ERROR_RETRY_DELAY: 1000 // 1 second for network errors
 };
 
-class InvoiceDataService {
+class InvoiceDataServiceWorkingButExtraCall {
   constructor() {
     // Track retry statistics
     this.retryStats = {
@@ -291,33 +290,6 @@ class InvoiceDataService {
   }
 
   /**
-   * Fetch notification settings from the API
-   * @private
-   */
-  async fetchNotificationSettings() {
-    try {
-      console.log('🔔 Fetching notification settings...');
-      const settings = await invoiceNotificationsApi.getSettings();
-      
-      if (settings.success === false) {
-        console.warn('Failed to fetch notification settings:', settings.error);
-        return null;
-      }
-      
-      console.log('✅ Notification settings retrieved:', {
-        newInvoiceAlerts: settings.newInvoiceAlerts,
-        paymentFailureAlerts: settings.paymentFailureAlerts,
-        hasEmail: !!settings.notificationEmail
-      });
-      
-      return settings;
-    } catch (error) {
-      console.error('Error fetching notification settings:', error);
-      return null;
-    }
-  }
-
-  /**
    * Get all invoice data - ALWAYS FRESH with enhanced retry logic
    * @param {string} customerId - NetSuite customer ID
    * @param {object} options - Additional options including salesforceContactId
@@ -337,8 +309,7 @@ class InvoiceDataService {
         customerInfo: null,
         emailNotificationSettings: null,
         salesOrderAnalysis: null,
-        alcorId: null,
-        notificationSettings: null
+        alcorId: null
       };
     }
 
@@ -346,8 +317,8 @@ class InvoiceDataService {
       console.log(`🚀 Fetching fresh invoice data for customer ${customerId}`);
       const startTime = Date.now();
       
-      // Fetch Alcor ID, notification settings, and invoice data in parallel
-      const [invoiceDataPromise, alcorIdPromise, notificationSettingsPromise] = await Promise.allSettled([
+      // Fetch Alcor ID in parallel with invoice data
+      const [invoiceDataPromise, alcorIdPromise] = await Promise.allSettled([
         // Invoice data fetch
         this.fetchWithRetry(
           `${API_BASE_URL}/netsuite/customers/${customerId}/invoice-data`,
@@ -367,9 +338,7 @@ class InvoiceDataService {
           }
         ),
         // Alcor ID fetch
-        salesforceContactId ? this.fetchAlcorId(salesforceContactId) : Promise.resolve(null),
-        // Notification settings fetch
-        this.fetchNotificationSettings()
+        salesforceContactId ? this.fetchAlcorId(salesforceContactId) : Promise.resolve(null)
       ]);
 
       const duration = Date.now() - startTime;
@@ -378,12 +347,6 @@ class InvoiceDataService {
       let alcorId = null;
       if (alcorIdPromise.status === 'fulfilled') {
         alcorId = alcorIdPromise.value;
-      }
-
-      // Extract notification settings result
-      let notificationSettings = null;
-      if (notificationSettingsPromise.status === 'fulfilled') {
-        notificationSettings = notificationSettingsPromise.value;
       }
 
       // Process invoice data response
@@ -396,109 +359,76 @@ class InvoiceDataService {
             paymentCount: result.payments?.length || 0,
             hasAutopayStatus: !!result.autopayStatus,
             hasSalesOrderAnalysis: !!result.salesOrderAnalysis,
-            hasNotificationSettings: !!notificationSettings,
             alcorId: alcorId,
             retryStats: this.getRetryStats()
           });
           
-          // Log detailed invoice data
-          console.log('📊 Detailed Invoice Data:', {
-            totalInvoices: result.invoices?.length || 0,
-            firstInvoice: result.invoices?.[0],
-            lastInvoice: result.invoices?.[result.invoices.length - 1],
-            invoiceFields: result.invoices?.length > 0 ? Object.keys(result.invoices[0]) : [],
-            // Show first 5 invoices
-            first5Invoices: result.invoices?.slice(0, 5).map(inv => ({
-              id: inv.id,
-              documentNumber: inv.documentNumber,
-              date: inv.date,
-              total: inv.total,
-              amountRemaining: inv.amountRemaining,
-              status: inv.status,
-              paymentStatus: inv.paymentStatus
-            })),
-            // Show date range
-            dateRange: result.invoices?.length > 0 ? {
-              earliest: result.invoices[result.invoices.length - 1].date,
-              latest: result.invoices[0].date
-            } : null,
-            // Group by status
-            statusBreakdown: result.invoices?.reduce((acc, inv) => {
-              const status = inv.status || inv.paymentStatus || 'Unknown';
-              acc[status] = (acc[status] || 0) + 1;
-              return acc;
-            }, {}),
-            // Group by year
-            yearBreakdown: result.invoices?.reduce((acc, inv) => {
-              const year = inv.date ? new Date(inv.date).getFullYear() : 'Unknown';
-              acc[year] = (acc[year] || 0) + 1;
-              return acc;
-            }, {})
-          });
-          
-          // Log detailed payment data
-          console.log('💰 Detailed Payment Data:', {
-            firstPayment: result.payments?.[0],
-            paymentFields: result.payments?.length > 0 ? Object.keys(result.payments[0]) : [],
-            samplePayment: result.payments?.length > 0 ? {
-              id: result.payments[0].id,
-              documentNumber: result.payments[0].documentNumber,
-              amount: result.payments[0].amount,
-              appliedTo: result.payments[0].appliedTo,
-              approvalStatus: result.payments[0].approvalStatus,
-              date: result.payments[0].date
-            } : null
-          });
-          
-          // Log autopay status details
-          console.log('🔄 Autopay Status Details:', {
-            autopayStatus: result.autopayStatus,
-            legacyEnabled: result.autopayStatus?.legacy?.autopayEnabled,
-            stripeEnabled: result.autopayStatus?.stripe?.autopayEnabled,
-            hasStripePaymentMethod: result.autopayStatus?.stripe?.hasPaymentMethod
-          });
-          
-          // Log notification settings details
-          if (notificationSettings) {
-            console.log('🔔 Notification Settings Details:', {
-              notificationSettings: notificationSettings,
-              newInvoiceAlerts: notificationSettings.newInvoiceAlerts,
-              paymentFailureAlerts: notificationSettings.paymentFailureAlerts,
-              notificationEmail: notificationSettings.notificationEmail
+          // Log sales order analysis details if present
+          if (result.salesOrderAnalysis) {
+            console.log('📊 Sales Order Analysis:', {
+              hasOrders: result.salesOrderAnalysis.hasOrders,
+              autopayStatus: result.salesOrderAnalysis.analysis?.autopayStatus,
+              canEnableAutopay: result.salesOrderAnalysis.canEnableAutopay,
+              billingPattern: result.salesOrderAnalysis.billingPattern?.type
             });
           }
           
-          // Log customer info
-          console.log('👤 Customer Info:', {
-            customerInfo: result.customerInfo,
-            billingAddress: result.customerInfo?.billingAddress,
-            subsidiary: result.customerInfo?.subsidiary
-          });
+          // Fetch the ACCURATE legacy autopay status from the correct endpoint
+          let legacyAutopayData = null;
+          try {
+            console.log('📊 Fetching accurate legacy autopay status...');
+            const autopayResponse = await this.fetchWithRetry(
+              `${API_BASE_URL}/netsuite/customers/${customerId}/autopay`,
+              {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+              },
+              { maxRetries: 3, baseDelay: 1000 }
+            );
+
+            if (autopayResponse.ok) {
+              const autopayResult = await autopayResponse.json();
+              if (autopayResult.success !== false) {
+                legacyAutopayData = {
+                  autopayEnabled: autopayResult.automaticPayment || false,
+                  customerName: autopayResult.companyName || autopayResult.entityId,
+                  autopayField: autopayResult.autopayField || 'custentity_ale_autopayment',
+                  lastChecked: autopayResult.lastChecked || new Date().toISOString()
+                };
+                console.log('✅ Got accurate legacy autopay status:', legacyAutopayData.autopayEnabled);
+              }
+            }
+          } catch (autopayError) {
+            console.warn('Failed to fetch legacy autopay status:', autopayError);
+            // Non-critical error - continue without autopay data
+          }
           
-          // Log the complete result before returning
-          console.log('📦 Complete API Response Structure:', {
-            topLevelKeys: Object.keys(result),
-            invoiceSummary: result.invoiceSummary,
-            emailNotificationSettings: result.emailNotificationSettings,
-            fullResponse: result
-          });
-          
-          // REMOVED: The redundant legacy autopay fetch that was here
-          // The consolidated endpoint already provides complete autopay status
+          // Merge autopay status with the correct legacy data
+          const autopayStatus = {
+            legacy: legacyAutopayData || {
+              autopayEnabled: false,
+              lastChecked: new Date().toISOString()
+            },
+            stripe: result.autopayStatus?.stripe || {
+              autopayEnabled: false,
+              hasPaymentMethod: false,
+              defaultPaymentMethodId: null
+            }
+          };
           
           return {
             invoices: result.invoices || [],
             payments: result.payments || [],
             invoiceSummary: result.invoiceSummary || null,
-            autopayStatus: result.autopayStatus || null, // Use autopay status from consolidated endpoint
+            autopayStatus: autopayStatus,
             customerInfo: {
               ...(result.customerInfo || {}),
               alcorId: alcorId // Add Alcor ID to customer info
             },
             emailNotificationSettings: result.emailNotificationSettings || null,
             salesOrderAnalysis: result.salesOrderAnalysis || null,
-            alcorId: alcorId, // Also return at top level for convenience
-            notificationSettings: notificationSettings // Add fetched notification settings
+            alcorId: alcorId // Also return at top level for convenience
           };
         }
       }
@@ -546,7 +476,7 @@ class InvoiceDataService {
           { maxRetries: 3 }
         ),
         
-        // Legacy autopay endpoint - only used in fallback scenario
+        // ACCURATE legacy autopay endpoint
         this.fetchWithRetry(
           `${API_BASE_URL}/netsuite/customers/${customerId}/autopay`,
           {
@@ -595,8 +525,7 @@ class InvoiceDataService {
         },
         emailNotificationSettings: null,
         salesOrderAnalysis: null,
-        alcorId: alcorId, // Top-level for convenience
-        notificationSettings: notificationSettings // Include notification settings in fallback
+        alcorId: alcorId // Top-level for convenience
       };
 
       // Process successful responses
@@ -606,10 +535,6 @@ class InvoiceDataService {
           if (invoiceData.success) {
             data.invoices = invoiceData.data || invoiceData.invoices || [];
             console.log(`Got ${data.invoices.length} invoices from fallback`);
-            console.log('📊 Fallback Invoice Data Sample:', {
-              firstInvoice: data.invoices[0],
-              invoiceStructure: data.invoices.length > 0 ? Object.keys(data.invoices[0]) : []
-            });
           }
         } catch (e) {
           console.error('Failed to parse invoice response:', e);
@@ -622,10 +547,6 @@ class InvoiceDataService {
           if (paymentData.success) {
             data.payments = paymentData.data || paymentData.payments || [];
             console.log(`Got ${data.payments.length} payments from fallback`);
-            console.log('💰 Fallback Payment Data Sample:', {
-              firstPayment: data.payments[0],
-              paymentStructure: data.payments.length > 0 ? Object.keys(data.payments[0]) : []
-            });
           }
         } catch (e) {
           console.error('Failed to parse payment response:', e);
@@ -685,17 +606,6 @@ class InvoiceDataService {
       };
 
       console.log('Fallback data retrieval completed. Retry stats:', this.getRetryStats());
-      
-      // Log final fallback data structure
-      console.log('🏁 Final Fallback Data Structure:', {
-        dataKeys: Object.keys(data),
-        invoiceCount: data.invoices.length,
-        paymentCount: data.payments.length,
-        hasAutopayStatus: !!data.autopayStatus,
-        hasNotificationSettings: !!data.notificationSettings,
-        completeData: data
-      });
-      
       return data;
       
     } catch (error) {
@@ -787,7 +697,7 @@ class InvoiceDataService {
 }
 
 // Export singleton instance
-export const invoiceDataService = new InvoiceDataService();
+export const invoiceDataService = new InvoiceDataServiceWorkingButExtraCall();
 
 // Also export the class for testing
-export { InvoiceDataService };
+export { InvoiceDataServiceWorkingButExtraCall };

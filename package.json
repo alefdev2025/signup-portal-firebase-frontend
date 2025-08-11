@@ -16,6 +16,7 @@
     "@react-google-maps/api": "^2.20.6",
     "@stripe/react-stripe-js": "^2.8.0",
     "@stripe/stripe-js": "^2.4.0",
+    "country-list": "^2.3.0",
     "docusign-click": "^3.0.0",
     "docusign-esign": "^8.1.0",
     "firebase": "^11.6.1",

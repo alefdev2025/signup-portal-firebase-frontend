@@ -41,7 +41,6 @@ const PaymentHistoryTab = () => {
   const [showSignupDetails, setShowSignupDetails] = useState(false);
   const [selectedSignupPayment, setSelectedSignupPayment] = useState(null);
   const [expandedPayments, setExpandedPayments] = useState(new Set());
-  const [includeLineItems, setIncludeLineItems] = useState(false);
   const [stats, setStats] = useState({
     totalSpent: 0,
     averagePayment: 0,
@@ -132,7 +131,6 @@ const PaymentHistoryTab = () => {
     });
   }, []);
 
-    // SIMPLE DATA FETCH - NO CACHING
   // SIMPLE DATA FETCH - NO CACHING
   const fetchData = useCallback(async () => {
     try {
@@ -159,10 +157,9 @@ const PaymentHistoryTab = () => {
       }
 
       console.log('Fetching fresh payment data for customer:', customerId);
-      console.log('Include line items:', includeLineItems);
       
-      // Always get fresh data
-      const data = await paymentDataService.getPaymentData(customerId, includeLineItems);
+      // Always get fresh data - removed includeLineItems parameter
+      const data = await paymentDataService.getPaymentData(customerId, false);
       
       console.log('Payment data received:', {
         data: data,
@@ -223,9 +220,9 @@ const PaymentHistoryTab = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [customerId, formatDate, includeLineItems]);
+  }, [customerId, formatDate]);
 
-  // Fetch data on mount and when customer changes or includeLineItems changes
+  // Fetch data on mount and when customer changes
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -320,7 +317,7 @@ const PaymentHistoryTab = () => {
         return;
       }
 
-      const csvHeaders = ['Date', 'Payment #', 'Description', 'Amount', 'Currency', 'Status', 'Applied To'];
+      const csvHeaders = ['Date', 'Payment #', 'Invoice #', 'Description', 'Amount', 'Currency', 'Status', 'Applied To'];
       const csvRows = paymentsToExport.map(payment => {
         let exportStatus = payment.status;
         if (payment.status === 'Deposited') exportStatus = 'Completed';
@@ -329,10 +326,15 @@ const PaymentHistoryTab = () => {
 
         const appliedInvoices = payment.appliedTo?.map(a => a.transactionName).join('; ') || 'None';
 
+        const invoiceNumbers = payment.appliedTo && payment.appliedTo.length > 0 
+          ? payment.appliedTo.map(a => a.transactionName).join('; ')
+          : 'Unapplied';
+
         return [
           payment.date || '',
           payment.documentNumber || '',
-          payment.description || '',
+          invoiceNumbers,
+          payment.description || 'Payment',
           payment.amount.toFixed(2) || '0.00',
           payment.currency || 'USD',
           exportStatus || 'Unknown',
@@ -398,12 +400,6 @@ const PaymentHistoryTab = () => {
           </div>
           <div>
             <span className="font-medium text-gray-600">Due Date:</span> {formatDate(details.dueDate)}
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Status:</span> {details.status}
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Terms:</span> {details.terms}
           </div>
           {details.description && (
             <div className="col-span-2">
@@ -831,17 +827,15 @@ const PaymentHistoryTab = () => {
           <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-4 sm:p-6 md:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100" 
                style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6 md:mb-12">
-              <h2 className="text-xl font-semibold text-gray-900">Payment History</h2>
+              <div className="flex items-center gap-3">
+                <div className="p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                  <svg className="w-7 h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Payment History</h2>
+              </div>
               <div className="hidden sm:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={includeLineItems}
-                    onChange={(e) => setIncludeLineItems(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  Show invoice details
-                </label>
                 <select 
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
@@ -891,9 +885,27 @@ const PaymentHistoryTab = () => {
                             onClick={() => hasAppliedInvoices && togglePaymentExpansion(payment.id)}
                           >
                             <div className="flex justify-between items-start mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-sm text-gray-600 mb-1 font-normal">{payment.date}</p>
-                                <p className="text-base font-medium text-[#6b5b7e]">#{payment.documentNumber}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-base font-medium text-[#6b5b7e]">
+                                    {payment.appliedTo && payment.appliedTo.length > 0 
+                                      ? payment.appliedTo.length === 1 
+                                        ? payment.appliedTo[0].transactionName 
+                                        : `${payment.appliedTo.length} invoices`
+                                      : 'Unapplied'}
+                                  </p>
+                                  {hasAppliedInvoices && (
+                                    <svg 
+                                      className={`w-4 h-4 transition-transform text-gray-400 ${isExpanded ? 'rotate-180' : ''}`} 
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  )}
+                                </div>
                                 {payment.hasInvoiceDetails && (
                                   <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
                                     Invoice Details
@@ -902,20 +914,8 @@ const PaymentHistoryTab = () => {
                               </div>
                               <p className="text-xl font-bold text-gray-900">${payment.amount.toFixed(2)}</p>
                             </div>
-                            <p className="text-sm text-gray-900 mb-3 font-normal">{payment.description || 'Payment'}</p>
-                            
-                            {hasAppliedInvoices && (
-                              <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
-                                <span>Applied to {payment.appliedTo.length} invoice{payment.appliedTo.length !== 1 ? 's' : ''}</span>
-                                <svg 
-                                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
+                            {!hasAppliedInvoices && (
+                              <p className="text-sm text-gray-900 mb-3 font-normal">{payment.description || 'Payment'}</p>
                             )}
                             
                             <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
@@ -936,20 +936,54 @@ const PaymentHistoryTab = () => {
                             </div>
                           </div>
                           
-                          {/* Expanded invoice details */}
-                          {isExpanded && hasAppliedInvoices && (
+                          {/* Expanded payment details */}
+                          {isExpanded && (
                             <div className="px-5 pb-5 bg-white border-t border-gray-200">
                               <div className="mt-3">
-                                <div className="font-medium text-sm mb-2">Applied Invoices:</div>
-                                {payment.appliedTo.map((applied, idx) => (
-                                  <div key={idx} className="mb-3 last:mb-0">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <span className="font-medium text-sm">{applied.transactionName}</span>
-                                      <span className="font-medium text-sm">${parseFloat(applied.amount || 0).toFixed(2)}</span>
+                                <div className="space-y-3">
+                                  <div>
+                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Payment Details</h4>
+                                    <div className="space-y-1 text-xs">
+                                      <div>
+                                        <span className="text-gray-600">Payment #:</span> 
+                                        <span className="text-gray-900 ml-1">{payment.documentNumber || 'N/A'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Description:</span> 
+                                        <span className="text-gray-900 ml-1">{payment.description || 'Payment'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Payment ID:</span> 
+                                        <span className="text-gray-900 font-mono ml-1">{payment.internalId || payment.id}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Method:</span> 
+                                        <span className="text-gray-900 ml-1">{payment.method}</span>
+                                      </div>
+                                      {payment.unapplied > 0 && (
+                                        <div>
+                                          <span className="text-gray-600">Unapplied:</span> 
+                                          <span className="text-gray-900 ml-1">${payment.unapplied.toFixed(2)}</span>
+                                        </div>
+                                      )}
                                     </div>
-                                    {renderInvoiceDetails(applied)}
                                   </div>
-                                ))}
+                                  
+                                  {hasAppliedInvoices && (
+                                    <div>
+                                      <div className="font-medium text-sm mb-2 pt-2 border-t">Applied Invoices:</div>
+                                      {payment.appliedTo.map((applied, idx) => (
+                                        <div key={idx} className="mb-3 last:mb-0">
+                                          <div className="flex justify-between items-start mb-1">
+                                            <span className="font-medium text-sm">{applied.transactionName}</span>
+                                            <span className="font-medium text-sm">${parseFloat(applied.amount || 0).toFixed(2)}</span>
+                                          </div>
+                                          {renderInvoiceDetails(applied)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -960,15 +994,6 @@ const PaymentHistoryTab = () => {
                   
                   {/* Mobile buttons */}
                   <div className="flex flex-col gap-3 mt-6">
-                    <label className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={includeLineItems}
-                        onChange={(e) => setIncludeLineItems(e.target.checked)}
-                        className="rounded border-gray-300"
-                      />
-                      Show invoice line items
-                    </label>
                     <select 
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
@@ -1004,7 +1029,7 @@ const PaymentHistoryTab = () => {
                         <tr className="border-b-2 border-gray-200">
                           <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Date</th>
                           <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Payment #</th>
-                          <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Description</th>
+                          <th className="text-left py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Invoice</th>
                           <th className="text-right py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Amount</th>
                           <th className="text-center py-4 px-6 text-sm font-medium text-gray-600 uppercase tracking-wider">Status</th>
                         </tr>
@@ -1034,22 +1059,33 @@ const PaymentHistoryTab = () => {
                                   </div>
                                 </td>
                                 <td className="py-6 px-6">
-                                  <p className="text-sm text-gray-900 font-medium">
-                                    {payment.description || 'Payment'}
-                                  </p>
-                                  {hasAppliedInvoices && (
-                                    <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
-                                      Applied to {payment.appliedTo.length} invoice{payment.appliedTo.length !== 1 ? 's' : ''}
-                                      <svg 
-                                        className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                                        fill="none" 
-                                        stroke="currentColor" 
-                                        viewBox="0 0 24 24"
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-900 font-medium">
+                                      {payment.appliedTo && payment.appliedTo.length > 0 
+                                        ? payment.appliedTo.length === 1 
+                                          ? payment.appliedTo[0].transactionName 
+                                          : `${payment.appliedTo.length} invoices`
+                                        : 'Unapplied'}
+                                    </span>
+                                    {hasAppliedInvoices && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          togglePaymentExpansion(payment.id);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 transition-colors"
                                       >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                      </svg>
-                                    </p>
-                                  )}
+                                        <svg 
+                                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                                          fill="none" 
+                                          stroke="currentColor" 
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-6 px-6 text-xl font-bold text-gray-900 text-right">
                                   ${payment.amount.toFixed(2)}
@@ -1077,16 +1113,57 @@ const PaymentHistoryTab = () => {
                                 <tr>
                                   <td colSpan="5" className="px-6 pb-6 bg-gray-50/50">
                                     <div className="mt-3 p-4 bg-white rounded-lg border border-gray-200">
-                                      <div className="font-medium text-sm mb-3">Applied Invoices:</div>
-                                      {payment.appliedTo.map((applied, idx) => (
-                                        <div key={idx} className="mb-4 last:mb-0 p-3 bg-gray-50 rounded">
-                                          <div className="flex justify-between items-start mb-2">
-                                            <span className="font-medium">{applied.transactionName}</span>
-                                            <span className="font-medium">${parseFloat(applied.amount || 0).toFixed(2)}</span>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                          <h4 className="font-medium text-sm text-gray-900 mb-2">Payment Details</h4>
+                                          <div className="space-y-2 text-sm">
+                                            <div>
+                                              <span className="text-gray-600">Payment #:</span> 
+                                              <span className="text-gray-900 ml-1">{payment.documentNumber || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-600">Description:</span> 
+                                              <span className="text-gray-900 ml-1">{payment.description || 'Payment'}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-600">Payment ID:</span> 
+                                              <span className="text-gray-900 font-mono text-xs ml-1">{payment.internalId || payment.id}</span>
+                                            </div>
+                                            <div>
+                                              <span className="text-gray-600">Method:</span> 
+                                              <span className="text-gray-900 ml-1">{payment.method}</span>
+                                            </div>
+                                            {payment.unapplied > 0 && (
+                                              <div>
+                                                <span className="text-gray-600">Unapplied:</span> 
+                                                <span className="text-gray-900 ml-1">${payment.unapplied.toFixed(2)}</span>
+                                              </div>
+                                            )}
                                           </div>
-                                          {renderInvoiceDetails(applied)}
                                         </div>
-                                      ))}
+                                        {hasAppliedInvoices && (
+                                          <div>
+                                            <h4 className="font-medium text-sm text-gray-900 mb-2">Applied to Invoices</h4>
+                                            <div className="text-sm text-gray-600">
+                                              {payment.appliedTo.length} invoice{payment.appliedTo.length !== 1 ? 's' : ''} totaling ${payment.appliedTo.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0).toFixed(2)}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {hasAppliedInvoices && (
+                                        <div>
+                                          <div className="font-medium text-sm mb-3 border-t pt-3">Invoice Applications:</div>
+                                          {payment.appliedTo.map((applied, idx) => (
+                                            <div key={idx} className="mb-4 last:mb-0 p-3 bg-gray-50 rounded">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <span className="font-medium">{applied.transactionName}</span>
+                                                <span className="font-medium">${parseFloat(applied.amount || 0).toFixed(2)}</span>
+                                              </div>
+                                              {renderInvoiceDetails(applied)}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>

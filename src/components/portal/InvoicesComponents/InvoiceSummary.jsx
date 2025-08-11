@@ -2,10 +2,20 @@ import React from 'react';
 
 const InvoiceSummary = ({ invoices }) => {
   const totalInvoices = invoices.length;
-  const paidInvoices = invoices.filter(i => i.status === 'Paid').length;
-  const unpaidInvoices = invoices.filter(i => i.status !== 'Paid').length;
-  const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount, 0).toFixed(2);
-  const totalDue = invoices.reduce((sum, inv) => sum + inv.amountRemaining, 0).toFixed(2);
+  const paidInvoices = invoices.filter(i => i.status === 'Paid' || i.status === 'paidInFull').length;
+  const unpaidInvoices = invoices.filter(i => i.status !== 'Paid' && i.status !== 'paidInFull').length;
+  
+  // Fixed: Use 'total' instead of 'amount'
+  const totalAmount = invoices.reduce((sum, inv) => {
+    const amount = parseFloat(inv.total || 0);
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0).toFixed(2);
+  
+  // Ensure amountRemaining is parsed correctly
+  const totalDue = invoices.reduce((sum, inv) => {
+    const remaining = parseFloat(inv.amountRemaining || 0);
+    return sum + (isNaN(remaining) ? 0 : remaining);
+  }, 0).toFixed(2);
 
   return (
     <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeIn" 

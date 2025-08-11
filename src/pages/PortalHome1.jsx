@@ -567,25 +567,14 @@ const PortalHome = () => {
       
       // Replace these cases in your renderActiveTab function:
       case 'payments-methods':
-        return (
-          <PaymentContentWrapper>
-            <PaymentMethodsTab />
-          </PaymentContentWrapper>
-        );
+        return <PaymentMethodsTab />;
 
-        case 'payments-history':
-          return (
-            <PaymentContentWrapper>
-              <PaymentHistoryTab />
-            </PaymentContentWrapper>
-          );
+      case 'payments-history':
+        return <PaymentHistoryTab />;
         
-        case 'payments-invoices':
-          return (
-            <PaymentContentWrapper>
-              <InvoicesTab customerId={customerId} />
-            </PaymentContentWrapper>
-          );
+      case 'payments-invoices':
+      return <InvoicesTab customerId={customerId} setActiveTab={handleTabChange} />;
+
       
       // Resources subtabs
       case 'resources-media':

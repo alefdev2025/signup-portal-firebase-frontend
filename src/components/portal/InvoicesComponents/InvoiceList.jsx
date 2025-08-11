@@ -1,6 +1,6 @@
 // InvoicesComponents/InvoiceList.js
 import React from 'react';
-import { formatCurrency, formatDate } from './utils/invoiceHelpers';
+import { formatCurrency, formatDate } from './utils/invoiceHelpersOG';
 
 const InvoiceList = ({ 
   invoices = [], 
@@ -16,6 +16,14 @@ const InvoiceList = ({
   // Ensure we always have arrays to work with
   const safeInvoices = invoices || [];
   const safeFilteredInvoices = filteredInvoices || [];
+  
+  // Function to clean invoice number
+  const cleanInvoiceNumber = (invoiceNumber) => {
+    if (!invoiceNumber) return '';
+    
+    // Remove "INV" prefix (case insensitive) and any following dash or space
+    return invoiceNumber.replace(/^INV[-\s]*/i, '');
+  };
   
   // Updated status color function with better colors
   const getStatusStyles = (status) => {
@@ -81,7 +89,7 @@ const InvoiceList = ({
             <select 
               value={filterValue} 
               onChange={(e) => onFilterChange(e.target.value)}
-              className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:border-gray-300 focus:border-[#6B46C1] focus:ring-2 focus:ring-[#6B46C1] focus:ring-opacity-20 transition-all text-sm"
+              className="px-6 py-2.5 bg-white border border-[#12243c] text-[#12243c] rounded-lg focus:border-[#12243c] focus:ring-2 focus:ring-[#12243c] focus:ring-opacity-20 transition-all text-sm"
             >
               <option value="all">All Invoices</option>
               <option value="unpaid">Unpaid</option>
@@ -89,38 +97,21 @@ const InvoiceList = ({
               <option value="older">Older than 30 Days</option>
               <option value="pastYear">Past Year</option>
             </select>
-            
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className="px-6 py-2.5 bg-[#6B46C1] text-white rounded-lg hover:bg-[#7C52D3] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm hover:shadow-md"
-            >
-              {isRefreshing ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Refreshing...
-                </span>
-              ) : (
-                'Refresh'
-              )}
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Invoice List */}
-      <div className="divide-y divide-gray-100">
+      {/* Invoice List - Now with individual boxes */}
+      <div className="p-6 space-y-4">
         {safeFilteredInvoices.map((invoice) => {
           const statusStyles = getStatusStyles(invoice.status);
           const isLoading = loadingInvoiceId === invoice.id;
+          const invoiceNumber = cleanInvoiceNumber(invoice.documentNumber || invoice.tranid || invoice.id);
           
           return (
             <div 
               key={invoice.id} 
-              className="p-8 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+              className="border border-gray-200 rounded-lg p-6 lg:p-8 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
               onClick={() => !isLoading && onInvoiceSelect(invoice)}
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -129,36 +120,36 @@ const InvoiceList = ({
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-base font-medium text-gray-900">
-                          Invoice #{invoice.id}
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Invoice #{invoiceNumber}
                         </h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyles.bg} ${statusStyles.text}`}>
                           {invoice.status}
                         </span>
-                        {invoice.hasUnapprovedPayment && (
-                          <span className="text-xs text-gray-500">
-                            Payment #{invoice.unapprovedPaymentNumber}
-                          </span>
-                        )}
                       </div>
-                      <p className="text-sm text-gray-600">{invoice.description}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span>Date: {formatDate(invoice.date)}</span>
-                        <span>Due: {formatDate(invoice.dueDate)}</span>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>{invoice.description || invoice.memo || `Invoice for ${formatDate(invoice.date)}`}</span>
+                        <span>•</span>
+                        <span>{formatDate(invoice.date)}</span>
                       </div>
+                      {invoice.hasUnapprovedPayment && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          Payment #{invoice.unapprovedPaymentNumber} pending approval
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Amount and Action */}
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <div className="text-lg font-medium text-gray-900">
-                      {formatCurrency(invoice.amount)}
+                <div className="flex items-center justify-between lg:justify-end lg:gap-6 mt-4 lg:mt-0">
+                  <div className="text-left lg:text-right">
+                    <div className="text-lg lg:text-xl font-medium text-gray-900">
+                      {formatCurrency(invoice.total)}
                     </div>
-                    {invoice.amountRemaining > 0 && invoice.status !== 'Payment Pending' && (
+                    {invoice.amountRemaining > 0 && invoice.amountRemaining < invoice.total && (
                       <div className="text-sm text-gray-500">
-                        Balance: {formatCurrency(invoice.amountRemaining)}
+                        {formatCurrency(invoice.amountRemaining)} remaining
                       </div>
                     )}
                   </div>
@@ -170,7 +161,7 @@ const InvoiceList = ({
                       !isLoading && onInvoiceSelect(invoice);
                     }}
                     disabled={isLoading}
-                    className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium min-w-[120px]"
+                    className="px-4 py-2 border border-[#12243c] text-[#12243c] bg-white rounded-lg hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium min-w-[120px]"
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center gap-2">

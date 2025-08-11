@@ -97,17 +97,17 @@ class BackgroundDataLoader {
       }, 1000);
 
       // Start batch 4 after 1.5 seconds
-      setTimeout(async () => {
+      /*setTimeout(async () => {
         try {
-          await batch4();
-          console.log('[BackgroundLoader] Batch 4 complete (payment data)');
+          //await batch4();
+          //console.log('[BackgroundLoader] Batch 4 complete (payment data)');
         } catch (error) {
-          console.error('[BackgroundLoader] Batch 4 error:', error);
+          //console.error('[BackgroundLoader] Batch 4 error:', error);
         } finally {
-          this.isLoading = false;
-          console.log('[BackgroundLoader] All batches complete');
+          //this.isLoading = false;
+          //console.log('[BackgroundLoader] All batches complete');
         }
-      }, 1500);
+      }, 1500);*/
 
     } catch (error) {
       console.error('[BackgroundLoader] Batch 1 error:', error);
