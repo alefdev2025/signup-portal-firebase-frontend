@@ -25,6 +25,7 @@ import InformationDocumentsTab from '../components/portal/InformationDocumentsTa
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
 import ActivityLogTab from '../components/portal/ActivityLogTab';
 import PaymentContentWrapper from '../components/PaymentContentWrapper'
+import PortalPaymentPageWrapper from '../pages/PortalPaymentPageWrapper';
 
 // Import all overview tab versions
 import OverviewTab from '../components/portal/OverviewTab';
@@ -462,7 +463,7 @@ const PortalHome = () => {
   };
 
   // Listen for browser back/forward buttons
-  useEffect(() => {
+  /*useEffect(() => {
     // Handle hash changes (including back button)
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
@@ -483,7 +484,44 @@ const PortalHome = () => {
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, []);
+  }, []);*/
+
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    // Handle hash changes (including back button)
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      console.log('=== Hash Changed ===');
+      console.log('New hash:', hash);
+      
+      if (hash) {
+        console.log('Setting activeTab to:', hash);
+        setActiveTab(hash);
+      } else {
+        setActiveTab('overview');
+      }
+    };
+
+    // Log initial setup
+    console.log('Setting up hashchange listener');
+    console.log('Initial hash:', window.location.hash);
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Also handle the initial hash on mount
+    const initialHash = window.location.hash.slice(1);
+    if (initialHash && initialHash !== activeTab) {
+      console.log('Initial hash different from activeTab, updating to:', initialHash);
+      setActiveTab(initialHash);
+    } else if (!window.location.hash) {
+      window.location.hash = 'overview';
+    }
+
+    return () => {
+      console.log('Removing hashchange listener');
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []); // IMPORTANT: Empty dependency array
 
   // Add the logout handler
   const handleLogout = async () => {
@@ -522,6 +560,9 @@ const PortalHome = () => {
   };
 
   const renderActiveTab = () => {
+    console.log('=== renderActiveTab ===');
+    console.log('Current activeTab:', activeTab);
+    console.log('Should render payments-pay?', activeTab === 'payments-pay');
     // Check if we're rendering settings tab with dewars background
     const isSettingsWithDewars = activeTab === 'account-settings' && 
       localStorage.getItem('settingsTabStyle') === 'dewars';
@@ -575,7 +616,11 @@ const PortalHome = () => {
       case 'payments-invoices':
       return <InvoicesTab customerId={customerId} setActiveTab={handleTabChange} />;
 
-      
+      case 'payments-pay':
+        console.log('Rendering payments-pay tab');
+        console.log('RENDERING PAYMENT PAGE WRAPPER');
+        return <PortalPaymentPageWrapper />;
+
       // Resources subtabs
       case 'resources-media':
         return (

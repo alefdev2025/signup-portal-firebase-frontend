@@ -16,12 +16,6 @@ import alcorStar from '../assets/images/alcor-star.png';
 import whiteALogoNoText from '../assets/images/alcor-white-logo-no-text.png';
 import alcorWhiteLogo from '../assets/images/alcor-white-logo.png';
 
-// Import card logos
-import visaLogo from '../assets/images/cards/visa.png';
-import mastercardLogo from '../assets/images/cards/mastercard.png';
-import amexLogo from '../assets/images/cards/american-express.png';
-import discoverLogo from '../assets/images/cards/discover.png';
-
 // Feature flags
 const ENABLE_STRIPE_MIGRATION = true; // Toggle to enable/disable migration prompts
 const ENABLE_AUTOPAY_ENROLLMENT = true; // Toggle to enable/disable autopay enrollment during payment
@@ -34,8 +28,7 @@ const CARD_ELEMENT_OPTIONS = {
     base: {
       fontSize: '14px',
       color: '#1f2937',
-      fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-      fontWeight: '300',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
       '::placeholder': { 
         color: '#9ca3af' 
       },
@@ -49,7 +42,7 @@ const CARD_ELEMENT_OPTIONS = {
       iconColor: '#059669'
     },
   },
-  hidePostalCode: true, // We'll collect it separately
+  hidePostalCode: false,
 };
 
 function InvoicePaymentForm({ invoice, onBack }) {
@@ -81,15 +74,6 @@ function InvoicePaymentForm({ invoice, onBack }) {
   );
   const [saveCard, setSaveCard] = useState(false);
   
-  // Address fields for new card
-  const [billingAddress, setBillingAddress] = useState({
-    line1: invoice.billingAddress?.addr1 || '',
-    line2: invoice.billingAddress?.addr2 || '',
-    city: invoice.billingAddress?.city || '',
-    state: invoice.billingAddress?.state || '',
-    country: invoice.billingAddress?.country || 'US'
-  });
-  
   // Autopay enrollment
   const [enrollInAutopay, setEnrollInAutopay] = useState(false);
   const [showAutopayOption, setShowAutopayOption] = useState(false);
@@ -99,17 +83,6 @@ function InvoicePaymentForm({ invoice, onBack }) {
   const [loadingAutopayStatus, setLoadingAutopayStatus] = useState(true);
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
   
-  // Card validation states
-  const [cardError, setCardError] = useState(null);
-  const [touchedFields, setTouchedFields] = useState({
-    cardholderName: false,
-    address: false,
-    city: false,
-    state: false,
-    zip: false,
-    card: false
-  });
-  
   // Calculate processing fee if enabled
   const processingFeeRate = 0.029; // 2.9%
   const processingFeeFixed = 0.30; // $0.30
@@ -117,48 +90,6 @@ function InvoicePaymentForm({ invoice, onBack }) {
     ? (invoice.amountRemaining * processingFeeRate) + processingFeeFixed
     : 0;
   const totalAmount = invoice.amountRemaining + processingFee;
-  
-  // Add font styles for payment page
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .payment-page * {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-        font-weight: 300 !important;
-      }
-      .payment-page h1,
-      .payment-page h2,
-      .payment-page h3,
-      .payment-page h4 {
-        font-weight: 400 !important;
-      }
-      .payment-page .font-medium {
-        font-weight: 400 !important;
-      }
-      .payment-page .font-semibold {
-        font-weight: 500 !important;
-      }
-      .payment-page .font-bold {
-        font-weight: 500 !important;
-      }
-      .payment-page p,
-      .payment-page span,
-      .payment-page div,
-      .payment-page label,
-      .payment-page input,
-      .payment-page select {
-        font-weight: 300 !important;
-      }
-      .payment-page .text-xs {
-        font-weight: 400 !important;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
   
   // Fetch saved payment methods
   useEffect(() => {
@@ -178,10 +109,6 @@ function InvoicePaymentForm({ invoice, onBack }) {
             setSelectedPaymentMethod(defaultMethod.id);
             setUseNewCard(false);
             setCardComplete(true); // Consider card complete if using saved card
-            // Set cardholder name from default payment method if available
-            if (defaultMethod.billing_details?.name) {
-              setCardholderName(defaultMethod.billing_details.name);
-            }
           }
         } else {
           console.log('No saved payment methods found');
@@ -243,19 +170,12 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
   const handleCardChange = useCallback((event) => {
     setCardComplete(event.complete);
-    setTouchedFields(prev => ({ ...prev, card: true }));
-    
     if (event.error) {
-      setCardError(event.error.message);
+      setError(event.error.message);
     } else {
-      setCardError(null);
-    }
-    
-    // Clear general error when card changes
-    if (error && error !== event.error?.message) {
       setError(null);
     }
-  }, [error]);
+  }, []);
 
   // Handle payment method selection change
   const handlePaymentMethodChange = (value) => {
@@ -263,73 +183,23 @@ function InvoicePaymentForm({ invoice, onBack }) {
       setUseNewCard(true);
       setSelectedPaymentMethod('');
       setCardComplete(false);
-      // Reset to default name when switching to new card
-      setCardholderName(salesforceCustomer?.name || invoice.billingAddress?.addressee || '');
     } else {
       setUseNewCard(false);
       setSelectedPaymentMethod(value);
       setCardComplete(true); // Card is complete when using saved method
-      
-      // Find the selected card and update cardholder name if available
-      const selectedCard = savedPaymentMethods.find(m => m.id === value);
-      if (selectedCard?.billing_details?.name) {
-        setCardholderName(selectedCard.billing_details.name);
-      }
     }
   };
 
-  // Field blur handlers for validation
-  const handleFieldBlur = (fieldName) => {
-    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
-  };
-
-  // Validation functions
-  const validateFields = () => {
-    const errors = [];
-    
-    if (!cardholderName.trim()) {
-      errors.push('Cardholder name is required');
+  // Clear error when user types
+  useEffect(() => {
+    if (error && cardholderName && (useNewCard ? billingZip : true)) {
+      setError(null);
     }
-    
-    if (useNewCard) {
-      if (!cardComplete) {
-        errors.push('Please complete your card information');
-      }
-      
-      if (!billingAddress.line1.trim()) {
-        errors.push('Street address is required');
-      }
-      
-      if (!billingAddress.city.trim()) {
-        errors.push('City is required');
-      }
-      
-      if (!billingZip.trim()) {
-        errors.push('ZIP/Postal code is required');
-      }
-      
-      // Only require state for US and Canada
-      if ((billingAddress.country === 'US' || billingAddress.country === 'CA') && !billingAddress.state.trim()) {
-        errors.push('State/Province is required');
-      }
-    }
-    
-    return errors;
-  };
+  }, [cardholderName, billingZip, error, useNewCard]);
 
   // Process payment
   const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
-    
-    // Mark all fields as touched to show validation errors
-    setTouchedFields({
-      cardholderName: true,
-      address: true,
-      city: true,
-      state: true,
-      zip: true,
-      card: true
-    });
     
     // Prevent double-processing
     if (isProcessingRef.current) {
@@ -343,13 +213,22 @@ function InvoicePaymentForm({ invoice, onBack }) {
       return;
     }
 
-    const validationErrors = validateFields();
-    if (validationErrors.length > 0) {
-      setError(validationErrors[0]); // Show first error
+    if (!cardholderName) {
+      setError('Please enter the cardholder name');
       return;
     }
 
-    if (!useNewCard && !selectedPaymentMethod) {
+    // If using new card, validate card completion and billing zip
+    if (useNewCard) {
+      if (!cardComplete) {
+        setError('Please complete your card information');
+        return;
+      }
+      if (!billingZip) {
+        setError('Please enter the billing zip code');
+        return;
+      }
+    } else if (!selectedPaymentMethod) {
       setError('Please select a payment method');
       return;
     }
@@ -380,12 +259,14 @@ function InvoicePaymentForm({ invoice, onBack }) {
             name: cardholderName,
             email: salesforceCustomer?.email || '',
             address: {
-              line1: billingAddress.line1,
-              line2: billingAddress.line2 || undefined,
-              city: billingAddress.city,
-              state: billingAddress.state || undefined,
               postal_code: billingZip,
-              country: billingAddress.country || 'US',
+              ...(invoice.billingAddress ? {
+                line1: invoice.billingAddress.addr1,
+                line2: invoice.billingAddress.addr2,
+                city: invoice.billingAddress.city,
+                state: invoice.billingAddress.state,
+                country: 'US',
+              } : {})
             }
           },
         });
@@ -408,6 +289,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
         customerId: salesforceCustomer?.id || '',
         customerInfo: {
           email: salesforceCustomer?.email || '',
+          //name: salesforceCustomer?.name || invoice.billingAddress?.addressee || '',
           name: cardholderName,
         },
         savePaymentMethod: useNewCard ? (saveCard || enrollInAutopay) : false, // Only save if it's a new card
@@ -534,7 +416,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
-  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, billingAddress, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt, useNewCard, selectedPaymentMethod, totalAmount]);
+  }, [stripe, elements, cardComplete, invoice, salesforceCustomer, onBack, cardholderName, billingZip, saveCard, enrollInAutopay, netsuiteCustomerId, showMigrationPrompt, useNewCard, selectedPaymentMethod, totalAmount]);
 
   const formatCurrency = (amount) => {
     // Handle 'USA' currency code by converting to 'USD'
@@ -549,64 +431,33 @@ function InvoicePaymentForm({ invoice, onBack }) {
     }).format(amount);
   };
 
-  // Field error display helper
-  const getFieldError = (fieldName) => {
-    if (!touchedFields[fieldName]) return null;
-    
-    switch (fieldName) {
-      case 'cardholderName':
-        return !cardholderName.trim() ? 'Cardholder name is required' : null;
-      case 'address':
-        return !billingAddress.line1.trim() ? 'Street address is required' : null;
-      case 'city':
-        return !billingAddress.city.trim() ? 'City is required' : null;
-      case 'state':
-        return (billingAddress.country === 'US' || billingAddress.country === 'CA') && !billingAddress.state.trim() 
-          ? 'State/Province is required' : null;
-      case 'zip':
-        return !billingZip.trim() ? 'ZIP/Postal code is required' : null;
-      default:
-        return null;
-    }
-  };
-
   if (paymentStatus === 'completed') {
     return (
-      <div className="payment-page min-h-[400px] flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-[#0a1629] to-[#1e2650] rounded-xl p-8 text-white text-center max-w-md mx-auto w-full shadow-2xl">
-          <div className="bg-white/10 backdrop-blur-sm rounded-full p-3 mb-6 mx-auto w-16 h-16 flex items-center justify-center border border-white/20">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="bg-white border-2 border-purple-200 rounded-xl p-8 text-center max-w-md mx-auto w-full">
+          <div className="border-2 border-blue-200 rounded-full p-3 mb-6 mx-auto w-16 h-16 flex items-center justify-center bg-blue-50">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          
-          <h2 className="text-xl font-medium text-white mb-2 flex items-center justify-center gap-2">
-            Payment Successful
-            <img src={alcorStar} alt="" className="h-5 w-5" />
-          </h2>
-          
-          <p className="text-sm text-white/90 mb-1">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Payment Successful</h2>
+          <p className="text-sm text-gray-600 mb-1">
             {formatCurrency(totalAmount)} has been charged
-            <img src={alcorStar} alt="" className="h-3 w-3 inline ml-1" />
           </p>
-          
-          <p className="text-xs text-white/70 mb-4">
+          <p className="text-xs text-gray-500 mb-4">
             Invoice #{invoice.id}
           </p>
-          
           {enrollInAutopay && (
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 mb-4 border border-white/20">
-              <p className="text-xs text-white flex items-center justify-center gap-1">
+            <div className="border border-purple-200 bg-purple-50 rounded-lg px-4 py-2 mb-4">
+              <p className="text-xs text-purple-700 flex items-center justify-center gap-1">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 Autopay enabled for future invoices
-                <img src={alcorStar} alt="" className="h-3 w-3" />
               </p>
             </div>
           )}
-          
-          <div className="text-xs text-white/60 mt-6">
+          <div className="text-xs text-gray-400 mt-6">
             Redirecting to invoices...
           </div>
         </div>
@@ -615,25 +466,21 @@ function InvoicePaymentForm({ invoice, onBack }) {
   }
 
   return (
-    <div className="payment-page min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-    {/* Navy banner */}
-    <div className="bg-[#0a1629] h-20 flex items-center justify-between px-6 shadow-lg sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    {/* ADD THIS NAVY BANNER HERE */}
+    <div className="bg-[#0a1629] h-20 flex items-center px-6 shadow-lg sticky top-0 z-50">
       <img 
         src={alcorWhiteLogo} 
         alt="Alcor" 
         className="h-12 w-auto cursor-pointer hover:opacity-90 transition-opacity" 
         onClick={() => window.location.hash = 'overview'}
       />
-      <div className="flex items-center gap-2 text-white">
-        <span className="text-lg font-medium">Invoice Payment</span>
-        <img src={alcorStar} alt="Alcor Star" className="h-5 w-5" />
-      </div>
     </div>
       <div className="flex items-start justify-center px-4 sm:px-4">
         <div className="w-full max-w-5xl px-0 sm:px-6 lg:px-0">
-          {/* Migration Banner */}
+          {/* Migration Banner - reduced margin top */}
           {showMigrationPrompt && ENABLE_STRIPE_MIGRATION && (
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm mt-8">
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-300 rounded-xl p-4 mb-6 shadow-sm mt-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
                   <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -658,8 +505,8 @@ function InvoicePaymentForm({ invoice, onBack }) {
             </div>
           )}
 
-          {/* Main payment card */}
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] w-full mx-auto mt-8">
+          {/* Main payment card - reduced margin top */}
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden lg:h-[650px] w-full mx-auto mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-5 lg:h-full">
           
               {/* LEFT SIDE - Invoice Summary */}
@@ -677,7 +524,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                   
                   <div className="space-y-4 flex-grow">
                     {/* Invoice Details */}
-                    <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 space-y-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 space-y-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="text-sm font-normal text-white mb-1">Invoice Number</h3>
@@ -685,29 +532,41 @@ function InvoicePaymentForm({ invoice, onBack }) {
                         </div>
                       </div>
 
-                      <hr className="border-white/10 my-3" />
+                      <hr className="border-white/20 my-3" />
                       
                       <div>
                         <h3 className="text-sm font-normal text-white mb-2">Description</h3>
                         <p className="text-white/70 text-xs leading-relaxed">{invoice.description}</p>
                       </div>
 
-                      <hr className="border-white/10 my-3" />
+                      <hr className="border-white/20 my-3" />
 
-                      <div>
-                        <h3 className="text-sm font-normal text-white mb-1">Invoice Date</h3>
-                        <p className="text-white/90 text-sm">
-                          {new Date(invoice.date).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-sm font-normal text-white mb-1">Invoice Date</h3>
+                          <p className="text-white/90 text-sm">
+                            {new Date(invoice.date).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-normal text-white mb-1">Due Date</h3>
+                          <p className="text-white/90 text-sm">
+                            {new Date(invoice.dueDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     {/* Payment Summary */}
-                    <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 space-y-2">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 space-y-2">
                       {!ENABLE_PROCESSING_FEE && (
                         <>
                           <div className="flex justify-between items-center">
@@ -720,7 +579,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                               {formatCurrency(invoice.amount - invoice.amountRemaining)}
                             </span>
                           </div>
-                          <hr className="border-white/10" />
+                          <hr className="border-white/20" />
                         </>
                       )}
                       <div className="flex justify-between items-center">
@@ -737,7 +596,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                               {formatCurrency(processingFee)}
                             </span>
                           </div>
-                          <hr className="border-white/10" />
+                          <hr className="border-white/20" />
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-semibold text-white">Total Amount</span>
                             <span className="text-base font-bold text-white">
@@ -750,7 +609,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
                     {/* Current Autopay Status */}
                     {!loadingAutopayStatus && customerAutopayStatus && (
-                      <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
                         <h4 className="text-xs font-semibold text-white mb-2">Current Status</h4>
                         <div className="space-y-1">
                           {customerAutopayStatus.legacy?.autopayEnabled && (
@@ -799,7 +658,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                   <div className="max-w-md mx-auto w-full">
                     <h2 className="text-lg font-bold text-gray-900 mb-5">Payment Information</h2>
 
-                    <form onSubmit={handleSubmit} className="space-y-6 pb-8 lg:pb-12">
+                    <div onSubmit={handleSubmit} className="space-y-6 pb-8 lg:pb-12">
                       {/* Billing Address Display */}
                       {invoice.billingAddress && (
                         <div className="bg-gray-50 rounded-lg p-4">
@@ -830,18 +689,10 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           type="text"
                           value={cardholderName}
                           onChange={(e) => setCardholderName(e.target.value)}
-                          onBlur={() => handleFieldBlur('cardholderName')}
                           placeholder="John Doe"
-                          className={`w-full px-4 py-3 text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
-                            touchedFields.cardholderName && !cardholderName.trim() 
-                              ? 'border-red-300' 
-                              : 'border-gray-200'
-                          }`}
+                          className="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
                           required
                         />
-                        {touchedFields.cardholderName && !cardholderName.trim() && (
-                          <p className="text-xs text-red-600 mt-1">Cardholder name is required</p>
-                        )}
                       </div>
 
                       {/* Card Information with Dropdown */}
@@ -863,250 +714,19 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                 •••• {method.card.last4} - {method.card.brand.charAt(0).toUpperCase() + method.card.brand.slice(1)} (Expires {String(method.card.exp_month).padStart(2, '0')}/{method.card.exp_year})
                               </option>
                             ))}
-                            <option value="new">─── Add new card ───</option>
+                            <option value="new">───── Add new card ─────</option>
                           </select>
-                        )}
-                        
-                        {/* Show selected card details when a saved card is selected */}
-                        {!useNewCard && selectedPaymentMethod && savedPaymentMethods.length > 0 && (
-                          <div className="mt-3 space-y-3">
-                            {(() => {
-                              const selectedCard = savedPaymentMethods.find(m => m.id === selectedPaymentMethod);
-                              if (!selectedCard) return null;
-                              
-                              // Get card logo
-                              const brandLogos = {
-                                visa: visaLogo,
-                                mastercard: mastercardLogo,
-                                amex: amexLogo,
-                                'american-express': amexLogo,
-                                discover: discoverLogo
-                              };
-                              
-                              const cardBrand = selectedCard.card?.brand?.toLowerCase();
-                              const cardLogo = brandLogos[cardBrand];
-                              
-                              return (
-                                <>
-                                  {/* Card Details */}
-                                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex-shrink-0">
-                                        {cardLogo ? (
-                                          <img 
-                                            src={cardLogo} 
-                                            alt={selectedCard.card.brand}
-                                            className="h-8 w-auto object-contain"
-                                          />
-                                        ) : (
-                                          <div className="text-gray-400">
-                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
-                                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                            </svg>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900">
-                                          {selectedCard.card.brand.charAt(0).toUpperCase() + selectedCard.card.brand.slice(1)} •••• {selectedCard.card.last4}
-                                        </p>
-                                        <p className="text-xs text-gray-600">
-                                          Expires {String(selectedCard.card.exp_month).padStart(2, '0')}/{selectedCard.card.exp_year}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Billing Details if available */}
-                                  {selectedCard.billing_details && (
-                                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                      <p className="text-xs font-medium text-gray-700 mb-2">Billing Information</p>
-                                      {selectedCard.billing_details.name && (
-                                        <p className="text-sm text-gray-900 font-medium">{selectedCard.billing_details.name}</p>
-                                      )}
-                                      {selectedCard.billing_details.address && (
-                                        <div className="text-sm text-gray-600 mt-1">
-                                          {selectedCard.billing_details.address.line1 && (
-                                            <p>{selectedCard.billing_details.address.line1}</p>
-                                          )}
-                                          {selectedCard.billing_details.address.line2 && (
-                                            <p>{selectedCard.billing_details.address.line2}</p>
-                                          )}
-                                          {(selectedCard.billing_details.address.city || 
-                                            selectedCard.billing_details.address.state || 
-                                            selectedCard.billing_details.address.postal_code) && (
-                                            <p>
-                                              {[
-                                                selectedCard.billing_details.address.city,
-                                                selectedCard.billing_details.address.state,
-                                                selectedCard.billing_details.address.postal_code
-                                              ].filter(Boolean).join(', ')}
-                                            </p>
-                                          )}
-                                          {selectedCard.billing_details.address.country && (
-                                            <p className="text-xs text-gray-500 mt-1">
-                                              {selectedCard.billing_details.address.country}
-                                            </p>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </div>
                         )}
                         
                         {/* New Card Input - Only show if using new card or no saved cards */}
                         {(useNewCard || savedPaymentMethods.length === 0) && (
                           <>
-                            <div className={`border rounded-lg p-4 bg-white transition-all duration-200 ${
-                              touchedFields.card && cardError 
-                                ? 'border-red-300' 
-                                : touchedFields.card && cardComplete
-                                  ? 'border-green-300'
-                                  : 'border-gray-200'
-                            } focus-within:border-gray-200 focus-within:ring-0`}>
+                            <div className="border border-gray-200 rounded-lg p-4 bg-white focus-within:border-gray-200 focus-within:ring-0 transition-all duration-200">
                               <CardElement 
                                 options={CARD_ELEMENT_OPTIONS}
                                 onReady={handleCardReady}
                                 onChange={handleCardChange}
                               />
-                            </div>
-                            {touchedFields.card && cardError && (
-                              <p className="text-xs text-red-600 mt-1">{cardError}</p>
-                            )}
-                            
-                            {/* Billing Address for New Card */}
-                            <div className="mt-4 space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="col-span-2">
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Country
-                                  </label>
-                                  <select
-                                    value={billingAddress.country}
-                                    onChange={(e) => setBillingAddress({...billingAddress, country: e.target.value})}
-                                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
-                                  >
-                                    <option value="US">United States</option>
-                                    <option value="CA">Canada</option>
-                                    <option value="GB">United Kingdom</option>
-                                    <option value="AU">Australia</option>
-                                    <option value="FR">France</option>
-                                    <option value="DE">Germany</option>
-                                    <option value="JP">Japan</option>
-                                    <option value="CN">China</option>
-                                    <option value="IN">India</option>
-                                    <option value="BR">Brazil</option>
-                                    <option value="MX">Mexico</option>
-                                    <option value="ES">Spain</option>
-                                    <option value="IT">Italy</option>
-                                    <option value="NL">Netherlands</option>
-                                    <option value="SE">Sweden</option>
-                                    <option value="NO">Norway</option>
-                                    <option value="DK">Denmark</option>
-                                    <option value="FI">Finland</option>
-                                    <option value="CH">Switzerland</option>
-                                    <option value="AT">Austria</option>
-                                  </select>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Street Address
-                                </label>
-                                <input
-                                  type="text"
-                                  value={billingAddress.line1}
-                                  onChange={(e) => setBillingAddress({...billingAddress, line1: e.target.value})}
-                                  onBlur={() => handleFieldBlur('address')}
-                                  placeholder="123 Main Street"
-                                  className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
-                                    touchedFields.address && !billingAddress.line1.trim() 
-                                      ? 'border-red-300' 
-                                      : 'border-gray-200'
-                                  }`}
-                                />
-                                {touchedFields.address && !billingAddress.line1.trim() && (
-                                  <p className="text-xs text-red-600 mt-1">Street address is required</p>
-                                )}
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    City
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={billingAddress.city}
-                                    onChange={(e) => setBillingAddress({...billingAddress, city: e.target.value})}
-                                    onBlur={() => handleFieldBlur('city')}
-                                    placeholder="New York"
-                                    className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
-                                      touchedFields.city && !billingAddress.city.trim() 
-                                        ? 'border-red-300' 
-                                        : 'border-gray-200'
-                                    }`}
-                                  />
-                                  {touchedFields.city && !billingAddress.city.trim() && (
-                                    <p className="text-xs text-red-600 mt-1">City is required</p>
-                                  )}
-                                </div>
-                                
-                                {(billingAddress.country === 'US' || billingAddress.country === 'CA') && (
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                      {billingAddress.country === 'CA' ? 'Province' : 'State'}
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={billingAddress.state}
-                                      onChange={(e) => setBillingAddress({...billingAddress, state: e.target.value.toUpperCase()})}
-                                      onBlur={() => handleFieldBlur('state')}
-                                      placeholder={billingAddress.country === 'CA' ? 'ON' : 'NY'}
-                                      maxLength="2"
-                                      className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
-                                        touchedFields.state && !billingAddress.state.trim() 
-                                          ? 'border-red-300' 
-                                          : 'border-gray-200'
-                                      }`}
-                                    />
-                                    {touchedFields.state && !billingAddress.state.trim() && (
-                                      <p className="text-xs text-red-600 mt-1">
-                                        {billingAddress.country === 'CA' ? 'Province' : 'State'} is required
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="max-w-[50%]">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  {billingAddress.country === 'US' ? 'ZIP Code' : 'Postal Code'}
-                                </label>
-                                <input
-                                  type="text"
-                                  value={billingZip}
-                                  onChange={(e) => setBillingZip(e.target.value)}
-                                  onBlur={() => handleFieldBlur('zip')}
-                                  placeholder={billingAddress.country === 'US' ? '10001' : 'A1B 2C3'}
-                                  className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
-                                    touchedFields.zip && !billingZip.trim() 
-                                      ? 'border-red-300' 
-                                      : 'border-gray-200'
-                                  }`}
-                                />
-                                {touchedFields.zip && !billingZip.trim() && (
-                                  <p className="text-xs text-red-600 mt-1">
-                                    {billingAddress.country === 'US' ? 'ZIP code' : 'Postal code'} is required
-                                  </p>
-                                )}
-                              </div>
                             </div>
                             
                             <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1211,8 +831,9 @@ function InvoicePaymentForm({ invoice, onBack }) {
 
                       {/* Submit Button */}
                       <button
-                        type="submit"
-                        disabled={isLoading || (!useNewCard && !selectedPaymentMethod)}
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isLoading || !cardComplete || !cardholderName}
                         className="w-full bg-[#13273f] hover:bg-[#1d3351] disabled:bg-gray-400 disabled:hover:bg-gray-400 text-white py-4 px-5 rounded-full font-semibold text-sm disabled:cursor-not-allowed transition-all duration-300 shadow-sm disabled:shadow-none flex items-center justify-center"
                       >
                         {isLoading ? (
@@ -1259,7 +880,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           Stripe Verified
                         </div>
                       </div>
-                    </form>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1291,7 +912,7 @@ export default function PortalPaymentPage({ invoice, onBack }) {
 
   if (!invoice) {
     return (
-      <div className="payment-page min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">No invoice selected for payment</p>
         </div>

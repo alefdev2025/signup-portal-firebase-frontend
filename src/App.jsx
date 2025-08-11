@@ -22,6 +22,7 @@ import StaffPasswordReset from './pages/StaffPasswordReset';
 import PortalSetupPage from './pages/PortalSetupPage';
 import PaymentSetup from './components/portal/PaymentSetupSubscriptionNotUsing';
 import PaymentContentWrapper from './components/PaymentContentWrapper';
+import PortalPaymentPageWrapper from './pages/PortalPaymentPageWrapper';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -217,6 +218,13 @@ function App() {
                 <PortalHome />
               </MemberPortalRoute>
             } />
+
+            {/* Payment route within portal 
+            <Route path="/portal-home/payments/pay/:invoiceId" element={
+              <MemberPortalRoute>
+                <PortalPaymentPageWrapper />
+              </MemberPortalRoute>
+            } /> */}
             
             {/* All other portal routes */}
             <Route path="/portal/*" element={

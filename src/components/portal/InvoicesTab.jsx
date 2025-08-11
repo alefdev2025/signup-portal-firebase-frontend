@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getInvoiceDetails } from './services/netsuite';
 import { getMemberProfile } from './services/salesforce/memberInfo';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
-import PortalPaymentPage from '../../pages/PortalPaymentPage';
 import { invoiceNotificationsApi } from '../../services/invoiceNotificationsApi';
 
 // Import the new service - UPDATED PATH
@@ -64,6 +64,7 @@ const EmptyInvoiceListView = () => (
 );
 
 const InvoicesTab = ({ setActiveTab }) => { 
+  const navigate = useNavigate();
   // NOW call the hook inside the component
   const { 
     customerId, 
@@ -81,10 +82,6 @@ const InvoicesTab = ({ setActiveTab }) => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [loadingInvoiceId, setLoadingInvoiceId] = useState(null);
   
-  // Payment page states
-  const [showPaymentPage, setShowPaymentPage] = useState(false);
-  const [invoiceForPayment, setInvoiceForPayment] = useState(null);
-  
   // Email notification settings
   const [newInvoiceAlerts, setNewInvoiceAlerts] = useState(false);
   const [paymentFailureAlerts, setPaymentFailureAlerts] = useState(false);
@@ -95,20 +92,6 @@ const InvoicesTab = ({ setActiveTab }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  // Hide sidebar when payment page is shown
-  useEffect(() => {
-    if (showPaymentPage) {
-      document.body.classList.add('payment-page-active');
-    } else {
-      document.body.classList.remove('payment-page-active');
-      window.scrollTo(0, 0);
-    }
-    
-    return () => {
-      document.body.classList.remove('payment-page-active');
-    };
-  }, [showPaymentPage]);
 
   // Add styles
   useEffect(() => {
@@ -156,31 +139,6 @@ const InvoicesTab = ({ setActiveTab }) => {
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
-      }
-      
-      @media (min-width: 1280px) {
-        body.payment-page-active .relative.z-50 > div:first-child,
-        body.payment-page-active [class*="w-[280px]"] {
-          display: none !important;
-        }
-        
-        body.payment-page-active .w-\\[240px\\],
-        body.payment-page-active .w-\\[280px\\] {
-          width: 0 !important;
-        }
-        
-        body.payment-page-active main {
-          margin-left: 0 !important;
-        }
-        
-        body.payment-page-active .flex-1.flex.flex-col {
-          margin-left: 0 !important;
-        }
-        
-        body.payment-page-active .invoice-page {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
       }
     `;
     document.head.appendChild(style);
@@ -288,10 +246,10 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // Scroll to top when returning from invoice detail
   useEffect(() => {
-    if (!selectedInvoice && !showPaymentPage) {
+    if (!selectedInvoice) {
       window.scrollTo(0, 0);
     }
-  }, [selectedInvoice, showPaymentPage]);
+  }, [selectedInvoice]);
 
   // Scroll to top when filter changes
   useEffect(() => {
@@ -302,8 +260,6 @@ const InvoicesTab = ({ setActiveTab }) => {
   useEffect(() => {
     const handlePopState = (event) => {
       setSelectedInvoice(null);
-      setShowPaymentPage(false);
-      setInvoiceForPayment(null);
       window.scrollTo(0, 0);
     };
 
@@ -412,6 +368,11 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // Handle payment
   const handlePayInvoice = (invoice) => {
+
+    console.log('=== handlePayInvoice START ===');
+    console.log('Invoice passed:', invoice);
+    console.log('Current URL:', window.location.href);
+
     const invoiceWithDetails = {
       ...invoice,
       billingAddress: invoice.billingAddress || data?.billingAddress,
@@ -429,29 +390,16 @@ const InvoicesTab = ({ setActiveTab }) => {
       dueDate: invoice.dueDate
     };
     
-    console.log('Navigating to payment with invoice:', invoiceWithDetails);
+    // Store invoice data in sessionStorage for the payment page
+    sessionStorage.setItem('invoiceForPayment', JSON.stringify(invoiceWithDetails));
+    sessionStorage.setItem('paymentInvoiceId', invoice.internalId || invoice.id);
     
-    window.history.pushState(
-      { invoiceView: 'payment', invoiceId: invoice.id }, 
-      '', 
-      window.location.href
-    );
+    console.log('About to navigate to:', '/portal-home#payments-pay');
     
-    setInvoiceForPayment(invoiceWithDetails);
-    setShowPaymentPage(true);
-    window.scrollTo(0, 0);
-  };
-
-  // Handle back from payment
-  const handleBackFromPayment = () => {
-    console.log('Returning from payment page, refreshing data...');
-    setShowPaymentPage(false);
-    setInvoiceForPayment(null);
-    setSelectedInvoice(null);
-    window.scrollTo(0, 0);
+    // Use window.location.hash instead of navigate
+    window.location.hash = 'payments-pay';
     
-    // Refresh all data
-    fetchAllData();
+    console.log('Navigate called, new URL:', window.location.href);
   };
 
   // Handle refresh
@@ -471,35 +419,6 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // Filter invoices
   const filteredInvoices = data ? filterInvoices(data.invoices, filterValue) : [];
-
-  // Show payment page
-  if (showPaymentPage && invoiceForPayment) {
-    return (
-      <>
-        <style>
-          {`
-            @media (min-width: 1280px) {
-              .hide-sidebar-for-payment [class*="PortalSidebar"],
-              .hide-sidebar-for-payment .relative.z-50 > div:first-child {
-                display: none !important;
-              }
-              .hide-sidebar-for-payment main {
-                margin-left: 0 !important;
-              }
-            }
-          `}
-        </style>
-        <div className="hide-sidebar-for-payment">
-          <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-            <PortalPaymentPage 
-              invoice={invoiceForPayment} 
-              onBack={handleBackFromPayment}
-            />
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <div className="invoice-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
