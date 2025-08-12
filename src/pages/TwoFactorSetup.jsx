@@ -96,7 +96,7 @@ const TwoFactorSetup = ({
           Two-Factor Authentication Enabled
         </h2>
         
-        <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
+        <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
           <div className="flex items-center">
             <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -223,7 +223,7 @@ const TwoFactorSetup = ({
             }}
             placeholder="000000" 
             maxLength="6"
-            className="w-full px-5 py-4 mb-4 border border-purple-300 rounded-md text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-full px-4 py-3 mb-4 border border-purple-300 rounded-md text-center text-base tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             autoComplete="off"
             autoFocus
             required
@@ -232,7 +232,8 @@ const TwoFactorSetup = ({
           <button
             type="submit"
             disabled={loading || twoFactorCode.length !== 6}
-            className="w-full bg-purple-600 text-white py-4 px-6 rounded-full font-semibold text-lg hover:bg-purple-700 disabled:opacity-70 flex items-center justify-center"
+            style={{ backgroundColor: "#6f2d74", color: "white" }}
+            className="w-full py-3 px-6 rounded-full font-semibold text-base hover:opacity-90 disabled:opacity-70 flex items-center justify-center"
           >
             {loading ? (
               <>
@@ -247,12 +248,6 @@ const TwoFactorSetup = ({
             )}
           </button>
         </form>
-      </div>
-      
-      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
-        <p className="text-sm text-yellow-800">
-          <strong>Important:</strong> Save your backup codes or secret key in a safe place. You'll need them if you lose access to your authenticator app.
-        </p>
       </div>
       
       <div className="text-center">

@@ -1,10 +1,11 @@
-// PortalSetupPage.jsx - Complete implementation with debug logging for 2FA
+// PortalSetupPage.jsx - Updated implementation with separate 2FA view
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ResponsiveBanner from '../components/ResponsiveBanner';
 import darkLogo from "../assets/images/alcor-white-logo.png";
 import PasswordField, { checkPasswordStrength } from '../components/signup/PasswordField';
+import TwoFactorSetup from './TwoFactorSetup'; // Import from adjacent file
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
 import { sendPortalWelcomeNotification } from '../services/notifications';
@@ -17,7 +18,7 @@ import {
 } from '../services/auth';
 
 const PortalSetupPage = () => {
-  const [step, setStep] = useState('email'); // 'email', 'alcorId', 'verify', 'password', '2fa', 'noAccount', 'existingAccount'
+  const [step, setStep] = useState('email'); // 'email', 'alcorId', 'verify', 'password', '2fa-choice', '2fa-setup', 'noAccount', 'existingAccount'
   const [formData, setFormData] = useState({
     email: '',
     alcorId: '',
@@ -28,7 +29,6 @@ const PortalSetupPage = () => {
   const [salesforceData, setSalesforceData] = useState(null);
   const [verificationId, setVerificationId] = useState('');
   const [twoFactorData, setTwoFactorData] = useState(null);
-  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -340,10 +340,10 @@ const PortalSetupPage = () => {
             return;
           }
           
-          // Show 2FA setup
+          // Show 2FA choice screen
           setTwoFactorData(twoFAData);
-          setStep('2fa');
-          setSuccessMessage('Account created! Now set up two-factor authentication.');
+          setStep('2fa-choice');
+          setSuccessMessage('Account created! Now choose whether to set up two-factor authentication.');
           
           // Force scroll with multiple attempts
           forceScrollToTop();
@@ -377,59 +377,18 @@ const PortalSetupPage = () => {
     }
   };
 
-  // Handler for 2FA setup verification
-  const handle2FASetup = async (e) => {
-    e.preventDefault();
-    
-    if (twoFactorCode.length !== 6) {
-      setError('Please enter a 6-digit code');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      console.log('Attempting to complete 2FA setup with code:', twoFactorCode);
-      console.log('User ID:', twoFactorData.userId);
-      
-      const authCoreFn = httpsCallable(functions, 'authCore');
-      const result = await authCoreFn({
-        action: 'completePortal2FASetup',
-        userId: twoFactorData.userId,
-        token: twoFactorCode,
-        code: twoFactorCode // Some backends expect 'code' instead of 'token'
-      });
-      
-      console.log('2FA setup result:', result.data);
-      
-      if (result.data?.success) {
-        setSuccessMessage('Two-factor authentication enabled successfully!');
-
-        // Clear the code
-        setTwoFactorCode('');
-
-        // Wait a bit to show success message
-        setTimeout(() => {
-          navigate('/login?portal=true&setup=complete&2fa=enabled');
-        }, 2000);
-      } else {
-        console.error('2FA setup failed:', result.data?.error);
-        setError(result.data?.error || 'Invalid code. Please try again.');
-        // Clear the code so user can try again
-        setTwoFactorCode('');
-      }
-    } catch (error) {
-      console.error('2FA setup error:', error);
-      setError('Failed to verify code. Please try again.');
-      setTwoFactorCode('');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleGoBack = () => {
     navigate('/login');
+  };
+
+  // Handle 2FA setup success
+  const handle2FASuccess = () => {
+    navigate('/login?portal=true&setup=complete&2fa=enabled');
+  };
+
+  // Handle 2FA skip
+  const handle2FASkip = () => {
+    navigate('/login?portal=true&setup=complete');
   };
 
   // Render different steps
@@ -447,7 +406,7 @@ const PortalSetupPage = () => {
             </p>
             
             {successMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
                 {successMessage}
               </div>
             )}
@@ -459,7 +418,7 @@ const PortalSetupPage = () => {
             )}
             
             <div className="mb-6">
-              <label htmlFor="email" className="block text-gray-800 text-lg font-medium mb-2">
+              <label htmlFor="email" className="block text-gray-800 text-base font-medium mb-2">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <input 
@@ -469,7 +428,7 @@ const PortalSetupPage = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="e.g. john.smith@example.com" 
-                className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                 disabled={loading}
                 required
               />
@@ -480,7 +439,7 @@ const PortalSetupPage = () => {
                 type="submit"
                 disabled={loading}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
               >
                 {loading ? 'Checking...' : 'Continue'}
               </button>
@@ -511,7 +470,7 @@ const PortalSetupPage = () => {
             </p>
             
             {successMessage && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-600 rounded-md p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
                 {successMessage}
               </div>
             )}
@@ -523,7 +482,7 @@ const PortalSetupPage = () => {
             )}
             
             <div className="mb-6">
-              <label htmlFor="alcorId" className="block text-gray-800 text-lg font-medium mb-2">
+              <label htmlFor="alcorId" className="block text-gray-800 text-base font-medium mb-2">
                 Alcor ID (A-Number) <span className="text-red-500">*</span>
               </label>
               <input 
@@ -533,7 +492,7 @@ const PortalSetupPage = () => {
                 value={formData.alcorId}
                 onChange={handleInputChange}
                 placeholder="e.g. A-1234" 
-                className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                 disabled={loading}
                 required
               />
@@ -547,7 +506,7 @@ const PortalSetupPage = () => {
                 type="submit"
                 disabled={loading}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
               >
                 {loading ? 'Verifying...' : 'Continue'}
               </button>
@@ -555,7 +514,7 @@ const PortalSetupPage = () => {
               <button
                 type="button"
                 onClick={() => setStep('email')}
-                className="w-full bg-white border border-gray-300 text-gray-700 py-4 px-6 rounded-full font-medium text-lg hover:bg-gray-50"
+                className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium text-base hover:bg-gray-50"
                 disabled={loading}
               >
                 Back
@@ -576,7 +535,7 @@ const PortalSetupPage = () => {
             </p>
             
             {successMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
                 {successMessage}
               </div>
             )}
@@ -588,7 +547,7 @@ const PortalSetupPage = () => {
             )}
             
             <div className="mb-6">
-              <label htmlFor="verificationCode" className="block text-gray-800 text-lg font-medium mb-2">
+              <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-2">
                 Verification Code <span className="text-red-500">*</span>
               </label>
               <input 
@@ -599,7 +558,7 @@ const PortalSetupPage = () => {
                 onChange={handleInputChange}
                 placeholder="Enter 6-digit code" 
                 maxLength="6"
-                className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg text-center tracking-widest font-mono text-2xl"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono"
                 disabled={loading}
                 required
               />
@@ -610,7 +569,7 @@ const PortalSetupPage = () => {
                 type="submit"
                 disabled={loading}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
               >
                 {loading ? 'Verifying...' : 'Verify Email'}
               </button>
@@ -639,7 +598,7 @@ const PortalSetupPage = () => {
             )}
             
             {successMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
                 {successMessage}
               </div>
             )}
@@ -650,7 +609,7 @@ const PortalSetupPage = () => {
               </div>
             )}
             
-            {/* Use PasswordField component */}
+            {/* Use PasswordField component with custom className */}
             <PasswordField
               value={formData.password}
               onChange={(e) => handleInputChange(e)}
@@ -661,6 +620,8 @@ const PortalSetupPage = () => {
               label="Password"
               placeholder="Create a secure password"
               className="mb-6"
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
+              labelClassName="block text-gray-800 text-base font-medium mb-2"
             />
             
             {/* Confirm Password */}
@@ -674,6 +635,8 @@ const PortalSetupPage = () => {
               label="Confirm Password"
               placeholder="Re-enter your password"
               className="mb-8"
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
+              labelClassName="block text-gray-800 text-base font-medium mb-2"
             />
             
             <div className="space-y-4">
@@ -681,7 +644,7 @@ const PortalSetupPage = () => {
                 type="submit"
                 disabled={loading || !checkPasswordStrength(formData.password).meetsMinimumRequirements}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
               >
                 {loading ? 'Creating Account...' : 'Create Portal Account'}
               </button>
@@ -689,245 +652,87 @@ const PortalSetupPage = () => {
           </form>
         );
 
-      case '2fa':
+      case '2fa-choice':
         return (
           <div className="p-8" tabIndex={-1} ref={el => el && el.focus()}>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2" tabIndex={-1}>
-              Optional: Set Up Two-Factor Authentication
+              Account Created Successfully!
             </h2>
             
             <p className="text-gray-600 mb-6">
-              Your portal account has been created successfully! You can add an extra layer of security now, or set it up later.
+              Your portal account is ready to use. Would you like to add two-factor authentication for extra security?
             </p>
             
-            {/* Show success message if 2FA was successfully enabled */}
-            {successMessage && successMessage.includes('successfully') && (
-              <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {successMessage}
-                </div>
-              </div>
-            )}
-            
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
-                {error}
-              </div>
-            )}
-            
-            {/* Main action buttons - Skip is prominent */}
-            {!successMessage?.includes('successfully') && (
-              <div className="mb-8 space-y-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/login?portal=true&setup=complete')}
-                  style={{ backgroundColor: "#6f2d74", color: "white" }}
-                  className="w-full py-4 px-6 rounded-full font-semibold text-lg hover:opacity-90 flex items-center justify-center"
-                >
-                  Continue to Portal
-                  <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Scroll to 2FA setup section
-                    document.getElementById('2fa-setup-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="w-full bg-white border-2 border-purple-600 text-purple-700 py-4 px-6 rounded-full font-medium text-lg hover:bg-purple-50"
-                >
-                  Set Up 2FA Now (Recommended)
-                </button>
-              </div>
-            )}
-            
             {/* Success message banner */}
-            {!successMessage?.includes('successfully') && (
-              <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-green-800">
-                      Account Created Successfully!
-                    </h3>
-                    <p className="text-sm text-green-700 mt-1">
-                      Your portal account is ready to use. You can log in now or add 2FA for extra security.
-                    </p>
-                  </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-              </div>
-            )}
-            
-            {/* Show QR code if we have the data and 2FA isn't complete yet */}
-            {twoFactorData && twoFactorData.qrCode && !successMessage?.includes('successfully') && (
-              <div id="2fa-setup-section">
-                <div className="border-t pt-6 mt-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Add Two-Factor Authentication (Optional)
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">
+                    Portal Access Enabled
                   </h3>
-                  
-                  <div className="bg-blue-50 border border-blue-200 text-blue-600 rounded-md p-4 mb-6">
-                    <p className="text-sm">Two-factor authentication adds an extra layer of security by requiring a code from your phone in addition to your password.</p>
-                  </div>
-                  
-                  {/* Mobile device warning */}
-                  <div className="sm:hidden bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-amber-800">
-                          Mobile Device Detected
-                        </h3>
-                        <p className="text-sm text-amber-700 mt-1">
-                          You'll need an authenticator app on this device. If you haven't installed one yet, we recommend:
-                        </p>
-                        <ul className="list-disc list-inside text-sm text-amber-700 mt-2">
-                          <li>Google Authenticator</li>
-                          <li>Microsoft Authenticator</li>
-                          <li>Authy</li>
-                        </ul>
-                        <p className="text-sm text-amber-700 mt-2">
-                          Install one of these apps first, then return here to continue.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-4 text-center">Step 1: Add to Authenticator App</h4>
-                    
-                    {/* Desktop: Show QR Code */}
-                    <div className="hidden sm:block text-center">
-                      <img 
-                        src={twoFactorData.qrCode} 
-                        alt="2FA QR Code" 
-                        className="mx-auto mb-4 border-2 border-gray-300 rounded-lg"
-                        style={{ maxWidth: '250px', height: 'auto' }}
-                      />
-                      <p className="text-sm text-gray-600 mb-2">
-                        Scan this QR code with your authenticator app
-                      </p>
-                    </div>
-                    
-                    {/* Mobile: Show setup key directly */}
-                    <div className="sm:hidden">
-                      <div className="bg-white rounded border border-gray-200 p-4 mb-4">
-                        <p className="text-sm text-gray-700 mb-2">Add this account to your authenticator app:</p>
-                        <p className="text-sm font-medium text-gray-900 mb-1">Account: Alcor Portal</p>
-                        <p className="text-sm font-medium text-gray-900 mb-3">Email: {formData.email}</p>
-                        <p className="text-xs text-gray-600 mb-2">Setup key:</p>
-                        <p className="font-mono text-xs break-all bg-gray-100 p-2 rounded select-all">
-                          {twoFactorData.secret}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(twoFactorData.secret);
-                            alert('Setup key copied to clipboard!');
-                          }}
-                          className="mt-3 w-full bg-gray-200 text-gray-700 py-2 px-4 rounded text-sm hover:bg-gray-300"
-                        >
-                          Copy Setup Key
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Manual entry option for desktop */}
-                    <details className="hidden sm:block text-xs text-gray-500">
-                      <summary className="cursor-pointer hover:text-gray-700">Can't scan? Enter manually</summary>
-                      <div className="mt-2 p-3 bg-white rounded border border-gray-200">
-                        <p className="mb-2">Account name: <strong>Alcor Portal - {formData.email}</strong></p>
-                        <p className="mb-2">Secret key:</p>
-                        <p className="font-mono break-all select-all bg-gray-100 p-2 rounded">{twoFactorData.secret}</p>
-                      </div>
-                    </details>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-4">Step 2: Enter Verification Code</h4>
-                    <form onSubmit={handle2FASetup}>
-                      <label htmlFor="twoFactorCode" className="block text-gray-700 text-sm font-medium mb-2">
-                        Enter the 6-digit code from your authenticator app:
-                      </label>
-                      <input 
-                        type="text" 
-                        id="twoFactorCode"
-                        name="twoFactorCode"
-                        value={twoFactorCode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '');
-                          if (value.length <= 6) {
-                            setTwoFactorCode(value);
-                            if (error) setError(''); // Clear error when typing
-                          }
-                        }}
-                        placeholder="000000" 
-                        maxLength="6"
-                        className="w-full px-5 py-4 mb-4 border border-purple-300 rounded-md text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                        autoComplete="off"
-                        autoFocus
-                        required
-                      />
-                      
-                      <button
-                        type="submit"
-                        disabled={loading || twoFactorCode.length !== 6}
-                        className="w-full bg-purple-600 text-white py-4 px-6 rounded-full font-semibold text-lg hover:bg-purple-700 disabled:opacity-70 flex items-center justify-center"
-                      >
-                        {loading ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Verifying...
-                          </>
-                        ) : (
-                          'Enable 2FA'
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                  
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Important:</strong> Save your backup codes or secret key in a safe place. You'll need them if you lose access to your authenticator app.
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-700 mt-1">
+                    You can now log in to your member portal using your email and password.
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
             
-            {/* Error state - no 2FA data */}
-            {!twoFactorData && !successMessage?.includes('successfully') && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-6">
-                <h3 className="text-red-800 font-medium mb-2">Setup Error</h3>
-                <p className="text-red-700 mb-4">
-                  We couldn't load your 2FA setup information. Don't worry - your account was created successfully!
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/login?portal=true&setup=complete')}
-                  className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
-                >
-                  Continue to Login
-                </button>
-              </div>
-            )}
+            {/* 2FA information */}
+            <div className="bg-gray-100 border border-gray-300 rounded-md p-4 mb-8">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Why use two-factor authentication?
+              </h3>
+              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                <li>Adds an extra layer of security to your account</li>
+                <li>Protects against unauthorized access even if your password is compromised</li>
+                <li>Required by many organizations for sensitive data protection</li>
+                <li>Can be set up now or anytime later from your account settings</li>
+              </ul>
+            </div>
+            
+            {/* Main action buttons */}
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => navigate('/login?portal=true&setup=complete')}
+                style={{ backgroundColor: "#6f2d74", color: "white" }}
+                className="w-full py-3 px-6 rounded-full font-semibold text-base hover:opacity-90 flex items-center justify-center"
+              >
+                Continue to Portal
+                <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setStep('2fa-setup')}
+                className="w-full bg-white border-2 border-purple-600 text-purple-700 py-3 px-6 rounded-full font-medium text-base hover:bg-purple-50"
+              >
+                Set Up 2FA Now (Recommended)
+              </button>
+            </div>
+            
+            <p className="text-center text-sm text-gray-500 mt-6">
+              You can always enable two-factor authentication later from your account settings.
+            </p>
           </div>
+        );
+
+      case '2fa-setup':
+        return (
+          <TwoFactorSetup
+            twoFactorData={twoFactorData}
+            formData={formData}
+            onSuccess={handle2FASuccess}
+            onSkip={handle2FASkip}
+            loading={loading}
+          />
         );
 
       case 'existingAccount':
@@ -937,18 +742,18 @@ const PortalSetupPage = () => {
               Portal Account Already Exists
             </h2>
             
-            <div className="bg-green-50 border border-green-200 rounded-md p-6 mb-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-green-800">
+                  <h3 className="text-sm font-medium text-gray-800">
                     Account Found!
                   </h3>
-                  <div className="mt-2 text-sm text-green-700">
+                  <div className="mt-2 text-sm text-gray-700">
                     <p>Good news! You already have a portal account for:</p>
                     <p className="font-semibold mt-1">{formData.email}</p>
                   </div>

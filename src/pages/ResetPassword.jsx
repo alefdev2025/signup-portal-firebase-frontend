@@ -240,8 +240,8 @@ const ResetPasswordPage = () => {
             {message && !resetSuccessful && (
               <div className={`p-4 mb-6 rounded-md ${
                 message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-600' : 
-                message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-600' : 
-                'bg-blue-50 border border-blue-200 text-blue-600'
+                message.type === 'success' ? 'bg-gray-50 border border-gray-200 text-gray-700' : 
+                'bg-gray-50 border border-gray-200 text-gray-700'
               }`}>
                 {message.content}
               </div>
@@ -250,8 +250,8 @@ const ResetPasswordPage = () => {
             {resetSuccessful ? (
               // Success state with countdown
               <div className="text-center py-8">
-                <div className="inline-block bg-green-100 rounded-full p-3 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="inline-block bg-gray-100 rounded-full p-3 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
@@ -272,7 +272,7 @@ const ResetPasswordPage = () => {
                     backgroundColor: "#6f2d74",
                     color: "white"
                   }}
-                  className="mt-6 py-3 px-6 rounded-full font-semibold text-lg hover:opacity-90"
+                  className="mt-6 py-3 px-6 rounded-full font-semibold text-base hover:opacity-90"
                 >
                   Go to Login Now
                 </button>
@@ -307,11 +307,13 @@ const ResetPasswordPage = () => {
                   label="New Password"
                   placeholder="Create a strong password"
                   className="mb-6"
+                  inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
+                  labelClassName="block text-gray-800 text-base font-medium mb-2"
                 />
                 
                 {/* Confirm password field */}
                 <div className="mb-8">
-                  <label htmlFor="confirmPassword" className="block text-gray-800 text-lg font-medium mb-2">
+                  <label htmlFor="confirmPassword" className="block text-gray-800 text-base font-medium mb-2">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -322,11 +324,11 @@ const ResetPasswordPage = () => {
                       value={confirmPassword}
                       onChange={handleChange}
                       placeholder="Confirm your new password" 
-                      className={`w-full px-5 py-4 bg-white border ${
+                      className={`w-full px-4 py-3 bg-white border ${
                         errors.confirmPassword ? 'border-red-500' : 
                         confirmPassword && confirmPassword === newPassword ? 'border-green-500' : 
                         'border-purple-300'
-                      } rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg`}
+                      } rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base`}
                       disabled={isSubmitting}
                     />
                     {confirmPassword && confirmPassword === newPassword && !errors.confirmPassword && (
@@ -337,9 +339,9 @@ const ResetPasswordPage = () => {
                       </div>
                     )}
                   </div>
-                  {errors.confirmPassword && <p className="text-red-500 text-sm mt-2">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
                   {confirmPassword && confirmPassword !== newPassword && !errors.confirmPassword && (
-                    <p className="text-gray-500 text-sm mt-2">Passwords do not match</p>
+                    <p className="text-gray-500 text-xs mt-1">Passwords do not match</p>
                   )}
                 </div>
                 
@@ -351,7 +353,7 @@ const ResetPasswordPage = () => {
                     backgroundColor: "#6f2d74",
                     color: "white"
                   }}
-                  className="w-full py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                  className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>
@@ -385,7 +387,7 @@ const ResetPasswordPage = () => {
                     backgroundColor: "#6f2d74",
                     color: "white"
                   }}
-                  className="mt-4 py-3 px-6 rounded-full font-semibold text-lg hover:opacity-90"
+                  className="mt-4 py-3 px-6 rounded-full font-semibold text-base hover:opacity-90"
                 >
                   Go to Login
                 </button>

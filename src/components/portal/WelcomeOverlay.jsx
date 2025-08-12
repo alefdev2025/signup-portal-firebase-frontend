@@ -68,7 +68,7 @@ const WelcomeOverlay = ({ onClose }) => {
           onClick={handleClose}
         />
         
-        {/* Modal - narrower */}
+        {/* Modal - responsive sizing */}
         <div 
           className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
           style={{
@@ -76,38 +76,38 @@ const WelcomeOverlay = ({ onClose }) => {
             animationDelay: '0.2s',
             transform: 'translateY(20px)',
             opacity: 0,
-            maxHeight: '85vh',
+            maxHeight: '90vh',
             overflow: 'auto'
           }}
         >
-          {/* Header with gradient - centered content */}
+          {/* Header with gradient - reduced padding on mobile */}
           <div 
-            className="relative py-6 text-center"
+            className="relative py-4 sm:py-6 text-center"
             style={{
               background: 'linear-gradient(135deg, #1a2744 0%, #3c305b 50%, #6e4376 100%)'
             }}
           >
-            <img src={alcorLogo} alt="Alcor" className="h-12 w-auto mb-3 mx-auto" />
-            <h2 className="text-2xl font-light text-white">
+            <img src={alcorLogo} alt="Alcor" className="h-10 sm:h-12 w-auto mb-2 sm:mb-3 mx-auto" />
+            <h2 className="text-xl sm:text-2xl font-light text-white px-4">
               Welcome to the Alcor Member Portal!
             </h2>
           </div>
           
-          {/* Content - center aligned */}
-          <div className="px-12 py-8 text-center">
+          {/* Content - responsive padding */}
+          <div className="px-6 sm:px-12 py-6 sm:py-8 text-center">
             {isApplicant && requiresInfoCompletion ? (
               <>
-                <p className="text-gray-700 mb-6 text-base">
+                <p className="text-gray-700 mb-4 sm:mb-6 text-sm sm:text-base">
                   Congratulations on completing your membership signup! As a cryopreservation member applicant, 
                   there are important details we need to complete your cryopreservation contract.
                 </p>
                 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left">
-                  <h3 className="font-semibold text-gray-900 mb-2 text-base">Action Required</h3>
-                  <p className="text-gray-700 mb-2 text-sm">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 text-left">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Action Required</h3>
+                  <p className="text-gray-700 mb-2 text-xs sm:text-sm">
                     Please complete your member information including:
                   </p>
-                  <ul className="space-y-1.5 text-gray-700 text-sm">
+                  <ul className="space-y-1 sm:space-y-1.5 text-gray-700 text-xs sm:text-sm">
                     <li className="flex items-start">
                       <span className="text-gray-400 mr-2">•</span>
                       Medical history and conditions
@@ -125,82 +125,90 @@ const WelcomeOverlay = ({ onClose }) => {
               </>
             ) : (
               <>
-                <p className="text-gray-700 mb-6 text-base">
-                  Your portal provides everything you need to manage your Alcor membership.
+                <p className="text-gray-700 mb-4 sm:mb-6 text-sm sm:text-base">
+                  Your portal provides many things you need to manage your Alcor membership.
                 </p>
                 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left">
-                  <h3 className="font-semibold text-gray-900 mb-4 text-lg text-center">New Features Available</h3>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 pl-4">
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">Membership status</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">Your information</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">Your member files</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">Video testimony</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">Most recent Alcor news</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-sm">View invoices</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg text-center">
+                    New Features Available
+                  </h3>
+                  <div className="flex justify-center">
+                    <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 lg:gap-x-12 gap-y-1.5 sm:gap-y-2 text-left">
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">Membership status</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">Your information</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">Your member files</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">Video testimony</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">Recent Alcor news</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-purple-600 mr-2 text-sm sm:text-base">•</span>
+                        <span className="text-xs sm:text-sm lg:text-base">View invoices</span>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-center text-sm text-gray-600 italic mt-3">And much more!</p>
+                  <p className="text-center text-xs sm:text-sm text-gray-600 italic mt-6 sm:mt-7 mb-0">
+                    And much more!
+                  </p>
                 </div>
                 
-                <p className="text-gray-600 text-sm mt-4">
-                  The member portal is new! If you discover any issues, please let us know at feedback@alcor.org
+                <p className="text-gray-600 text-xs sm:text-sm mt-3 sm:mt-4">
+                  The member portal is new! If you discover any issues, please let us know at support@alcor.org
                 </p>
               </>
             )}
           </div>
           
-          {/* Footer - increased padding */}
-          <div className="bg-gray-50 px-12 py-6 flex gap-4">
+          {/* Footer - responsive padding and layout */}
+          <div className="bg-gray-50 px-6 sm:px-12 py-4 sm:py-6">
             {isApplicant && requiresInfoCompletion ? (
-              <>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={handleGoToMyInfo}
-                  className="flex-1 bg-[#1e293b] text-white py-2.5 px-6 rounded-full font-normal hover:bg-[#0f172a] transition-all duration-300 flex items-center justify-center gap-1 shadow-lg hover:shadow-xl group text-sm"
+                  className="flex-1 bg-[#1e293b] text-white py-2.5 px-4 sm:px-6 rounded-full font-normal hover:bg-[#0f172a] transition-all duration-300 flex items-center justify-center gap-1 shadow-lg hover:shadow-xl group text-xs sm:text-sm"
                 >
                   <img 
                     src={alcorStar} 
                     alt="" 
-                    className="h-5 w-5 group-hover:rotate-180 transition-transform duration-500" 
+                    className="h-4 sm:h-5 w-4 sm:w-5 group-hover:rotate-180 transition-transform duration-500" 
                   />
                   Complete My Information
                 </button>
                 <button
                   onClick={handleClose}
-                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 px-6 rounded-full font-normal hover:bg-gray-50 transition-all duration-300 text-sm"
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 px-4 sm:px-6 rounded-full font-normal hover:bg-gray-50 transition-all duration-300 text-xs sm:text-sm"
                 >
                   I'll Do This Later
                 </button>
-              </>
+              </div>
             ) : (
-              <button
-                onClick={handleClose}
-                className="w-full bg-[#1e293b] text-white py-2.5 px-6 rounded-full font-normal hover:bg-[#0f172a] transition-all duration-300 flex items-center justify-center gap-1 shadow-lg hover:shadow-xl group text-sm"
-              >
-                <img 
-                  src={alcorStar} 
-                  alt="" 
-                  className="h-5 w-5 group-hover:rotate-180 transition-transform duration-500" 
-                />
-                Get Started
-              </button>
+              <div className="flex justify-center">
+                <button
+                  onClick={handleClose}
+                  className="bg-[#1e293b] text-white py-2.5 px-12 sm:px-16 rounded-full font-normal hover:bg-[#0f172a] transition-all duration-300 flex items-center justify-center gap-1 shadow-lg hover:shadow-xl group text-xs sm:text-sm"
+                >
+                  <img 
+                    src={alcorStar} 
+                    alt="" 
+                    className="h-4 sm:h-5 w-4 sm:w-5 group-hover:rotate-180 transition-transform duration-500" 
+                  />
+                  Get Started
+                </button>
+              </div>
             )}
           </div>
         </div>

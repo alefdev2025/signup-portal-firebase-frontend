@@ -561,7 +561,7 @@ const AutopaySection = ({
   const stripePaymentMethodId = autopayData?.stripeIntegration?.stripe?.defaultPaymentMethodId || 
                                 autopayData?.autopayStatus?.stripe?.defaultPaymentMethodId;
   const salesOrderAnalysis = autopayData?.salesOrderAnalysis;
-  const cardDetails = salesOrderAnalysis?.analysis?.cardDetails;
+  const cardDetails = salesOrderAnalysis?.analysis?.cardOnFile;
 
   // Add click outside handler
   useEffect(() => {

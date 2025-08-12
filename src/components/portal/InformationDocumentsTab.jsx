@@ -324,7 +324,7 @@ const InformationDocumentsTab = () => {
       documents: [
         {
           title: "Straight Freeze Pet Shipping Instructions",
-          description: "Complete guide for arranging cryopreservation for your pets through Alcor's partner services.",
+          description: "Complete guide for arranging transportation for your pet for cryopreservation.",
           fileName: "PetSFInstruction.pdf",
           pages: 3
         }
