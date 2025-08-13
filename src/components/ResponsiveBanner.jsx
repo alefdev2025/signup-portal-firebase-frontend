@@ -85,24 +85,24 @@ const ResponsiveBanner = ({
         setBackendError(null);
         
         const result = await checkUserStep({ userId: currentUser.uid });
-        console.log("Backend user step check result:", result);
+        //console.log("Backend user step check result:", result);
         
         if (result.success) {
           setMaxCompletedStep(result.step || 0);
           
           if (result.isSessionExpired) {
-            console.log("User session expired, redirecting to login");
+            //console.log("User session expired, redirecting to login");
             sessionStorage.setItem('session_expired', 'true');
             window.location.href = '/login';
             return;
           }
         } else {
-          console.error("Error fetching user step:", result.error);
+          //console.error("Error fetching user step:", result.error);
           setBackendError(result.error);
           setMaxCompletedStep(0);
         }
       } catch (error) {
-        console.error("Failed to fetch user step:", error);
+        //console.error("Failed to fetch user step:", error);
         setBackendError(error.message);
         setMaxCompletedStep(0);
       } finally {
@@ -131,7 +131,7 @@ const ResponsiveBanner = ({
     //console.log(`maxCompletedStep: ${maxCompletedStep}, canAccess: ${canAccessStep ? canAccessStep(finalTargetStep) : 'unknown'}`);
     
     if (finalTargetStep <= maxCompletedStep || (canAccessStep && canAccessStep(finalTargetStep))) {
-      console.log(`Navigating to step ${finalTargetStep} via SignupFlowContext`);
+      //console.log(`Navigating to step ${finalTargetStep} via SignupFlowContext`);
       navigateToStep(finalTargetStep, { 
         force: true, 
         reason: 'banner_navigation' 
@@ -264,9 +264,9 @@ const ResponsiveBanner = ({
   const logoSizeClass = getLogoSizeClass();
   const topPaddingClass = getTopPaddingClass();
   
-  console.log("- maxCompletedStep:", maxCompletedStep);
-  console.log("- activeStep:", activeStep);
-  console.log("- progressIndex:", getProgressIndexFromStep(activeStep));
+  //console.log("- maxCompletedStep:", maxCompletedStep);
+  //console.log("- activeStep:", activeStep);
+  //console.log("- progressIndex:", getProgressIndexFromStep(activeStep));
 
   const maxCompletedProgressDot = stepToProgressMap[maxCompletedStep] || 0;
   const activeProgressDot = getProgressIndexFromStep(activeStep);

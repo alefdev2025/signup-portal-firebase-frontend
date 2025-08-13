@@ -134,7 +134,7 @@ export const signInWithEmailAndPassword = async (email, password) => {
             signInError.code === 'auth/wrong-password') {
           throw {
             code: 'auth/invalid-credential',
-            message: 'Invalid email or password. Please check your credentials and try again.'
+            message: 'Invalid email or password. Please check your credentials and try again.If you created your account with Google, log in with the Google button below.'
           };
         }
         

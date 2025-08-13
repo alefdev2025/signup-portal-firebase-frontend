@@ -56,6 +56,10 @@ const ResetPasswordPage = () => {
       }
     }
     
+    // Log all search params to help debug
+    console.log("URL search params:", Object.fromEntries([...searchParams.entries()]));
+    console.log("Extracted oobCode:", oobCode);
+    
     // Continue with normal verification
     verifyResetCode();
   }, [location.pathname, location.search]);
@@ -73,15 +77,6 @@ const ResetPasswordPage = () => {
       navigate('/')
     }
   }, [resetSuccessful, redirectCountdown, navigate]);
-
-  // Clear sensitive data on unmount
-  useEffect(() => {
-    return () => {
-      setNewPassword('');
-      setConfirmPassword('');
-      setEmail('');
-    };
-  }, []);
 
   // Verify the reset code
   const verifyResetCode = async () => {
@@ -101,18 +96,15 @@ const ResetPasswordPage = () => {
     }
     
     try {
+      console.log("Verifying reset code:", oobCode);
       // Call Firebase to verify the code and get the associated email
       const emailFromCode = await verifyPasswordResetCode(auth, oobCode);
+      console.log("Code verified successfully for email:", emailFromCode);
       setEmail(emailFromCode);
       setIsValid(true);
       setIsVerifying(false);
-      
-      // Strip the token from URL immediately after successful verification
-      if (window.history.replaceState) {
-        window.history.replaceState({}, '', '/reset-password');
-      }
     } catch (error) {
-      //console.error("Error verifying reset code:", error);
+      console.error("Error verifying reset code:", error);
       setIsValid(false);
       setIsVerifying(false);
       
@@ -183,8 +175,12 @@ const ResetPasswordPage = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Attempting to reset password with code:", oobCode);
+      
       // Call Firebase to complete the password reset
       await confirmPasswordReset(auth, oobCode, newPassword);
+      
+      console.log("Password reset successful for email:", email);
       
       // Clear the form fields
       setNewPassword("");
@@ -194,7 +190,7 @@ const ResetPasswordPage = () => {
       setResetSuccessful(true);
       
     } catch (error) {
-      //console.error("Error resetting password:", error);
+      console.error("Error resetting password:", error);
       
       // Handle specific errors
       if (error.code === 'auth/weak-password') {
@@ -314,7 +310,6 @@ const ResetPasswordPage = () => {
                   className="mb-6"
                   inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
                   labelClassName="block text-gray-800 text-base font-medium mb-2"
-                  autoComplete="new-password"
                 />
                 
                 {/* Confirm password field */}
@@ -336,7 +331,6 @@ const ResetPasswordPage = () => {
                         'border-purple-300'
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base`}
                       disabled={isSubmitting}
-                      autoComplete="new-password"
                     />
                     {confirmPassword && confirmPassword === newPassword && !errors.confirmPassword && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -406,5 +400,30 @@ const ResetPasswordPage = () => {
     </div>
   );
 };
+
+// Add CSS for animated dots
+const style = document.createElement('style');
+style.textContent = `
+  .dots .dot {
+    animation: loading 1.4s infinite;
+    display: inline-block;
+    opacity: 0;
+  }
+  .dots .dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+  .dots .dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .dots .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes loading {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
 
 export default ResetPasswordPage;

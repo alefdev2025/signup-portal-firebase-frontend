@@ -80,23 +80,23 @@ const LoginPage = () => {
   // Navigate based on backend progress after successful login
   useEffect(() => {
     if (currentUser && signupState && !userLoading && !loading && !show2FAForm && !isChecking2FA) {
-      console.log(`User logged in. Progress: ${signupState.signupProgress}, Step: ${signupState.signupStep}, Completed: ${signupState.signupCompleted}`);
+      //console.log(`User logged in. Progress: ${signupState.signupProgress}, Step: ${signupState.signupStep}, Completed: ${signupState.signupCompleted}`);
       
       // If continuing signup
       if (isContinueSignup) {
         // If signup is completed, go to member portal
         if (signupState.signupCompleted) {
-          console.log('Signup completed - going to member portal');
+          //console.log('Signup completed - going to member portal');
           navigate('/portal-home', { replace: true });
           return;
         }
         
         // Navigate to signup - SignupFlowContext will handle setting the right step
-        console.log('Going to signup flow');
+        //console.log('Going to signup flow');
         navigate('/signup', { replace: true });
       } else {
         // Member portal login - navigate to portal home
-        console.log('Member portal login - going to portal home');
+        //console.log('Member portal login - going to portal home');
         navigate('/portal-home', { replace: true });
       }
     }
@@ -114,7 +114,7 @@ const LoginPage = () => {
       setLoading(true);
       setError('');
       
-      console.log('Attempting login...');
+      //console.log('Attempting login...');
       
       // Clear ALL auth state before login
       try {
@@ -123,28 +123,28 @@ const LoginPage = () => {
         clearVerificationState();
         localStorage.removeItem('signupState');
         localStorage.removeItem('fresh_signup');
-        console.log('Cleared all auth state before login');
+        //console.log('Cleared all auth state before login');
       } catch (clearError) {
-        console.error('Error clearing auth state:', clearError);
+        //console.error('Error clearing auth state:', clearError);
         // Continue anyway
       }
       
       // First, try to sign in with Firebase Auth
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log('Firebase auth successful, user:', userCredential.user.uid);
+        //console.log('Firebase auth successful, user:', userCredential.user.uid);
         
         // Get the user document from Firestore to check 2FA status
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
         const userData = userDoc.data();
         
-        console.log('User data from Firestore:', userData);
-        console.log('2FA enabled?', userData?.twoFactorEnabled);
-        console.log('Is portal user?', userData?.isPortalUser);
+        //console.log('User data from Firestore:', userData);
+        //console.log('2FA enabled?', userData?.twoFactorEnabled);
+        //console.log('Is portal user?', userData?.isPortalUser);
         
         // Check if user has 2FA enabled AND completed setup
         if (userData?.twoFactorEnabled === true && userData?.twoFactorSecret) {
-          console.log('User has 2FA enabled and completed, showing 2FA form');
+          //console.log('User has 2FA enabled and completed, showing 2FA form');
           // Store temp auth data for after 2FA verification
           setTempAuthData({
             email,
@@ -158,7 +158,7 @@ const LoginPage = () => {
         
         // If they have pending 2FA setup but didn't complete it, just log them in
         if (userData?.pending2FASetup && !userData?.twoFactorEnabled) {
-          console.log('User has pending 2FA setup but it\'s not enabled - logging in normally');
+          //console.log('User has pending 2FA setup but it\'s not enabled - logging in normally');
         }
         
         // No 2FA required, proceed with normal login flow
@@ -166,11 +166,11 @@ const LoginPage = () => {
         // Navigation will happen in useEffect above once backend data loads
         
       } catch (authError) {
-        console.error("Login error:", authError.code, authError.message);
+        //console.error("Login error:", authError.code, authError.message);
         
         // Check if this is a 2FA-related error from Firebase
         if (authError.code === 'auth/multi-factor-auth-required') {
-          console.log('Firebase indicates 2FA is required');
+          //console.log('Firebase indicates 2FA is required');
           setTempAuthData({
             email,
             multiFactorResolver: authError.resolver // Firebase MFA resolver if using Firebase 2FA
@@ -187,7 +187,7 @@ const LoginPage = () => {
           case 'auth/wrong-password':
           case 'auth/invalid-credential':
           case 'auth/invalid-email':
-            setError('Invalid email or password. Please check your credentials and try again.');
+            setError('Invalid email or password. Please check your credentials and try again. If you created your account with Google, log in with the Google button below.');
             break;
           case 'auth/too-many-requests':
             setError('Too many failed login attempts. Please try again later or reset your password.');
@@ -205,7 +205,7 @@ const LoginPage = () => {
       }
       
     } catch (err) {
-      console.error("Login process error:", err);
+      //console.error("Login process error:", err);
       // Error already handled above
     } finally {
       setLoading(false);
@@ -224,8 +224,8 @@ const LoginPage = () => {
     setError('');
     
     try {
-      console.log('Verifying 2FA code...');
-      console.log('User ID:', tempAuthData.userId);
+      //console.log('Verifying 2FA code...');
+      //console.log('User ID:', tempAuthData.userId);
       
       // Call the verify2FACode function through authCore
       const authCoreFn = httpsCallable(functions, 'authCore');
@@ -236,10 +236,10 @@ const LoginPage = () => {
         token: twoFactorCode // Some backends expect 'token' instead of 'code'
       });
       
-      console.log('2FA verification result:', result.data);
+      //console.log('2FA verification result:', result.data);
       
       if (result.data?.success) {
-        console.log('2FA verification successful');
+        //console.log('2FA verification successful');
         setSuccessMessage('2FA verified successfully. Redirecting...');
         setShow2FAForm(false);
         setTwoFactorCode('');
@@ -251,7 +251,7 @@ const LoginPage = () => {
       }
       
     } catch (error) {
-      console.error('2FA verification error:', error);
+      //console.error('2FA verification error:', error);
       setError('Failed to verify 2FA code. Please try again.');
       setTwoFactorCode('');
     } finally {
@@ -286,22 +286,22 @@ const LoginPage = () => {
       const user = result.user;
       
       if (!user || !user.uid) {
-        console.log('No user in Google sign-in result');
+        //console.log('No user in Google sign-in result');
         setSuccessMessage("Successfully signed in with Google. Redirecting...");
         setIsChecking2FA(false);
         return;
       }
       
-      console.log('Checking 2FA for Google user:', user.uid);
+      //console.log('Checking 2FA for Google user:', user.uid);
       
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const userData = userDoc.data();
       
-      console.log('Google user 2FA status:', userData?.twoFactorEnabled);
-      console.log('Google user has 2FA secret:', !!userData?.twoFactorSecret);
+      //console.log('Google user 2FA status:', userData?.twoFactorEnabled);
+      //console.log('Google user has 2FA secret:', !!userData?.twoFactorSecret);
       
       if (userData?.twoFactorEnabled === true && userData?.twoFactorSecret) {
-        console.log('Google user has 2FA enabled, showing 2FA form');
+        //console.log('Google user has 2FA enabled, showing 2FA form');
         
         setTempAuthData({
           email: user.email,
