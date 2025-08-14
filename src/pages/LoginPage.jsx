@@ -10,6 +10,7 @@ import { clearVerificationState } from '../services/storage';
 import { useUser } from '../contexts/UserContext';
 import ResponsiveBanner from '../components/ResponsiveBanner';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
+import NoPortalAccountView from '../components/NoPortalAccountView';
 import darkLogo from "../assets/images/alcor-white-logo.png";
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
@@ -36,6 +37,9 @@ const LoginPage = () => {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [tempAuthData, setTempAuthData] = useState(null); // Store user/session data during 2FA
   const [is2FASubmitting, setIs2FASubmitting] = useState(false);
+  
+  // New state for no portal account view
+  const [showNoPortalAccount, setShowNoPortalAccount] = useState(false);
   
   const { currentUser, signupState, isLoading: userLoading } = useUser();
   const navigate = useNavigate();
@@ -184,10 +188,14 @@ const LoginPage = () => {
         // Handle other auth errors
         switch(authError.code) {
           case 'auth/user-not-found':
+            // Show the portal-specific no account view
+            setShowNoPortalAccount(true);
+            setError(''); // Clear any error
+            break;
           case 'auth/wrong-password':
           case 'auth/invalid-credential':
           case 'auth/invalid-email':
-            setError('Invalid email or password. Please check your credentials and try again. If you created your account with Google, log in with the Google button below.');
+            setError('Invalid email or password. Please check your credentials and try again. If you do not have a portal account, create one below.');
             break;
           case 'auth/too-many-requests':
             setError('Too many failed login attempts. Please try again later or reset your password.');
@@ -369,6 +377,11 @@ const LoginPage = () => {
       setSuccessMessage('');
     }
     
+    // Clear the no portal account view when user types
+    if (showNoPortalAccount) {
+      setShowNoPortalAccount(false);
+    }
+    
     if (name === 'email') {
       setEmail(value);
     } else if (name === 'password') {
@@ -444,7 +457,15 @@ const LoginPage = () => {
       
       <div className="flex-1 flex justify-center items-start px-4 sm:px-8 md:px-12 pb-16 sm:pb-12 pt-12 sm:pt-8">
         <div className="w-full max-w-2xl bg-white rounded-xl shadow-md overflow-hidden">
-          {showResetForm ? (
+          {showNoPortalAccount ? (
+            <NoPortalAccountView 
+              email={email}
+              onBack={() => {
+                setShowNoPortalAccount(false);
+                setPassword(''); // Clear password for security
+              }}
+            />
+          ) : showResetForm ? (
             // Password Reset Form
             <form onSubmit={handleResetPassword} className="p-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Reset Your Password</h2>

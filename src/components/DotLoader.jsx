@@ -1,8 +1,7 @@
-// File: components/DotLoader.jsx
 import React from 'react';
 
 /**
- * Modern dot collision loading animation with horizontal collision effect cool
+ * Elegant pulse loader with purple tones for portal-wide use
  */
 const DotLoader = ({ 
   size = 'md', 
@@ -11,208 +10,18 @@ const DotLoader = ({
   className = '' 
 }) => {
   
-  // Size mappings
+  // Size mappings - medium-sized dots with more spacing
   const sizes = {
-    sm: { dot: 'w-2 h-2', container: 'w-32', text: 'text-sm' },
-    md: { dot: 'w-3 h-3', container: 'w-40', text: 'text-base' },
-    lg: { dot: 'w-4 h-4', container: 'w-48', text: 'text-lg' }
+    sm: { dot: 'w-2 h-2', spacing: 'gap-4', text: 'text-sm' },
+    md: { dot: 'w-2.5 h-2.5', spacing: 'gap-6', text: 'text-base' },
+    lg: { dot: 'w-3 h-3', spacing: 'gap-8', text: 'text-lg' }
   };
   
-  // Color mappings
+  // Purple tones from sidebar
   const colors = {
-    primary: '#775684',
-    navy: '#13263f',
-    white: '#ffffff',
-    gray: '#6b7280'
-  };
-  
-  const currentSize = sizes[size];
-  const dotColor = colors[color] || colors.primary;
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className={`relative ${currentSize.container} h-8 flex items-center justify-center`}>
-        {/* Left dot - moves right and bounces back */}
-        <div
-          className={`absolute ${currentSize.dot} rounded-full`}
-          style={{
-            backgroundColor: dotColor,
-            left: '10%',
-            animation: 'dotCollideLeft 2s ease-in-out infinite'
-          }}
-        />
-        
-        {/* Center dots - scale and pulse on impact */}
-        <div
-          className={`absolute ${currentSize.dot} rounded-full`}
-          style={{
-            backgroundColor: dotColor,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            animation: 'dotCollideCenter 2s ease-in-out infinite'
-          }}
-        />
-        
-        {/* Right dot - moves left and bounces back */}
-        <div
-          className={`absolute ${currentSize.dot} rounded-full`}
-          style={{
-            backgroundColor: dotColor,
-            right: '10%',
-            animation: 'dotCollideRight 2s ease-in-out infinite'
-          }}
-        />
-      </div>
-      
-      {message && (
-        <p className={`mt-3 ${currentSize.text} text-gray-600`}>{message}</p>
-      )}
-      
-      <style jsx>{`
-        @keyframes dotCollideLeft {
-          0%, 100% {
-            transform: translateX(0) scale(1);
-            opacity: 0.8;
-          }
-          25% {
-            transform: translateX(0) scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: translateX(calc(40% - 6px)) scale(1.2);
-            opacity: 1;
-          }
-          60% {
-            transform: translateX(calc(30% - 6px)) scale(0.9);
-            opacity: 0.9;
-          }
-        }
-        
-        @keyframes dotCollideCenter {
-          0%, 100% {
-            transform: translateX(-50%) scale(1);
-            opacity: 0.6;
-          }
-          45%, 55% {
-            transform: translateX(-50%) scale(1.5);
-            opacity: 1;
-          }
-          50% {
-            transform: translateX(-50%) scale(1.8);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes dotCollideRight {
-          0%, 100% {
-            transform: translateX(0) scale(1);
-            opacity: 0.8;
-          }
-          25% {
-            transform: translateX(0) scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: translateX(calc(-40% + 6px)) scale(1.2);
-            opacity: 1;
-          }
-          60% {
-            transform: translateX(calc(-30% + 6px)) scale(0.9);
-            opacity: 0.9;
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
-
-// Alternative: Continuous horizontal collision with 4 dots
-export const HorizontalCollisionLoader = ({ 
-  size = 'md', 
-  color = 'primary',
-  message = '',
-  className = '' 
-}) => {
-  
-  const sizes = {
-    sm: { dot: 'w-2 h-2', container: 'w-24', text: 'text-sm' },
-    md: { dot: 'w-3 h-3', container: 'w-32', text: 'text-base' },
-    lg: { dot: 'w-4 h-4', container: 'w-40', text: 'text-lg' }
-  };
-  
-  const colors = {
-    primary: '#775684',
-    navy: '#13263f',
-    white: '#ffffff',
-    gray: '#6b7280'
-  };
-  
-  const currentSize = sizes[size];
-  const dotColor = colors[color] || colors.primary;
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className={`relative ${currentSize.container} h-8 flex items-center`}>
-        {[0, 1, 2, 3].map((index) => (
-          <div
-            key={index}
-            className={`absolute ${currentSize.dot} rounded-full`}
-            style={{
-              backgroundColor: dotColor,
-              left: `${index * 25}%`,
-              animation: `horizontalBounce 1.6s ease-in-out ${index * 0.1}s infinite`
-            }}
-          />
-        ))}
-      </div>
-      
-      {message && (
-        <p className={`mt-3 ${currentSize.text} text-gray-600`}>{message}</p>
-      )}
-      
-      <style jsx>{`
-        @keyframes horizontalBounce {
-          0%, 100% {
-            transform: translateX(0) scale(1);
-            opacity: 1;
-          }
-          25% {
-            transform: translateX(10px) scale(1.2);
-            opacity: 0.9;
-          }
-          50% {
-            transform: translateX(-10px) scale(0.8);
-            opacity: 0.7;
-          }
-          75% {
-            transform: translateX(5px) scale(1.1);
-            opacity: 0.95;
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
-
-// Newton's Cradle style with true physics-like collision
-export const NewtonCradleLoader = ({ 
-  size = 'md', 
-  color = 'primary',
-  message = '',
-  className = '' 
-}) => {
-  
-  const sizes = {
-    sm: { dot: 'w-2 h-2', text: 'text-sm', spacing: 'gap-0.5' },
-    md: { dot: 'w-3 h-3', text: 'text-base', spacing: 'gap-1' },
-    lg: { dot: 'w-4 h-4', text: 'text-lg', spacing: 'gap-1.5' }
-  };
-  
-  const colors = {
-    primary: '#775684',
-    navy: '#13263f',
-    white: '#ffffff',
-    gray: '#6b7280'
+    primary: '#72407f',    // Main purple from sidebar
+    darkPurple: '#4c3565', // Darker purple from sidebar  
+    deepPurple: '#6e4376', // Deep purple variant
   };
   
   const currentSize = sizes[size];
@@ -221,53 +30,34 @@ export const NewtonCradleLoader = ({
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
       <div className={`flex items-center ${currentSize.spacing}`}>
-        {[0, 1, 2, 3, 4].map((index) => (
+        {[0, 1, 2].map((index) => (
           <div
             key={index}
             className={`${currentSize.dot} rounded-full`}
             style={{
               backgroundColor: dotColor,
-              transformOrigin: 'center',
-              animation: 
-                index === 0 ? 'cradleLeft 1s ease-in-out infinite' : 
-                index === 4 ? 'cradleRight 1s ease-in-out infinite 0.5s' : 
-                'cradleCenter 1s ease-in-out infinite'
+              animation: `elegantPulse 1.4s ease-in-out ${index * 0.2}s infinite`,
+              boxShadow: `0 0 4px ${dotColor}20`
             }}
           />
         ))}
       </div>
       
       {message && (
-        <p className={`mt-3 ${currentSize.text} text-gray-600`}>{message}</p>
+        <p className={`mt-4 ${currentSize.text} text-gray-500 font-light tracking-wide`}>
+          {message}
+        </p>
       )}
       
       <style jsx>{`
-        @keyframes cradleLeft {
-          0%, 50% {
-            transform: rotate(0deg) translateX(0);
+        @keyframes elegantPulse {
+          0%, 80%, 100% {
+            transform: scale(0.8);
+            opacity: 0.3;
           }
-          25% {
-            transform: rotate(-30deg) translateX(-10px);
-          }
-        }
-        
-        @keyframes cradleRight {
-          0%, 50% {
-            transform: rotate(0deg) translateX(0);
-          }
-          25% {
-            transform: rotate(30deg) translateX(10px);
-          }
-        }
-        
-        @keyframes cradleCenter {
-          0%, 100% {
-            transform: scale(1);
+          40% {
+            transform: scale(1.2);
             opacity: 1;
-          }
-          25%, 75% {
-            transform: scale(0.95);
-            opacity: 0.9;
           }
         }
       `}</style>
@@ -275,17 +65,83 @@ export const NewtonCradleLoader = ({
   );
 };
 
-// Preset loaders for different use cases
-export const InlineLoader = ({ color = 'gray' }) => (
+// Preset loaders for different use cases throughout the portal
+export const InlineLoader = ({ color = 'primary' }) => (
   <DotLoader size="sm" color={color} className="inline-flex" />
 );
 
-export const ButtonLoader = ({ color = 'white' }) => (
-  <HorizontalCollisionLoader size="sm" color={color} className="inline-flex" />
+export const ButtonLoader = ({ color = 'primary' }) => (
+  <DotLoader size="sm" color={color} className="inline-flex" />
 );
 
-export const PageLoader = ({ message = "Loading...", size = "lg", color = "primary" }) => (
-  <DotLoader size={size} color={color} message={message} />
+// Page loader with proper centering
+export const PageLoader = ({ message = "Loading...", size = "md", color = "primary" }) => (
+  <div className="min-h-screen flex items-center justify-center">
+    <DotLoader size={size} color={color} message={message} />
+  </div>
 );
+
+// Alternative: Centered loader for specific containers
+export const CenteredLoader = ({ message = "Loading...", size = "md", color = "primary", minHeight = "400px" }) => (
+  <div className="w-full flex items-center justify-center" style={{ minHeight }}>
+    <DotLoader size={size} color={color} message={message} />
+  </div>
+);
+
+// Demo component
+export const LoaderDemo = () => {
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h2 className="text-2xl font-light text-gray-800 mb-8 text-center">
+        Portal Loading Animation
+      </h2>
+      
+      <div className="space-y-12">
+        {/* Primary purple loader */}
+        <div className="flex flex-col items-center space-y-4">
+          <h3 className="text-lg font-light text-gray-700">Primary Purple</h3>
+          <DotLoader size="md" color="primary" />
+        </div>
+        
+        {/* Size variations */}
+        <div>
+          <h3 className="text-lg font-light text-gray-700 mb-4 text-center">Size Variations</h3>
+          <div className="flex items-center justify-center gap-12">
+            <DotLoader size="sm" color="primary" message="Small" />
+            <DotLoader size="md" color="primary" message="Medium" />
+            <DotLoader size="lg" color="primary" message="Large" />
+          </div>
+        </div>
+        
+        {/* Use cases */}
+        <div>
+          <h3 className="text-lg font-light text-gray-700 mb-4 text-center">Common Use Cases</h3>
+          <div className="space-y-6 max-w-md mx-auto">
+            {/* Button example */}
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
+              <span className="text-gray-700">Button Loading</span>
+              <button className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2">
+                <ButtonLoader />
+                <span>Processing</span>
+              </button>
+            </div>
+            
+            {/* Inline example */}
+            <div className="p-4 bg-white rounded-lg shadow-sm">
+              <p className="text-gray-700">
+                Fetching data <InlineLoader /> please wait...
+              </p>
+            </div>
+            
+            {/* Page loading example */}
+            <div className="p-8 bg-white rounded-lg shadow-sm">
+              <PageLoader message="Loading your content..." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default DotLoader;

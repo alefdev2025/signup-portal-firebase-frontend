@@ -101,28 +101,30 @@ const WelcomePage = () => {
    navigate('/signup');
  };
  
- const goToLogin = async (continueSignup = false) => {
-   console.log(`Login button clicked, continueSignup=${continueSignup}`);
-   
-   // FORCE logout before going to login page
-   try {
-     await logout();
-     console.log("Force logout before login navigation");
-     localStorage.clear();
-     sessionStorage.clear();
-     
-     // Wait a bit to ensure logout completes
-     await new Promise(resolve => setTimeout(resolve, 500));
-   } catch (error) {
-     console.log("Logout error before navigation:", error);
-   }
-   
-   if (continueSignup) {
-     navigate('/login?continue=signup');
-   } else {
-     navigate('/login');
-   }
- };
+ const goToLogin = async (continueSignup = false, isPortalLogin = false) => {
+  console.log(`Login button clicked, continueSignup=${continueSignup}, isPortalLogin=${isPortalLogin}`);
+  
+  // FORCE logout before going to login page
+  try {
+    await logout();
+    console.log("Force logout before login navigation");
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Wait a bit to ensure logout completes
+    await new Promise(resolve => setTimeout(resolve, 500));
+  } catch (error) {
+    console.log("Logout error before navigation:", error);
+  }
+  
+  if (isPortalLogin) {
+    navigate('/portal-login');
+  } else if (continueSignup) {
+    navigate('/login?continue=signup');
+  } else {
+    navigate('/login');
+  }
+};
 
  // Card data with smaller sizes
  const cardData = [
@@ -171,27 +173,27 @@ const WelcomePage = () => {
      borderColor: 'border-[#825f7c]/30'
    },
    {
-     id: 'member-portal',
-     title: 'Member Portal',
-     description: 'Access your account, view benefits, manage your profile, and more as an existing member.',
-     buttonText: 'Sign In',
-     buttonAction: () => goToLogin(false),
-     iconPath: (
-       <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-         <defs>
-           <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-             <stop offset="0%" stopColor="#d59560" />
-             <stop offset="100%" stopColor="#513a6d" />
-           </linearGradient>
-         </defs>
-         <path stroke="url(#portalGradient)" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-       </svg>
-     ),
-     buttonClasses: 'bg-[#404060] hover:bg-[#4e4e73] text-white font-semibold',
-     cardClasses: 'bg-white border-[#9194A1]/10 hover:border-[#9194A1]/30',
-     starClasses: 'text-[#9194A1]',
-     borderColor: 'border-[#404060]/30'
-   }
+    id: 'member-portal',
+    title: 'Member Portal',
+    description: 'Access your account, view benefits, manage your profile, and more as an existing member.',
+    buttonText: 'Sign In',
+    buttonAction: () => goToLogin(false, true), // Pass true for isPortalLogin
+    iconPath: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#d59560" />
+            <stop offset="100%" stopColor="#513a6d" />
+          </linearGradient>
+        </defs>
+        <path stroke="url(#portalGradient)" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+    buttonClasses: 'bg-[#404060] hover:bg-[#4e4e73] text-white font-semibold',
+    cardClasses: 'bg-white border-[#9194A1]/10 hover:border-[#9194A1]/30',
+    starClasses: 'text-[#9194A1]',
+    borderColor: 'border-[#404060]/30'
+  }
  ];
 
  return (

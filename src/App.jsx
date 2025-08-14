@@ -23,6 +23,7 @@ import PortalSetupPage from './pages/PortalSetupPage';
 import PaymentSetup from './components/portal/PaymentSetupSubscriptionNotUsing';
 import PaymentContentWrapper from './components/PaymentContentWrapper';
 import PortalPaymentPageWrapper from './pages/PortalPaymentPageWrapper';
+import PortalLoginPage from './pages/PortalLoginPage';
 
 // Import demo service
 import { checkDemoAuth } from './services/demo';
@@ -30,7 +31,7 @@ import { checkDemoAuth } from './services/demo';
 // Debug wrapper to track component mounting
 const DebugWrapper = ({ name, children }) => {
   React.useEffect(() => {
-    console.log(`[DEBUG] ${name} mounted`);
+    //console.log(`[DEBUG] ${name} mounted`);
     return () => console.log(`[DEBUG] ${name} unmounted`);
   }, [name]);
   
@@ -58,12 +59,12 @@ function App() {
   // Add instance ID to track if component is remounting
   const instanceId = React.useRef(Math.random().toString(36).substr(2, 9));
   
-  console.log(`[APP] Render #${renderCount.current} - Instance: ${instanceId.current}`);
+  //console.log(`[APP] Render #${renderCount.current} - Instance: ${instanceId.current}`);
   
   // Calculate these values once and memoize them
   const isProduction = React.useMemo(() => {
     const val = import.meta.env.MODE === 'production';
-    console.log(`[APP] isProduction calculated: ${val}`);
+    //console.log(`[APP] isProduction calculated: ${val}`);
     return val;
   }, []);
   
@@ -73,55 +74,55 @@ function App() {
       window.location.hostname.includes('staging') ||
       window.location.hostname.includes('client') ||
       window.location.hostname.includes('preview');
-    console.log(`[APP] isDemoMode calculated: ${val}`);
+    //console.log(`[APP] isDemoMode calculated: ${val}`);
     return val;
   }, []);
   
   const shouldProtect = React.useMemo(() => {
     const val = isDemoMode || !isProduction;
-    console.log(`[APP] shouldProtect calculated: ${val}`);
+    //console.log(`[APP] shouldProtect calculated: ${val}`);
     return val;
   }, [isDemoMode, isProduction]);
   
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    console.log('[APP] Initial isAuthenticated state: false');
+    //console.log('[APP] Initial isAuthenticated state: false');
     return false;
   });
   
   const [checkingAuth, setCheckingAuth] = useState(() => {
-    console.log('[APP] Initial checkingAuth state: true');
+    //console.log('[APP] Initial checkingAuth state: true');
     return true;
   });
 
   // Check if user is already authenticated on app load
   useEffect(() => {
-    console.log(`[APP] Auth check useEffect running - Instance: ${instanceId.current}`);
+    //console.log(`[APP] Auth check useEffect running - Instance: ${instanceId.current}`);
     
     const checkAuth = async () => {
       if (!shouldProtect) {
-        console.log('[APP] Not in demo mode, skipping auth check');
+        //console.log('[APP] Not in demo mode, skipping auth check');
         setIsAuthenticated(true);
         setCheckingAuth(false);
         return;
       }
 
-      console.log('[APP] Checking demo authentication...');
+      //console.log('[APP] Checking demo authentication...');
       
       try {
         const result = await checkDemoAuth();
         
         if (result.success && result.authenticated) {
-          console.log('[APP] ✅ Demo session is valid');
+          //console.log('[APP] ✅ Demo session is valid');
           setIsAuthenticated(true);
         } else {
-          console.log('[APP] ❌ No valid demo session found');
+          //console.log('[APP] ❌ No valid demo session found');
           setIsAuthenticated(false);
         }
       } catch (err) {
-        console.log('[APP] Demo auth check failed:', err.message);
+        //console.log('[APP] Demo auth check failed:', err.message);
         setIsAuthenticated(false);
       } finally {
-        console.log('[APP] Setting checkingAuth to false');
+        //console.log('[APP] Setting checkingAuth to false');
         setCheckingAuth(false);
       }
     };
@@ -129,18 +130,18 @@ function App() {
     checkAuth();
     
     return () => {
-      console.log(`[APP] Auth check useEffect cleanup - Instance: ${instanceId.current}`);
+      //console.log(`[APP] Auth check useEffect cleanup - Instance: ${instanceId.current}`);
     };
   }, [shouldProtect, instanceId]);
 
   // Log state changes
   useEffect(() => {
-    console.log(`[APP] State changed - isAuthenticated: ${isAuthenticated}, checkingAuth: ${checkingAuth}`);
+    //console.log(`[APP] State changed - isAuthenticated: ${isAuthenticated}, checkingAuth: ${checkingAuth}`);
   }, [isAuthenticated, checkingAuth]);
 
   // Show loading state while checking authentication
   if (checkingAuth) {
-    console.log('[APP] Rendering loading state');
+    //console.log('[APP] Rendering loading state');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -153,24 +154,24 @@ function App() {
 
   // Show password page if protection is enabled and user is not authenticated
   if (shouldProtect && !isAuthenticated) {
-    console.log('[APP] Rendering demo password page');
+    //console.log('[APP] Rendering demo password page');
     return (
       <DemoPasswordPage 
         onAuthenticated={async () => {
-          console.log('[APP] Demo authentication successful');
+          //console.log('[APP] Demo authentication successful');
           await new Promise(resolve => setTimeout(resolve, 100));
           
           try {
             const checkResult = await checkDemoAuth();
             if (checkResult.success && checkResult.authenticated) {
-              console.log('[APP] Auth verified, setting authenticated');
+              //console.log('[APP] Auth verified, setting authenticated');
               setIsAuthenticated(true);
             } else {
-              console.error('[APP] Auth verification failed after login');
+              //console.error('[APP] Auth verification failed after login');
               setIsAuthenticated(true);
             }
           } catch (err) {
-            console.error('[APP] Error verifying auth:', err);
+            //console.error('[APP] Error verifying auth:', err);
             setIsAuthenticated(true);
           }
         }} 
@@ -178,7 +179,7 @@ function App() {
     );
   }
 
-  console.log('[APP] Rendering main app routes');
+  //console.log('[APP] Rendering main app routes');
 
   // Main app - only renders after authentication (or if protection is disabled)
   return (
@@ -189,6 +190,7 @@ function App() {
             {/* Public routes - no authentication required */}
             <Route path="/" element={<DebugWrapper name="WelcomePage"><WelcomePage /></DebugWrapper>} />
             <Route path="/login" element={<DebugWrapper name="LoginPage"><LoginPage /></DebugWrapper>} />
+            <Route path="/portal-login" element={<DebugWrapper name="PortalLoginPage"><PortalLoginPage /></DebugWrapper>} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/__/auth/action" element={<ResetPasswordPage />} />
             <Route path="/portal-setup" element={<PortalSetupPage />} />
@@ -218,6 +220,13 @@ function App() {
                 <PortalHome />
               </MemberPortalRoute>
             } />
+
+            {/* Special route for Google signup flow 
+            <Route path="/signup/google-callback" element={
+              <SignupFlowProvider>
+                <GoogleSignupCallback />
+              </SignupFlowProvider>
+            } />*/}
 
             {/* Payment route within portal 
             <Route path="/portal-home/payments/pay/:invoiceId" element={

@@ -8,7 +8,7 @@ import whiteALogoNoText from "../../assets/images/alcor-white-logo-no-text.png";
 // Import services
 import membershipService from "../../services/membership";
 
-import DotLoader, { NewtonCradleLoader } from "../../components/DotLoader";
+import DotLoader, { PageLoader } from "../../components/DotLoader";
 
 // Document names to match backend
 const DOCUMENT_NAMES = {
@@ -577,7 +577,7 @@ export default function MembershipDocuSign({
       
       case 'creating':
         return {
-          icon: <NewtonCradleLoader size="lg" color="primary" />,
+          icon: <PageLoader size="lg" color="primary" />,
           title: 'Creating DocuSign Envelope',
           message: `Setting up your ${DOCUMENT_NAMES[currentDocument]} for signing...`,
           color: 'text-[#775684]'

@@ -1,4 +1,4 @@
-// PortalSetupPage.jsx - Updated implementation with separate 2FA view
+// PortalSetupPage.jsx - Updated implementation with applicant handling feature flag
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +17,11 @@ import {
   checkMemberAccount
 } from '../services/auth';
 
+// FEATURE FLAG: Set to true to allow applicants to create portal accounts
+const ALLOW_APPLICANT_PORTAL_ACCESS = true;
+
 const PortalSetupPage = () => {
-  const [step, setStep] = useState('email'); // 'email', 'alcorId', 'verify', 'password', '2fa-choice', '2fa-setup', 'noAccount', 'existingAccount'
+  const [step, setStep] = useState('email'); // 'email', 'alcorId', 'verify', 'password', '2fa-choice', '2fa-setup', 'noAccount', 'existingAccount', 'applicantMessage'
   const [formData, setFormData] = useState({
     email: '',
     alcorId: '',
@@ -86,7 +89,7 @@ const PortalSetupPage = () => {
     }
   };
 
-  // Step 1: Check email in backend
+  // Step 1: Check email in backend - SECURE VERSION
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     
@@ -99,37 +102,48 @@ const PortalSetupPage = () => {
     setError('');
     
     try {
+      console.log('Calling checkMemberAccount with email:', formData.email);
       const result = await checkMemberAccount(formData.email);
+      console.log('checkMemberAccount result:', result);
       
-      if (!result.success) {
-        setError(result.error || 'Failed to check account');
-        return;
-      }
+      // ALWAYS show the same success message
+      setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
       
-      if (!result.hasAccount) {
-        setStep('noAccount');
+      if (!result.success || !result.hasAccount) {
+        // No account - just show success message but don't actually proceed
+        // Don't reveal that no account was found
+        setLoading(false);
         return;
       }
       
       if (result.requiresAlcorId) {
         // Multiple accounts - need Alcor ID
-        setStep('alcorId');
-        setSuccessMessage(result.message || `Found ${result.count} accounts with this email. Please enter your A-number to continue.`);
+        // Don't reveal this until AFTER they verify email
+        // Store this info for later
+        sessionStorage.setItem('pendingMultipleAccounts', 'true');
+        sessionStorage.setItem('pendingAccountCount', result.count.toString());
+        
+        // Just send verification to the email
+        // Pick the first account for now
+        const customerData = result.data[0];
+        setSalesforceData(customerData);
+        await sendVerificationEmail(customerData);
       } else {
-        // Single account - extract the first customer from the data array
+        // Single account found
         const customerData = result.data[0];
         setSalesforceData(customerData);
         await sendVerificationEmail(customerData);
       }
     } catch (err) {
       console.error('Email check error:', err);
-      setError('Failed to check account. Please try again.');
+      // Don't reveal specific errors
+      setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: Handle Alcor ID submission
+  // Step 2: Handle Alcor ID submission (after email verification)
   const handleAlcorIdSubmit = async (e) => {
     e.preventDefault();
     
@@ -157,7 +171,10 @@ const PortalSetupPage = () => {
       // For Alcor ID search, data might be an object or single item in array
       const customerData = result.data.id ? result.data : result.data[0];
       setSalesforceData(customerData);
-      await sendVerificationEmail(customerData);
+      
+      // Continue to password step
+      setStep('password');
+      setSuccessMessage('Account verified! Now create your password.');
     } catch (err) {
       console.error('Alcor ID check error:', err);
       setError('Invalid Alcor ID. Please check your A-number and try again.');
@@ -166,31 +183,14 @@ const PortalSetupPage = () => {
     }
   };
 
-  // Send verification email
+  // Send verification email - SIMPLIFIED VERSION
   const sendVerificationEmail = async (accountData) => {
     try {
       if (!accountData) {
         throw new Error('No account data available');
       }
       
-      // Check if this member already has a portal account
-      try {
-        const authCoreFn = httpsCallable(functions, 'authCore');
-        const portalCheckResult = await authCoreFn({
-          action: 'checkPortalAccountExists',
-          email: formData.email
-        });
-        
-        if (portalCheckResult.data?.hasPortalAccount) {
-          console.log('Member already has portal account, but continuing to send verification');
-          // Don't reveal this yet - continue with verification
-        }
-      } catch (checkError) {
-        console.error('Error checking portal account:', checkError);
-        // Continue anyway
-      }
-      
-      // Safely construct the name
+      // Just send the verification email
       const firstName = accountData.firstName || '';
       const lastName = accountData.lastName || '';
       const fullName = `${firstName} ${lastName}`.trim() || 'Member';
@@ -198,24 +198,25 @@ const PortalSetupPage = () => {
       const result = await requestPortalEmailVerification({
         email: formData.email,
         name: fullName,
-        alcorId: accountData.alcorId || '',
+        alcorId: accountData.alcorId || '', // Empty string for applicants is OK
         salesforceContactId: accountData.id || accountData.salesforceContactId || ''
       });
       
       if (result.success) {
         setVerificationId(result.verificationId);
         setStep('verify');
-        setSuccessMessage('Verification code sent! Please check your email.');
+        // Don't show success message here - the generic message is already shown
       } else {
-        setError(result.error || 'Failed to send verification email.');
+        // Don't reveal error details
+        console.error('Failed to send verification:', result.error);
       }
     } catch (err) {
       console.error('Verification email error:', err);
-      setError('Failed to send verification email. Please try again.');
+      // Don't reveal error details
     }
   };
 
-  // Step 3: Verify code
+  // Step 3: Verify code - WITH ALL CHECKS MOVED HERE
   const handleCodeVerification = async (e) => {
     e.preventDefault();
     
@@ -234,8 +235,23 @@ const PortalSetupPage = () => {
       );
       
       if (result.success) {
-        // NOW check if this user already has a portal account
-        // This is secure because they've proven they have access to the email
+        // NOW do all checks after successful verification
+        
+        // Check if we stored multiple accounts flag
+        const hasMultipleAccounts = sessionStorage.getItem('pendingMultipleAccounts') === 'true';
+        
+        if (hasMultipleAccounts) {
+          // NOW we can reveal they have multiple accounts and ask for Alcor ID
+          const accountCount = sessionStorage.getItem('pendingAccountCount') || 'multiple';
+          sessionStorage.removeItem('pendingMultipleAccounts');
+          sessionStorage.removeItem('pendingAccountCount');
+          
+          setStep('alcorId');
+          setSuccessMessage(`Found ${accountCount} accounts with this email. Please enter your A-number to continue.`);
+          return;
+        }
+        
+        // 1. Check if portal account already exists
         try {
           console.log('Checking if portal account already exists for:', formData.email);
           const authCoreFn = httpsCallable(functions, 'authCore');
@@ -251,12 +267,7 @@ const PortalSetupPage = () => {
             // User already has a portal account
             console.log('Portal account already exists!');
             setStep('existingAccount');
-            // Scroll to top
-            setTimeout(() => {
-              window.scrollTo(0, 0);
-              document.documentElement.scrollTop = 0;
-              document.body.scrollTop = 0;
-            }, 0);
+            forceScrollToTop();
             return;
           }
         } catch (checkError) {
@@ -264,7 +275,24 @@ const PortalSetupPage = () => {
           // Continue with normal flow if check fails
         }
         
-        // No existing portal account, continue with setup
+        // 2. Check if this is an applicant and if they're allowed
+        const isApplicant = !salesforceData.alcorId;
+        if (isApplicant) {
+          console.log('Applicant detected - no Alcor ID assigned yet');
+          console.log('ALLOW_APPLICANT_PORTAL_ACCESS flag:', ALLOW_APPLICANT_PORTAL_ACCESS);
+          
+          if (!ALLOW_APPLICANT_PORTAL_ACCESS) {
+            // Show applicant message (not allowed)
+            setStep('applicantMessage');
+            forceScrollToTop();
+            return;
+          }
+          
+          // If feature flag is enabled, continue with portal creation for applicants
+          console.log('Applicant portal access is enabled, continuing to password step');
+        }
+        
+        // 3. No existing portal account and allowed to proceed - continue with setup
         setStep('password');
         setSuccessMessage('Email verified! Now create your password.');
       } else {
@@ -278,7 +306,7 @@ const PortalSetupPage = () => {
     }
   };
 
-  // Step 4: Create account with password (WITH DEBUG LOGGING)
+  // Step 4: Create account with password
   const handleAccountCreation = async (e) => {
     e.preventDefault();
     
@@ -304,6 +332,39 @@ const PortalSetupPage = () => {
     setError('');
     
     try {
+      // Check if this is an applicant
+      const isApplicant = !salesforceData.alcorId;
+      
+      if (isApplicant && ALLOW_APPLICANT_PORTAL_ACCESS) {
+        // Handle applicant portal creation differently
+        console.log('Creating portal account for applicant');
+        
+        // You might want to call a different backend function for applicants
+        // For now, we'll use the same function but with empty alcorId
+        const result = await createPortalAccountWithPassword({
+          email: formData.email,
+          password: formData.password,
+          verificationId: verificationId,
+          alcorId: '', // Empty for applicants
+          firstName: salesforceData.firstName,
+          lastName: salesforceData.lastName,
+          salesforceContactId: salesforceData.id || salesforceData.salesforceContactId
+        });
+        
+        if (result.success) {
+          // Applicants might not need 2FA setup
+          setSuccessMessage('Portal account created successfully! Redirecting to login...');
+          setTimeout(() => {
+            navigate('/portal-login?setup=complete&userType=applicant');
+          }, 2000);
+        } else {
+          setError(result.error || 'Failed to create account.');
+        }
+        
+        return;
+      }
+      
+      // Regular member portal creation
       const result = await createPortalAccountWithPassword({
         email: formData.email,
         password: formData.password,
@@ -363,7 +424,7 @@ const PortalSetupPage = () => {
           setSuccessMessage('Portal account created successfully! Redirecting to login...');
 
           setTimeout(() => {
-            navigate('/login?portal=true&setup=complete');
+            navigate('/portal-login?setup=complete');
           }, 2000);
         }
       } else {
@@ -378,17 +439,17 @@ const PortalSetupPage = () => {
   };
 
   const handleGoBack = () => {
-    navigate('/login');
+    navigate('/portal-login');
   };
 
   // Handle 2FA setup success
   const handle2FASuccess = () => {
-    navigate('/login?portal=true&setup=complete&2fa=enabled');
+    navigate('/portal-login?setup=complete&2fa=enabled');
   };
 
   // Handle 2FA skip
   const handle2FASkip = () => {
-    navigate('/login?portal=true&setup=complete');
+    navigate('/portal-login?setup=complete');
   };
 
   // Render different steps
@@ -402,14 +463,8 @@ const PortalSetupPage = () => {
             </h2>
             
             <p className="text-gray-600 mb-6">
-              If the email you enter is connected to an Alcor account you'll receive an email with a verification code.
+              If an application or membership account exists for this email, you'll receive a verification code.
             </p>
-            
-            {successMessage && (
-              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
-                {successMessage}
-              </div>
-            )}
             
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
@@ -513,7 +568,9 @@ const PortalSetupPage = () => {
               
               <button
                 type="button"
-                onClick={() => setStep('email')}
+                onClick={() => {
+                  setStep('email');
+                }}
                 className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium text-base hover:bg-gray-50"
                 disabled={loading}
               >
@@ -531,7 +588,7 @@ const PortalSetupPage = () => {
             </h2>
             
             <p className="text-gray-600 mb-6">
-              We've sent a 6-digit verification code to <strong>{formData.email}</strong>
+              Enter the 6-digit verification code sent to <strong>{formData.email}</strong>
             </p>
             
             {successMessage && (
@@ -592,7 +649,11 @@ const PortalSetupPage = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-600">
                   <strong>Account:</strong> {salesforceData.firstName} {salesforceData.lastName}<br/>
-                  <strong>Member ID:</strong> {salesforceData.alcorId}
+                  {salesforceData.alcorId ? (
+                    <><strong>Member ID:</strong> {salesforceData.alcorId}</>
+                  ) : (
+                    <><strong>Status:</strong> Applicant (Pending A-number)</>
+                  )}
                 </p>
               </div>
             )}
@@ -682,7 +743,7 @@ const PortalSetupPage = () => {
               </div>
             </div>
             
-            {/* 2FA information */}
+            {/* 2FA information
             <div className="bg-gray-100 border border-gray-300 rounded-md p-4 mb-8">
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Why use two-factor authentication?
@@ -693,13 +754,13 @@ const PortalSetupPage = () => {
                 <li>Required by many organizations for sensitive data protection</li>
                 <li>Can be set up now or anytime later from your account settings</li>
               </ul>
-            </div>
+            </div> */}
             
             {/* Main action buttons */}
             <div className="space-y-4">
               <button
                 type="button"
-                onClick={() => navigate('/login?portal=true&setup=complete')}
+                onClick={() => navigate('/portal-login?setup=complete')}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
                 className="w-full py-3 px-6 rounded-full font-semibold text-base hover:opacity-90 flex items-center justify-center"
               >
@@ -733,6 +794,78 @@ const PortalSetupPage = () => {
             onSkip={handle2FASkip}
             loading={loading}
           />
+        );
+
+      case 'applicantMessage':
+        return (
+          <div className="p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
+              Applicant Account Detected
+            </h2>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-6 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Portal Access for Applicants
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>We found your application record for: <strong>{formData.email}</strong></p>
+                    <p className="mt-2">
+                      As an applicant, you'll need to complete your membership process before creating portal access. 
+                      Your Alcor ID (A-number) will be assigned once your membership is finalized.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">What to do next:</h3>
+              <ol className="list-decimal list-inside space-y-2 text-gray-600">
+                <li>Complete your membership application if you haven't already</li>
+                <li>Wait for your A-number to be assigned (you'll receive an email)</li>
+                <li>Return here to create your portal access once you have your A-number</li>
+              </ol>
+            </div>
+            
+            {salesforceData && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-600">
+                  <strong>Applicant:</strong> {salesforceData.firstName} {salesforceData.lastName}<br/>
+                  <strong>Status:</strong> Pending A-number assignment
+                </p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => navigate('/portal-login')}
+                style={{ backgroundColor: "#6f2d74", color: "white" }}
+                className="w-full py-3 px-6 rounded-full font-semibold hover:opacity-90"
+              >
+                Back to Login
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('email');
+                  setFormData({ ...formData, email: '' });
+                  setSalesforceData(null);
+                }}
+                className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium hover:bg-gray-50"
+              >
+                Try Different Email
+              </button>
+            </div>
+          </div>
         );
 
       case 'existingAccount':
@@ -769,7 +902,7 @@ const PortalSetupPage = () => {
               {salesforceData && (
                 <div className="text-sm text-gray-500">
                   <p>Name: {salesforceData.firstName} {salesforceData.lastName}</p>
-                  <p>Member ID: {salesforceData.alcorId}</p>
+                  {salesforceData.alcorId && <p>Member ID: {salesforceData.alcorId}</p>}
                   <p>Email: {formData.email}</p>
                 </div>
               )}
@@ -778,7 +911,7 @@ const PortalSetupPage = () => {
             <div className="space-y-4">
               <button
                 type="button"
-                onClick={() => navigate('/login?email=' + encodeURIComponent(formData.email))}
+                onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email))}
                 style={{ backgroundColor: "#6f2d74", color: "white" }}
                 className="w-full py-4 px-6 rounded-full font-semibold text-lg hover:opacity-90 flex items-center justify-center"
               >
@@ -790,7 +923,7 @@ const PortalSetupPage = () => {
               
               <button
                 type="button"
-                onClick={() => navigate('/login?email=' + encodeURIComponent(formData.email) + '&reset=true')}
+                onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email) + '&reset=true')}
                 className="w-full bg-white border-2 border-purple-600 text-purple-700 py-4 px-6 rounded-full font-medium text-lg hover:bg-purple-50"
               >
                 Reset Password

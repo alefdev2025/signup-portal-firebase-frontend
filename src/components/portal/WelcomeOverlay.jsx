@@ -98,12 +98,12 @@ const WelcomeOverlay = ({ onClose }) => {
             {isApplicant && requiresInfoCompletion ? (
               <>
                 <p className="text-gray-700 mb-4 sm:mb-6 text-sm sm:text-base">
-                  Congratulations on completing your membership signup! As a cryopreservation member applicant, 
+                  Congratulations on completing your membership signup! If you are a cryopreservation member applicant, 
                   there are important details we need to complete your cryopreservation contract.
                 </p>
                 
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 text-left">
-                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Action Required</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Action Required For Cyropreservation Applicants</h3>
                   <p className="text-gray-700 mb-2 text-xs sm:text-sm">
                     Please complete your member information including:
                   </p>

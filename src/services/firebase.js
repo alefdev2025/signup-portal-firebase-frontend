@@ -19,10 +19,10 @@ const firebaseConfig = {
 const FIREBASE_REGION = import.meta.env.VITE_FIREBASE_REGION || 'us-central1';
 
 // Add this right after the firebaseConfig object:
-console.log('🔥 FIREBASE DEBUG:');
-console.log('Project ID from env:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
-console.log('Full firebaseConfig:', firebaseConfig);
-console.log('Functions region:', FIREBASE_REGION);
+//console.log('🔥 FIREBASE DEBUG:');
+//console.log('Project ID from env:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
+//console.log('Full firebaseConfig:', firebaseConfig);
+//console.log('Functions region:', FIREBASE_REGION);
 
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);

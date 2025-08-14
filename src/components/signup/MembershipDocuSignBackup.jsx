@@ -11,7 +11,7 @@ import fundingService from "../../services/funding";
 import { getContactInfo } from "../../services/contact";
 import { getMembershipCost } from "../../services/pricing";
 
-import DotLoader, { NewtonCradleLoader } from "../DotLoader";
+import DotLoader, { PageLoader } from "../DotLoader";
 
 
 export default function MembershipDocuSign({ 
@@ -514,7 +514,7 @@ export default function MembershipDocuSign({
       
       case 'creating':
         return {
-          icon: <NewtonCradleLoader size="lg" color="primary" />,
+          icon: <PageLoader size="lg" color="primary" />,
           title: 'Creating DocuSign Envelope',
           message: 'Setting up your embedded signing experience...',
           color: 'text-[#775684]'

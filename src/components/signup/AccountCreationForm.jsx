@@ -445,14 +445,14 @@ const AccountCreationForm = ({
               )}
             </button>
             
-            {/* OR Divider */}
+            {/* OR Divider 
             <div className="flex items-center my-4">
               <div className="flex-grow border-t border-gray-300"></div>
               <div className="px-4 text-gray-500 uppercase text-sm">OR</div>
               <div className="flex-grow border-t border-gray-300"></div>
             </div>
             
-            {/* Google Sign In Button with Terms Check feature */}
+
             <button 
               type="button"
               onClick={handleGoogleSignInWithTermsCheck}
@@ -467,12 +467,12 @@ const AccountCreationForm = ({
               Continue with Google
             </button>
             
-            {/* Error message for Google sign-in without terms acceptance */}
+
             {googleButtonError && (
               <div className="text-red-500 text-sm mb-4 text-center">
                 You must accept the Terms of Use and Privacy Policy to continue with Google sign-in
               </div>
-            )}
+            )}*/}
           </div>
           
           <div className="text-center mt-6">

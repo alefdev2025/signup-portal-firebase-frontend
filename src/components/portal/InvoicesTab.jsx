@@ -4,6 +4,7 @@ import { getInvoiceDetails } from './services/netsuite';
 import { getMemberProfile } from './services/salesforce/memberInfo';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
 import { invoiceNotificationsApi } from '../../services/invoiceNotificationsApi';
+import { PageLoader, CenteredLoader } from '../DotLoader';
 
 // Import the new service - UPDATED PATH
 import { invoiceDataService } from './services/invoiceDataService';
@@ -409,7 +410,7 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // WAIT FOR DATA BEFORE SHOWING ANYTHING
   if (isLoading || !data) {
-    return <LoadingState />;
+    return <CenteredLoader message="Loading invoices..." minHeight="500px" />;
   }
 
   // Show error
