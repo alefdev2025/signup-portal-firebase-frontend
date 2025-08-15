@@ -171,6 +171,24 @@ const MembershipStatusTab = () => {
     });
   };
 
+  // Check if contract update flag should show
+  const shouldShowContractUpdateFlag = () => {
+    // Only show for cryopreservation members
+    if (!cryoArrangements?.methodOfPreservation) {
+      return false;
+    }
+    
+    // Check if contract date is before February 2022
+    if (!cryoArrangements?.contractDate) {
+      return false;
+    }
+    
+    const contractDate = new Date(cryoArrangements.contractDate);
+    const feb2022 = new Date('2022-02-01');
+    
+    return contractDate < feb2022;
+  };
+
   // Determine membership type based on available data
   const getMembershipType = () => {
     if (cryoArrangements?.methodOfPreservation?.includes('Whole Body')) {
@@ -181,19 +199,9 @@ const MembershipStatusTab = () => {
     return 'Basic Membership';
   };
 
-  // Get status color
-  const getStatusColor = () => {
-    if (!membershipStatus?.isActive) return 'text-red-600';
-    if (membershipStatus?.contractComplete) return 'text-green-600';
-    return 'text-yellow-600';
-  };
-
+  // Get status - EDIT 1: Simplified to just Active field
   const getStatus = () => {
-    if (!membershipStatus?.isActive) return 'Inactive';
-    if (membershipStatus?.contractComplete) return 'Active';
-    // Check if they have a cryo arrangement before showing "In Progress"
-    if (cryoArrangements?.methodOfPreservation) return 'In Progress';
-    return 'Active'; // Default to Active for non-cryo members with alcor number
+    return membershipStatus?.isActive ? 'Active' : 'Inactive';
   };
 
   // Get icon for sections
@@ -233,7 +241,7 @@ const MembershipStatusTab = () => {
       <div className="hidden sm:block">
         <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', minHeight: '600px' }}>
           {/* Card Header */}
-          <div className="p-8 border-b border-gray-200">
+          <div className="p-8 pb-6 border-b border-gray-200">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
@@ -247,19 +255,20 @@ const MembershipStatusTab = () => {
                 </h2>
               </div>
               
-              <span className={`px-4 py-2 rounded-lg ${
-                membershipStatus?.contractComplete 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'border border-purple-600 text-purple-700 bg-white'
+              {/* EDIT 1: Status badge - Active/Inactive only */}
+              <span className={`px-4 py-2 rounded-lg border-2 border-black font-medium ${
+                membershipStatus?.isActive 
+                  ? 'text-green-700 bg-white' 
+                  : 'text-red-700 bg-white'
               }`}>
                 {getStatus()}
               </span>
             </div>
 
-            {/* Member Info */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mt-6">
+            {/* Member Info - EDIT 2: Reduced name size */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mt-6 lg:mt-12">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
                   {personalInfo?.firstName} {personalInfo?.lastName}
                 </h3>
                 <p className="text-sm text-gray-600 flex items-center gap-3">
@@ -317,9 +326,9 @@ const MembershipStatusTab = () => {
 
           {/* Content Section - Fixed height with scroll */}
           <div className="p-8" style={{ minHeight: '400px' }}>
-            {/* Personal Information Section */}
+            {/* Personal Information Section - EDIT 3: Centered like Requirements */}
             {activeSection === 'personal' && (
-              <div className="animate-fadeInUp">
+              <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
                 <div className="flex items-start gap-4 mb-6">
                   {getIcon('personal')}
                   <div>
@@ -328,28 +337,26 @@ const MembershipStatusTab = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-0 lg:pl-16">
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Full Name</p>
-                    <p className="text-base font-normal text-gray-900">
-                      {personalInfo?.firstName} {personalInfo?.lastName}
-                    </p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Member ID</p>
-                    <p className="text-base font-normal text-gray-900">{personalInfo?.alcorId || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Years of Membership</p>
-                    <p className="text-base font-normal text-gray-900">{yearsOfMembership}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Member Since</p>
-                    <p className="text-base font-normal text-gray-900">{formatDate(membershipStatus?.memberJoinDate)}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Contract Date</p>
-                    <p className="text-base font-normal text-gray-900">{formatDate(membershipStatus?.contractDate)}</p>
+                <div className="pl-0 lg:pl-16 flex-1 flex items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+                      <p className="text-xs text-gray-600 mb-1 font-medium">Full Name</p>
+                      <p className="text-base font-normal text-gray-900">
+                        {personalInfo?.firstName} {personalInfo?.lastName}
+                      </p>
+                    </div>
+                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+                      <p className="text-xs text-gray-600 mb-1 font-medium">Member ID</p>
+                      <p className="text-base font-normal text-gray-900">{personalInfo?.alcorId || 'N/A'}</p>
+                    </div>
+                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+                      <p className="text-xs text-gray-600 mb-1 font-medium">Years of Membership</p>
+                      <p className="text-base font-normal text-gray-900">{yearsOfMembership}</p>
+                    </div>
+                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+                      <p className="text-xs text-gray-600 mb-1 font-medium">Member Since</p>
+                      <p className="text-base font-normal text-gray-900">{formatDate(membershipStatus?.memberJoinDate)}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -402,6 +409,22 @@ const MembershipStatusTab = () => {
                   <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
                     <p className="text-xs text-gray-600 mb-1 font-medium">Membership Type</p>
                     <p className="text-base font-normal text-gray-900">{getMembershipType()}</p>
+                  </div>
+                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
+                    <p className="text-xs text-gray-600 mb-1 font-medium">Contract Version</p>
+                    <div className="flex items-start gap-2">
+                      <p className="text-base font-normal text-gray-900">
+                        {formatDate(cryoArrangements?.contractDate)}
+                      </p>
+                      {shouldShowContractUpdateFlag() && (
+                        <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-md px-2 py-1">
+                          <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span className="text-xs text-yellow-800 font-medium">May need to sign updated contracts</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -512,72 +535,98 @@ const MembershipStatusTab = () => {
               </div>
             )}
 
-            {/* Timeline */}
+            {/* Timeline - COMPLETELY RESTRUCTURED */}
             {activeSection === 'timeline' && (
-              <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
+              <div className="animate-fadeInUp">
                 <div className="flex items-start gap-4 mb-6">
                   {getIcon('timeline')}
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Membership Timeline</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Membership Timeline</h3>
                     <p className="text-sm text-gray-600 mt-0.5">Your membership journey milestones</p>
                   </div>
                 </div>
                 
-                <div className="pl-0 lg:pl-16 flex-1 flex items-center">
-                  {/* Prepare and sort timeline items */}
-                  {(() => {
-                    const timelineItems = [];
-                    
-                    if (membershipStatus?.memberJoinDate) {
-                      timelineItems.push({
-                        date: new Date(membershipStatus.memberJoinDate),
-                        title: 'Joined Alcor',
-                        dateString: membershipStatus.memberJoinDate
-                      });
-                    }
-                    
-                    if (membershipStatus?.agreementSent) {
-                      timelineItems.push({
-                        date: new Date(membershipStatus.agreementSent),
-                        title: 'Agreement Sent',
-                        dateString: membershipStatus.agreementSent
-                      });
-                    }
-                    
-                    if (membershipStatus?.agreementReceived) {
-                      timelineItems.push({
-                        date: new Date(membershipStatus.agreementReceived),
-                        title: 'Agreement Received',
-                        dateString: membershipStatus.agreementReceived
-                      });
-                    }
-                    
-                    if (membershipStatus?.contractComplete && membershipStatus?.contractDate) {
-                      timelineItems.push({
-                        date: new Date(membershipStatus.contractDate),
-                        title: 'Contract Completed',
-                        dateString: membershipStatus.contractDate
-                      });
-                    }
-                    
-                    // Sort by date (oldest first)
-                    timelineItems.sort((a, b) => a.date - b.date);
-                    
+                {/* Timeline DIRECTLY HERE - NO WRAPPERS */}
+                {(() => {
+                  const timelineItems = [];
+                  
+                  if (membershipStatus?.memberJoinDate) {
+                    timelineItems.push({
+                      date: new Date(membershipStatus.memberJoinDate),
+                      title: 'Joined Alcor',
+                      dateString: membershipStatus.memberJoinDate
+                    });
+                  }
+                  
+                  if (membershipStatus?.agreementSent) {
+                    timelineItems.push({
+                      date: new Date(membershipStatus.agreementSent),
+                      title: 'Agreement Sent',
+                      dateString: membershipStatus.agreementSent
+                    });
+                  }
+                  
+                  if (membershipStatus?.agreementReceived) {
+                    timelineItems.push({
+                      date: new Date(membershipStatus.agreementReceived),
+                      title: 'Agreement Received',
+                      dateString: membershipStatus.agreementReceived
+                    });
+                  }
+                  
+                  // Sort by date (oldest first)
+                  timelineItems.sort((a, b) => a.date - b.date);
+                  
+                  // Horizontal timeline
+                  if (timelineItems.length >= 3) {
                     return (
-                      <div className="space-y-3 w-full">
-                        {timelineItems.map((item, index) => (
-                          <div key={index} className={`flex items-start gap-3 animate-fadeInUp-delay-${Math.min(index + 1, 3)}`}>
-                            <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full mt-1 flex-shrink-0"></div>
-                            <div className="flex-1">
-                              <p className="text-base font-normal text-gray-900">{item.title}</p>
-                              <p className="text-sm text-gray-600">{formatDate(item.dateString)}</p>
+                      <div style={{ marginTop: '120px', marginLeft: '-30px' }}>
+                        <div className="relative flex">
+                          {timelineItems.map((item, index) => (
+                            <div key={index} className="flex flex-col items-center relative" style={{ width: '240px' }}>
+                              {/* Line BETWEEN dots */}
+                              {index < timelineItems.length - 1 && (
+                                <div className="absolute h-0.5 bg-gray-300" 
+                                     style={{ 
+                                       top: '8px',
+                                       left: '128px',
+                                       width: '224px',
+                                       zIndex: 0
+                                     }}></div>
+                              )}
+                              
+                              {/* Dot */}
+                              <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full relative z-10"></div>
+                              
+                              {/* Label */}
+                              <div className="mt-3 text-center">
+                                <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{item.title}</p>
+                                <p className="text-xs text-gray-600 mt-1">{formatDate(item.dateString)}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     );
-                  })()}
-                </div>
+                  } else {
+                    // Vertical timeline for 1-2 items
+                    return (
+                      <div style={{ marginTop: '120px', marginLeft: '-30px' }}>
+                        <div className="space-y-4">
+                          {timelineItems.map((item, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full mt-1"></div>
+                              <div>
+                                <p className="text-base font-normal text-gray-900">{item.title}</p>
+                                <p className="text-sm text-gray-600">{formatDate(item.dateString)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             )}
           </div>
@@ -602,17 +651,19 @@ const MembershipStatusTab = () => {
                 </h2>
               </div>
               
-              <span className={`px-3 py-1 rounded-lg text-sm ${
-                membershipStatus?.contractComplete 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'border border-purple-600 text-purple-700 bg-white'
+              {/* EDIT 1: Mobile status badge */}
+              <span className={`px-3 py-1 rounded-lg text-sm border-2 border-black font-medium ${
+                membershipStatus?.isActive 
+                  ? 'text-green-700 bg-white' 
+                  : 'text-red-700 bg-white'
               }`}>
                 {getStatus()}
               </span>
             </div>
 
+            {/* EDIT 2: Reduced name size on mobile */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
                 {personalInfo?.firstName} {personalInfo?.lastName}
               </h3>
               <p className="text-sm text-gray-600 flex flex-col gap-0.5">
@@ -650,10 +701,6 @@ const MembershipStatusTab = () => {
             <div className="px-6 py-3 animate-fadeInUp">
               <p className="text-xs text-gray-600 mb-0.5">Member Since</p>
               <p className="text-sm font-normal text-gray-900">{formatDate(membershipStatus?.memberJoinDate)}</p>
-            </div>
-            <div className="px-6 py-3 animate-fadeInUp">
-              <p className="text-xs text-gray-600 mb-0.5">Contract Date</p>
-              <p className="text-sm font-normal text-gray-900">{formatDate(membershipStatus?.contractDate)}</p>
             </div>
           </div>
         </div>
@@ -701,6 +748,19 @@ const MembershipStatusTab = () => {
             <div className="px-6 py-4 animate-fadeInUp">
               <p className="text-xs text-gray-500 mb-1">Membership Type</p>
               <p className="text-sm font-normal text-gray-900">{getMembershipType()}</p>
+            </div>
+            <div className="px-6 py-4 animate-fadeInUp">
+              <p className="text-xs text-gray-500 mb-1">Contract Version</p>
+              <div className="flex items-start gap-2">
+                <p className="text-sm font-normal text-gray-900">
+                  {formatDate(cryoArrangements?.contractDate)}
+                </p>
+                {shouldShowContractUpdateFlag() && (
+                  <span className="text-xs bg-yellow-50 text-yellow-800 border border-yellow-200 rounded px-1.5 py-0.5">
+                    Update needed
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -805,7 +865,7 @@ const MembershipStatusTab = () => {
           </div>
         </div>
 
-        {/* Timeline Card */}
+        {/* Timeline Card - MOBILE VERSION (KEEP ORIGINAL) */}
         <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-3" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-3">
@@ -842,26 +902,28 @@ const MembershipStatusTab = () => {
                 });
               }
               
-              if (membershipStatus?.contractComplete && membershipStatus?.contractDate) {
-                timelineItems.push({
-                  date: new Date(membershipStatus.contractDate),
-                  title: 'Contract Completed',
-                  dateString: membershipStatus.contractDate
-                });
-              }
-              
               // Sort by date (oldest first)
               timelineItems.sort((a, b) => a.date - b.date);
               
               return (
-                <div className="space-y-5">
-                  {timelineItems.map((item, index) => (
-                    <div key={index} className="border-l-2 border-gray-200 pl-6 ml-5 relative animate-fadeInUp">
-                      <div className="absolute -left-[9px] top-0 w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full"></div>
-                      <p className="text-sm font-normal text-gray-900">{item.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{formatDate(item.dateString)}</p>
-                    </div>
-                  ))}
+                <div className="relative">
+                  {/* Vertical line connecting all dots */}
+                  {timelineItems.length > 1 && (
+                    <div className="absolute left-[27px] top-2 bottom-2 w-0.5 bg-gray-300"></div>
+                  )}
+                  
+                  {/* Timeline items */}
+                  <div className="space-y-6">
+                    {timelineItems.map((item, index) => (
+                      <div key={index} className="relative flex items-start gap-4 animate-fadeInUp">
+                        <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full relative z-10 flex-shrink-0 ml-5"></div>
+                        <div>
+                          <p className="text-sm font-normal text-gray-900">{item.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{formatDate(item.dateString)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })()}

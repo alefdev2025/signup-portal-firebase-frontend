@@ -74,17 +74,21 @@ export const ButtonLoader = ({ color = 'primary' }) => (
   <DotLoader size="sm" color={color} className="inline-flex" />
 );
 
-// Page loader with proper centering
+// Page loader with dots positioned lower on screen
 export const PageLoader = ({ message = "Loading...", size = "md", color = "primary" }) => (
   <div className="min-h-screen flex items-center justify-center">
-    <DotLoader size={size} color={color} message={message} />
+    <div className="mt-32">
+      <DotLoader size={size} color={color} message={message} />
+    </div>
   </div>
 );
 
 // Alternative: Centered loader for specific containers
 export const CenteredLoader = ({ message = "Loading...", size = "md", color = "primary", minHeight = "400px" }) => (
   <div className="w-full flex items-center justify-center" style={{ minHeight }}>
-    <DotLoader size={size} color={color} message={message} />
+    <div className="mt-20">
+      <DotLoader size={size} color={color} message={message} />
+    </div>
   </div>
 );
 

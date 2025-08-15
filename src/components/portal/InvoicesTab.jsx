@@ -452,23 +452,23 @@ const InvoicesTab = ({ setActiveTab }) => {
               </div>
 
               {/* Autopay Banners for Empty State - REMOVED wrapper div with mt-12 md:mt-16 */}
-              {/* Legacy Autopay Banner */}
+              {/* Legacy Autopay Banner
               {data?.salesOrderAnalysis?.analysis?.autopayStatus === 'ON_AUTOPAY' && 
               SHOW_LEGACY_AUTOPAY_BANNER && (
                 <LegacyAutopayBanner 
                   salesOrderAnalysis={data?.salesOrderAnalysis}
                   setActiveTab={setActiveTab}
                 />
-              )}
+              )} */}
 
-              {/* Stripe Autopay Banner */}
+              {/* Stripe Autopay Banner 
               {data?.salesOrderAnalysis?.analysis?.autopayStatus !== 'ON_AUTOPAY' && 
               SHOW_STRIPE_AUTOPAY_BANNER && (
                 <StripeAutopayBanner 
                   stripeAutopayStatus={data?.autopayStatus?.stripe}
                   setActiveTab={setActiveTab}
                 />
-              )}
+              )} */}
 
               <EmailNotifications 
                 newInvoiceAlerts={newInvoiceAlerts}
