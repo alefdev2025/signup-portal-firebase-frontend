@@ -613,25 +613,25 @@ const handle2FAVerification = async (e) => {
          <div className="px-8 py-6">
            <div className="flex items-center gap-4 mb-8">
              <IconWrapper className="icon-luxury" size="large" color="navy">
-               <BellIcon className="w-5 h-5 2xl:w-6 2xl:h-6" />
+               <BellIcon className={iconStyle.iconSizeLarge} />
              </IconWrapper>
-             <h2 className="text-base 2xl:text-lg font-normal text-gray-800 card-title">Notifications</h2>
+             <h2 className="text-lg font-normal text-gray-800 card-title">Notifications</h2>
            </div>
 
            <div className="space-y-6">
-             <div className="settings-list-item p-4 2xl:p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.3s' }}>
+             <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.3s' }}>
                <div className="flex items-start justify-between gap-4">
                  <div className="flex-1">
-                   <h3 className="text-sm 2xl:text-base font-medium text-gray-800 mb-1">Media Updates</h3>
-                   <p className="text-xs 2xl:text-xs text-gray-500 leading-relaxed settings-description">
+                   <h3 className="text-base font-medium text-gray-800 mb-1">Media Updates</h3>
+                   <p className="text-xs text-gray-500 leading-relaxed settings-description">
                      Get email notifications for new announcements, newsletters and podcasts
                    </p>
                    <div className="mt-3 animate-subtleFadeIn" style={{ minHeight: '32px', animationDelay: '0.5s' }}>
                      {settings.receiveMediaNotifications && (
                        <div className="inline-flex items-center">
-                         <div className="flex items-center gap-2 bg-gray-50 px-2.5 2xl:px-3 py-1 2xl:py-1.5 border border-gray-200 rounded-lg">
-                           <Check className="w-3 2xl:w-3.5 h-3 2xl:h-3.5 text-gray-600" strokeWidth={2} />
-                           <span className="text-[0.625rem] 2xl:text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                           <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                           <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
                              ACTIVE
                            </span>
                          </div>
@@ -647,19 +647,19 @@ const handle2FAVerification = async (e) => {
                </div>
              </div>
 
-             <div className="settings-list-item p-4 2xl:p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.4s' }}>
+             <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', animationDelay: '0.4s' }}>
                <div className="flex items-start justify-between gap-4">
                  <div className="flex-1">
-                   <h3 className="text-sm 2xl:text-base font-medium text-gray-800 mb-1">Staff Messages</h3>
-                   <p className="text-xs 2xl:text-xs text-gray-500 leading-relaxed settings-description">
+                   <h3 className="text-base font-medium text-gray-800 mb-1">Staff Messages</h3>
+                   <p className="text-xs text-gray-500 leading-relaxed settings-description">
                      Get email notifications when Alcor staff message portal users
                    </p>
                    <div className="mt-3 animate-subtleFadeIn" style={{ minHeight: '32px', animationDelay: '0.6s' }}>
                      {settings.receiveStaffMessages && (
                        <div className="inline-flex items-center">
-                         <div className="flex items-center gap-2 bg-gray-50 px-2.5 2xl:px-3 py-1 2xl:py-1.5 border border-gray-200 rounded-lg">
-                           <Check className="w-3 2xl:w-3.5 h-3 2xl:h-3.5 text-gray-600" strokeWidth={2} />
-                           <span className="text-[0.625rem] 2xl:text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
+                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-lg">
+                           <Check className="w-3.5 h-3.5 text-gray-600" strokeWidth={2} />
+                           <span className="text-[0.6875rem] tracking-widest text-gray-700 font-medium status-badge">
                              ACTIVE
                            </span>
                          </div>
@@ -683,27 +683,27 @@ const handle2FAVerification = async (e) => {
          <div className="px-8 py-6">
            <div className="flex items-center gap-4 mb-8">
              <IconWrapper className="icon-luxury" size="large" color="navy">
-               <ShieldIcon className="w-5 h-5 2xl:w-6 2xl:h-6" />
+               <ShieldIcon className={iconStyle.iconSizeLarge} />
              </IconWrapper>
-             <h2 className="text-base 2xl:text-lg font-normal text-gray-800 card-title">Security</h2>
+             <h2 className="text-lg font-normal text-gray-800 card-title">Security</h2>
            </div>
 
-           <div className="settings-list-item p-4 2xl:p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)', animationDelay: '0.5s' }}>
+           <div className="settings-list-item p-5 bg-white border border-gray-100 rounded-xl animate-gentleSlideIn" style={{ boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)', animationDelay: '0.5s' }}>
              <div className="flex items-start justify-between gap-4">
                <div className="flex-1">
-                 <h3 className="text-sm 2xl:text-base font-medium text-gray-800 mb-1">Two-Factor Authentication</h3>
-                 <p className="text-xs 2xl:text-xs text-gray-500 leading-relaxed mb-4 settings-description">
+                 <h3 className="text-base font-medium text-gray-800 mb-1">Two-Factor Authentication</h3>
+                 <p className="text-xs text-gray-500 leading-relaxed mb-4 settings-description">
                    Enhanced security with additional verification
                  </p>
                  
                  <div className="animate-subtleFadeIn" style={{ minHeight: '80px', animationDelay: '0.7s' }}>
                    {!settings.twoFactorEnabled ? (
-                     <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-100/50 p-3 2xl:p-4 rounded-xl">
+                     <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-100/50 p-4 rounded-xl">
                        <div className="flex gap-3">
-                         <AlertCircle className="w-3.5 2xl:w-4 h-3.5 2xl:h-4 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1} />
+                         <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1} />
                          <div>
-                           <p className="text-[0.625rem] 2xl:text-xs font-medium text-gray-700 tracking-wider uppercase">Recommended</p>
-                           <p className="text-[0.625rem] 2xl:text-xs text-gray-400 mt-1 leading-relaxed font-light">
+                           <p className="text-xs font-medium text-gray-700 tracking-wider uppercase">Recommended</p>
+                           <p className="text-xs text-gray-400 mt-1 leading-relaxed font-light">
                              Secure your account
                            </p>
                          </div>
@@ -711,9 +711,9 @@ const handle2FAVerification = async (e) => {
                      </div>
                    ) : (
                      <div className="inline-flex items-center">
-                       <div className="flex items-center gap-2 bg-emerald-50 px-2.5 2xl:px-3 py-1 2xl:py-1.5 border border-emerald-100 rounded-lg">
-                         <Check className="w-3 2xl:w-3.5 h-3 2xl:h-3.5 text-emerald-600" strokeWidth={2} />
-                         <span className="text-[0.625rem] 2xl:text-[0.6875rem] tracking-widest text-emerald-700 font-medium status-badge">
+                       <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 border border-emerald-100 rounded-lg">
+                         <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2} />
+                         <span className="text-[0.6875rem] tracking-widest text-emerald-700 font-medium status-badge">
                            SECURED
                          </span>
                        </div>
@@ -835,7 +835,7 @@ const handle2FAVerification = async (e) => {
                        }}
                        placeholder="000000" 
                        maxLength="6"
-                       className="w-full px-4 py-3 mb-4 border border-gray-200 rounded-md text-center text-xl tracking-widest font-mono focus:outline-none focus:border-gray-300 focus:ring-0"
+                       className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md text-center text-xl tracking-widest font-mono"
                        autoFocus
                        required
                      />
@@ -844,7 +844,7 @@ const handle2FAVerification = async (e) => {
                        <button
                          type="submit"
                          disabled={saving || twoFactorCode.length !== 6}
-                         className="flex-1 border-2 border-purple-600 text-purple-600 py-3 rounded-md font-medium hover:bg-purple-50 disabled:opacity-50 disabled:border-gray-300 disabled:text-gray-400 transition-colors"
+                         className="flex-1 bg-purple-600 text-white py-3 rounded-md font-medium hover:bg-purple-700 disabled:opacity-50"
                        >
                          {saving ? 'Verifying...' : 'Enable 2FA'}
                        </button>
@@ -909,7 +909,7 @@ const handle2FAVerification = async (e) => {
                    }}
                    placeholder="000000" 
                    maxLength="6"
-                   className="w-full px-4 py-3 mb-4 border border-gray-200 rounded-md text-center text-xl tracking-widest font-mono focus:outline-none focus:border-red-300 focus:ring-0"
+                   className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md text-center text-xl tracking-widest font-mono"
                    autoFocus
                    required
                  />

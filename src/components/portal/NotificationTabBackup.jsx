@@ -271,7 +271,7 @@ const NotificationsTab = () => {
   };
 
   const getIcon = (type, isRead = false) => {
-    const iconClass = "w-5 h-5 2xl:w-6 2xl:h-6 text-white transition-transform duration-200";
+    const iconClass = "w-5 h-5 lg:w-6 lg:h-6 text-white transition-transform duration-200";
     const iconProps = { className: iconClass, fill: "none", strokeWidth: "1.5" };
     
     return (
@@ -338,31 +338,27 @@ const NotificationsTab = () => {
       <div className="h-8"></div>
       
       {/* Main Card - Desktop */}
-      <div className="hidden sm:block" style={{ height: 'min(calc(100vh - 200px), 700px)' }}>
-        <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp h-full flex flex-col" 
-             style={{ 
-               boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', 
-               minHeight: '600px'
-             }}>
+      <div className="hidden sm:block">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', minHeight: '600px' }}>
           {/* Card Header */}
-          <div className="p-5 xl:p-8 pb-5 xl:pb-8 border-b border-gray-200">
+          <div className="p-8 border-b border-gray-200">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 2xl:p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
-                  <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                <div className="p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
+                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
                 </div>
-                <h2 className="text-xl 2xl:text-2xl font-semibold text-gray-900 flex items-center">
+                <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
                   Notifications
-                  <img src={alcorStar} alt="" className="w-5 h-5 2xl:w-6 2xl:h-6 ml-1" />
+                  <img src={alcorStar} alt="" className="w-6 h-6 ml-1" />
                 </h2>
               </div>
               
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-xs 2xl:text-sm text-purple-600 hover:text-purple-700 font-normal transition-colors"
+                  className="text-sm text-purple-600 hover:text-purple-700 font-normal transition-colors"
                 >
                   Mark all as read
                 </button>
@@ -370,11 +366,11 @@ const NotificationsTab = () => {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col lg:flex-row gap-4 mt-4 lg:mt-6">
+            <div className="flex flex-col lg:flex-row gap-4 mt-6">
               <div className="flex bg-gray-200 rounded-lg p-1">
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-4 py-2 rounded-md text-xs 2xl:text-sm transition-all ${
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
                     filter === 'all' 
                       ? 'bg-white text-gray-900 shadow-sm font-medium' 
                       : 'text-gray-700 hover:text-gray-900'
@@ -384,7 +380,7 @@ const NotificationsTab = () => {
                 </button>
                 <button
                   onClick={() => setFilter('unread')}
-                  className={`px-4 py-2 rounded-md text-xs 2xl:text-sm transition-all ${
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
                     filter === 'unread' 
                       ? 'bg-white text-gray-900 shadow-sm font-medium' 
                       : 'text-gray-700 hover:text-gray-900'
@@ -394,7 +390,7 @@ const NotificationsTab = () => {
                 </button>
                 <button
                   onClick={() => setFilter('read')}
-                  className={`px-4 py-2 rounded-md text-xs 2xl:text-sm transition-all ${
+                  className={`px-4 py-2 rounded-md text-sm transition-all ${
                     filter === 'read' 
                       ? 'bg-white text-gray-900 shadow-sm font-medium' 
                       : 'text-gray-700 hover:text-gray-900'
@@ -404,62 +400,54 @@ const NotificationsTab = () => {
                 </button>
               </div>
 
-              <div className="relative">
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-10 rounded-lg border border-gray-300 text-xs 2xl:text-sm text-gray-700 focus:outline-none focus:border-gray-400 w-full h-[42px]"
-                  style={{ minWidth: '150px' }}
-                >
-                  <option value="all">All Types</option>
-                  <option value="message">Messages</option>
-                  <option value="announcement">Announcements</option>
-                  <option value="podcast">Podcasts</option>
-                  <option value="newsletter">Newsletters</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-                  <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">All Types</option>
+                <option value="message">Messages</option>
+                <option value="announcement">Announcements</option>
+                <option value="podcast">Podcasts</option>
+                <option value="newsletter">Newsletters</option>
+              </select>
             </div>
           </div>
 
-          {/* Content Section - Flex to fill remaining height */}
-          <div className="p-8 flex-1 overflow-y-auto">
+          {/* Content Section - Fixed height with scroll */}
+          <div className="p-8" style={{ minHeight: '400px' }}>
             {filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <div className="w-14 h-14 2xl:w-16 2xl:h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex items-center justify-center mb-4">
-                  <Bell className="w-7 h-7 2xl:w-8 2xl:h-8 text-gray-400" />
+                <div className="w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex items-center justify-center mb-4">
+                  <Bell className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 text-base 2xl:text-lg font-normal">No notifications found</p>
+                <p className="text-gray-500 text-lg font-normal">No notifications found</p>
                 {filter !== 'all' && (
-                  <p className="text-gray-400 text-xs 2xl:text-sm mt-2">Try adjusting your filters</p>
+                  <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
                 )}
               </div>
             ) : (
-              <div className="space-y-3 2xl:space-y-4">
+              <div className="space-y-4">
                 {paginatedNotifications.map((notification, index) => (
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 2xl:p-5 border rounded-lg cursor-pointer transition-all animate-fadeInUp-delay-${Math.min(index + 1, 3)} ${
+                    className={`p-4 border rounded-lg cursor-pointer transition-all animate-fadeInUp-delay-${Math.min(index + 1, 3)} ${
                       !notification.read 
                         ? 'border-purple-200 bg-purple-50/30 hover:bg-purple-50' 
                         : 'border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-start gap-3 2xl:gap-4">
-                      <div className="w-10 h-10 2xl:w-12 2xl:h-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                         {getIcon(notification.type, notification.read)}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1.5 2xl:mb-2">
-                          <h3 className={`text-sm 2xl:text-base ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-900`}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className={`text-base ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-900`}>
                             {notification.title}
-                            {!notification.read && <img src={alcorYellowStar} alt="" className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 inline-block ml-1 align-text-bottom" />}
+                            {!notification.read && <img src={alcorYellowStar} alt="" className="w-4 h-4 inline-block ml-1 align-text-bottom" />}
                           </h3>
                           
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -476,7 +464,7 @@ const NotificationsTab = () => {
                                   setOpenMenuId(openMenuId === notification.id ? null : notification.id);
                                 }}
                               >
-                                <svg className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                 </svg>
                               </button>
@@ -490,7 +478,7 @@ const NotificationsTab = () => {
                                         handleMarkAsUnread(notification.id);
                                         setOpenMenuId(null);
                                       }}
-                                      className="w-full text-left px-4 py-3 text-xs 2xl:text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
+                                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
                                     >
                                       Mark as unread
                                     </button>
@@ -501,7 +489,7 @@ const NotificationsTab = () => {
                                         handleMarkAsRead(notification.id);
                                         setOpenMenuId(null);
                                       }}
-                                      className="w-full text-left px-4 py-3 text-xs 2xl:text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
+                                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg transition-colors"
                                     >
                                       Mark as read
                                     </button>
@@ -512,7 +500,7 @@ const NotificationsTab = () => {
                                       handleDeleteNotification(notification.id);
                                       setOpenMenuId(null);
                                     }}
-                                    className="w-full text-left px-4 py-3 text-xs 2xl:text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg transition-colors"
+                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg transition-colors"
                                   >
                                     Delete
                                   </button>
@@ -522,13 +510,13 @@ const NotificationsTab = () => {
                           </div>
                         </div>
                         
-                        <p className="text-xs 2xl:text-sm text-gray-600 line-clamp-2 mb-2.5 2xl:mb-3">
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                           {notification.type === 'message' && notification.metadata?.messageId && messageContentCache[notification.metadata.messageId]
                             ? messageContentCache[notification.metadata.messageId]
                             : notification.content}
                         </p>
                         
-                        <p className="text-[0.625rem] 2xl:text-xs text-gray-500">
+                        <p className="text-xs text-gray-500">
                           {formatDate(notification.createdAt)}
                         </p>
                       </div>
@@ -540,8 +528,8 @@ const NotificationsTab = () => {
             
             {/* Pagination */}
             {filteredNotifications.length > ITEMS_PER_PAGE && (
-              <div className="mt-6 2xl:mt-8 flex items-center justify-between">
-                <p className="text-xs 2xl:text-sm text-gray-600">
+              <div className="mt-8 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
                   Showing {startIndex + 1}-{Math.min(endIndex, filteredNotifications.length)} of {filteredNotifications.length}
                 </p>
                 
@@ -549,7 +537,7 @@ const NotificationsTab = () => {
                   <button
                     onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                     disabled={currentPage === 1}
-                    className={`px-3 2xl:px-4 py-1.5 2xl:py-2 text-xs 2xl:text-sm font-normal rounded-lg transition-all ${
+                    className={`px-4 py-2 text-sm font-normal rounded-lg transition-all ${
                       currentPage === 1 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                         : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white hover:shadow-md'
@@ -558,14 +546,14 @@ const NotificationsTab = () => {
                     Previous
                   </button>
                   
-                  <span className="text-xs 2xl:text-sm text-gray-600 px-4">
+                  <span className="text-sm text-gray-600 px-4">
                     Page {currentPage} of {totalPages}
                   </span>
                   
                   <button
                     onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className={`px-3 2xl:px-4 py-1.5 2xl:py-2 text-xs 2xl:text-sm font-normal rounded-lg transition-all ${
+                    className={`px-4 py-2 text-sm font-normal rounded-lg transition-all ${
                       currentPage === totalPages 
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                         : 'bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white hover:shadow-md'
@@ -640,24 +628,17 @@ const NotificationsTab = () => {
                 </button>
               </div>
 
-              <div className="relative w-full">
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="appearance-none w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="all">All Types</option>
-                  <option value="message">Messages</option>
-                  <option value="announcement">Announcements</option>
-                  <option value="podcast">Podcasts</option>
-                  <option value="newsletter">Newsletters</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-                  <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Types</option>
+                <option value="message">Messages</option>
+                <option value="announcement">Announcements</option>
+                <option value="podcast">Podcasts</option>
+                <option value="newsletter">Newsletters</option>
+              </select>
 
               {unreadCount > 0 && (
                 <button
@@ -781,22 +762,22 @@ const NotificationsTab = () => {
           <div className="flex min-h-full items-center justify-center p-4">
             <div className={`relative bg-white rounded-2xl ${CURRENT_MODAL_WIDTH} w-full max-h-[80vh] flex flex-col overflow-hidden shadow-2xl`}>
               {/* Modal Header */}
-              <div className="border-b border-gray-200 p-5 2xl:p-6 flex items-start justify-between flex-shrink-0 bg-white">
+              <div className="border-b border-gray-200 p-6 flex items-start justify-between flex-shrink-0 bg-white">
                 <div className="flex items-start gap-4">
-                  <div className="p-2.5 2xl:p-3 rounded-lg bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
-                    <Bell className="w-5 h-5 2xl:w-6 2xl:h-6 text-white" />
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
+                    <Bell className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl 2xl:text-2xl font-medium text-gray-900">
+                    <h2 className="text-2xl font-medium text-gray-900">
                       {messageContent.subject}
                     </h2>
-                    <div className="flex items-center gap-4 mt-3 text-xs 2xl:text-sm text-gray-500">
+                    <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                       <span className="flex items-center gap-2">
-                        <User className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" />
+                        <User className="w-4 h-4" />
                         From: Alcor Staff
                       </span>
                       <span className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" />
+                        <Clock className="w-4 h-4" />
                         {formatDate(messageContent.createdAt?.toDate?.() || messageContent.createdAt)}
                       </span>
                     </div>
@@ -806,26 +787,26 @@ const NotificationsTab = () => {
                   onClick={closeMessageModal}
                   className="text-gray-400 hover:text-gray-500 transition-colors p-2 rounded-lg hover:bg-gray-100"
                 >
-                  <X className="w-5 h-5 2xl:w-6 2xl:h-6" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="overflow-y-auto p-5 2xl:p-6 bg-gray-50 flex-1">
+              <div className="overflow-y-auto p-6 bg-gray-50 flex-1">
                 {loadingMessage ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-600"></div>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="bg-white rounded-lg p-5 2xl:p-6 shadow-sm border border-gray-100">
-                      <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-sm 2xl:text-base font-light">
+                    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+                      <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base font-light">
                         {messageContent.content}
                       </p>
                     </div>
 
                     <div className="text-center py-4">
-                      <p className="text-xs 2xl:text-sm text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Need assistance? Contact support at info@alcor.org
                       </p>
                     </div>
@@ -834,16 +815,16 @@ const NotificationsTab = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="border-t border-gray-200 p-5 2xl:p-6 flex justify-between items-center flex-shrink-0 bg-white">
-                <p className="text-[0.625rem] 2xl:text-xs text-gray-400">
+              <div className="border-t border-gray-200 p-6 flex justify-between items-center flex-shrink-0 bg-white">
+                <p className="text-xs text-gray-400">
                   Secure message from Alcor Member Portal
                 </p>
                 <button
                   onClick={closeMessageModal}
-                  className="px-5 2xl:px-6 py-2 2xl:py-2.5 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-normal flex items-center gap-2 text-xs 2xl:text-sm"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:shadow-lg transition-all duration-200 font-normal flex items-center gap-2"
                 >
                   Close
-                  <img src={alcorStar} alt="" className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 brightness-0 invert" />
+                  <img src={alcorStar} alt="" className="w-4 h-4 brightness-0 invert" />
                 </button>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { User, Shield, Clock, CheckCircle } from 'lucide-react';
 import alcorStar from '../../assets/images/alcor-star.png';
 
 const MembershipStatusTab = () => {
+  // Context and State Management
   const { salesforceContactId } = useMemberPortal();
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -12,7 +13,7 @@ const MembershipStatusTab = () => {
   const [activeSection, setActiveSection] = useState('personal');
   const [showHelpPopup, setShowHelpPopup] = useState(false);
 
-  // Add Helvetica font
+  // Initialize Helvetica font styling
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -68,6 +69,7 @@ const MembershipStatusTab = () => {
     };
   }, []);
 
+  // Load membership data when component mounts or ID changes
   useEffect(() => {
     if (salesforceContactId) {
       loadMembershipData();
@@ -76,6 +78,7 @@ const MembershipStatusTab = () => {
     }
   }, [salesforceContactId]);
 
+  // API call to fetch membership data
   const loadMembershipData = async () => {
     setIsLoading(true);
     setError(null);
@@ -94,7 +97,98 @@ const MembershipStatusTab = () => {
     }
   };
 
-  // Handle loading state
+  // Utility function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  // Calculate years of membership
+  const calculateYearsOfMembership = (joinDate) => {
+    if (!joinDate) return 0;
+    const memberSince = new Date(joinDate);
+    return Math.floor((new Date() - memberSince) / (365.25 * 24 * 60 * 60 * 1000));
+  };
+
+  // Determine membership type based on preservation method and record type
+  const getMembershipType = (cryoArrangements, personalInfo) => {
+    // Check if user is an applicant
+    const isApplicant = personalInfo?.alcorRecordType === 'Applicant' || 
+                       personalInfo?.recordType === 'Applicant' ||
+                       personalInfo?.memberType === 'Applicant';
+    
+    let baseType = '';
+    
+    if (cryoArrangements?.methodOfPreservation?.includes('Whole Body')) {
+      baseType = 'Whole Body Cryopreservation';
+    } else if (cryoArrangements?.methodOfPreservation?.includes('Neuro')) {
+      baseType = 'Neuropreservation';
+    } else {
+      baseType = 'Basic Membership';
+    }
+    
+    // Add Applicant suffix if applicable
+    if (isApplicant) {
+      return baseType === 'Basic Membership' ? 'Membership Applicant' : `${baseType} Applicant`;
+    }
+    
+    // Add Member suffix for full members
+    return baseType === 'Basic Membership' ? baseType : `${baseType} Member`;
+  };
+
+  // Get membership status
+  const getStatus = (membershipStatus) => {
+    return membershipStatus?.isActive ? 'Active' : 'Inactive';
+  };
+
+  // Check if contract needs updating
+  const shouldShowContractUpdateFlag = (cryoArrangements) => {
+    if (!cryoArrangements?.methodOfPreservation || !cryoArrangements?.contractDate) {
+      return false;
+    }
+    
+    const contractDate = new Date(cryoArrangements.contractDate);
+    const feb2022 = new Date('2022-02-01');
+    
+    return contractDate < feb2022;
+  };
+
+  // Get icon component for different sections
+  const getSectionIcon = (type) => {
+    const iconClass = "w-5 h-5 2xl:w-6 2xl:h-6 text-white";
+    const containerClass = "p-2.5 2xl:p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]";
+    
+    const icons = {
+      personal: (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      cryo: (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+      requirements: (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      timeline: (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    };
+
+    return <div className={containerClass}>{icons[type]}</div>;
+  };
+
+  // Render loading state
   if (isLoading) {
     return (
       <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
@@ -112,7 +206,7 @@ const MembershipStatusTab = () => {
     );
   }
 
-  // Handle error state
+  // Render error state
   if (error) {
     return (
       <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
@@ -131,7 +225,7 @@ const MembershipStatusTab = () => {
     );
   }
 
-  // Handle no data state
+  // Render empty state
   if (!profileData) {
     return (
       <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
@@ -154,489 +248,359 @@ const MembershipStatusTab = () => {
     );
   }
 
-  // Now we can safely destructure
+  // Extract data from profileData
   const { personalInfo, cryoArrangements, membershipStatus } = profileData;
+  const yearsOfMembership = calculateYearsOfMembership(membershipStatus?.memberJoinDate);
+  const membershipType = getMembershipType(cryoArrangements, personalInfo);
+  const status = getStatus(membershipStatus);
+  const needsContractUpdate = shouldShowContractUpdateFlag(cryoArrangements);
 
-  // Calculate years of membership
-  const memberSince = membershipStatus?.memberJoinDate ? new Date(membershipStatus.memberJoinDate) : null;
-  const yearsOfMembership = memberSince ? Math.floor((new Date() - memberSince) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-
-  // Format dates
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  // Check if contract update flag should show
-  const shouldShowContractUpdateFlag = () => {
-    // Only show for cryopreservation members
-    if (!cryoArrangements?.methodOfPreservation) {
-      return false;
+  // Build timeline items
+  const buildTimelineItems = () => {
+    const items = [];
+    
+    if (membershipStatus?.memberJoinDate) {
+      items.push({
+        date: new Date(membershipStatus.memberJoinDate),
+        title: 'Joined Alcor',
+        dateString: membershipStatus.memberJoinDate
+      });
     }
     
-    // Check if contract date is before February 2022
-    if (!cryoArrangements?.contractDate) {
-      return false;
+    if (membershipStatus?.agreementSent) {
+      items.push({
+        date: new Date(membershipStatus.agreementSent),
+        title: 'Agreement Sent',
+        dateString: membershipStatus.agreementSent
+      });
     }
     
-    const contractDate = new Date(cryoArrangements.contractDate);
-    const feb2022 = new Date('2022-02-01');
-    
-    return contractDate < feb2022;
-  };
-
-  // Determine membership type based on available data
-  const getMembershipType = () => {
-    if (cryoArrangements?.methodOfPreservation?.includes('Whole Body')) {
-      return 'Whole Body Cryopreservation Member';
-    } else if (cryoArrangements?.methodOfPreservation?.includes('Neuro')) {
-      return 'Neuropreservation Member';
+    if (membershipStatus?.agreementReceived) {
+      items.push({
+        date: new Date(membershipStatus.agreementReceived),
+        title: 'Agreement Received',
+        dateString: membershipStatus.agreementReceived
+      });
     }
-    return 'Basic Membership';
+    
+    return items.sort((a, b) => a.date - b.date);
   };
 
-  // Get status - EDIT 1: Simplified to just Active field
-  const getStatus = () => {
-    return membershipStatus?.isActive ? 'Active' : 'Inactive';
-  };
-
-  // Get icon for sections
-  const getIcon = (type) => {
-    return (
-      <div className="p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
-        {type === 'personal' && (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        )}
-        {type === 'cryo' && (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-        )}
-        {type === 'requirements' && (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        )}
-        {type === 'timeline' && (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        )}
+  // Render Personal Information Section
+  const renderPersonalInfoSection = () => (
+    <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
+      <div className="flex items-start gap-4 mb-6">
+        {getSectionIcon('personal')}
+        <div>
+          <h3 className="text-base xl:text-lg font-semibold text-gray-900">Personal Information</h3>
+          <p className="text-xs xl:text-sm text-gray-600 mt-0.5">Your account details and membership information</p>
+        </div>
       </div>
-    );
-  };
-
-  return (
-    <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
-      {/* Small top padding */}
-      <div className="h-8"></div>
       
-      {/* Main Card - Desktop */}
-      <div className="hidden sm:block">
-        <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', minHeight: '600px' }}>
-          {/* Card Header */}
-          <div className="p-8 pb-6 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
-                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
-                  Membership Status
-                  <img src={alcorStar} alt="" className="w-6 h-6 ml-1" />
-                </h2>
-              </div>
-              
-              {/* EDIT 1: Status badge - Active/Inactive only */}
-              <span className={`px-4 py-2 rounded-lg border-2 border-black font-medium ${
-                membershipStatus?.isActive 
-                  ? 'text-green-700 bg-white' 
-                  : 'text-red-700 bg-white'
-              }`}>
-                {getStatus()}
-              </span>
-            </div>
-
-            {/* Member Info - EDIT 2: Reduced name size */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mt-6 lg:mt-12">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {personalInfo?.firstName} {personalInfo?.lastName}
-                </h3>
-                <p className="text-sm text-gray-600 flex items-center gap-3">
-                  <span>Member ID: {personalInfo?.alcorId || 'N/A'}</span>
-                  <span>•</span>
-                  <span>{getMembershipType()}</span>
-                </p>
-              </div>
-              
-              {/* Section Navigation Tabs */}
-              <div className="flex bg-gray-200 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveSection('personal')}
-                  className={`px-4 py-2 rounded-md text-sm transition-all ${
-                    activeSection === 'personal' 
-                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Personal Info
-                </button>
-                <button
-                  onClick={() => setActiveSection('cryo')}
-                  className={`px-4 py-2 rounded-md text-sm transition-all ${
-                    activeSection === 'cryo' 
-                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Membership
-                </button>
-                <button
-                  onClick={() => setActiveSection('requirements')}
-                  className={`px-4 py-2 rounded-md text-sm transition-all ${
-                    activeSection === 'requirements' 
-                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Requirements
-                </button>
-                <button
-                  onClick={() => setActiveSection('timeline')}
-                  className={`px-4 py-2 rounded-md text-sm transition-all ${
-                    activeSection === 'timeline' 
-                      ? 'bg-white text-gray-900 shadow-sm font-medium' 
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Timeline
-                </button>
-              </div>
-            </div>
+      <div className="pl-0 lg:pl-16 flex-1 flex items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+            <p className="text-xs text-gray-600 mb-1 font-medium">Full Name</p>
+            <p className="text-sm 2xl:text-base font-normal text-gray-900">
+              {personalInfo?.firstName} {personalInfo?.lastName}
+            </p>
           </div>
+          <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+            <p className="text-xs text-gray-600 mb-1 font-medium">Member ID</p>
+            <p className="text-sm 2xl:text-base font-normal text-gray-900">{personalInfo?.alcorId || 'N/A'}</p>
+          </div>
+          <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+            <p className="text-xs text-gray-600 mb-1 font-medium">Years of Membership</p>
+            <p className="text-sm 2xl:text-base font-normal text-gray-900">{yearsOfMembership}</p>
+          </div>
+          <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+            <p className="text-xs text-gray-600 mb-1 font-medium">Member Since</p>
+            <p className="text-sm 2xl:text-base font-normal text-gray-900">{formatDate(membershipStatus?.memberJoinDate)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-          {/* Content Section - Fixed height with scroll */}
-          <div className="p-8" style={{ minHeight: '400px' }}>
-            {/* Personal Information Section - EDIT 3: Centered like Requirements */}
-            {activeSection === 'personal' && (
-              <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
-                <div className="flex items-start gap-4 mb-6">
-                  {getIcon('personal')}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
-                    <p className="text-sm text-gray-600 mt-0.5">Your account details and membership information</p>
-                  </div>
-                </div>
-                
-                <div className="pl-0 lg:pl-16 flex-1 flex items-center">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                      <p className="text-xs text-gray-600 mb-1 font-medium">Full Name</p>
-                      <p className="text-base font-normal text-gray-900">
-                        {personalInfo?.firstName} {personalInfo?.lastName}
-                      </p>
-                    </div>
-                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                      <p className="text-xs text-gray-600 mb-1 font-medium">Member ID</p>
-                      <p className="text-base font-normal text-gray-900">{personalInfo?.alcorId || 'N/A'}</p>
-                    </div>
-                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                      <p className="text-xs text-gray-600 mb-1 font-medium">Years of Membership</p>
-                      <p className="text-base font-normal text-gray-900">{yearsOfMembership}</p>
-                    </div>
-                    <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                      <p className="text-xs text-gray-600 mb-1 font-medium">Member Since</p>
-                      <p className="text-base font-normal text-gray-900">{formatDate(membershipStatus?.memberJoinDate)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Cryopreservation Details */}
-            {activeSection === 'cryo' && (
-              <div className="animate-fadeInUp">
-                <div className="flex items-start gap-4 mb-6">
-                  {getIcon('cryo')}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {cryoArrangements?.methodOfPreservation ? 'Cryopreservation Details' : 'Membership Details'}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      {cryoArrangements?.methodOfPreservation ? 'Your preservation arrangements and preferences' : 'Your membership information'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-0 lg:pl-16">
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Preservation Type</p>
-                    <p className="text-base font-normal text-gray-900">
-                      {cryoArrangements?.methodOfPreservation?.includes('Whole Body') 
-                        ? 'Whole Body' 
-                        : cryoArrangements?.methodOfPreservation?.includes('Neuro')
-                        ? 'Neuro'
-                        : 'N/A'}
-                    </p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">CMS Fee Waiver</p>
-                    <p className="text-base font-normal text-gray-900">{cryoArrangements?.cmsWaiver || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Funding Status</p>
-                    <p className="text-base font-normal text-gray-900">{cryoArrangements?.fundingStatus || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Public Disclosure</p>
-                    <p className="text-base font-normal text-gray-900">
-                      {cryoArrangements?.memberPublicDisclosure?.includes('reasonable efforts') 
-                        ? 'Confidential' 
-                        : cryoArrangements?.memberPublicDisclosure?.includes('freely') 
-                        ? 'Public' 
-                        : 'Limited'}
-                    </p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Membership Type</p>
-                    <p className="text-base font-normal text-gray-900">{getMembershipType()}</p>
-                  </div>
-                  <div className="p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Contract Version</p>
-                    <div className="flex items-start gap-2">
-                      <p className="text-base font-normal text-gray-900">
-                        {formatDate(cryoArrangements?.contractDate)}
-                      </p>
-                      {shouldShowContractUpdateFlag() && (
-                        <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-md px-2 py-1">
-                          <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          <span className="text-xs text-yellow-800 font-medium">May need to sign updated contracts</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Requirements Checklist */}
-            {activeSection === 'requirements' && (
-              <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
-                <div className="flex items-start gap-4 mb-6">
-                  {getIcon('requirements')}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Membership Requirements</h3>
-                    <p className="text-sm text-gray-600 mt-0.5">Track your membership completion status</p>
-                  </div>
-                </div>
-                
-                <div className="pl-0 lg:pl-16 flex-1 flex items-center">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                    <div className="p-5 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                          membershipStatus?.hasESignature 
-                            ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                            : 'bg-gray-300'
-                        }`}>
-                          {membershipStatus?.hasESignature ? (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-base font-normal text-gray-900">E-Signature Completed</p>
-                          <p className="text-xs text-gray-600 mt-1">{membershipStatus?.hasESignature ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-5 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                          membershipStatus?.hasAuthorizationConsent 
-                            ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                            : 'bg-gray-300'
-                        }`}>
-                          {membershipStatus?.hasAuthorizationConsent ? (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-base font-normal text-gray-900">Authorization Consent</p>
-                          <p className="text-xs text-gray-600 mt-1">{membershipStatus?.hasAuthorizationConsent ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-5 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                          membershipStatus?.paidInitialDues 
-                            ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                            : 'bg-gray-300'
-                        }`}>
-                          {membershipStatus?.paidInitialDues ? (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-base font-normal text-gray-900">Initial Dues Paid</p>
-                          <p className="text-xs text-gray-600 mt-1">{membershipStatus?.paidInitialDues ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-5 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                          membershipStatus?.hasProofOfFunding 
-                            ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                            : 'bg-gray-300'
-                        }`}>
-                          {membershipStatus?.hasProofOfFunding ? (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-base font-normal text-gray-900">Proof of Funding</p>
-                          <p className="text-xs text-gray-600 mt-1">{membershipStatus?.hasProofOfFunding ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Timeline - COMPLETELY RESTRUCTURED */}
-            {activeSection === 'timeline' && (
-              <div className="animate-fadeInUp">
-                <div className="flex items-start gap-4 mb-6">
-                  {getIcon('timeline')}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Membership Timeline</h3>
-                    <p className="text-sm text-gray-600 mt-0.5">Your membership journey milestones</p>
-                  </div>
-                </div>
-                
-                {/* Timeline DIRECTLY HERE - NO WRAPPERS */}
-                {(() => {
-                  const timelineItems = [];
-                  
-                  if (membershipStatus?.memberJoinDate) {
-                    timelineItems.push({
-                      date: new Date(membershipStatus.memberJoinDate),
-                      title: 'Joined Alcor',
-                      dateString: membershipStatus.memberJoinDate
-                    });
-                  }
-                  
-                  if (membershipStatus?.agreementSent) {
-                    timelineItems.push({
-                      date: new Date(membershipStatus.agreementSent),
-                      title: 'Agreement Sent',
-                      dateString: membershipStatus.agreementSent
-                    });
-                  }
-                  
-                  if (membershipStatus?.agreementReceived) {
-                    timelineItems.push({
-                      date: new Date(membershipStatus.agreementReceived),
-                      title: 'Agreement Received',
-                      dateString: membershipStatus.agreementReceived
-                    });
-                  }
-                  
-                  // Sort by date (oldest first)
-                  timelineItems.sort((a, b) => a.date - b.date);
-                  
-                  // Horizontal timeline
-                  if (timelineItems.length >= 3) {
-                    return (
-                      <div style={{ marginTop: '120px', marginLeft: '-30px' }}>
-                        <div className="relative flex">
-                          {timelineItems.map((item, index) => (
-                            <div key={index} className="flex flex-col items-center relative" style={{ width: '240px' }}>
-                              {/* Line BETWEEN dots */}
-                              {index < timelineItems.length - 1 && (
-                                <div className="absolute h-0.5 bg-gray-300" 
-                                     style={{ 
-                                       top: '8px',
-                                       left: '128px',
-                                       width: '224px',
-                                       zIndex: 0
-                                     }}></div>
-                              )}
-                              
-                              {/* Dot */}
-                              <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full relative z-10"></div>
-                              
-                              {/* Label */}
-                              <div className="mt-3 text-center">
-                                <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{item.title}</p>
-                                <p className="text-xs text-gray-600 mt-1">{formatDate(item.dateString)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    // Vertical timeline for 1-2 items
-                    return (
-                      <div style={{ marginTop: '120px', marginLeft: '-30px' }}>
-                        <div className="space-y-4">
-                          {timelineItems.map((item, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full mt-1"></div>
-                              <div>
-                                <p className="text-base font-normal text-gray-900">{item.title}</p>
-                                <p className="text-sm text-gray-600">{formatDate(item.dateString)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                })()}
+  // Render Cryopreservation Details Section
+  const renderCryoSection = () => (
+    <div className="animate-fadeInUp">
+      <div className="flex items-start gap-4 mb-6">
+        {getSectionIcon('cryo')}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {cryoArrangements?.methodOfPreservation ? 'Cryopreservation Details' : 'Membership Details'}
+          </h3>
+          <p className="text-sm text-gray-600 mt-0.5">
+            {cryoArrangements?.methodOfPreservation ? 'Your preservation arrangements and preferences' : 'Your membership information'}
+          </p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-0 lg:pl-16">
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+          <p className="text-xs text-gray-600 mb-1 font-medium">Preservation Type</p>
+          <p className="text-sm 2xl:text-base font-normal text-gray-900">
+            {cryoArrangements?.methodOfPreservation?.includes('Whole Body') 
+              ? 'Whole Body' 
+              : cryoArrangements?.methodOfPreservation?.includes('Neuro')
+              ? 'Neuro'
+              : 'N/A'}
+          </p>
+        </div>
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+          <p className="text-xs text-gray-600 mb-1 font-medium">CMS Fee Waiver</p>
+          <p className="text-sm 2xl:text-base font-normal text-gray-900">{cryoArrangements?.cmsWaiver || 'N/A'}</p>
+        </div>
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+          <p className="text-xs text-gray-600 mb-1 font-medium">Funding Status</p>
+          <p className="text-sm 2xl:text-base font-normal text-gray-900">{cryoArrangements?.fundingStatus || 'N/A'}</p>
+        </div>
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-2">
+          <p className="text-xs text-gray-600 mb-1 font-medium">Public Disclosure</p>
+          <p className="text-sm 2xl:text-base font-normal text-gray-900">
+            {cryoArrangements?.memberPublicDisclosure?.includes('reasonable efforts') 
+              ? 'Confidential' 
+              : cryoArrangements?.memberPublicDisclosure?.includes('freely') 
+              ? 'Public' 
+              : 'Limited'}
+          </p>
+        </div>
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
+          <p className="text-xs text-gray-600 mb-1 font-medium">Membership Type</p>
+          <p className="text-sm 2xl:text-base font-normal text-gray-900">{membershipType}</p>
+        </div>
+        <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-3">
+          <p className="text-xs text-gray-600 mb-1 font-medium">Contract Version</p>
+          <div className="flex items-start gap-2">
+            <p className="text-sm 2xl:text-base font-normal text-gray-900">
+              {formatDate(cryoArrangements?.contractDate)}
+            </p>
+            {needsContractUpdate && (
+              <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-md px-2 py-1">
+                <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="text-xs text-yellow-800 font-medium">May need to sign updated contracts</span>
               </div>
             )}
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  // Render Requirements Section
+  const renderRequirementsSection = () => {
+    const requirements = [
+      {
+        key: 'hasESignature',
+        label: 'E-Signature Completed',
+        completed: membershipStatus?.hasESignature
+      },
+      {
+        key: 'hasAuthorizationConsent',
+        label: 'Authorization Consent',
+        completed: membershipStatus?.hasAuthorizationConsent
+      },
+      {
+        key: 'paidInitialDues',
+        label: 'Initial Dues Paid',
+        completed: membershipStatus?.paidInitialDues
+      },
+      {
+        key: 'hasProofOfFunding',
+        label: 'Proof of Funding',
+        completed: membershipStatus?.hasProofOfFunding
+      }
+    ];
+
+    return (
+      <div className="animate-fadeInUp flex flex-col h-full" style={{ minHeight: '350px' }}>
+        <div className="flex items-start gap-4 mb-6">
+          {getSectionIcon('requirements')}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Membership Requirements</h3>
+            <p className="text-sm text-gray-600 mt-0.5">Track your membership completion status</p>
+          </div>
+        </div>
+        
+        <div className="pl-0 lg:pl-16 flex-1 flex items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            {requirements.map((req, index) => (
+              <div key={req.key} className={`p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-${Math.floor(index / 2) + 1}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-7 h-7 2xl:w-8 2xl:h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
+                    req.completed 
+                      ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
+                      : 'bg-gray-300'
+                  }`}>
+                    {req.completed ? (
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm 2xl:text-base font-normal text-gray-900">{req.label}</p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {req.completed ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Timeline Section
+  const renderTimelineSection = () => {
+    const timelineItems = buildTimelineItems();
+    
+    return (
+      <div className="animate-fadeInUp">
+        <div className="flex items-start gap-4 mb-6">
+          {getSectionIcon('timeline')}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Membership Timeline</h3>
+            <p className="text-sm text-gray-600 mt-0.5">Your membership journey milestones</p>
+          </div>
+        </div>
+        
+        <div style={{ 
+          //marginTop: `min(max(120px, calc((100vh - 400px) * 0.3)), 280px)`,
+          marginTop: `min(max(120px, calc((100vh - 400px) * 0.2)), 200px)`,
+          marginLeft: timelineItems.length >= 3 ? '-30px' : '64px' // Conditional left margin
+        }}>
+          {timelineItems.length >= 3 ? (
+            // Horizontal timeline for 3+ items
+            <div className="relative flex">
+              {timelineItems.map((item, index) => (
+                <div key={index} className="flex flex-col items-center relative" style={{ width: '240px' }}>
+                  {index < timelineItems.length - 1 && (
+                    <div className="absolute h-0.5 bg-gray-300" 
+                         style={{ 
+                           top: '8px',
+                           left: '128px',
+                           width: '224px',
+                           zIndex: 0
+                         }}></div>
+                  )}
+                  
+                  <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full relative z-10"></div>
+                  
+                  <div className="mt-3 text-center">
+                    <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{item.title}</p>
+                    <p className="text-xs text-gray-600 mt-1">{formatDate(item.dateString)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Vertical timeline for 1-2 items
+            <div className="space-y-4">
+              {timelineItems.map((item, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full mt-1"></div>
+                  <div>
+                    <p className="text-base font-normal text-gray-900">{item.title}</p>
+                    <p className="text-sm text-gray-600">{formatDate(item.dateString)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Main render
+  return (
+    <div className="membership-status-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
+      <div className="h-8"></div>
+      
+      {/* Desktop View */}
+      <div className="hidden sm:block" style={{ height: 'min(calc(100vh - 200px), 700px)' }}>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeInUp h-full flex flex-col" 
+             style={{ 
+               boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)', 
+               minHeight: '600px'
+             }}>
           
-      {/* Mobile View - All sections as separate cards */}
+          {/* Header */}
+          <div className="p-5 xl:p-8 pb-5 xl:pb-8 border-b border-gray-200">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 2xl:p-3 rounded-lg transform transition duration-300 bg-gradient-to-r from-[#0a1628] to-[#6e4376]">
+                  <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl 2xl:text-2xl font-semibold text-gray-900 flex items-center">
+                  Membership Status
+                  <img src={alcorStar} alt="" className="w-5 h-5 2xl:w-6 2xl:h-6 ml-1" />
+                </h2>
+              </div>
+              
+              <span className={`inline-block px-4 py-1 rounded-lg border border-black font-medium flex-shrink-0 ${
+                membershipStatus?.isActive ? 'text-green-700 bg-white' : 'text-red-700 bg-white'
+              }`}>
+                {status}
+              </span>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mt-4 lg:mt-16">
+              <div>
+                <h3 className="text-base 2xl:text-lg font-semibold text-gray-900 mb-1">
+                  {personalInfo?.firstName} {personalInfo?.lastName}
+                </h3>
+                <p className="text-xs 2xl:text-sm text-gray-600 flex items-center gap-3">
+                  <span>Member ID: {personalInfo?.alcorId || 'N/A'}</span>
+                  <span>•</span>
+                  <span>{membershipType}</span>
+                </p>
+              </div>
+              
+              {/* Navigation Tabs */}
+              <div className="flex bg-gray-200 rounded-lg p-1">
+                {['personal', 'cryo', 'requirements', 'timeline'].map((section) => (
+                  <button
+                    key={section}
+                    onClick={() => setActiveSection(section)}
+                    className={`px-4 py-2 rounded-md text-sm transition-all capitalize ${
+                      activeSection === section 
+                        ? 'bg-white text-gray-900 shadow-sm font-medium' 
+                        : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    {section === 'cryo' ? 'Membership' : section.charAt(0).toUpperCase() + section.slice(1).replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-8 flex-1 overflow-y-auto">
+            {activeSection === 'personal' && renderPersonalInfoSection()}
+            {activeSection === 'cryo' && renderCryoSection()}
+            {activeSection === 'requirements' && renderRequirementsSection()}
+            {activeSection === 'timeline' && renderTimelineSection()}
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile View */}
       <div className="sm:hidden px-4 space-y-4">
-        {/* Main Status Card - Mobile */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+        {/* Status Card */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp" 
+             style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -651,34 +615,31 @@ const MembershipStatusTab = () => {
                 </h2>
               </div>
               
-              {/* EDIT 1: Mobile status badge */}
-              <span className={`px-3 py-1 rounded-lg text-sm border-2 border-black font-medium ${
-                membershipStatus?.isActive 
-                  ? 'text-green-700 bg-white' 
-                  : 'text-red-700 bg-white'
+              <span className={`inline-block px-3 py-1 rounded-lg text-sm border border-black font-medium ${
+                membershipStatus?.isActive ? 'text-green-700 bg-white' : 'text-red-700 bg-white'
               }`}>
-                {getStatus()}
+                {status}
               </span>
             </div>
 
-            {/* EDIT 2: Reduced name size on mobile */}
             <div>
               <h3 className="text-base font-semibold text-gray-900 mb-1">
                 {personalInfo?.firstName} {personalInfo?.lastName}
               </h3>
               <p className="text-sm text-gray-600 flex flex-col gap-0.5">
                 <span>Member ID: {personalInfo?.alcorId || 'N/A'}</span>
-                <span>{getMembershipType()}</span>
+                <span>{membershipType}</span>
               </p>
             </div>
           </div>
         </div>
 
         {/* Personal Information Card */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-1" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-1" 
+             style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-6 bg-gray-50 border-b border-gray-300">
             <div className="flex items-center gap-3">
-              {getIcon('personal')}
+              {getSectionIcon('personal')}
               <h3 className="text-base font-semibold text-gray-900">Personal Information</h3>
             </div>
           </div>
@@ -706,10 +667,11 @@ const MembershipStatusTab = () => {
         </div>
 
         {/* Cryopreservation Details Card */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-2" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-2" 
+             style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              {getIcon('cryo')}
+              {getSectionIcon('cryo')}
               <h3 className="text-base font-semibold text-gray-900">
                 {cryoArrangements?.methodOfPreservation ? 'Cryopreservation Details' : 'Membership Details'}
               </h3>
@@ -747,7 +709,7 @@ const MembershipStatusTab = () => {
             </div>
             <div className="px-6 py-4 animate-fadeInUp">
               <p className="text-xs text-gray-500 mb-1">Membership Type</p>
-              <p className="text-sm font-normal text-gray-900">{getMembershipType()}</p>
+              <p className="text-sm font-normal text-gray-900">{membershipType}</p>
             </div>
             <div className="px-6 py-4 animate-fadeInUp">
               <p className="text-xs text-gray-500 mb-1">Contract Version</p>
@@ -755,7 +717,7 @@ const MembershipStatusTab = () => {
                 <p className="text-sm font-normal text-gray-900">
                   {formatDate(cryoArrangements?.contractDate)}
                 </p>
-                {shouldShowContractUpdateFlag() && (
+                {needsContractUpdate && (
                   <span className="text-xs bg-yellow-50 text-yellow-800 border border-yellow-200 rounded px-1.5 py-0.5">
                     Update needed
                   </span>
@@ -766,153 +728,67 @@ const MembershipStatusTab = () => {
         </div>
 
         {/* Requirements Checklist Card */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-3" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-3" 
+             style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              {getIcon('requirements')}
+              {getSectionIcon('requirements')}
               <h3 className="text-base font-semibold text-gray-900">Membership Requirements</h3>
             </div>
           </div>
           
           <div className="divide-y divide-gray-200">
-            <div className="px-6 py-6 animate-fadeInUp">
-              <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
-                  membershipStatus?.hasESignature 
-                    ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                    : 'bg-gray-300'
-                }`}>
-                  {membershipStatus?.hasESignature ? (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-normal text-gray-900">E-Signature Completed</p>
-                  <p className="text-xs text-gray-500 mt-1.5">{membershipStatus?.hasESignature ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="px-6 py-6 animate-fadeInUp">
-              <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
-                  membershipStatus?.hasAuthorizationConsent 
-                    ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                    : 'bg-gray-200'
-                }`}>
-                  {membershipStatus?.hasAuthorizationConsent ? (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-normal text-gray-900">Authorization Consent</p>
-                  <p className="text-xs text-gray-500 mt-1.5">{membershipStatus?.hasAuthorizationConsent ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
+            {[
+              { key: 'hasESignature', label: 'E-Signature Completed', completed: membershipStatus?.hasESignature },
+              { key: 'hasAuthorizationConsent', label: 'Authorization Consent', completed: membershipStatus?.hasAuthorizationConsent },
+              { key: 'paidInitialDues', label: 'Initial Dues Paid', completed: membershipStatus?.paidInitialDues },
+              { key: 'hasProofOfFunding', label: 'Proof of Funding', completed: membershipStatus?.hasProofOfFunding }
+            ].map((req) => (
+              <div key={req.key} className="px-6 py-6 animate-fadeInUp">
+                <div className="flex items-center gap-3">
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
+                    req.completed ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' : 'bg-gray-300'
+                  }`}>
+                    {req.completed ? (
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-normal text-gray-900">{req.label}</p>
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      {req.completed ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="px-6 py-6 animate-fadeInUp">
-              <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
-                  membershipStatus?.paidInitialDues 
-                    ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                    : 'bg-gray-200'
-                }`}>
-                  {membershipStatus?.paidInitialDues ? (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-normal text-gray-900">Initial Dues Paid</p>
-                  <p className="text-xs text-gray-500 mt-1.5">{membershipStatus?.paidInitialDues ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="px-6 py-6 animate-fadeInUp">
-              <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
-                  membershipStatus?.hasProofOfFunding 
-                    ? 'bg-gradient-to-r from-[#0a1628] to-[#6e4376]' 
-                    : 'bg-gray-200'
-                }`}>
-                  {membershipStatus?.hasProofOfFunding ? (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-normal text-gray-900">Proof of Funding</p>
-                  <p className="text-xs text-gray-500 mt-1.5">{membershipStatus?.hasProofOfFunding ? 'Complete' : (personalInfo?.alcorId ? 'N/A' : 'Pending')}</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Timeline Card - MOBILE VERSION (KEEP ORIGINAL) */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-3" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+        {/* Timeline Card */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden animate-fadeInUp-delay-3" 
+             style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              {getIcon('timeline')}
+              {getSectionIcon('timeline')}
               <h3 className="text-base font-semibold text-gray-900">Membership Timeline</h3>
             </div>
           </div>
           
           <div className="px-6 py-8">
             {(() => {
-              const timelineItems = [];
-              
-              if (membershipStatus?.memberJoinDate) {
-                timelineItems.push({
-                  date: new Date(membershipStatus.memberJoinDate),
-                  title: 'Joined Alcor',
-                  dateString: membershipStatus.memberJoinDate
-                });
-              }
-              
-              if (membershipStatus?.agreementSent) {
-                timelineItems.push({
-                  date: new Date(membershipStatus.agreementSent),
-                  title: 'Agreement Sent',
-                  dateString: membershipStatus.agreementSent
-                });
-              }
-              
-              if (membershipStatus?.agreementReceived) {
-                timelineItems.push({
-                  date: new Date(membershipStatus.agreementReceived),
-                  title: 'Agreement Received',
-                  dateString: membershipStatus.agreementReceived
-                });
-              }
-              
-              // Sort by date (oldest first)
-              timelineItems.sort((a, b) => a.date - b.date);
+              const timelineItems = buildTimelineItems();
               
               return (
                 <div className="relative">
-                  {/* Vertical line connecting all dots */}
                   {timelineItems.length > 1 && (
                     <div className="absolute left-[27px] top-2 bottom-2 w-0.5 bg-gray-300"></div>
                   )}
                   
-                  {/* Timeline items */}
                   <div className="space-y-6">
                     {timelineItems.map((item, index) => (
                       <div key={index} className="relative flex items-start gap-4 animate-fadeInUp">
@@ -931,7 +807,6 @@ const MembershipStatusTab = () => {
         </div>
       </div>
 
-      {/* Add padding at the end */}
       <div className="h-32"></div>
 
       {/* Help Button - Desktop Only */}
@@ -940,18 +815,8 @@ const MembershipStatusTab = () => {
           className="w-16 h-16 bg-[#9f5fa6] hover:bg-[#8a4191] rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105"
           onClick={() => setShowHelpPopup(!showHelpPopup)}
         >
-          <svg 
-            className="w-8 h-8 text-white" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="1.8" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-            />
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
 
