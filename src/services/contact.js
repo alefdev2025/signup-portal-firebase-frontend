@@ -59,6 +59,83 @@ export const getContactInfo = async () => {
     }
   };
 
+
+  // src/services/contact.js
+
+// Get video testimony status
+export const getVideoTestimonyStatus = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(
+      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/video-testimony-status`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error checking video testimony status:", error);
+    return { 
+      success: false, 
+      error: error.message,
+      hasVideoTestimony: false // Default to false on error
+    };
+  }
+};
+
+// Update video testimony status
+export const updateVideoTestimonyStatus = async (hasVideo) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User must be authenticated");
+    }
+    
+    const token = await user.getIdToken();
+    
+    const response = await fetch(
+      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/video-testimony-status`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ hasVideoTestimony: hasVideo })
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error updating video testimony status:", error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
   // Check portal welcome status
 export const getPortalWelcomeStatus = async () => {
   try {

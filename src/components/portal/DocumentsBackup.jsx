@@ -476,7 +476,7 @@ const handleDownload = async (doc) => {
 
   const getDocumentIcon = (doc) => {
     return (
-      <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-black" fill="none" stroke="currentColor" strokeWidth="0.5" viewBox="0 0 24 24">
+      <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" strokeWidth="0.5" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     );
@@ -614,19 +614,19 @@ const handleDownload = async (doc) => {
 
         {documents.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 sm:p-12 animate-fadeInUp animation-delay-100 border border-gray-200 text-center" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-            <svg className="w-16 h-16 2xl:w-18 2xl:h-18 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-18 h-18 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-gray-800 text-base 2xl:text-lg font-medium">No documents found</p>
-            <p className="text-gray-500 text-xs 2xl:text-sm mt-2 font-light">Your membership documents will appear here once uploaded by Alcor staff</p>
+            <p className="text-gray-800 text-lg font-medium">No documents found</p>
+            <p className="text-gray-500 text-sm mt-2 font-light">Your membership documents will appear here once uploaded by Alcor staff</p>
           </div>
         ) : (
           <>
             {/* Files Section */}
             <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp animation-delay-100 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-              <h3 className="text-lg 2xl:text-xl font-semibold text-gray-800 mb-12 flex items-center gap-3 flex-wrap">
-                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2.5 2xl:p-3 rounded-lg shadow-md">
-                  <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+              <h3 className="text-xl font-semibold text-gray-800 mb-12 flex items-center gap-3 flex-wrap">
+                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
+                  <svg className="h-9 w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -640,7 +640,7 @@ const handleDownload = async (doc) => {
                       key={doc.id} 
                       onClick={() => handleDownload(doc)}
                       disabled={downloading[doc.id]}
-                      className={`bg-white rounded-lg p-3.5 2xl:p-4 border border-gray-200 shadow-sm flex items-center justify-between gap-3 animate-slideInRow hover:border-gray-300 hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left w-full`}
+                      className={`bg-white rounded-lg p-4 border border-gray-200 shadow-sm flex items-center justify-between gap-3 animate-slideInRow hover:border-gray-300 hover:shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left w-full`}
                       style={{ animationDelay: `${getRowDelay(index)}ms` }}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -648,10 +648,10 @@ const handleDownload = async (doc) => {
                           {getDocumentIcon(doc)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-800 text-xs 2xl:text-sm truncate">{formatDocumentName(doc.name)}</h3>
+                          <h3 className="font-medium text-gray-800 text-sm truncate">{formatDocumentName(doc.name)}</h3>
                           {downloading[doc.id] && (
-                            <div className="mt-1 flex items-center gap-2 text-[0.625rem] 2xl:text-xs text-purple-600">
-                              <div className="w-2.5 h-2.5 2xl:w-3 2xl:h-3 relative">
+                            <div className="mt-1 flex items-center gap-2 text-xs text-purple-600">
+                              <div className="w-3 h-3 relative">
                                 <div className="absolute inset-0 rounded-full border-2 border-purple-100"></div>
                                 <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-600 animate-spin"></div>
                               </div>
@@ -662,7 +662,7 @@ const handleDownload = async (doc) => {
                       </div>
 
                       <div className="flex-shrink-0">
-                        <svg className="w-4 h-4 2xl:w-5 2xl:h-5 text-gray-600 transition-all duration-200 hover:text-[#794384] hover:scale-110" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-gray-600 transition-all duration-200 hover:text-[#794384] hover:scale-110" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                       </div>
@@ -670,14 +670,14 @@ const handleDownload = async (doc) => {
                   ))
                 ) : (
                   <div className="col-span-2 text-center py-8">
-                    <p className="text-gray-800 text-base 2xl:text-lg font-medium">No documents found matching your search.</p>
+                    <p className="text-gray-800 text-lg font-medium">No documents found matching your search.</p>
                     {(searchQuery || filterType !== 'all') && (
                       <button 
                         onClick={() => {
                           setSearchQuery('');
                           setFilterType('all');
                         }}
-                        className="mt-3 text-sm 2xl:text-base text-purple-600 hover:text-purple-700 transition-colors underline font-medium"
+                        className="mt-3 text-base text-purple-600 hover:text-purple-700 transition-colors underline font-medium"
                       >
                         Clear filters
                       </button>
@@ -694,19 +694,15 @@ const handleDownload = async (doc) => {
           <div className="h-4"></div>
           <style>{`
             .upload-files-title {
-              font-size: 1.125rem;
+              font-size: 1.25rem;
             }
             @media (min-width: 768px) {
-              .upload-files-title {
-                font-size: 1.25rem;
-            }
-            @media (min-width: 1536px) {
               .upload-files-title {
                 font-size: 1.5rem;
             }
           `}</style>
           <h2 className="upload-files-title font-medium text-[#2a2346] mb-6 tracking-widest">UPLOAD FILES</h2>
-          <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed mb-12 max-w-2xl">
+          <p className="text-gray-700 text-base leading-relaxed mb-12 max-w-2xl">
             Upload new documents to your member portal. Files are stored with your membership file for Alcor staff access. Please ensure all documents are clearly labeled and in an 
             acceptable format before uploading.
           </p>
@@ -715,10 +711,10 @@ const handleDownload = async (doc) => {
           {uploadSuccess && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-fadeIn">
               <div className="flex items-center gap-3">
-                <svg className="w-4 h-4 2xl:w-5 2xl:h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <p className="text-green-800 text-xs 2xl:text-sm">Document uploaded successfully!</p>
+                <p className="text-green-800">Document uploaded successfully!</p>
               </div>
             </div>
           )}
@@ -727,16 +723,16 @@ const handleDownload = async (doc) => {
           {error && error.includes('upload') && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-3">
-                <svg className="w-4 h-4 2xl:w-5 2xl:h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
-                <p className="text-red-800 text-xs 2xl:text-sm">{error}</p>
+                <p className="text-red-800">{error}</p>
               </div>
             </div>
           )}
           
           <div>
-            <label className="block text-xs 2xl:text-sm font-medium text-[#6a5b8a] mb-2">
+            <label className="block text-sm font-medium text-[#6a5b8a] mb-2">
               Choose File
             </label>
             <input 
@@ -748,18 +744,18 @@ const handleDownload = async (doc) => {
             />
             <label 
               htmlFor="file-upload"
-              className={`inline-flex items-center justify-center gap-3 px-5 2xl:px-6 py-2.5 2xl:py-3 bg-white border-2 border-gray-300 text-[#2a2346] rounded-2xl hover:border-[#6b5b7e] hover:text-[#6b5b7e] transition-all cursor-pointer text-xs 2xl:text-sm ${
+              className={`inline-flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 text-[#2a2346] rounded-2xl hover:border-[#6b5b7e] hover:text-[#6b5b7e] transition-all cursor-pointer ${
                 uploading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               {uploading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 2xl:h-5 2xl:w-5 border-b-2 border-[#6b5b7e]"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6b5b7e]"></div>
                   <span>Uploading...</span>
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 2xl:w-5 2xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <span>Select File to Upload</span>
@@ -768,7 +764,7 @@ const handleDownload = async (doc) => {
             </label>
           </div>
 
-          <p className="text-[0.625rem] 2xl:text-xs text-[#6a5b8a] mt-4 mb-8">
+          <p className="text-sm text-[#6a5b8a] mt-4 mb-8">
             Accepted file types: PDF, DOC, DOCX, JPG, PNG (Max size: 10MB)
           </p>
         </div>
@@ -786,33 +782,33 @@ const handleDownload = async (doc) => {
           }}></div>
           
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-2xl p-7 2xl:p-8 sm:p-8 2xl:sm:p-10 max-w-lg w-full animate-fadeInUp shadow-xl">
-              <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-800 mb-6">Select Document Type</h3>
-              <p className="text-sm 2xl:text-base text-gray-600 mb-8">Please select the type of document you're uploading.</p>
+            <div className="relative bg-white rounded-2xl p-8 sm:p-10 max-w-lg w-full animate-fadeInUp shadow-xl">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6">Select Document Type</h3>
+              <p className="text-base text-gray-600 mb-8">Please select the type of document you're uploading.</p>
               
               <div className="space-y-4">
                 <button
                   onClick={() => setDocumentType('member_uploaded_document')}
-                  className={`w-full p-4 2xl:p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
                     documentType === 'member_uploaded_document' 
                       ? 'border-gray-800 bg-gray-50 text-gray-800' 
                       : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="font-medium text-base 2xl:text-lg">Membership Document</span>
-                  <p className="text-xs 2xl:text-sm text-gray-500 mt-2">Any documents related to your membership</p>
+                  <span className="font-medium text-lg">Membership Document</span>
+                  <p className="text-sm text-gray-500 mt-2">Any documents related to your membership</p>
                 </button>
                 
                 <button
                   onClick={() => setDocumentType('profile_picture')}
-                  className={`w-full p-4 2xl:p-5 rounded-xl border-2 text-left transition-all ${
+                  className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
                     documentType === 'profile_picture' 
                       ? 'border-gray-800 bg-gray-50 text-gray-800' 
                       : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="font-medium text-base 2xl:text-lg">Profile Picture</span>
-                  <p className="text-xs 2xl:text-sm text-gray-500 mt-2">Your photo for identification purposes</p>
+                  <span className="font-medium text-lg">Profile Picture</span>
+                  <p className="text-sm text-gray-500 mt-2">Your photo for identification purposes</p>
                 </button>
               </div>
               
@@ -824,14 +820,14 @@ const handleDownload = async (doc) => {
                     setDocumentType('');
                     document.getElementById('file-upload').value = '';
                   }}
-                  className="flex-1 px-5 2xl:px-6 py-2.5 2xl:py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm 2xl:text-base font-medium"
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-base font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={!documentType}
-                  className={`flex-1 px-5 2xl:px-6 py-2.5 2xl:py-3 rounded-xl transition-all text-sm 2xl:text-base font-medium ${
+                  className={`flex-1 px-6 py-3 rounded-xl transition-all text-base font-medium ${
                     documentType 
                       ? 'bg-gray-800 text-white hover:bg-gray-900' 
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
