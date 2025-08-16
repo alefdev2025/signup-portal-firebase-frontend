@@ -168,163 +168,14 @@ const VideoUploading = ({
     }
   };
 
-  // Mobile direct upload with better error handling
-// Mobile direct upload with extensive debugging
-const handleMobileDirectUpload = async () => {
-    const debugInfo = [];
-    
+  const handleMobileDirectUpload = async () => {
     try {
-      // Log initial state
-      debugInfo.push(`[START] File: ${selectedVideo.name}`);
-      debugInfo.push(`[SIZE] ${(selectedVideo.size / 1024 / 1024).toFixed(2)} MB`);
-      debugInfo.push(`[TYPE] ${selectedVideo.type || 'unknown'}`);
+      console.log('[Mobile Upload] Using direct upload');
       
-      // Check if file is actually readable
-      debugInfo.push(`[CHECK] Testing file readability...`);
-      try {
-        // Try to read first 1KB of file to verify it's accessible
-        const testSlice = selectedVideo.slice(0, 1024);
-        const testReader = new FileReader();
-        
-        await new Promise((resolve, reject) => {
-          testReader.onload = () => {
-            debugInfo.push(`[READ] ✓ File is readable`);
-            resolve();
-          };
-          testReader.onerror = () => {
-            debugInfo.push(`[READ] ✗ File read error: ${testReader.error}`);
-            reject(testReader.error);
-          };
-          testReader.readAsArrayBuffer(testSlice);
-        });
-      } catch (readErr) {
-        debugInfo.push(`[READ ERROR] ${readErr.message}`);
-        setError(debugInfo.join('\n'));
-        return;
-      }
+      const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
       
-      // Check browser capabilities
-      debugInfo.push(`[BROWSER] ${navigator.userAgent.substring(0, 50)}...`);
-      
-      // Check network
-      if ('connection' in navigator) {
-        const conn = navigator.connection;
-        debugInfo.push(`[NETWORK] Type: ${conn.effectiveType || 'unknown'}`);
-        debugInfo.push(`[NETWORK] Downlink: ${conn.downlink || 'unknown'} Mbps`);
-      }
-      
-      // Check available memory (Chrome only)
-      if (performance.memory) {
-        const usedMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
-        const limitMB = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2);
-        debugInfo.push(`[MEMORY] ${usedMB}/${limitMB} MB used`);
-      }
-      
-      // Try to create FormData
-      debugInfo.push(`[UPLOAD] Creating upload data...`);
-      let formData;
-      try {
-        formData = new FormData();
-        formData.append('video', selectedVideo);
-        formData.append('contactId', contactId);
-        debugInfo.push(`[FORMDATA] ✓ Created successfully`);
-      } catch (formErr) {
-        debugInfo.push(`[FORMDATA] ✗ Error: ${formErr.message}`);
-        setError(debugInfo.join('\n'));
-        return;
-      }
-      
-      // Check if memberDataService exists
-      if (!memberDataService) {
-        debugInfo.push(`[SERVICE] ✗ memberDataService is undefined`);
-        setError(debugInfo.join('\n'));
-        return;
-      }
-      
-      if (!memberDataService.uploadVideoTestimony) {
-        debugInfo.push(`[SERVICE] ✗ uploadVideoTestimony method missing`);
-        setError(debugInfo.join('\n'));
-        return;
-      }
-      
-      debugInfo.push(`[SERVICE] ✓ Service ready`);
-      
-      // Set up timeout
-      debugInfo.push(`[UPLOAD] Starting upload with 2 min timeout...`);
-      setError(debugInfo.join('\n')); // Show progress in UI
-      
-      let uploadStartTime = Date.now();
-      
-      // Create upload promise with detailed error catching
-      const uploadPromise = new Promise(async (resolve, reject) => {
-        try {
-          debugInfo.push(`[CALL] Calling uploadVideoTestimony...`);
-          setError(debugInfo.join('\n')); // Update UI
-          
-          const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
-          
-          const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
-          debugInfo.push(`[RESPONSE] Got response after ${uploadTime}s`);
-          debugInfo.push(`[RESPONSE] Success: ${result.success}`);
-          
-          if (result.error) {
-            debugInfo.push(`[RESPONSE] Error: ${result.error}`);
-          }
-          
-          resolve(result);
-        } catch (uploadErr) {
-          const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
-          debugInfo.push(`[UPLOAD ERROR] After ${uploadTime}s`);
-          debugInfo.push(`[ERROR TYPE] ${uploadErr.name}`);
-          debugInfo.push(`[ERROR MSG] ${uploadErr.message}`);
-          
-          // Check for specific error types
-          if (uploadErr.name === 'TypeError') {
-            debugInfo.push(`[DETAIL] Likely network or CORS issue`);
-          } else if (uploadErr.name === 'AbortError') {
-            debugInfo.push(`[DETAIL] Request was aborted`);
-          } else if (uploadErr.message.includes('Failed to fetch')) {
-            debugInfo.push(`[DETAIL] Network request failed - check connection`);
-          } else if (uploadErr.message.includes('NetworkError')) {
-            debugInfo.push(`[DETAIL] Network error - possibly offline`);
-          }
-          
-          reject(uploadErr);
-        }
-      });
-      
-      // Create timeout promise
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => {
-          debugInfo.push(`[TIMEOUT] Upload exceeded 2 minutes`);
-          reject(new Error('Upload timeout after 2 minutes'));
-        }, 120000) // 2 minute timeout
-      );
-      
-      // Update progress slowly
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          const elapsed = (Date.now() - uploadStartTime) / 1000;
-          debugInfo[debugInfo.length - 1] = `[UPLOADING] ${elapsed.toFixed(0)}s elapsed...`;
-          setError(debugInfo.join('\n')); // Keep updating UI
-          return prev + 5;
-        });
-      }, 1000);
-      
-      // Race upload against timeout
-      const result = await Promise.race([uploadPromise, timeoutPromise]);
-      
-      clearInterval(progressInterval);
-      
-      if (result.success) {
-        debugInfo.push(`[SUCCESS] Upload completed!`);
-        setError(null); // Clear debug info on success
+      if (result && result.success) {
         setUploadProgress(100);
-        
         await updateVideoTestimonyStatus(true);
         memberDataService.clearCacheEntry(contactId, 'videoTestimony');
         
@@ -340,85 +191,25 @@ const handleMobileDirectUpload = async () => {
           }, 500);
         }, 1000);
       } else {
-        debugInfo.push(`[FAILED] ${result.error || 'Unknown error'}`);
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result?.error || 'Upload failed');
       }
-      
     } catch (err) {
-      debugInfo.push(`\n[FINAL ERROR] ${err.message}`);
-      debugInfo.push(`[ERROR STACK] ${err.stack?.substring(0, 200)}`);
-      
-      // Show all debug info in the error message
-      setError(debugInfo.join('\n'));
+      setError(`Upload failed: ${err.message}`);
       setUploading(false);
       setUploadProgress(0);
-      
-      // Don't throw, just display the error
-      return;
     }
   };
 
   // Chunked upload for mobile (for large files)
-  const handleMobileChunkedUpload = async () => {
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks for mobile
-    const totalChunks = Math.ceil(selectedVideo.size / CHUNK_SIZE);
-    
-    console.log(`[Mobile Upload] Splitting into ${totalChunks} chunks`);
-
+// Chunked upload for mobile (for large files)
+const handleMobileChunkedUpload = async () => {
     try {
-      // First, initialize the chunked upload
-      const initResult = await memberDataService.initializeChunkedUpload(contactId, {
-        fileName: selectedVideo.name,
-        fileSize: selectedVideo.size,
-        fileType: selectedVideo.type,
-        totalChunks: totalChunks
-      });
-
-      if (!initResult.success) {
-        throw new Error('Failed to initialize upload');
-      }
-
-      const uploadId = initResult.uploadId;
-
-      // Upload chunks
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, selectedVideo.size);
-        const chunk = selectedVideo.slice(start, end);
-
-        console.log(`[Mobile Upload] Uploading chunk ${i + 1}/${totalChunks}`);
-        
-        const chunkResult = await memberDataService.uploadVideoChunk(contactId, {
-          uploadId: uploadId,
-          chunkIndex: i,
-          chunk: chunk,
-          totalChunks: totalChunks
-        });
-
-        if (!chunkResult.success) {
-          // Retry once on failure
-          console.log(`[Mobile Upload] Retrying chunk ${i + 1}`);
-          const retryResult = await memberDataService.uploadVideoChunk(contactId, {
-            uploadId: uploadId,
-            chunkIndex: i,
-            chunk: chunk,
-            totalChunks: totalChunks
-          });
-          
-          if (!retryResult.success) {
-            throw new Error(`Failed to upload chunk ${i + 1}`);
-          }
-        }
-
-        // Update progress
-        const progress = Math.round(((i + 1) / totalChunks) * 100);
-        setUploadProgress(progress);
-      }
-
-      // Finalize the upload
-      const finalResult = await memberDataService.finalizeChunkedUpload(contactId, uploadId);
+      console.log('[Mobile Upload] Using chunked upload for large file');
       
-      if (finalResult.success) {
+      // The service already handles chunking internally!
+      const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
+      
+      if (result && result.success) {
         setUploadProgress(100);
         await updateVideoTestimonyStatus(true);
         memberDataService.clearCacheEntry(contactId, 'videoTestimony');
@@ -435,10 +226,9 @@ const handleMobileDirectUpload = async () => {
           }, 500);
         }, 1000);
       } else {
-        throw new Error('Failed to finalize upload');
+        throw new Error(result?.error || 'Upload failed');
       }
     } catch (err) {
-      // Fallback to direct upload if chunked upload is not supported
       console.log('[Mobile Upload] Chunked upload failed, trying direct upload');
       await handleMobileDirectUpload();
     }

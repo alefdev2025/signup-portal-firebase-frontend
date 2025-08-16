@@ -173,7 +173,73 @@ class MemberDataService {
     return this.fetchAndCache(contactId, 'videoTestimony', getMemberVideoTestimony);
   }
 
-  async uploadVideoTestimony(contactId, formData) {
+  async uploadVideoTestimony(contactId, videoFile) {
+    try {
+      const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB chunks
+      
+      // Get auth token
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error('Authentication required');
+      const token = await currentUser.getIdToken();
+      
+      // Check if we need to chunk it
+      if (videoFile.size <= CHUNK_SIZE) {
+        // Small file, use existing upload
+        const result = await uploadMemberVideoTestimony(contactId, videoFile);
+        
+        if (result.success) {
+          this.clearCacheEntry(contactId, 'videoTestimony');
+        }
+        
+        return result;
+      }
+      
+      // Large file, chunk it
+      const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
+      console.log(`Uploading in ${totalChunks} chunks...`);
+      
+      let lastResult;
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, videoFile.size);
+        const chunk = videoFile.slice(start, end);
+        
+        const formData = new FormData();
+        formData.append('chunk', chunk);
+        formData.append('chunkIndex', i.toString());
+        formData.append('totalChunks', totalChunks.toString());
+        formData.append('fileName', videoFile.name);
+        
+        const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony-chunked`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        lastResult = await response.json();
+        
+        // You'll need to pass setUploadProgress somehow or emit an event
+        // For now, just log progress
+        console.log(`Upload progress: ${((i + 1) / totalChunks * 100).toFixed(0)}%`);
+      }
+      
+      if (lastResult?.success) {
+        this.clearCacheEntry(contactId, 'videoTestimony');
+      }
+      
+      return lastResult;
+      
+    } catch (error) {
+      console.error('[MemberDataService] Error uploading video testimony:', error);
+      throw error;
+    }
+  }
+
+  // prior to chunched
+  /*async uploadVideoTestimony(contactId, formData) {
     try {
       const result = await uploadMemberVideoTestimony(contactId, formData);
       
@@ -187,7 +253,7 @@ class MemberDataService {
       //console.error('[MemberDataService] Error uploading video testimony:', error);
       throw error;
     }
-  }
+  }*/
 
   async deleteVideoTestimony(contactId) {
     try {

@@ -463,7 +463,7 @@ const VideoTestimonyTab = ({ contactId }) => {
               <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
             </div>
-            <p className="text-gray-500 font-light">Loading video testimony...</p>
+            <p className="text-gray-500 font-light text-sm lg:text-base">Loading video testimony...</p>
           </div>
         </div>
       </div>
@@ -501,7 +501,7 @@ const VideoTestimonyTab = ({ contactId }) => {
             </div>
           ) : (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
-              <p className="font-medium text-sm 2xl:text-base">{error}</p>
+              <p className="font-medium text-xs lg:text-sm 2xl:text-base">{error}</p>
             </div>
           )
         )}
@@ -510,17 +510,18 @@ const VideoTestimonyTab = ({ contactId }) => {
         <div className="space-y-8">
           {/* Upload/Current Video Section */}
           {!testimony || !testimony.data || !downloadedVideoUrl ? (
-            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-              <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-12 flex items-center gap-3 flex-wrap">
-                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
-                  <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp border border-gray-200 flex flex-col" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', minHeight: 'min(400px, 40vh)' }}>
+              <h3 className="text-base lg:text-lg 2xl:text-xl font-semibold text-gray-900 mb-12 flex items-center gap-3 flex-wrap">
+                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2.5 2xl:p-3 rounded-lg shadow-md">
+                  <svg className="h-5 w-5 sm:h-8 sm:w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
                 Your Video Testimony
               </h3>
               
-              {!selectedVideo && !isRecording && !isPreviewing ? (
+              <div className="flex-1 flex items-center justify-center">
+                {!selectedVideo && !isRecording && !isPreviewing ? (
                 <VideoUploading
                   selectedVideo={selectedVideo}
                   videoPreview={videoPreview}
@@ -591,12 +592,13 @@ const VideoTestimonyTab = ({ contactId }) => {
                   initializeCamera={initializeCamera}
                 />
               )}
+              </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-              <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-12 flex items-center gap-3">
-                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
-                  <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', minHeight: 'min(400px, 40vh)' }}>
+              <h3 className="text-base lg:text-lg 2xl:text-xl font-semibold text-gray-900 mb-12 flex items-center gap-3">
+                <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2.5 2xl:p-3 rounded-lg shadow-md">
+                  <svg className="h-5 w-5 sm:h-8 sm:w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -612,7 +614,7 @@ const VideoTestimonyTab = ({ contactId }) => {
                         <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
                         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
                       </div>
-                      <p className="text-white font-light text-sm 2xl:text-base">Loading video...</p>
+                      <p className="text-white font-light text-xs lg:text-sm 2xl:text-base">Loading video...</p>
                     </div>
                   </div>
                 ) : downloadedVideoUrl ? (
@@ -678,14 +680,14 @@ const VideoTestimonyTab = ({ contactId }) => {
                               <path d="M8 5v14l11-7z" />
                             </svg>
                           </div>
-                          <p className="text-white text-lg 2xl:text-xl font-medium">Your Current Video Testimony</p>
+                          <p className="text-white text-base lg:text-lg 2xl:text-xl font-medium">Your Current Video Testimony</p>
                         </div>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-64 bg-gray-900">
-                    <p className="text-gray-400 font-light text-sm 2xl:text-base">Video unavailable</p>
+                    <p className="text-gray-400 font-light text-xs lg:text-sm 2xl:text-base">Video unavailable</p>
                   </div>
                 )}
               </div>
@@ -693,13 +695,13 @@ const VideoTestimonyTab = ({ contactId }) => {
               {/* Video Info */}
               {testimony.data.createdDate && testimony.data.size ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-                  <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Uploaded on</p>
-                    <p className="text-sm 2xl:text-base font-normal text-gray-900">{formatDate(testimony.data.createdDate)}</p>
+                  <div className="p-2 lg:p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+                    <p className="text-xs 2xl:text-sm text-gray-600 mb-1 font-medium">Uploaded on</p>
+                    <p className="text-xs lg:text-sm 2xl:text-base font-normal text-gray-900">{formatDate(testimony.data.createdDate)}</p>
                   </div>
-                  <div className="p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">File size</p>
-                    <p className="text-sm 2xl:text-base font-normal text-gray-900">{formatFileSize(testimony.data.size)}</p>
+                  <div className="p-2 lg:p-2.5 2xl:p-4 border border-gray-300 rounded-lg animate-fadeInUp-delay-1">
+                    <p className="text-xs 2xl:text-sm text-gray-600 mb-1 font-medium">File size</p>
+                    <p className="text-xs lg:text-sm 2xl:text-base font-normal text-gray-900">{formatFileSize(testimony.data.size)}</p>
                   </div>
                 </div>
               ) : null}
@@ -726,16 +728,16 @@ const VideoTestimonyTab = ({ contactId }) => {
           )}
 
           {/* About Section */}
-          <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp-delay-1 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-            <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-3 rounded-lg shadow-md">
-                <svg className="h-8 w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+          <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp-delay-1 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', minHeight: 'min(200px, 20vh)' }}>
+            <h3 className="text-base lg:text-lg 2xl:text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <div className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2.5 2xl:p-3 rounded-lg shadow-md">
+                <svg className="h-5 w-5 sm:h-8 sm:w-8 2xl:h-9 2xl:w-9 text-white" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               About Video Testimonies
             </h3>
-            <p className="text-gray-600 font-light leading-relaxed text-sm 2xl:text-base">
+            <p className="text-gray-600 font-light leading-relaxed text-xs lg:text-sm 2xl:text-base">
               Your video testimony is a personal message that can be used as evidence that your intention upon legal death is to be cryopreserved. Make sure you take the video in good 
               lighting, indicate your full name, and detail your specific contact with Alcor and your wishes for cryopreservation.
             </p>
@@ -753,8 +755,8 @@ const VideoTestimonyTab = ({ contactId }) => {
             onClick={() => setShowDeleteConfirm(false)}
           ></div>
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 z-10 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)' }}>
-            <h3 className="text-base 2xl:text-lg font-semibold text-gray-900 mb-4">Replace Video Testimony?</h3>
-            <p className="text-gray-600 font-light mb-6 text-sm 2xl:text-base">
+            <h3 className="text-xs lg:text-sm 2xl:text-base font-semibold text-gray-900 mb-4">Replace Video Testimony?</h3>
+            <p className="text-gray-600 font-light mb-6 text-xs lg:text-sm 2xl:text-base">
               This will permanently delete your current video testimony. You'll need to upload a new video to replace it.
             </p>
             <div className="flex gap-3">
