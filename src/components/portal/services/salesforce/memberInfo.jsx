@@ -402,26 +402,42 @@ export const getMemberVideoTestimony = async (contactId) => {
 };
 
 // FIXED VERSION
-export const uploadMemberVideoTestimony = async (contactId, formData) => {
+// In your memberDataService file, replace the uploadMemberVideoTestimony function with this:
+
+export const uploadMemberVideoTestimony = async (contactId, videoFile) => {
   try {
     // GET AUTH TOKEN
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error('Authentication required');
     const token = await currentUser.getIdToken();
     
+    console.log('[Upload] Starting video testimony upload');
+    console.log('[Upload] File size:', (videoFile.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('[Upload] File type:', videoFile.type);
+    console.log('[Upload] File name:', videoFile.name);
+    
+    // Create FormData and append the file directly
+    const formData = new FormData();
+    formData.append('file', videoFile, videoFile.name || 'video_testimony.mp4');
+    formData.append('description', `Video testimony uploaded on ${new Date().toLocaleDateString()}`);
+    
+    console.log('[Upload] Sending as multipart/form-data');
+    
     const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`  // <-- ADD AUTH
+        'Authorization': `Bearer ${token}`
+        // DO NOT set Content-Type - browser will set it automatically with boundary
       },
       credentials: 'include',
-      body: formData
+      body: formData  // Send FormData directly
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[Upload] Server error:', response.status, errorText);
       return {
         success: false,
         error: `Failed to upload video testimony: ${response.statusText}`,
@@ -430,8 +446,10 @@ export const uploadMemberVideoTestimony = async (contactId, formData) => {
     }
 
     const data = await response.json();
+    console.log('[Upload] Success:', data);
     return data;
   } catch (error) {
+    console.error('[Upload] Error:', error);
     return {
       success: false,
       error: error.message,

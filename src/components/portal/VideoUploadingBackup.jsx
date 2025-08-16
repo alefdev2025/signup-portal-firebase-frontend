@@ -27,7 +27,6 @@ const VideoUploading = ({
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileUploadStrategy, setMobileUploadStrategy] = useState('chunk'); // 'chunk' or 'compress'
-  const [videoAspectRatio, setVideoAspectRatio] = useState(null);
 
   useEffect(() => {
     // Detect mobile device
@@ -45,20 +44,6 @@ const VideoUploading = ({
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Detect video aspect ratio when preview is set
-  useEffect(() => {
-    if (videoPreview) {
-      const video = document.createElement('video');
-      video.onloadedmetadata = () => {
-        // Determine if video is portrait or landscape
-        const isPortrait = video.videoHeight > video.videoWidth;
-        // On mobile, recorded videos are portrait (9:16), on desktop they're landscape (16:9)
-        setVideoAspectRatio(isPortrait ? '9/16' : '16/9');
-      };
-      video.src = videoPreview;
-    }
-  }, [videoPreview]);
 
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
@@ -468,7 +453,7 @@ const handleMobileDirectUpload = async () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={initializeCamera}
-            className="px-6 py-3.5 sm:py-3 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:bg-none lg:bg-white lg:text-[#d4af37] lg:border-2 lg:border-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f] lg:hover:opacity-100"
+            className="px-6 py-3 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -476,7 +461,7 @@ const handleMobileDirectUpload = async () => {
             Record Video Now
           </button>
           
-          <label className="px-6 py-3.5 sm:py-3 bg-white border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all cursor-pointer flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:border-[#d4af37] lg:text-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f]">
+          <label className="px-6 py-3 bg-white border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all cursor-pointer flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
@@ -500,38 +485,17 @@ const handleMobileDirectUpload = async () => {
     );
   }
 
-  // Selected video preview/upload UI - FIXED FOR MOBILE
+  // Selected video preview/upload UI
   return (
     <div>
       {videoPreview && (
         <div className="mb-6">
-          <div className="relative bg-black rounded-xl overflow-hidden w-full max-w-md mx-auto lg:max-w-2xl">
-            <video
-              src={videoPreview}
-              controls
-              playsInline
-              muted
-              autoPlay={false}
-              preload="metadata"
-              poster=""
-              className="w-full h-full object-contain"
-              style={{ 
-                aspectRatio: videoAspectRatio || (window.innerWidth < 1024 ? '9/16' : '16/9'),
-                maxHeight: window.innerWidth < 1024 ? '500px' : '400px'
-              }}
-              onLoadedMetadata={(e) => {
-                // Force the video to show first frame on mobile
-                e.target.currentTime = 0.1;
-                e.target.play().then(() => {
-                  e.target.pause();
-                  e.target.currentTime = 0;
-                }).catch(() => {
-                  // If autoplay fails, just set the current time
-                  e.target.currentTime = 0;
-                });
-              }}
-            />
-          </div>
+          <video
+            src={videoPreview}
+            controls
+            className="w-full max-w-2xl mx-auto rounded-lg"
+            style={{ maxHeight: '400px' }}
+          />
         </div>
       )}
       
