@@ -7,6 +7,7 @@ import VideoUploading from './VideoUploading';
 // Global configuration for video overlay
 const SHOW_VIDEO_OVERLAY = false; // Set to false to disable overlay
 const VIDEO_OVERLAY_GRADIENT = 'linear-gradient(to bottom right, rgba(18, 36, 60, 0.95) 0%, rgba(110, 67, 118, 0.9) 40%, rgba(156, 116, 144, 0.75) 70%, rgba(178, 138, 172, 0.65) 100%)';
+const ENABLE_DELETE_MODAL = false; 
 
 const VideoTestimonyTab = ({ contactId }) => {
   const [testimony, setTestimony] = useState(null);
@@ -29,6 +30,7 @@ const VideoTestimonyTab = ({ contactId }) => {
   const videoRef = useRef(null);
   const recorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
   const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/webm', 'video/ogg'];
@@ -112,7 +114,8 @@ const VideoTestimonyTab = ({ contactId }) => {
   useEffect(() => {
     // Clean up the blob URL when component unmounts or video changes
     return () => {
-      if (downloadedVideoUrl) {
+      // Only revoke if it's a blob URL (starts with 'blob:')
+      if (downloadedVideoUrl && downloadedVideoUrl.startsWith('blob:')) {
         URL.revokeObjectURL(downloadedVideoUrl);
       }
       if (videoPreview) {
@@ -182,80 +185,23 @@ const VideoTestimonyTab = ({ contactId }) => {
     }
   };
 
+  // UPDATED: Now gets signed URL instead of downloading the video
   const downloadVideoForPlayback = async () => {
     try {
       setDownloadingVideo(true);
       
-      const result = await memberDataService.downloadVideoTestimony(contactId);
+      // Get signed URL for playback
+      const result = await memberDataService.getVideoDownloadUrl(contactId);
       
-      if (result.success && result.data) {
-        let blob;
-        if (result.data instanceof Blob) {
-          if (result.data.type !== 'video/mp4' && result.data.type !== 'video/quicktime') {
-            const arrayBuffer = await result.data.arrayBuffer();
-            blob = new Blob([arrayBuffer], { type: 'video/mp4' });
-          } else {
-            blob = result.data;
-          }
-        } else if (typeof result.data === 'string' && result.data.includes('base64,')) {
-          const base64Response = result.data.split(',')[1];
-          const binaryString = atob(base64Response);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          blob = new Blob([bytes], { type: 'video/mp4' });
-        } else if (typeof result.data === 'string') {
-          try {
-            const binaryString = atob(result.data);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            blob = new Blob([bytes], { type: 'video/mp4' });
-          } catch (e) {
-            blob = new Blob([result.data], { type: 'video/mp4' });
-          }
-        } else {
-          blob = new Blob([result.data], { type: 'video/mp4' });
-        }
-        
-        const url = URL.createObjectURL(blob);
-        
-        const testVideo = document.createElement('video');
-        testVideo.muted = true;
-        testVideo.playsInline = true;
-        
-        const loadPromise = new Promise((resolve, reject) => {
-          let loadTimeout;
-          
-          testVideo.onloadedmetadata = () => {
-            clearTimeout(loadTimeout);
-            resolve(true);
-          };
-          
-          testVideo.onerror = (e) => {
-            clearTimeout(loadTimeout);
-            resolve(false);
-          };
-          
-          loadTimeout = setTimeout(() => {
-            resolve(false);
-          }, 5000);
-        });
-        
-        testVideo.src = url;
-        testVideo.load();
-        
-        await loadPromise;
-        
-        setDownloadedVideoUrl(url);
-        
+      if (result.success && result.downloadUrl) {
+        // Set the signed URL directly for video playback
+        setDownloadedVideoUrl(result.downloadUrl);
         return true;
-      } else {
-        return false;
       }
+      
+      return false;
     } catch (err) {
+      console.error('Error getting video URL:', err);
       return false;
     } finally {
       setDownloadingVideo(false);
@@ -302,6 +248,7 @@ const VideoTestimonyTab = ({ contactId }) => {
 
   const handleDelete = async () => {
     setShowDeleteConfirm(false);
+    setIsDeleting(true); // Add this
     
     try {
       setError(null);
@@ -314,10 +261,11 @@ const VideoTestimonyTab = ({ contactId }) => {
         
         await updateVideoTestimonyStatus(false);
         
-        if (downloadedVideoUrl) {
+        // Don't revoke signed URLs, only blob URLs
+        if (downloadedVideoUrl && downloadedVideoUrl.startsWith('blob:')) {
           URL.revokeObjectURL(downloadedVideoUrl);
-          setDownloadedVideoUrl(null);
         }
+        setDownloadedVideoUrl(null);
         
         memberDataService.clearCacheEntry(contactId, 'videoTestimony');
         
@@ -327,6 +275,7 @@ const VideoTestimonyTab = ({ contactId }) => {
       } else {
         setError(result.error || 'Failed to delete video testimony');
         setLoading(false);
+        setIsDeleting(false); // Add this
       }
     } catch (err) {
       if (err.message && err.message.includes('No video testimony found')) {
@@ -334,10 +283,10 @@ const VideoTestimonyTab = ({ contactId }) => {
         
         await updateVideoTestimonyStatus(false);
         
-        if (downloadedVideoUrl) {
+        if (downloadedVideoUrl && downloadedVideoUrl.startsWith('blob:')) {
           URL.revokeObjectURL(downloadedVideoUrl);
-          setDownloadedVideoUrl(null);
         }
+        setDownloadedVideoUrl(null);
         
         memberDataService.clearCacheEntry(contactId, 'videoTestimony');
         
@@ -347,23 +296,21 @@ const VideoTestimonyTab = ({ contactId }) => {
       } else {
         setError('Failed to delete video testimony');
         setLoading(false);
+        setIsDeleting(false); // Add this
       }
+    } finally {
+      setIsDeleting(false); // Add this - ensures it's always reset
     }
   };
 
   const handleDownload = async () => {
     try {
-      const result = await memberDataService.downloadVideoTestimony(contactId);
+      // Get a fresh signed URL for download
+      const result = await memberDataService.getVideoDownloadUrl(contactId);
       
-      if (result.success && result.data) {
-        const url = window.URL.createObjectURL(result.data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename || 'video-testimony.mp4';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      if (result.success && result.downloadUrl) {
+        // Open the signed URL in a new tab to trigger download
+        window.open(result.downloadUrl, '_blank');
       } else {
         setError('Failed to download video testimony');
       }
@@ -457,13 +404,15 @@ const VideoTestimonyTab = ({ contactId }) => {
     return (
       <div className="video-testimony-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
         <div className="h-8"></div>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center justify-center" style={{ minHeight: '30vh', marginTop: '10vh' }}>
           <div className="text-center">
             <div className="w-16 h-16 relative mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-purple-100"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 animate-spin"></div>
             </div>
-            <p className="text-gray-500 font-light text-sm lg:text-base">Loading video testimony...</p>
+            <p className="text-gray-500 font-light text-sm lg:text-base">
+              {isDeleting ? 'Removing video...' : 'Loading video testimony...'}
+            </p>
           </div>
         </div>
       </div>
@@ -619,52 +568,92 @@ const VideoTestimonyTab = ({ contactId }) => {
                   </div>
                 ) : downloadedVideoUrl ? (
                   <div className="relative">
-                    <video
-                      key={downloadedVideoUrl}
-                      controls
-                      className="w-full"
-                      preload="metadata"
-                      playsInline
-                      muted={false}
-                      autoPlay={false}
-                      onPlay={() => {
-                        if (SHOW_VIDEO_OVERLAY) {
-                          const overlay = document.getElementById('video-overlay');
-                          if (overlay) {
-                            overlay.style.display = 'none';
+                    <div className="relative">
+                      <video
+                        key={downloadedVideoUrl}
+                        controls
+                        className="w-full"
+                        preload="metadata"
+                        playsInline
+                        webkit-playsinline="true"
+                        muted={false}
+                        autoPlay={false}
+                        onLoadedMetadata={(e) => {
+                          console.log('[Video] Metadata loaded, duration:', e.target.duration);
+                          
+                          // Mobile fix for duration
+                          if (e.target.duration === Infinity || isNaN(e.target.duration) || e.target.duration === 0) {
+                            console.log('[Video] Attempting mobile duration fix');
+                            const fixDuration = async () => {
+                              e.target.currentTime = 1e101;
+                              await new Promise(r => setTimeout(r, 10));
+                              e.target.currentTime = 0;
+                            };
+                            fixDuration();
                           }
-                        }
-                      }}
-                      onPause={() => {
-                        if (SHOW_VIDEO_OVERLAY) {
-                          const overlay = document.getElementById('video-overlay');
-                          if (overlay) {
-                            overlay.style.display = 'flex';
+                        }}
+                        onError={(e) => {
+                          const errorMessages = {
+                            1: 'Video loading aborted',
+                            2: 'Network error while loading video',
+                            3: 'Video decoding error - corrupt or unsupported format',
+                            4: 'Video format not supported'
+                          };
+                          
+                          const errorCode = e.target.error?.code;
+                          console.error('[Video] Playback error:', errorCode, e.target.error);
+                          
+                          // Show mobile-specific help
+                          if (window.innerWidth <= 768) {
+                            setError(`Video playback issue on mobile. ${errorMessages[errorCode] || 'Unknown error'}. Try: 1) Refresh the page, 2) Open in a different browser, or 3) View on desktop.`);
+                          } else {
+                            setError(errorMessages[errorCode] || 'Failed to play video');
                           }
-                        }
-                      }}
-                      onLoadedMetadata={(e) => {
-                        console.log('[Video] Metadata loaded');
-                      }}
-                      onError={(e) => {
-                        const errorMessages = {
-                          1: 'Video loading aborted',
-                          2: 'Network error while loading video',
-                          3: 'Video decoding error - corrupt or unsupported format',
-                          4: 'Video format not supported'
-                        };
-                        
-                        const errorCode = e.target.error?.code;
-                        if (errorCode) {
-                          setError(errorMessages[errorCode] || 'Failed to play video');
-                        }
-                      }}
-                    >
-                      <source src={downloadedVideoUrl} type="video/mp4" />
-                      <source src={downloadedVideoUrl} type="video/quicktime" />
-                      <source src={downloadedVideoUrl} />
-                      Your browser does not support the video tag.
-                    </video>
+                        }}
+                      >
+                        <source src={downloadedVideoUrl} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                      
+                      {/* Mobile fallback UI - show if video doesn't load */}
+                      {window.innerWidth <= 768 && (
+                        <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-xs text-blue-800 mb-2">
+                            Having trouble playing the video?
+                          </p>
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => {
+                                // Force reload video
+                                const video = document.querySelector('video');
+                                if (video) {
+                                  video.load();
+                                  video.play().catch(err => {
+                                    console.error('[Video] Play failed:', err);
+                                    setError('Unable to play video. This may be a format compatibility issue with your mobile browser.');
+                                  });
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 bg-blue-600 text-white rounded text-xs"
+                            >
+                              Try Playing Video
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Open video in new tab (sometimes works better on mobile)
+                                window.open(downloadedVideoUrl, '_blank');
+                              }}
+                              className="w-full px-3 py-1.5 bg-gray-600 text-white rounded text-xs"
+                            >
+                              Open in New Tab
+                            </button>
+                            <p className="text-xs text-gray-600 mt-2">
+                              Note: Video playback on mobile devices can be limited. For best experience, view on desktop.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     {SHOW_VIDEO_OVERLAY && (
                       <div 
                         id="video-overlay"
@@ -706,26 +695,28 @@ const VideoTestimonyTab = ({ contactId }) => {
                 </div>
               ) : null}
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleDownload}
-                  className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all flex items-center justify-center gap-2 text-xs 2xl:text-sm font-medium"
-                >
-                  <svg className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download Video
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-transparent border-2 border-black text-black rounded-lg text-xs 2xl:text-sm font-medium"
-                >
-                  Remove Video
-                </button>
-              </div>
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Download temporarily disabled - QuickTime compatibility issue
+              <button
+                onClick={handleDownload}
+                className="px-4 py-2 bg-transparent border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all flex items-center justify-center gap-2 text-xs 2xl:text-sm font-medium"
+              >
+                <svg className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Video
+              </button>
+              */}
+              <button
+                onClick={() => ENABLE_DELETE_MODAL ? setShowDeleteConfirm(true) : handleDelete()}
+                className="px-4 py-2 bg-transparent border-2 border-black text-black rounded-lg text-xs 2xl:text-sm font-medium"
+              >
+                Remove Video
+              </button>
             </div>
-          )}
+            </div>
+            )}
 
           {/* About Section */}
           <div className="bg-white rounded-2xl p-4 sm:p-8 animate-fadeInUp-delay-1 border border-gray-200" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08)', minHeight: 'min(200px, 20vh)' }}>
@@ -748,7 +739,7 @@ const VideoTestimonyTab = ({ contactId }) => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {ENABLE_DELETE_MODAL && showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
             className="fixed inset-0 bg-black bg-opacity-50" 

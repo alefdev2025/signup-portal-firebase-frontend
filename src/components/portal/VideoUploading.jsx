@@ -26,7 +26,6 @@ const VideoUploading = ({
   initializeCamera
 }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileUploadStrategy, setMobileUploadStrategy] = useState('chunk'); // 'chunk' or 'compress'
   const [videoAspectRatio, setVideoAspectRatio] = useState(null);
 
   useEffect(() => {
@@ -80,8 +79,8 @@ const VideoUploading = ({
     setError(null);
   };
 
-  // Desktop upload - EXACTLY AS BEFORE
-  const handleDesktopUpload = async () => {
+  // SINGLE UNIFIED UPLOAD METHOD - Direct to GCS
+  const handleUpload = async () => {
     if (!selectedVideo) return;
 
     try {
@@ -89,208 +88,187 @@ const VideoUploading = ({
       setUploadProgress(0);
       setError(null);
 
-      // Simulate progress for user feedback
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 500);
+      console.log('[Upload] Starting direct GCS upload...');
+      console.log('[Upload] File:', {
+        name: selectedVideo.name,
+        size: formatFileSize(selectedVideo.size),
+        type: selectedVideo.type
+      });
 
-      const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
+      // Step 1: Get signed upload URL from backend
+      console.log('[Upload] Step 1: Getting signed upload URL...');
+      const uploadUrlResult = await memberDataService.getVideoUploadUrl(
+        contactId,
+        selectedVideo.name,
+        selectedVideo.type || 'video/webm',
+        selectedVideo.size
+      );
 
-      clearInterval(progressInterval);
+      if (!uploadUrlResult.success || !uploadUrlResult.uploadUrl) {
+        throw new Error(uploadUrlResult.error || 'Failed to get upload URL');
+      }
+
+      console.log('[Upload] Got signed URL, GCS filename:', uploadUrlResult.gcsFileName);
+      setUploadProgress(10);
+
+      // Step 2: Upload directly to GCS using the signed URL
+      console.log('[Upload] Step 2: Uploading to GCS...');
       
-      if (result.success) {
-        setUploadProgress(100);
-        
-        // Update the flag to indicate video exists
-        await updateVideoTestimonyStatus(true);
-        
-        // Clear the cache to ensure fresh data
-        memberDataService.clearCacheEntry(contactId, 'videoTestimony');
-        
-        setTimeout(() => {
-          setSelectedVideo(null);
-          setVideoPreview(null);
-          setUploading(false);
-          setUploadProgress(0);
-          setLoading(true);
-          
-          // Reload to show the uploaded video
-          setTimeout(() => {
-            loadTestimony();
-          }, 500);
-        }, 1000);
-      } else {
-        setError(result.error || 'Failed to upload video testimony');
+      // Create XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      // Set up progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 80) + 10; // 10-90%
+          setUploadProgress(percentComplete);
+          console.log(`[Upload] Progress: ${percentComplete}%`);
+        }
+      });
+
+      // Set up completion/error handling
+      const uploadPromise = new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            console.log('[Upload] GCS upload successful');
+            resolve();
+          } else {
+            console.error('[Upload] GCS upload failed:', xhr.status, xhr.statusText);
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => {
+          console.error('[Upload] Network error during upload');
+          reject(new Error('Network error during upload'));
+        };
+
+        xhr.ontimeout = () => {
+          console.error('[Upload] Upload timed out');
+          reject(new Error('Upload timed out'));
+        };
+      });
+
+      // Configure and send the request
+      xhr.open('PUT', uploadUrlResult.uploadUrl, true);
+      xhr.setRequestHeader('Content-Type', selectedVideo.type || 'video/webm');
+      
+      // Set timeout for large files (5 minutes)
+      xhr.timeout = 300000;
+      
+      // Send the file directly
+      xhr.send(selectedVideo);
+
+      // Wait for upload to complete
+      await uploadPromise;
+      setUploadProgress(90);
+
+      // Step 3: Confirm the upload with backend
+      console.log('[Upload] Step 3: Confirming upload with backend...');
+      const confirmResult = await memberDataService.confirmVideoUpload(
+        contactId,
+        uploadUrlResult.gcsFileName,
+        selectedVideo.size,
+        selectedVideo.name
+      );
+
+      if (!confirmResult.success) {
+        throw new Error(confirmResult.error || 'Failed to confirm upload');
+      }
+
+      console.log('[Upload] Upload confirmed successfully');
+      setUploadProgress(100);
+
+      // Update the flag to indicate video exists
+      await updateVideoTestimonyStatus(true);
+      
+      // Clear the cache to ensure fresh data
+      memberDataService.clearCacheEntry(contactId, 'videoTestimony');
+      
+      // Success! Clean up and reload
+      setTimeout(() => {
+        setSelectedVideo(null);
+        setVideoPreview(null);
         setUploading(false);
         setUploadProgress(0);
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      setError('Failed to upload video testimony');
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  // Mobile upload - CHUNKED UPLOAD FOR RELIABILITY
-  const handleMobileUpload = async () => {
-    if (!selectedVideo) return;
-
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-      setError(null);
-
-      console.log('[Mobile Upload] Starting mobile-optimized upload...');
-      console.log('[Mobile Upload] File size:', formatFileSize(selectedVideo.size));
-
-      // For mobile, we'll try different strategies
-      if (selectedVideo.size > 100 * 1024 * 1024) { // If larger than 100MB
-        console.log('[Mobile Upload] Large file detected, using chunked upload');
-        await handleMobileChunkedUpload();
-      } else {
-        console.log('[Mobile Upload] Small file, using direct upload');
-        // For smaller files, use regular upload but with mobile-specific error handling
-        await handleMobileDirectUpload();
-      }
-      
-    } catch (err) {
-      console.error('[Mobile Upload] Error:', err);
-      setError('Failed to upload video. Please try a shorter video or use a desktop browser.');
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  const handleMobileDirectUpload = async () => {
-    try {
-      console.log('[Mobile Upload] Using direct upload');
-      
-      const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
-      
-      if (result && result.success) {
-        setUploadProgress(100);
-        await updateVideoTestimonyStatus(true);
-        memberDataService.clearCacheEntry(contactId, 'videoTestimony');
+        setLoading(true);
         
+        // Reload to show the uploaded video
         setTimeout(() => {
-          setSelectedVideo(null);
-          setVideoPreview(null);
-          setUploading(false);
-          setUploadProgress(0);
-          setLoading(true);
-          
-          setTimeout(() => {
-            loadTestimony();
-          }, 500);
-        }, 1000);
-      } else {
-        throw new Error(result?.error || 'Upload failed');
-      }
+          loadTestimony();
+        }, 500);
+      }, 1000);
+
     } catch (err) {
-      setError(`Upload failed: ${err.message}`);
+      console.error('[Upload] Error:', err);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to upload video. ';
+      
+      if (err.message.includes('Network error')) {
+        errorMessage += 'Please check your internet connection and try again.';
+      } else if (err.message.includes('timed out')) {
+        errorMessage += 'The upload took too long. Please try with a smaller video or faster connection.';
+      } else if (err.message.includes('status 413')) {
+        errorMessage += 'The video file is too large. Please try a smaller file.';
+      } else if (err.message.includes('status 403')) {
+        errorMessage += 'Upload permission denied. Please try again or contact support.';
+      } else {
+        errorMessage += err.message || 'Please try again or contact support.';
+      }
+      
+      setError(errorMessage);
       setUploading(false);
       setUploadProgress(0);
     }
   };
 
-  // Chunked upload for mobile (for large files)
-// Chunked upload for mobile (for large files)
-const handleMobileChunkedUpload = async () => {
-    try {
-      console.log('[Mobile Upload] Using chunked upload for large file');
-      
-      // The service already handles chunking internally!
-      const result = await memberDataService.uploadVideoTestimony(contactId, selectedVideo);
-      
-      if (result && result.success) {
-        setUploadProgress(100);
-        await updateVideoTestimonyStatus(true);
-        memberDataService.clearCacheEntry(contactId, 'videoTestimony');
-        
-        setTimeout(() => {
-          setSelectedVideo(null);
-          setVideoPreview(null);
-          setUploading(false);
-          setUploadProgress(0);
-          setLoading(true);
-          
-          setTimeout(() => {
-            loadTestimony();
-          }, 500);
-        }, 1000);
-      } else {
-        throw new Error(result?.error || 'Upload failed');
-      }
-    } catch (err) {
-      console.log('[Mobile Upload] Chunked upload failed, trying direct upload');
-      await handleMobileDirectUpload();
-    }
-  };
-
-  const handleUpload = async () => {
-    // Use different upload strategy based on device
-    if (isMobile) {
-      console.log('[Upload] Using mobile upload strategy');
-      await handleMobileUpload();
-    } else {
-      console.log('[Upload] Using desktop upload strategy');
-      await handleDesktopUpload();
-    }
-  };
-
-  // Render component
-  if (!selectedVideo) {
-    return (
-      <div className="text-center">
-        <div className="mb-8">
-          <p className="text-gray-600 font-light mb-6 text-sm 2xl:text-base">
-            Record a personal video testimony stating your intention to be cryopreserved
-          </p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={initializeCamera}
-            className="px-6 py-3.5 sm:py-3 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:bg-none lg:bg-white lg:text-[#d4af37] lg:border-2 lg:border-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f] lg:hover:opacity-100"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Record Video Now
-          </button>
-          
-          <label className="px-6 py-3.5 sm:py-3 bg-white border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all cursor-pointer flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:border-[#d4af37] lg:text-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f]">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            Select Video File
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </label>
-        </div>
-        
-        {isMobile && (
-          <p className="text-xs text-gray-500 mt-4">
-            For best results on mobile, record videos under 60 seconds
-          </p>
-        )}
+// Render component
+if (!selectedVideo) {
+  return (
+    <div className="text-center">
+      <div className="mb-8">
+        <p className="text-gray-600 font-light mb-6 text-sm 2xl:text-base">
+          Record a personal video testimony stating your intention to be cryopreserved
+        </p>
       </div>
-    );
-  }
+      
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          onClick={initializeCamera}
+          className="px-6 py-3.5 sm:py-1.5 bg-gradient-to-r from-[#0a1628] to-[#6e4376] text-white rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:bg-none lg:bg-white lg:text-[#d4af37] lg:border-2 lg:border-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f] lg:hover:opacity-100"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Record Video Now
+        </button>
+        
+        <label className="px-6 py-3.5 sm:py-1.5 bg-white border-2 border-[#6b5b7e] text-[#6b5b7e] rounded-lg hover:border-[#5d4d70] hover:text-[#5d4d70] transition-all cursor-pointer flex items-center justify-center gap-2 text-sm 2xl:text-base font-medium lg:border-[#d4af37] lg:text-[#d4af37] lg:hover:border-[#b8941f] lg:hover:text-[#b8941f]">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Select Video File
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </label>
+      </div>
+      
+      {isMobile && (
+        <p className="text-xs text-gray-500 mt-4">
+          For best results on mobile, record videos under 60 seconds
+        </p>
+      )}
+    </div>
+  );
+}
 
-  // Selected video preview/upload UI - FIXED FOR MOBILE
+  // Selected video preview/upload UI
   return (
     <div>
       {videoPreview && (
@@ -337,21 +315,36 @@ const handleMobileChunkedUpload = async () => {
         
         {uploading && (
           <div className="mt-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-600">Uploading...</span>
-              <span className="text-xs text-gray-600">{uploadProgress}%</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Uploading video... {uploadProgress}%
+              </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-[#0a1628] to-[#6e4376] h-2 rounded-full transition-all duration-300"
+            
+            {/* Progress bar with actual percentage */}
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-[#0a1628] to-[#6e4376] rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
-              />
+              ></div>
             </div>
-            {isMobile && uploadProgress > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
-                Please keep this page open until upload completes
+            
+            <div className="mt-3 space-y-1">
+              <p className="text-xs text-gray-600">
+                {uploadProgress < 10 && 'Getting upload URL...'}
+                {uploadProgress >= 10 && uploadProgress < 90 && 'Uploading to cloud storage...'}
+                {uploadProgress >= 90 && uploadProgress < 100 && 'Confirming upload...'}
+                {uploadProgress === 100 && 'Upload complete!'}
               </p>
-            )}
+              <p className="text-xs text-gray-600 font-semibold">
+                Please keep this page open until the upload completes.
+              </p>
+              {isMobile && (
+                <p className="text-xs text-red-600 font-medium mt-2">
+                  ⚠️ Do not navigate away or lock your phone during upload
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

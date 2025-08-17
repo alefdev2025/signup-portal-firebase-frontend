@@ -1,5 +1,5 @@
 // src/components/portal/services/memberDataService.js
-import { auth } from '../../../services/firebase'; // ADD THIS IMPORT!
+import { auth } from '../../../services/firebase';
 import { 
   getMemberPersonalInfo,
   getMemberContactInfo,
@@ -21,6 +21,10 @@ import {
   deleteMemberVideoTestimony,
   downloadMemberVideoTestimony,
   getMemberFundingInfo,
+  // NEW IMPORTS FOR SIGNED URL APPROACH
+  getVideoUploadUrl,
+  confirmVideoUpload,
+  getVideoDownloadUrl,
 } from './salesforce/memberInfo';
 
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
@@ -168,92 +172,78 @@ class MemberDataService {
     return getMemberDocument(contactId, documentId, documentType);
   }
 
-  // VIDEO TESTIMONY
+  // VIDEO TESTIMONY - UPDATED FOR SIGNED URL APPROACH
   async getVideoTestimony(contactId) {
     return this.fetchAndCache(contactId, 'videoTestimony', getMemberVideoTestimony);
   }
 
-  async uploadVideoTestimony(contactId, videoFile) {
+  // NEW: Get signed URL for direct upload to GCS
+  async getVideoUploadUrl(contactId, filename, contentType, fileSize) {
     try {
-      const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB chunks
-      
-      // Get auth token
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('Authentication required');
-      const token = await currentUser.getIdToken();
-      
-      // Check if we need to chunk it
-      if (videoFile.size <= CHUNK_SIZE) {
-        // Small file, use existing upload
-        const result = await uploadMemberVideoTestimony(contactId, videoFile);
-        
-        if (result.success) {
-          this.clearCacheEntry(contactId, 'videoTestimony');
-        }
-        
-        return result;
-      }
-      
-      // Large file, chunk it
-      const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
-      console.log(`Uploading in ${totalChunks} chunks...`);
-      
-      let lastResult;
-      
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, videoFile.size);
-        const chunk = videoFile.slice(start, end);
-        
-        const formData = new FormData();
-        formData.append('chunk', chunk);
-        formData.append('chunkIndex', i.toString());
-        formData.append('totalChunks', totalChunks.toString());
-        formData.append('fileName', videoFile.name);
-        
-        const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony-chunked`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-        
-        lastResult = await response.json();
-        
-        // You'll need to pass setUploadProgress somehow or emit an event
-        // For now, just log progress
-        console.log(`Upload progress: ${((i + 1) / totalChunks * 100).toFixed(0)}%`);
-      }
-      
-      if (lastResult?.success) {
-        this.clearCacheEntry(contactId, 'videoTestimony');
-      }
-      
-      return lastResult;
-      
+      const result = await getVideoUploadUrl(contactId, filename, contentType, fileSize);
+      return result;
     } catch (error) {
-      console.error('[MemberDataService] Error uploading video testimony:', error);
+      console.error('[MemberDataService] Error getting upload URL:', error);
       throw error;
     }
   }
 
-  // prior to chunched
-  /*async uploadVideoTestimony(contactId, formData) {
+  // NEW: Confirm video upload after GCS upload completes
+  async confirmVideoUpload(contactId, gcsFileName, fileSize, fileName) {
     try {
-      const result = await uploadMemberVideoTestimony(contactId, formData);
+      const result = await confirmVideoUpload(contactId, gcsFileName, fileSize, fileName);
       
       if (result.success) {
-        // Clear cache to force refresh
         this.clearCacheEntry(contactId, 'videoTestimony');
       }
       
       return result;
     } catch (error) {
-      //console.error('[MemberDataService] Error uploading video testimony:', error);
+      console.error('[MemberDataService] Error confirming upload:', error);
       throw error;
     }
-  }*/
+  }
+
+  // NEW: Get signed URL for video playback
+  async getVideoDownloadUrl(contactId) {
+    try {
+      const result = await getVideoDownloadUrl(contactId);
+      return result;
+    } catch (error) {
+      console.error('[MemberDataService] Error getting download URL:', error);
+      throw error;
+    }
+  }
+
+  // DEPRECATED: Old chunked upload method - keeping for backward compatibility
+  async uploadVideoTestimony(contactId, videoFile) {
+    console.warn('[MemberDataService] uploadVideoTestimony is deprecated. Use getVideoUploadUrl + direct GCS upload instead.');
+    throw new Error('Please use the new upload flow with getVideoUploadUrl');
+  }
+
+  // UPDATED: Now returns signed URL instead of downloading the actual video
+  async downloadVideoTestimony(contactId) {
+    try {
+      console.log('[VideoTestimony] Getting signed URL for video playback');
+      
+      // Get signed URL for streaming
+      const result = await getVideoDownloadUrl(contactId);
+      
+      if (result.success && result.downloadUrl) {
+        // Return the signed URL for direct playback
+        return {
+          success: true,
+          signedUrl: result.downloadUrl,
+          metadata: result.metadata
+        };
+      }
+      
+      throw new Error('Failed to get video URL');
+    } catch (error) {
+      console.error('[VideoTestimony] Error getting video URL:', error);
+      throw error;
+    }
+  }
 
   async deleteVideoTestimony(contactId) {
     try {
@@ -271,66 +261,6 @@ class MemberDataService {
     }
   }
 
-  // FIXED: Added auth to downloadVideoTestimony
-  async downloadVideoTestimony(contactId) {
-    try {
-      //console.log('[VideoTestimony] Downloading video testimony for contact:', contactId);
-      
-      // GET AUTH TOKEN - THIS IS THE FIX!
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('Authentication required');
-      }
-      const token = await currentUser.getIdToken();
-      //console.log('[VideoTestimony] Got auth token for download');
-      
-      // Use the full backend URL
-      const response = await fetch(`${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'video/mp4, video/*',
-          'Authorization': `Bearer ${token}` // ADD AUTH HEADER!
-        }
-      });
-  
-      // Check if the response is OK before trying to process it
-      if (!response.ok) {
-        // If the response is not OK, it's likely a JSON error response
-        let errorMessage = 'Failed to download video testimony';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          // If parsing JSON fails, use the status text
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-  
-      // Get the content type from response headers
-      const contentType = response.headers.get('content-type') || 'video/mp4';
-      
-      // Get the response as blob for binary data
-      const blob = await response.blob();
-      
-      /*console.log('[VideoTestimony] Download successful:', {
-        blobSize: blob.size,
-        contentType: contentType
-      });*/
-  
-      return {
-        success: true,
-        data: blob,
-        contentType: contentType,
-        filename: 'video-testimony.mp4' // You might want to parse this from Content-Disposition header
-      };
-    } catch (error) {
-      console.error('[VideoTestimony] Download error:', error.message);
-      throw error;
-    }
-  }
-  
   // Helper to clear a specific cache entry
   clearCacheEntry(contactId, dataType) {
     const cacheKey = this.getCacheKey(contactId, dataType);

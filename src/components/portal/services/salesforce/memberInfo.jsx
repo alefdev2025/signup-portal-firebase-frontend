@@ -522,6 +522,143 @@ export const downloadMemberVideoTestimony = async (contactId) => {
   }
 };
 
+// Video Testimony - NEW SIGNED URL APPROACH
+
+/**
+ * Get signed URL for direct video upload to GCS
+ */
+ export const getVideoUploadUrl = async (contactId, filename, contentType, fileSize) => {
+  try {
+    // Get auth token
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
+    
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/upload-url`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        filename,
+        contentType,
+        fileSize
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Failed to get upload URL: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[getVideoUploadUrl] Error:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+/**
+ * Confirm video upload after direct GCS upload
+ */
+export const confirmVideoUpload = async (contactId, gcsFileName, fileSize, fileName) => {
+  try {
+    // Get auth token
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
+    
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/confirm`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        gcsFileName,
+        fileSize,
+        fileName
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Failed to confirm upload: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[confirmVideoUpload] Error:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
+/**
+ * Get signed URL for video playback/download
+ */
+export const getVideoDownloadUrl = async (contactId) => {
+  try {
+    // Get auth token
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Authentication required');
+    const token = await currentUser.getIdToken();
+    
+    const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/video-testimony/download`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Failed to get video URL: ${response.statusText}`,
+        data: null
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[getVideoDownloadUrl] Error:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+};
+
 // These can use apiCall since it now has auth
 export const getMemberCategory = async (contactId) => {
   return apiCall(`/api/salesforce/member/${contactId}/category`);
