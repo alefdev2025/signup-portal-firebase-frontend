@@ -12,6 +12,20 @@ const FormsTab = () => {
   const [downloading, setDownloading] = useState({});
   const [visibleSections, setVisibleSections] = useState(new Set());
 
+  // Preload images in background (non-blocking)
+  useEffect(() => {
+    const preloadImage = (src) => {
+      if (src) {
+        const img = new Image();
+        img.src = src;
+      }
+    };
+    
+    // Preload images but don't block rendering
+    preloadImage(alcorStar);
+    preloadImage(formsHeaderImage);
+  }, []);
+
   // Add Helvetica font and scroll animations
   useEffect(() => {
     const style = document.createElement('style');
@@ -160,48 +174,63 @@ const FormsTab = () => {
   
       setDownloading(prev => ({ ...prev, [fileName]: true }));
   
+      // For Safari: Open window immediately to preserve user gesture
+      const newWindow = window.open('', '_blank');
+      
       let fileRef;
       let url;
       let downloadSuccessful = false;
   
-      // First try the documents/forms path
       try {
+        // Try documents/forms path first
         fileRef = ref(storage, `documents/forms/${fileName}`);
         url = await getDownloadURL(fileRef);
-        window.open(url, '_blank');
-        console.log(`Successfully opened ${fileName} from documents/forms/`);
         downloadSuccessful = true;
       } catch (firstError) {
         console.log(`File not found in documents/forms/, trying root level for: ${fileName}`);
         
-        // If that fails, try root level
         try {
+          // Try root level
           fileRef = ref(storage, fileName);
           url = await getDownloadURL(fileRef);
-          window.open(url, '_blank');
-          console.log(`Successfully opened ${fileName} from root`);
           downloadSuccessful = true;
         } catch (secondError) {
-          // Both attempts failed
-          console.error('Download failed from both paths:', {
-            documentsFormsError: firstError,
-            rootError: secondError
-          });
-          throw secondError; // Throw the second error to be caught by outer catch
+          if (newWindow) newWindow.close();
+          throw secondError;
         }
+      }
+  
+      if (downloadSuccessful && url) {
+        if (newWindow) {
+          // For Safari: Navigate the already-opened window
+          newWindow.location.href = url;
+        } else {
+          // Fallback for other browsers or if popup was blocked
+          const link = document.createElement('a');
+          link.href = url;
+          link.target = '_blank';
+          link.download = fileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up after a short delay
+          setTimeout(() => {
+            document.body.removeChild(link);
+          }, 100);
+        }
+        
+        console.log(`Successfully opened ${fileName}`);
       }
   
     } catch (error) {
       console.error('Download error:', error);
       
+      // Your existing error handling...
       if (error.code === 'storage/object-not-found') {
         alert(`File not found: ${fileName}. Please contact support.`);
       } else if (error.code === 'storage/unauthorized') {
         alert('You do not have permission to download this file. Please ensure you are logged in.');
-      } else if (error.code === 'storage/canceled') {
-        alert('Download was canceled.');
-      } else if (error.code === 'storage/unknown') {
-        alert('An unknown error occurred. Please try again.');
       } else {
         alert('Failed to open file. Please try again later.');
       }
@@ -284,7 +313,7 @@ const FormsTab = () => {
         <div className="bg-white shadow-sm rounded-xl overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           {/* Header Image */}
           {formsHeaderImage && (
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
               <img 
                 src={formsHeaderImage} 
                 alt="Forms & Documents"
@@ -293,17 +322,17 @@ const FormsTab = () => {
             </div>
           )}
           
-          <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
-              <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+          <div className="px-4 sm:px-6 py-4 sm:py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-base sm:text-lg 2xl:text-xl font-medium text-white flex items-center drop-shadow-md">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white drop-shadow-sm mr-2 sm:mr-3" />
               Forms & Documents
-              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+              <img src={alcorStar} alt="" className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5" />
             </h2>
           </div>
 
           {/* Description */}
-          <div className="px-8 py-10 border-b border-gray-100">
-            <p className="text-gray-700 text-sm leading-relaxed font-normal">
+          <div className="px-6 sm:px-8 py-6 sm:py-8 lg:py-10 border-b border-gray-100">
+            <p className="text-gray-700 text-[11px] sm:text-sm 2xl:text-base leading-relaxed font-normal">
               Essential forms and documents for your Alcor membership. Download, complete, and submit these forms to ensure your cryopreservation arrangements are properly documented.
             </p>
           </div>
@@ -315,32 +344,32 @@ const FormsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-8 px-8">
+                <div className="py-6 sm:py-8 px-8">
                   <div className="h-px rounded-full bg-gray-200"></div>
                 </div>
               )}
               <div className={`bg-white shadow-sm rounded-xl overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               {/* Category Header */}
-              <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
+              <div className="px-4 sm:px-6 py-6 sm:py-8 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <div className="p-3.5 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                  <div className="p-2.5 sm:p-3 lg:p-3.5 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                     {categoryIndex === 0 && (
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     )}
                     {categoryIndex === 1 && (
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     )}
                     {categoryIndex === 2 && (
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     )}
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">{category.title}</h3>
+                  <h3 className="text-sm sm:text-base 2xl:text-lg font-semibold text-gray-900">{category.title}</h3>
                 </div>
               </div>
 
@@ -412,50 +441,50 @@ const FormsTab = () => {
               )} 
               <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] scroll-slide-up ${visibleSections.has(`form-category-${categoryIndex}`) ? 'visible' : ''}`} id={`form-category-${categoryIndex}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               {/* Category Header with Image */}
-              <div className={`${wider ? 'p-10' : 'p-10'} border-b border-gray-100`}>
+              <div className={`${wider ? 'p-10' : 'p-8 2xl:p-10'} border-b border-gray-100`}>
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                   {/* Text content - left side */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                      <div className="p-3 2xl:p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                         {categoryIndex === 0 && (
-                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         )}
                         {categoryIndex === 1 && (
-                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
                         )}
                         {categoryIndex === 2 && (
-                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         )}
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
+                      <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">{category.title}</h3>
                     </div>
-                    <p className={`text-gray-700 text-sm leading-relaxed font-normal ${wider ? 'max-w-3xl' : 'max-w-xl'}`}>
+                    <p className={`text-gray-700 text-sm 2xl:text-base leading-relaxed font-normal ${wider ? 'max-w-3xl' : 'max-w-xl'}`}>
                       {category.description}
                     </p>
                   </div>
                   
                   {/* Category Image - right side (if you have images for each category) */}
                   {categoryIndex === 0 && formsHeaderImage && (
-                    <div className={`relative w-full ${wider ? 'lg:w-96' : 'lg:w-80'} h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 scroll-slide-up ${visibleSections.has(`form-image-${categoryIndex}`) ? 'visible' : ''}`} id={`form-image-${categoryIndex}`} style={{ transitionDelay: '0.2s' }}>
+                    <div className={`relative w-full ${wider ? 'lg:w-96' : 'lg:w-72 2xl:w-80'} h-40 2xl:h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 scroll-slide-up ${visibleSections.has(`form-image-${categoryIndex}`) ? 'visible' : ''}`} id={`form-image-${categoryIndex}`} style={{ transitionDelay: '0.2s' }}>
                       <img 
                         src={formsHeaderImage} 
                         alt="Forms"
                         className="w-full h-full object-cover grayscale"
                       />
                       <div className="absolute bottom-0 right-0">
-                        <div className="px-4 py-2" style={{
+                        <div className="px-3 2xl:px-4 py-1.5 2xl:py-2" style={{
                           background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
                         }}>
-                          <p className="text-white font-medium text-sm tracking-wider flex items-center gap-1">
+                          <p className="text-white font-medium text-xs 2xl:text-sm tracking-wider flex items-center gap-1">
                             Member Forms
-                            <img src={alcorStar} alt="" className="w-4 h-4" />
+                            <img src={alcorStar} alt="" className="w-3 h-3 2xl:w-4 2xl:h-4" />
                           </p>
                         </div>
                       </div>
@@ -465,12 +494,12 @@ const FormsTab = () => {
               </div>
 
               {/* Forms Grid */}
-              <div className={`${wider ? 'p-8' : 'p-8'} scroll-fade-in ${visibleSections.has(`form-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`form-grid-${categoryIndex}`}>
+              <div className={`${wider ? 'p-8' : 'p-6 2xl:p-8'} scroll-fade-in ${visibleSections.has(`form-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`form-grid-${categoryIndex}`}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
                   {category.forms.map((form, formIndex) => (
                     <div
                       key={formIndex}
-                      className="p-6 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all"
+                      className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -524,7 +553,7 @@ const FormsTab = () => {
       </div>
       
       {/* Add padding at the end */}
-      <div className="h-32"></div>
+      <div className="h-24 sm:h-32"></div>
     </div>
   );
 };

@@ -268,7 +268,7 @@ const InformationDocumentsTab = () => {
         {
           title: "General Information for Physicians",
           description: "Comprehensive guide for medical professionals on cryonics procedures and protocols.",
-          fileName: "General-Information-Physician-2025.pdf",
+          fileName: "GeneralInformationPhysicians2025.pdf",
           pages: 1
         }
       ]
@@ -351,7 +351,7 @@ const InformationDocumentsTab = () => {
         {/* Header */}
         <div className="bg-white shadow-sm rounded-xl overflow-hidden slide-in mx-4" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
           {/* Header Image */}
-          <div className="relative h-48 overflow-hidden">
+          <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
             <img 
               src={informationDocuments[0].image} 
               alt="Information & Resources"
@@ -359,17 +359,17 @@ const InformationDocumentsTab = () => {
             />
           </div>
           
-          <div className="px-6 py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
-            <h2 className="text-lg font-medium text-white flex items-center drop-shadow-md">
-              <FileText className="w-5 h-5 text-white drop-shadow-sm mr-3" />
+          <div className="px-4 sm:px-6 py-4 sm:py-6" style={{ background: 'linear-gradient(90deg, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)' }}>
+            <h2 className="text-base sm:text-lg 2xl:text-xl font-medium text-white flex items-center drop-shadow-md">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white drop-shadow-sm mr-2 sm:mr-3" />
               Information & Resources
-              <img src={alcorStar} alt="" className="w-6 h-6 ml-0.5" />
+              <img src={alcorStar} alt="" className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5" />
             </h2>
           </div>
 
           {/* Description */}
-          <div className="px-8 py-10 border-b border-gray-100">
-            <p className="text-gray-700 text-sm leading-relaxed font-normal">
+          <div className="px-6 sm:px-8 py-6 sm:py-8 lg:py-10 border-b border-gray-100">
+            <p className="text-gray-700 text-[11px] sm:text-sm 2xl:text-base leading-relaxed font-normal">
               Comprehensive information and educational resources about Alcor's services, procedures, and the science of cryonics. Download these documents to learn more about your membership options.
             </p>
           </div>
@@ -381,37 +381,37 @@ const InformationDocumentsTab = () => {
           return (
             <React.Fragment key={categoryIndex}>
               {categoryIndex > 0 && (
-                <div className="py-8 px-8">
+                <div className="py-6 sm:py-8 px-8">
                   <div className="h-px bg-gray-200"></div> 
                 </div>
               )}
               <div className={`bg-white shadow-sm rounded-xl overflow-hidden slide-in-delay-${categoryIndex + 1} ${categoryIndex === 0 ? 'mt-6' : ''} mx-4`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
                 {/* Category Header */}
-                <div className="px-6 py-8 bg-gray-50 border-b border-gray-200">
+                <div className="px-4 sm:px-6 py-6 sm:py-8 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                    <div className="p-2.5 sm:p-3 lg:p-3.5 rounded-lg transform transition duration-300 mr-2" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                       {categoryIndex === 0 && (
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
                       {categoryIndex === 1 && (
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                       )}
                       {categoryIndex === 2 && (
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
                       {categoryIndex === 3 && (
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       )}
                       {categoryIndex === 4 && (
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                           <circle cx="9" cy="7" r="4"></circle>
                           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -419,7 +419,7 @@ const InformationDocumentsTab = () => {
                         </svg>
                       )}
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900">{category.title}</h3>
+                    <h3 className="text-sm sm:text-base 2xl:text-lg font-semibold text-gray-900">{category.title}</h3>
                   </div>
                 </div>
 
@@ -479,34 +479,34 @@ const InformationDocumentsTab = () => {
               )}
               <div className={`bg-white shadow-sm border border-gray-200 rounded-[1.25rem] scroll-slide-up ${visibleSections.has(`info-category-${categoryIndex}`) ? 'visible' : ''}`} id={`info-category-${categoryIndex}`} style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
                 {/* Category Header with Image */}
-                <div className="p-10 border-b border-gray-100">
+                <div className="p-8 2xl:p-10 border-b border-gray-100">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     {/* Text content - left side */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
+                        <div className="p-3 2xl:p-3.5 rounded-lg transform transition duration-300" style={{ background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' }}>
                           {categoryIndex === 0 && (
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           )}
                           {categoryIndex === 1 && (
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                           )}
                           {categoryIndex === 2 && (
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           )}
                           {categoryIndex === 3 && (
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                           )}
                           {categoryIndex === 4 && (
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 2xl:w-7 2xl:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                               <circle cx="9" cy="7" r="4"></circle>
                               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -514,27 +514,27 @@ const InformationDocumentsTab = () => {
                             </svg>
                           )}
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
+                        <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">{category.title}</h3>
                       </div>
-                      <p className="text-gray-700 text-sm leading-relaxed max-w-xl font-normal">
+                      <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed max-w-xl font-normal">
                         {category.description}
                       </p>
                     </div>
                     
                     {/* Category Image - right side */}
-                    <div className={`relative w-full lg:w-80 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 scroll-slide-up ${visibleSections.has(`info-image-${categoryIndex}`) ? 'visible' : ''}`} id={`info-image-${categoryIndex}`} style={{ transitionDelay: '0.2s' }}>
+                    <div className={`relative w-full lg:w-72 2xl:w-80 h-40 2xl:h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 scroll-slide-up ${visibleSections.has(`info-image-${categoryIndex}`) ? 'visible' : ''}`} id={`info-image-${categoryIndex}`} style={{ transitionDelay: '0.2s' }}>
                       <img 
                         src={category.image} 
                         alt={category.imageLabel}
                         className="w-full h-full object-cover grayscale"
                       />
                       <div className="absolute bottom-0 right-0">
-                        <div className="px-4 py-2" style={{
+                        <div className="px-3 2xl:px-4 py-1.5 2xl:py-2" style={{
                           background: 'linear-gradient(to right, #0a1628 0%, #1e2f4a 25%, #3a2f5a 60%, #6e4376 100%)'
                         }}>
-                          <p className="text-white font-medium text-sm tracking-wider flex items-center gap-1">
+                          <p className="text-white font-medium text-xs 2xl:text-sm tracking-wider flex items-center gap-1">
                             {category.imageLabel}
-                            <img src={alcorStar} alt="" className="w-4 h-4" />
+                            <img src={alcorStar} alt="" className="w-3 h-3 2xl:w-4 2xl:h-4" />
                           </p>
                         </div>
                       </div>
@@ -543,7 +543,7 @@ const InformationDocumentsTab = () => {
                 </div>
 
                 {/* Documents Grid */}
-                <div className={`p-8 scroll-fade-in ${visibleSections.has(`info-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`info-grid-${categoryIndex}`}>
+                <div className={`p-6 2xl:p-8 scroll-fade-in ${visibleSections.has(`info-grid-${categoryIndex}`) ? 'visible' : ''}`} id={`info-grid-${categoryIndex}`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
                     {category.documents.map((doc, docIndex) => (
                       <div
@@ -590,7 +590,7 @@ const InformationDocumentsTab = () => {
       </div>
       
       {/* Add padding at the end */}
-      <div className="h-32"></div>
+      <div className="h-24 sm:h-32"></div>
     </div>
   );
 };
