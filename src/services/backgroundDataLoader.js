@@ -5,7 +5,7 @@ import { getMemberCategory } from '../components/portal/services/salesforce/memb
 import { getDocuments } from '../components/portal/services/salesforce/memberDocuments';
 import { getNotifications } from './notifications';
 //import { fetchCustomerInvoices } from '../components/portal/services/netsuite';
-import { getCustomerInvoices } from '../components/portal/services/netsuite/invoices';
+//import { getCustomerInvoices } from '../components/portal/services/netsuite/invoices';
 import { getCustomerPayments } from '../components/portal/services/netsuite/payments';
 
 
@@ -57,8 +57,8 @@ class BackgroundDataLoader {
       this.loadCryoArrangements(salesforceContactId),
       this.loadLegalInfo(salesforceContactId),
       this.loadFundingInfo(salesforceContactId),
-      this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadInvoices(netsuiteCustomerId) : Promise.resolve(),
-      this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadPayments(netsuiteCustomerId) : Promise.resolve()
+      //this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadInvoices(netsuiteCustomerId) : Promise.resolve(),
+      //this.isValidNetsuiteId(netsuiteCustomerId) ? this.loadPayments(netsuiteCustomerId) : Promise.resolve()
     ]);
 
     // TURN OFF DUE TO RATE LIMITING

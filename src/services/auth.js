@@ -2400,8 +2400,16 @@ export const sendProcedureNotificationEmail = async (data) => {
   try {
     console.log('📧 Calling authCore to send procedure notification');
     
-    // Validate required fields
-    const { memberName, memberNumber, pdfData, fileName } = data;
+    // Validate required fields and extract userEmail
+    const { memberName, memberNumber, pdfData, fileName, userEmail } = data;
+    
+    console.log('📧 Procedure notification data:', {
+      memberName,
+      memberNumber,
+      fileName,
+      userEmail,
+      hasUserEmail: !!userEmail
+    });
     
     if (!memberName || !memberNumber || !pdfData || !fileName) {
       throw new Error('Missing required fields for procedure notification');
@@ -2410,22 +2418,32 @@ export const sendProcedureNotificationEmail = async (data) => {
     // Get the authCore function
     const authCoreFn = httpsCallable(functions, 'authCore');
     
-    // Call the function with the sendProcedureEmail action
+    // Call the function with the sendProcedureEmail action INCLUDING userEmail
     const result = await authCoreFn({
       action: 'sendProcedureEmail',
       memberName,
       memberNumber,
       pdfData,
-      fileName
+      fileName,
+      userEmail  // ⚠️ THIS WAS MISSING - NOW INCLUDED
     });
     
     // Check the result
     if (result.data?.success) {
       console.log('✅ Procedure notification sent successfully');
+      console.log('📧 Email details:', {
+        staffMessageId: result.data.staffMessageId,
+        userMessageId: result.data.userMessageId,
+        recipientEmail: result.data.recipientEmail,
+        userEmailSent: result.data.userEmailSent
+      });
+      
       return {
         success: true,
-        messageId: result.data.messageId,
-        recipientEmail: result.data.recipientEmail
+        messageId: result.data.staffMessageId,
+        userMessageId: result.data.userMessageId,
+        recipientEmail: result.data.recipientEmail,
+        userEmailSent: result.data.userEmailSent
       };
     } else {
       console.error('❌ authCore returned failure:', result.data);
