@@ -181,8 +181,8 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
            
            const syncResult = await syncStripeCustomerToNetSuite(
              customerId,
-             saveResult.customerId,
-             paymentMethod.id
+             saveResult.customerId
+             //paymentMethod.id
            );
            
            if (syncResult.success) {

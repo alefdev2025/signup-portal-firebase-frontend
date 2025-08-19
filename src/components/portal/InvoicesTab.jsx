@@ -153,16 +153,29 @@ const InvoicesTab = ({ setActiveTab }) => {
   const fetchAllData = useCallback(async () => {
     // Validate customer ID first
     if (!customerId || 
-        customerId === 'pending' || 
-        customerId === 'loading' ||
-        customerId === 'undefined' ||
-        customerId === 'null' ||
-        customerId === '' ||
-        !/^\d{4,5}$/.test(customerId)) {
-      console.log('Invalid customer ID:', customerId);
-      setIsLoading(false);
-      return;
-    }
+      customerId === 'pending' || 
+      customerId === 'loading' ||
+      customerId === 'undefined' ||
+      customerId === 'null' ||
+      customerId === '' ||
+      !/^\d{4,5}$/.test(customerId)) {
+    console.log('Invalid customer ID:', customerId);
+    
+    // SET EMPTY DATA SO THE COMPONENT CAN RENDER THE EMPTY STATE
+    setData({
+      invoices: [],
+      rawInvoices: [],
+      payments: [],
+      autopayStatus: null,
+      customerInfo: null,
+      emailNotificationSettings: null,
+      salesOrderAnalysis: null,
+      billingAddress: null
+    });
+    
+    setIsLoading(false);
+    return;
+  }
 
     try {
       setIsLoading(true);
@@ -369,11 +382,9 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // Handle payment
   const handlePayInvoice = (invoice) => {
-
-    console.log('=== handlePayInvoice START ===');
-    console.log('Invoice passed:', invoice);
-    console.log('Current URL:', window.location.href);
-
+    // DON'T call useMemberPortal() here - just use customerId from above
+    console.log('DO WE HAVE NetSuite Customer ID:', customerId);
+    
     const invoiceWithDetails = {
       ...invoice,
       billingAddress: invoice.billingAddress || data?.billingAddress,
@@ -388,19 +399,16 @@ const InvoicesTab = ({ setActiveTab }) => {
       currency: invoice.currency || 'USD',
       description: invoice.description || invoice.memo || `Invoice ${invoice.documentNumber || invoice.id}`,
       date: invoice.date || invoice.tranDate,
-      dueDate: invoice.dueDate
+      dueDate: invoice.dueDate,
+      netsuiteCustomerId: customerId // Use customerId from component scope
     };
     
     // Store invoice data in sessionStorage for the payment page
     sessionStorage.setItem('invoiceForPayment', JSON.stringify(invoiceWithDetails));
     sessionStorage.setItem('paymentInvoiceId', invoice.internalId || invoice.id);
+    sessionStorage.setItem('netsuiteCustomerId', customerId);
     
-    console.log('About to navigate to:', '/portal-home#payments-pay');
-    
-    // Use window.location.hash instead of navigate
     window.location.hash = 'payments-pay';
-    
-    console.log('Navigate called, new URL:', window.location.href);
   };
 
   // Handle refresh
@@ -410,7 +418,14 @@ const InvoicesTab = ({ setActiveTab }) => {
 
   // WAIT FOR DATA BEFORE SHOWING ANYTHING
   if (isLoading || !data) {
-    return <CenteredLoader message="Loading invoices..." minHeight="500px" />;
+    return (
+      <div className="-mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen flex items-center justify-center" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 sm:h-11 2xl:h-12 w-10 sm:w-11 2xl:w-12 border-b-2 border-[#6b5b7e] mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-[#6b7280] text-sm sm:text-base 2xl:text-lg">Loading invoices...</p>
+        </div>
+      </div>
+    );
   }
 
   // Show error

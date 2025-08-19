@@ -405,13 +405,13 @@ function InvoicePaymentForm({ invoice, onBack }) {
         paymentMethodId: paymentMethodId,
         invoiceId: invoice.internalId,
         invoiceNumber: invoice.id,
-        customerId: salesforceCustomer?.id || '',
+        customerId: invoice.netsuiteCustomerId || netsuiteCustomerId || '',  // ✅ USE NETSUITE ID HERE
         customerInfo: {
           email: salesforceCustomer?.email || '',
           name: cardholderName,
         },
-        savePaymentMethod: useNewCard ? (saveCard || enrollInAutopay) : false, // Only save if it's a new card
-        netsuiteCustomerId: netsuiteCustomerId,
+        savePaymentMethod: useNewCard ? (saveCard || enrollInAutopay) : false,
+        netsuiteCustomerId: invoice.netsuiteCustomerId || netsuiteCustomerId,  // Keep this too for backward compatibility
         setupFutureUsage: enrollInAutopay ? 'off_session' : null
       };
       

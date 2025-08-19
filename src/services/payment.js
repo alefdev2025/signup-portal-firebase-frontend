@@ -1,5 +1,7 @@
 // File: services/payment.js
-import { auth } from './firebase';
+//import { auth } from './firebase';
+import { auth, db } from './firebase';  // Add db import
+import { doc, getDoc } from 'firebase/firestore';  // Add Firestore imports
 
 // Base URL for API calls
 const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
@@ -415,11 +417,34 @@ export const setupSepaDebit = async (sepaData) => {
  */
  export const updateStripeAutopay = async (netsuiteCustomerId, enabled, options = {}) => {
   const MAX_RETRIES = 5;
-  const BASE_DELAY = 2000; // 2 seconds
-  const MAX_DELAY = 30000; // 30 seconds
+  const BASE_DELAY = 2000;
+  const MAX_DELAY = 30000;
   
   let lastError = null;
   let lastResponse = null;
+  
+  // Get the Stripe customer ID from Firebase BEFORE the retry loop
+  let stripeCustomerId = options.stripeCustomerId;
+  
+  if (!stripeCustomerId) {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          stripeCustomerId = userData.stripeCustomerId;
+          console.log('🎯 Found Stripe Customer ID from Firestore:', stripeCustomerId);
+        } else {
+          console.log('⚠️ No user document found in Firestore');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error fetching Stripe customer ID from Firestore:', error);
+    }
+  }
   
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -431,22 +456,21 @@ export const setupSepaDebit = async (sepaData) => {
       const token = await user.getIdToken();
       
       console.log(`🔄 Attempt ${attempt + 1} of ${MAX_RETRIES} for updateStripeAutopay`);
-      console.log("Updating Stripe autopay:", { netsuiteCustomerId, enabled, options });
+      console.log("Updating Stripe autopay:", { 
+        netsuiteCustomerId, 
+        enabled, 
+        stripeCustomerId,
+        options 
+      });
       
       const requestBody = {
         enabled,
-        updateLegacy: options.syncLegacy || false
+        syncLegacy: options.syncLegacy || false,  // Changed from updateLegacy
+        stripeCustomerId: stripeCustomerId,  // Always include it
+        paymentMethodId: options.paymentMethodId || null  // Include if provided
       };
       
-      // Include paymentMethodId if provided
-      if (options.paymentMethodId) {
-        requestBody.paymentMethodId = options.paymentMethodId;
-      }
-      
-      // Include stripeCustomerId if provided
-      if (options.stripeCustomerId) {
-        requestBody.stripeCustomerId = options.stripeCustomerId;
-      }
+      console.log("📤 Request body being sent:", requestBody);
       
       // Add timeout to prevent hanging
       const controller = new AbortController();
