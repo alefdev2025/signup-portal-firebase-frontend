@@ -499,7 +499,7 @@ const InvoicesTab = ({ setActiveTab }) => {
                 />
               </div>
 
-              {/* Autopay Banners - Above Email Notifications */}
+              {/* Autopay Banners - Above Email Notifications
               {data?.salesOrderAnalysis?.analysis?.autopayStatus === 'ON_AUTOPAY' && 
               SHOW_LEGACY_AUTOPAY_BANNER && (
                 <LegacyAutopayBanner 
@@ -514,7 +514,7 @@ const InvoicesTab = ({ setActiveTab }) => {
                   stripeAutopayStatus={data?.autopayStatus?.stripe}
                   setActiveTab={setActiveTab}
                 />
-              )}
+              )}*/}
 
               <EmailNotifications 
                 newInvoiceAlerts={newInvoiceAlerts}

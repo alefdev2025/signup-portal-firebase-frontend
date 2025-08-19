@@ -443,6 +443,11 @@ export const setupSepaDebit = async (sepaData) => {
         requestBody.paymentMethodId = options.paymentMethodId;
       }
       
+      // Include stripeCustomerId if provided
+      if (options.stripeCustomerId) {
+        requestBody.stripeCustomerId = options.stripeCustomerId;
+      }
+      
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -565,6 +570,44 @@ export const setupSepaDebit = async (sepaData) => {
   };
 };
 
+  // In services/payment.js
+  export const syncStripeCustomerToNetSuite = async (netsuiteCustomerId, stripeCustomerId, paymentMethodId = null) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User must be authenticated");
+      }
+      
+      const token = await user.getIdToken();
+      
+      const response = await fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe-sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          stripeCustomerId: stripeCustomerId,
+          paymentMethodId: paymentMethodId
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to sync: ${response.status}`);
+      }
+      
+      return await response.json();
+      
+    } catch (error) {
+      console.error('Failed to sync Stripe customer to NetSuite:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  };
+
 /**
  * Get Stripe integration status for a customer
  * @param {string} netsuiteCustomerId - NetSuite customer ID
@@ -618,5 +661,6 @@ export default {
   confirmPayment,
   confirmInvoicePayment,
   setupSepaDebit,
-  updateStripeAutopay
+  updateStripeAutopay,
+  syncStripeCustomerToNetSuite
 };

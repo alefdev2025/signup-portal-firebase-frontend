@@ -25,7 +25,7 @@ import discoverLogo from '../assets/images/cards/discover.png';
 // Feature flags
 const ENABLE_STRIPE_MIGRATION = true; // Toggle to enable/disable migration prompts
 const ENABLE_AUTOPAY_ENROLLMENT = true; // Toggle to enable/disable autopay enrollment during payment
-const ENABLE_PROCESSING_FEE = true; // Toggle to enable/disable Stripe processing fee
+const ENABLE_PROCESSING_FEE = false; // Toggle to enable/disable Stripe processing fee
 
 const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
 

@@ -237,6 +237,7 @@ export const savePaymentMethod = async (paymentMethodData) => {
     }
     
     const result = await response.json();
+    console.log('🔍 SAVE PAYMENT METHOD API RESPONSE:', result); // ADD THIS
     return result;
     
   } catch (error) {

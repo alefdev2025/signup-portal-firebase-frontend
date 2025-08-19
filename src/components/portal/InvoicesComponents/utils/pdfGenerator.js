@@ -335,33 +335,40 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
       minute: '2-digit'
     });
     
+    // Track Y position throughout - THIS IS KEY
+    let yPos = 10;
+    
     // Add timestamp at top right
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${timestamp}`, rightMargin, 10, { align: 'right' });
+    doc.text(`Generated: ${timestamp}`, rightMargin, yPos, { align: 'right' });
     
     // Add ALCOR header info
+    yPos = 20;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('ALCOR LIFE EXTENSION FOUNDATION', rightMargin, 20, { align: 'right' });
+    doc.text('ALCOR LIFE EXTENSION FOUNDATION', rightMargin, yPos, { align: 'right' });
     
+    yPos += 5;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', rightMargin, 25, { align: 'right' });
-    doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', rightMargin, 30, { align: 'right' });
+    doc.text('7895 E. Acoma Dr. #110, Scottsdale, AZ 85260-6916', rightMargin, yPos, { align: 'right' });
+    yPos += 5;
+    doc.text('480-905-1906 • Fax 480-922-9027 • www.alcor.org', rightMargin, yPos, { align: 'right' });
     
-    // Invoice Title and Status
+    // Invoice Title
+    yPos = 45;
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Invoice ${invoice.id}`, margin, 45);
+    doc.text(`Invoice ${invoice.id}`, margin, yPos);
     
     // Status Badge
     const statusText = invoice.status === 'Paid' ? 'Paid' : 
-                      invoice.status === 'Payment Pending' ? 'Payment Pending' :
+                      invoice.status === 'Payment Pending' || invoice.status === 'Pending' ? 'Payment Pending' :
                       'Payment Due';
-    const statusWidth = invoice.status === 'Payment Pending' ? 55 : 45;
+    const statusWidth = statusText === 'Payment Pending' ? 55 : 45;
     const statusHeight = 10;
     const statusX = rightMargin - statusWidth;
     const statusY = 37;
@@ -370,7 +377,7 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     if (invoice.status === 'Paid') {
       doc.setFillColor(229, 212, 241);
       doc.setTextColor(107, 91, 126);
-    } else if (invoice.status === 'Payment Pending') {
+    } else if (invoice.status === 'Payment Pending' || invoice.status === 'Pending') {
       doc.setFillColor(219, 234, 254);
       doc.setTextColor(30, 64, 175);
     } else {
@@ -380,17 +387,6 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     
     doc.rect(statusX, statusY, statusWidth, statusHeight, 'F');
     
-    // Add subtle border
-    if (invoice.status === 'Paid') {
-      doc.setDrawColor(229, 212, 241);
-    } else if (invoice.status === 'Payment Pending') {
-      doc.setDrawColor(219, 234, 254);
-    } else {
-      doc.setDrawColor(254, 243, 226);
-    }
-    doc.setLineWidth(0.5);
-    doc.rect(statusX - 0.5, statusY - 0.5, statusWidth + 1, statusHeight + 1);
-    
     // Status text
     doc.setFontSize(10);
     doc.text(statusText, statusX + (statusWidth / 2), statusY + (statusHeight / 2) + 1.5, { align: 'center' });
@@ -399,7 +395,7 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     doc.setTextColor(0, 0, 0);
     
     // Invoice metadata
-    let yPos = 57;
+    yPos = 57;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
@@ -416,17 +412,18 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     doc.setFont('helvetica', 'normal');
     doc.text(new Date(invoice.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), margin + 120, yPos);
     
-    // Customer Information Section
-    yPos = 72;
+    // Customer Information Section - FIXED SPACING
+    yPos = 75; // More space from dates
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Customer Information', margin, yPos);
     
     // Customer info box
-    yPos += 10;
+    yPos += 12; // Increased spacing
     doc.setFillColor(249, 250, 251);
-    doc.rect(margin, yPos, contentWidth, 32, 'F');
+    const customerBoxHeight = 35;
+    doc.rect(margin, yPos, contentWidth, customerBoxHeight, 'F');
     
     // Customer details
     doc.setFontSize(13);
@@ -439,18 +436,21 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     doc.text(`Alcor ID: ${customerInfo?.alcorId || invoice.id}`, margin + 5, yPos + 18);
     doc.text(customerInfo?.subsidiary || invoice.subsidiary || 'Alcor Life Extension Foundation', margin + 5, yPos + 26);
     
+    // Move yPos past the customer box
+    yPos += customerBoxHeight;
+    
     // Billing Address Section
     if (invoice.billingAddress) {
-      yPos += 40;
+      yPos += 15; // Space between sections
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
       doc.text('Billing Address', margin, yPos);
       
-      yPos += 10;
+      yPos += 12;
       doc.setFillColor(249, 250, 251);
-      const addressLines = 3 + (invoice.billingAddress.addr2 ? 1 : 0);
-      const addressHeight = 15 + (addressLines * 6);
+      const addressLines = 4 + (invoice.billingAddress.addr2 ? 1 : 0);
+      const addressHeight = 10 + (addressLines * 7);
       doc.rect(margin, yPos, contentWidth, addressHeight, 'F');
       
       doc.setFontSize(13);
@@ -463,26 +463,34 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
       let addressY = yPos + 18;
       doc.text(invoice.billingAddress.addr1, margin + 5, addressY);
       if (invoice.billingAddress.addr2) {
-        addressY += 6;
+        addressY += 7;
         doc.text(invoice.billingAddress.addr2, margin + 5, addressY);
       }
-      addressY += 6;
+      addressY += 7;
       doc.text(`${invoice.billingAddress.city}, ${invoice.billingAddress.state} ${invoice.billingAddress.zip}`, margin + 5, addressY);
-      addressY += 6;
+      addressY += 7;
       doc.text(invoice.billingAddress.country || 'United States', margin + 5, addressY);
       
+      // Move yPos past the address box
       yPos += addressHeight;
     }
     
-    // Invoice Items Section
-    yPos += 15;
+    // Invoice Items Section - ENSURE PROPER SPACING
+    yPos += 20; // Increased spacing before items section
+    
+    // Check if we need a new page for the items section
+    if (yPos > pageHeight - 100) {
+      doc.addPage();
+      yPos = 30;
+    }
+    
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Invoice Items', margin, yPos);
     
     // Table
-    yPos += 10;
+    yPos += 12;
     
     // Table header
     doc.setFillColor(249, 250, 251);
@@ -511,11 +519,17 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     const items = invoice.items && invoice.items.length > 0 ? invoice.items : [{
       description: invoice.description || 'Dues : Dues Associate Member',
       quantity: 1,
-      rate: invoice.amount,
-      amount: invoice.amount
+      rate: invoice.amount || invoice.total || 0,
+      amount: invoice.amount || invoice.total || 0
     }];
     
     items.forEach((item) => {
+      // Check if we need a new page
+      if (yPos > pageHeight - 60) {
+        doc.addPage();
+        yPos = 30;
+      }
+      
       // Draw row border
       doc.setDrawColor(229, 231, 235);
       doc.rect(margin, yPos, contentWidth, 12);
@@ -523,12 +537,15 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
       yPos += 8;
       doc.text(item.description || invoice.description, margin + 5, yPos);
       doc.text((item.quantity || 1).toString(), margin + 90, yPos, { align: 'center' });
-      doc.text(`${(item.rate || invoice.amount).toFixed(2)}`, rightMargin - 50, yPos, { align: 'right' });
+      doc.text(`$${(item.rate || invoice.amount || 0).toFixed(2)}`, rightMargin - 50, yPos, { align: 'right' });
       doc.setFont('helvetica', 'bold');
-      doc.text(`${(item.amount || invoice.amount).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      doc.text(`$${(item.amount || invoice.amount || 0).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
       doc.setFont('helvetica', 'normal');
       yPos += 4;
     });
+    
+    // Summary Section - ENSURE PROPER SPACING
+    yPos += 20; // Increased spacing before summary
     
     // Check if we need a new page for summary
     if (yPos > pageHeight - 80) {
@@ -536,8 +553,6 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
       yPos = 30;
     }
     
-    // Summary Section
-    yPos += 15;
     const summaryX = rightMargin - 80;
     
     // Summary items
@@ -548,15 +563,15 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     // Subtotal
     doc.text('Subtotal', summaryX, yPos);
     doc.setTextColor(0, 0, 0);
-    doc.text(`${invoice.subtotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+    doc.text(`$${(invoice.subtotal || invoice.amount || 0).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
     
     // Discount (if any)
-    if (invoice.discountTotal > 0) {
+    if (invoice.discountTotal && invoice.discountTotal > 0) {
       yPos += 8;
       doc.setTextColor(100, 100, 100);
       doc.text('Discount', summaryX, yPos);
       doc.setTextColor(0, 0, 0);
-      doc.text(`-${invoice.discountTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      doc.text(`-$${invoice.discountTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
     }
     
     // Tax
@@ -564,7 +579,7 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     doc.setTextColor(100, 100, 100);
     doc.text('Tax', summaryX, yPos);
     doc.setTextColor(0, 0, 0);
-    doc.text(`${invoice.taxTotal.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+    doc.text(`$${(invoice.taxTotal || 0).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
     
     // Total line
     yPos += 6;
@@ -577,7 +592,7 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Total', summaryX, yPos);
-    doc.text(`${invoice.amount.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+    doc.text(`$${(invoice.amount || invoice.total || 0).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
     
     // Amount Due - only show if not paid
     if (invoice.status !== 'Paid') {
@@ -585,7 +600,7 @@ export const handleDownloadInvoice = async (invoice, customerInfo) => {
       doc.setFontSize(12);
       doc.setTextColor(208, 145, 99);
       doc.text('Amount Due', summaryX, yPos);
-      doc.text(`${invoice.amountRemaining.toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
+      doc.text(`$${(invoice.amountRemaining || 0).toFixed(2)}`, rightMargin - 5, yPos, { align: 'right' });
     }
     
     // Footer - only add if there's space
