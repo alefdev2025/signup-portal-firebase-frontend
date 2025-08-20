@@ -8,6 +8,7 @@ import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
 const NotificationBell = ({ activeTab, setActiveTab, isGlassmorphic, variant = 'regular' }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const { notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
+  //const [showEmergencyNumber, setShowEmergencyNumber] = React.useState(false);
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -217,6 +218,7 @@ const PortalHeader = ({
   isGlassmorphic = false,
   variant = 'regular'
 }) => {
+  const [showEmergencyNumber, setShowEmergencyNumber] = React.useState(false);
   // Add styles for consistent font usage
   React.useEffect(() => {
     const style = document.createElement('style');
@@ -233,6 +235,16 @@ const PortalHeader = ({
       document.head.removeChild(style);
     };
   }, []);
+
+  React.useEffect(() => {
+    if (showEmergencyNumber) {
+      const timer = setTimeout(() => {
+        setShowEmergencyNumber(false);
+      }, 10000); // Auto-close after 10 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showEmergencyNumber]);
 
   // Function to generate breadcrumb from activeTab
   const getBreadcrumb = () => {
@@ -336,7 +348,11 @@ const PortalHeader = ({
           {activeTab !== 'overview' && (
             <div className="hidden md:flex items-center gap-2 pl-8">
               <h1 
-                className={`breadcrumb-title ${variant === 'compact' ? 'text-base' : 'text-lg'} tracking-wide text-black`}
+                className={`breadcrumb-title ${
+                  variant === 'compact' 
+                    ? 'text-xs md:text-sm' 
+                    : 'text-sm md:text-base'
+                } tracking-wide text-black`}
                 style={{
                   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   fontWeight: '300',
@@ -346,7 +362,7 @@ const PortalHeader = ({
               </h1>
             </div>
           )}
-          
+                    
           <div className="hidden md:block relative ml-auto mr-8">
             <input 
               type="text" 
@@ -362,18 +378,37 @@ const PortalHeader = ({
         {/* Right side - Action buttons */}
         <div className={`flex items-center ${variant === 'compact' ? 'gap-1.5 md:gap-3' : 'gap-2 md:gap-4'}`}>
           {/* Emergency Button - Now visible on all pages */}
+          {/* Emergency Button - Shows phone number when clicked */}
           <button 
-            className={emergencyButtonClasses}
+            className={`${emergencyButtonClasses} transition-all duration-300 ${
+              showEmergencyNumber ? 'min-w-[160px] md:min-w-[180px]' : ''
+            }`}
             style={{
               fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               fontWeight: '300',
             }}
+            onClick={() => {
+              if (showEmergencyNumber) {
+                // If number is showing, make the call
+                window.location.href = 'tel:4809051906';
+              } else {
+                // Show the number
+                setShowEmergencyNumber(true);
+              }
+            }}
           >
-            <svg className={`${variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5'}`} fill="currentColor" viewBox="0 0 20 20">
+            <svg className={`${variant === 'compact' ? 'w-3.5 h-3.5 md:w-4 md:h-4' : 'w-4 h-4 md:w-5 md:h-5'}`} 
+              fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
-            <span className="hidden md:inline">Emergency</span>
-            <span className="md:hidden">Emergency</span>
+            {showEmergencyNumber ? (
+              <span className="font-semibold">(480) 905-1906</span>
+            ) : (
+              <>
+                <span className="hidden md:inline">Emergency</span>
+                <span className="md:hidden">Emergency</span>
+              </>
+            )}
           </button>
           
           {/* Settings - Now black */}

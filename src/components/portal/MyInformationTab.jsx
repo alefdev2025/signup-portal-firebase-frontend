@@ -1372,22 +1372,22 @@ const loadMemberCategory = async () => {
   };
 
   const savePersonalInfo = async () => {
-    //console.log('🔵 === START savePersonalInfo ===');
-    //console.log('Member category:', memberCategory);
-    
-    // Store current state for rollback
-    const previousPersonalInfo = { ...personalInfo };
+    console.log('🔵 === START savePersonalInfo ===');
+    console.log('Current personalInfo state:', personalInfo);
+    console.log('Member category:', memberCategory);
     
     setSavingSection('personal');
     setSaveMessage({ type: '', text: '' });
+    setFieldErrors({}); // Clear previous errors
     
     try {
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.personal?.requiredFields || [];
-      //console.log('Required fields for personal section:', requiredFields);
+      console.log('Required fields for personal section:', requiredFields);
       
       // Clean the data before validation and sending
       const cleanedData = cleanDataBeforeSave(personalInfo, 'personal');
+      console.log('Cleaned data:', cleanedData);
       
       // Validate required fields
       const errors = {};
@@ -1396,7 +1396,7 @@ const loadMemberCategory = async () => {
         switch(field) {
           case 'gender':
             if (!cleanedData.gender) {
-              errors.gender = 'Gender is required';
+              errors.gender = 'Sex is required';
             }
             break;
           case 'dateOfBirth':
@@ -1408,49 +1408,59 @@ const loadMemberCategory = async () => {
             if (!cleanedData.ssn || cleanedData.ssn.includes('XXX')) {
               errors.ssn = memberCategory === 'CryoMember' 
                 ? 'SSN is required for Cryopreservation Members' 
-                : 'SSN is recommended';
+                : 'SSN is required';
             }
             break;
         }
       });
       
-      // If there are validation errors, rollback and show them
+      // If there are validation errors
       if (Object.keys(errors).length > 0) {
-        let errorMessage = 'Please fill in required fields: ';
-        errorMessage += Object.values(errors).join(', ');
-        setSaveMessage({ type: 'error', text: errorMessage });
+        console.log('Validation errors found:', errors);
+        setFieldErrors(errors);
         setSavingSection('');
-        
-        // Rollback state
-        setPersonalInfo(previousPersonalInfo);
-        return;
+        // DON'T close edit mode for validation errors - let user fix them
+        // Return failure with errors for overlay to use
+        return { success: false, errors: errors };
       }
       
-      //console.log('📤 Cleaned data being sent:', JSON.stringify(cleanedData, null, 2));
+      // Clear field errors if validation passes
+      setFieldErrors({});
       
+      console.log('📤 Sending to backend:', cleanedData);
       const result = await updateMemberPersonalInfo(salesforceContactId, cleanedData);
+      console.log('📨 Backend response:', result);
       
       if (!result.success && !result.partialSuccess) {
-        // Complete failure - rollback
-        setPersonalInfo(previousPersonalInfo);
+        // Complete backend failure
+        console.error('Backend save failed:', result.error);
         setSaveMessage({ type: 'error', text: result.error || 'Failed to save personal information' });
         setSavingSection('');
-        return;
+        // DON'T close edit mode on backend failure
+        return { success: false, errors: { general: result.error || 'Failed to save personal information' } };
       }
+      
+      // SUCCESS PATH - only close edit mode here
       
       // Handle partial success
       if (result.partialSuccess) {
-        //console.log('⚠️ Partial success - some fields may not have been updated');
+        console.log('⚠️ Partial success - some fields may not have been updated');
         const errorDetails = result.errors ? result.errors.join('; ') : '';
         setSaveMessage({ 
           type: 'warning', 
           text: `Some information was saved, but there were errors: ${errorDetails}` 
         });
+      } else {
+        // Full success
+        setSaveMessage({ type: 'success', text: 'Personal information saved successfully!' });
       }
       
-      // Update state with cleaned data
+      // Update state with cleaned data as the new baseline
       setPersonalInfo(cleanedData);
       setOriginalData(prev => ({ ...prev, personal: cleanedData }));
+      
+      // Close edit mode ONLY on success
+      setEditMode(prev => ({ ...prev, personal: false }));
       
       // Clear cache after successful save
       memberDataService.clearCache(salesforceContactId);
@@ -1472,23 +1482,26 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
+          console.log('🔄 Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
       }
       
-    } catch (error) {
-      console.error('❌ Error in savePersonalInfo:', error);
-      
-      // Rollback on error
-      setPersonalInfo(previousPersonalInfo);
-      setSaveMessage({ type: 'error', text: `Failed to save: ${error.message}` });
-    } finally {
-      // Always close edit mode and clear saving state
-      setEditMode(prev => ({ ...prev, personal: false }));
+      // Clear saving section and message after success
       setSavingSection('');
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 5000);
-      //console.log('🔵 === END savePersonalInfo ===\n');
+      
+      // Return success
+      console.log('🔵 === END savePersonalInfo (SUCCESS) ===\n');
+      return { success: true };
+      
+    } catch (error) {
+      console.error('❌ Error in savePersonalInfo:', error);
+      setSaveMessage({ type: 'error', text: `Failed to save: ${error.message}` });
+      setSavingSection('');
+      // DON'T close edit mode on error
+      console.log('🔵 === END savePersonalInfo (ERROR) ===\n');
+      return { success: false, errors: { general: error.message } };
     }
   };
   
@@ -3394,12 +3407,13 @@ const saveFunding = async () => {
 
   return (
     <div className="my-information-tab relative min-h-screen">
-      {console.log('🚨 CRITICAL CHECK:', {
-      memberCategory,
-      isContactSectionVisible: isSectionVisible(memberCategory, 'contact'),
-      categoryLoading,
-      isLoading
-    })}
+      {//console.log('🚨 CRITICAL CHECK:', {
+      //memberCategory,
+      //isContactSectionVisible: isSectionVisible(memberCategory, 'contact'),
+      //categoryLoading,
+      //isLoading
+    //})
+  }
       {/* White Background - Mobile Only */}
       <div className="fixed inset-0 z-0 sm:hidden bg-white"></div>
       

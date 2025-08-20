@@ -472,12 +472,36 @@ const formatSSN = (ssn, masked = false) => {
 };
 
 // Format date
+// Format date
 const formatDate = (date, format = 'US') => {
   if (!date) return '';
   
-  // Parse the date
+  // If it's already formatted (contains /), return as-is
+  if (typeof date === 'string' && date.includes('/')) {
+    return date;
+  }
+  
+  // If it's an ISO date string (YYYY-MM-DD), parse it manually to avoid timezone issues
+  if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = date.split('-');
+    
+    switch (format) {
+      case 'US':
+        return `${month}/${day}/${year}`;
+      case 'UK':
+      case 'GB':
+      case 'AU':
+        return `${day}/${month}/${year}`;
+      case 'ISO':
+        return date; // Already in ISO format
+      default:
+        return `${month}/${day}/${year}`;
+    }
+  }
+  
+  // For other date formats or Date objects, use the original logic
   const d = new Date(date);
-  if (isNaN(d.getTime())) return date; // Return original if invalid
+  if (isNaN(d.getTime())) return date;
   
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -496,7 +520,6 @@ const formatDate = (date, format = 'US') => {
       return `${month}/${day}/${year}`;
   }
 };
-
   // Format gender/sex values
   const formatGender = (gender) => {
     if (!gender) return '';

@@ -537,7 +537,7 @@ const PortalHome = () => {
       if (result.success) {
         //console.log('Logout successful, navigating to login page');
         // Navigate to login page
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
       } else {
         console.error('Logout failed:', result.error);
         alert('Failed to log out. Please try again.');

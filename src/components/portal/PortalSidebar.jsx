@@ -377,7 +377,7 @@ const PortalSidebar = ({
                   <span className={isItemActive(item.id) ? 'text-white' : 'text-white/90'}>
                     {item.icon}
                   </span>
-                  <span className="text-lg">{item.label}</span>
+                  <span className="text-base lg:text-sm xl:text-base 2xl:text-lg">{item.label}</span>
                 </div>
                 {item.subItems && (
                   <svg 
@@ -402,7 +402,7 @@ const PortalSidebar = ({
                     <button
                       key={subItem.id}
                       onClick={() => handleSubItemClick(item.id, subItem.id)}
-                      className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-base relative group ${
+                      className={`w-full text-left px-4 py-2.5 rounded-md transition-all text-sm lg:text-xs xl:text-sm 2xl:text-base relative group ${
                         activeTab === `${item.id}-${subItem.id}`
                           ? 'bg-white/20 text-white shadow-md'
                           : layoutMode === 'floating'
@@ -451,10 +451,10 @@ const PortalSidebar = ({
             </svg>
           </div>
           <div className="flex-1 overflow-hidden text-left">
-            <p className={`text-white ${layoutMode === 'floating' ? 'text-sm' : 'text-base'} font-medium truncate drop-shadow-sm`}>
+            <p className={`text-white ${layoutMode === 'floating' ? 'text-xs lg:text-[11px] xl:text-xs 2xl:text-sm' : 'text-sm lg:text-xs xl:text-sm 2xl:text-base'} font-medium truncate drop-shadow-sm`}>
               {displayName}
             </p>
-            <p className={`text-white/${layoutMode === 'floating' ? '80' : '90'} ${layoutMode === 'floating' ? 'text-xs' : 'text-sm'} truncate`}>
+            <p className={`text-white/${layoutMode === 'floating' ? '80' : '90'} ${layoutMode === 'floating' ? 'text-[11px] lg:text-[10px] xl:text-[11px] 2xl:text-xs' : 'text-xs lg:text-[11px] xl:text-xs 2xl:text-sm'} truncate`}>
               {isLoggingOut ? 'Logging out...' : 'Logout'}
             </p>
           </div>

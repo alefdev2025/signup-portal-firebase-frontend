@@ -19,7 +19,7 @@ const getEffectiveMemberCategory = (actualCategory) => {
 };
 
 // Mobile Multi-Select Component
-const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false }) => {
+const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = false, error }) => {
   const [showAll, setShowAll] = useState(false);
   
   const toggleOption = (option) => {
@@ -52,7 +52,7 @@ const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = fa
   return (
     <div>
       <label className="block text-gray-700 text-sm font-medium mb-1.5">{label}</label>
-      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto">
+      <div className={`border rounded-lg bg-gray-50 p-3 max-h-48 overflow-y-auto ${error ? 'border-red-500' : 'border-gray-300'}`}>
         {displayOptions.map((option) => (
           <label
             key={option}
@@ -78,6 +78,7 @@ const MobileMultiSelect = ({ label, options, value = [], onChange, disabled = fa
           </button>
         )}
       </div>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
       {value.length > 0 && (
         <p className="text-xs text-gray-600 mt-1">
           {[...new Set(value)].length} selected
@@ -101,7 +102,8 @@ const PersonalInfoMobile = ({
 }) => {
   // Get effective member category for debugging
   const effectiveMemberCategory = getEffectiveMemberCategory(memberCategory);
-  const canEditSSN = effectiveMemberCategory === 'CryoApplicant' && !personalInfo?.ssn;
+  // Only allow SSN editing for CryoApplicants with no existing SSN
+  const canEditSSN = effectiveMemberCategory === 'CryoApplicant' && (!personalInfo?.ssn || personalInfo.ssn === '');
 
   const formatSSN = (ssn) => {
     if (!ssn) return '—';
@@ -115,6 +117,27 @@ const PersonalInfoMobile = ({
     }
     // If less than 4 digits, just return what we have
     return cleaned || '—';
+  };
+
+  const normalizeEthnicity = (value) => {
+    if (!value) return '';
+    
+    // Map variations to consistent format
+    const normalized = value.trim().toLowerCase();
+    
+    if (normalized === 'hispanic or latino') return 'Hispanic Or Latino';
+    if (normalized === 'not hispanic or latino') return 'Not Hispanic Or Latino';
+    
+    return value;
+  };
+
+  const denormalizeEthnicity = (value) => {
+    // Convert back to the format your backend expects
+    // Adjust this based on what your backend needs
+    if (value === 'Hispanic Or Latino') return 'Hispanic Or Latino';
+    if (value === 'Not Hispanic Or Latino') return 'Not Hispanic Or Latino';
+    
+    return value;
   };
 
   const formatMultipleSelections = (selections) => {
@@ -183,6 +206,9 @@ const PersonalInfoMobile = ({
     
     if (personalInfo?.gender) {
       parts.push(personalInfo.gender);
+    }
+    if (personalInfo?.ethnicity) {
+      parts.push(personalInfo.ethnicity);
     }
     if (personalInfo?.placeOfBirth) {
       parts.push(`Born: ${personalInfo.placeOfBirth}`);
@@ -439,30 +465,30 @@ const PersonalInfoMobile = ({
                       <p className="text-sm text-gray-600">Additional personal details for your member file</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator to match Contact section */}
                     <div className="relative flex-shrink-0">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -494,7 +520,7 @@ const PersonalInfoMobile = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">Gender, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Sex, Birth Name, SSN/Government ID, Race, Marital Status, Place of Birth, Citizenship</p>
                       </div>
                     </div>
                     
@@ -529,6 +555,25 @@ const PersonalInfoMobile = ({
         {/* Edit Form Section */}
         {editMode.personal && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section */}
+            {fieldErrors && Object.keys(fieldErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      {Object.entries(fieldErrors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <FormInput
@@ -539,7 +584,7 @@ const PersonalInfoMobile = ({
                   disabled={savingSection === 'personal'}
                 />
                 <FormSelect
-                  label="Gender *"
+                  label="Sex *"
                   value={personalInfo?.gender || ''}
                   onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
                   error={fieldErrors.gender}
@@ -552,14 +597,26 @@ const PersonalInfoMobile = ({
                 </FormSelect>
               </div>
               
-              {canEditSSN && (
+              {canEditSSN ? (
                 <FormInput
                   label="SSN/Government ID *"
                   value={personalInfo?.ssn || ''}
                   onChange={(e) => setPersonalInfo({...personalInfo, ssn: e.target.value})}
                   error={fieldErrors.ssn}
                   disabled={savingSection === 'personal'}
+                  placeholder="Enter SSN or Government ID"
                 />
+              ) : (
+                // Show read-only SSN field if there's a value or if it's required
+                (personalInfo?.ssn || memberCategory === 'CryoMember') && (
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1.5">SSN/Government ID *</label>
+                    <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm">
+                      {formatSSN(personalInfo?.ssn)}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Contact Alcor to update SSN</p>
+                  </div>
+                )
               )}
               
               <MobileMultiSelect
@@ -568,21 +625,29 @@ const PersonalInfoMobile = ({
                 value={personalInfo?.race || []}
                 onChange={(selected) => setPersonalInfo({...personalInfo, race: selected})}
                 disabled={savingSection === 'personal'}
+                error={fieldErrors.race}
               />
               
+              {console.log('Ethnicity value:', JSON.stringify(personalInfo?.ethnicity))}
               <FormSelect
                 label="Ethnicity"
-                value={personalInfo?.ethnicity || ''}
-                onChange={(e) => setPersonalInfo({...personalInfo, ethnicity: e.target.value})}
+                value={normalizeEthnicity(personalInfo?.ethnicity)}
+                onChange={(e) => {
+                  // Save in the format your backend expects
+                  setPersonalInfo({
+                    ...personalInfo, 
+                    ethnicity: denormalizeEthnicity(e.target.value)
+                  });
+                }}
                 disabled={savingSection === 'personal'}
               >
                 <option value="">Select...</option>
-                <option value="Hispanic or Latino">Hispanic or Latino</option>
-                <option value="Not Hispanic or Latino">Not Hispanic or Latino</option>
+                <option value="Hispanic Or Latino">Hispanic Or Latino</option>
+                <option value="Not Hispanic Or Latino">Not Hispanic Or Latino</option>
               </FormSelect>
               
               <FormSelect
-                label="Marital Status *"
+                label="Marital Status"
                 value={personalInfo?.maritalStatus || ''}
                 onChange={(e) => setPersonalInfo({...personalInfo, maritalStatus: e.target.value})}
                 error={fieldErrors.maritalStatus}
@@ -605,6 +670,7 @@ const PersonalInfoMobile = ({
                 onChange={(e) => setPersonalInfo({...personalInfo, placeOfBirth: e.target.value})}
                 error={fieldErrors.placeOfBirth}
                 disabled={savingSection === 'personal'}
+                placeholder="City, State, Country"
               />
               
               <MobileMultiSelect
@@ -613,6 +679,7 @@ const PersonalInfoMobile = ({
                 value={personalInfo?.citizenship || []}
                 onChange={(selected) => setPersonalInfo({...personalInfo, citizenship: selected})}
                 disabled={savingSection === 'personal'}
+                error={fieldErrors.citizenship}
               />
             </div>
             
