@@ -1,3 +1,5 @@
+// AddressesSection.jsx - Simplified approach with validation in overlay
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Checkbox } from '../FormComponents';
@@ -20,68 +22,163 @@ import {
 } from './desktopCardStyles/index';
 import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
+import { memberCategoryConfig } from '../memberCategoryConfig';
 
-// Overlay Component - Updated to use local state like Contact and Personal
+// Overlay Component - Validate BEFORE calling parent save
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   section, 
-  data, 
+  addresses,
+  setAddresses,
   onSave,
   savingSection,
-  fieldErrors = {}
+  toggleEditMode,
+  cancelEdit,
+  memberCategory
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  // Local state for editing - completely separate from parent
-  const [localAddresses, setLocalAddresses] = useState({});
+  const [overlayEditMode, setOverlayEditMode] = useState(false);
+  const [showOverlaySuccess, setShowOverlaySuccess] = useState(false);
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(false);  // Start in view mode
-      setShowSuccess(false);
-      // Reset local state to current data when opening - create copy not reference
-      const addressData = {...data.addresses} || {};
-      // Set defaults only for truly empty fields
-      if (!addressData.homeCountry) {
-        addressData.homeCountry = 'United States';
-      }
-      if (!addressData.mailingCountry && !addressData.sameAsHome) {
-        addressData.mailingCountry = 'United States';
-      }
-      setLocalAddresses(addressData);
+      setOverlayEditMode(false);
+      setShowOverlaySuccess(false);
+      setIsOverlaySaving(false);
+      setOverlayFieldErrors({});
     }
-  }, [isOpen, data.addresses]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleEdit = () => {
-    setEditMode(true);
+  const handleOverlayEdit = () => {
+    setOverlayEditMode(true);
+    setShowOverlaySuccess(false);
+    setOverlayFieldErrors({});
   };
 
-  const handleSave = async () => {
-    // Normalize country codes before passing back to parent
-    const normalizedAddresses = normalizeAddressCountries(localAddresses);
+  const validateAddresses = (addressData) => {
+    const errors = {};
     
-    // Pass the normalized data back to parent via callback and wait for result
-    const success = await onSave(normalizedAddresses);
+    // Get required fields for this member category
+    const requiredFields = memberCategoryConfig[memberCategory]?.sections?.addresses?.requiredFields || [];
     
-    if (success) {
-      setEditMode(false);
-      setShowSuccess(true);
-      
-      setTimeout(() => {
-        setShowSuccess(false);
-        onClose();
-      }, 2000);
+    // Validate home address if required
+    if (requiredFields.includes('homeStreet') && !addressData.homeStreet) {
+      errors.homeStreet = 'Home street address is required';
     }
-    // If failed, stay in edit mode
+    if (requiredFields.includes('homeCity') && !addressData.homeCity) {
+      errors.homeCity = 'Home city is required';
+    }
+    if (requiredFields.includes('homeState') && !addressData.homeState) {
+      errors.homeState = 'Home state is required';
+    }
+    if (requiredFields.includes('homePostalCode') && !addressData.homePostalCode) {
+      errors.homePostalCode = 'Home postal code is required';
+    }
+    
+    // Validate mailing address if not same as home and if we're editing mailing section
+    if (section === 'mailing' && !addressData.sameAsHome && memberCategory === 'CryoMember') {
+      if (requiredFields.includes('mailingStreet') && !addressData.mailingStreet) {
+        errors.mailingStreet = 'Mailing street address is required';
+      }
+      if (requiredFields.includes('mailingCity') && !addressData.mailingCity) {
+        errors.mailingCity = 'Mailing city is required';
+      }
+      if (requiredFields.includes('mailingState') && !addressData.mailingState) {
+        errors.mailingState = 'Mailing state is required';
+      }
+      if (requiredFields.includes('mailingPostalCode') && !addressData.mailingPostalCode) {
+        errors.mailingPostalCode = 'Mailing postal code is required';
+      }
+    }
+    
+    return errors;
   };
 
-  const handleCancel = () => {
-    // Reset to original data - create new copy
-    setLocalAddresses({...data.addresses} || {});
-    setEditMode(false);
+  const handleOverlaySave = async () => {
+    console.log('🔵 Overlay handleOverlaySave called');
+    setIsOverlaySaving(true);
+    setShowOverlaySuccess(false);
+    setOverlayFieldErrors({});
+    
+    // Normalize country codes
+    const normalizedAddresses = normalizeAddressCountries(addresses);
+    console.log('🔵 Normalized addresses:', normalizedAddresses);
+    
+    // VALIDATE HERE before calling parent save
+    const errors = validateAddresses(normalizedAddresses);
+    console.log('🔵 Validation errors:', errors);
+    
+    if (Object.keys(errors).length > 0) {
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
+      setIsOverlaySaving(false);
+      return; // Don't call parent save
+    }
+    
+    // Update parent state with normalized data
+    setAddresses(normalizedAddresses);
+    
+    // Temporarily enable edit mode for save to work
+    const wasInEditMode = toggleEditMode.addresses;
+    if (!wasInEditMode) {
+      toggleEditMode('addresses');
+    }
+    
+    // Wait for state update then save
+    setTimeout(async () => {
+      try {
+        await onSave();
+        
+        // SUCCESS - show message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Turn off edit mode if we turned it on
+        if (!wasInEditMode && toggleEditMode.addresses) {
+          toggleEditMode('addresses');
+        }
+        
+        setTimeout(() => {
+          onClose();
+          setShowOverlaySuccess(false);
+        }, 1500);
+      } catch (error) {
+        console.error('Save failed:', error);
+        setOverlayFieldErrors({ general: 'Failed to save addresses' });
+        
+        // Turn off edit mode if we turned it on
+        if (!wasInEditMode && toggleEditMode.addresses) {
+          toggleEditMode('addresses');
+        }
+      } finally {
+        setIsOverlaySaving(false);
+      }
+    }, 0);
+  };
+
+  const handleOverlayCancel = () => {
+    cancelEdit('addresses');
+    setOverlayEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayFieldErrors({});
+  };
+
+  const handleOverlayClose = () => {
+    if (isOverlaySaving) return;
+    
+    if (overlayEditMode) {
+      cancelEdit('addresses');
+      setOverlayEditMode(false);
+    }
+    
+    onClose();
+    setShowOverlaySuccess(false);
+    setOverlayFieldErrors({});
   };
 
   const getFieldDescriptions = () => {
@@ -102,17 +199,18 @@ const CardOverlay = ({
   };
 
   const fieldInfo = getFieldDescriptions();
+  const currentErrors = overlayFieldErrors;
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
-      <div className={overlayStyles.backdrop} onClick={onClose}></div>
+      <div className={overlayStyles.backdrop} onClick={handleOverlayClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
         <div className={overlayStyles.contentBox}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
-              onClick={onClose}
+              onClick={handleOverlayClose}
               className={overlayStyles.header.closeButton}
             >
               <svg className={overlayStyles.header.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -142,18 +240,34 @@ const CardOverlay = ({
           {/* Content */}
           <div className={overlayStyles.body.wrapper}>
             {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Addresses updated successfully!</p>
+            {showOverlaySuccess && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-sm text-green-800">Addresses updated successfully!</p>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {overlayEditMode && currentErrors && Object.keys(currentErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please complete all required fields</p>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Fields */}
-            {!editMode ? (
-              /* Display Mode - Use local state */
+            {!overlayEditMode ? (
+              /* Display Mode */
               <div className={overlayStyles.body.content}>
                 {section === 'home' && (
                   <div className="space-y-6">
@@ -162,18 +276,18 @@ const CardOverlay = ({
                         <label className={overlayStyles.displayMode.field.label}>Street Address</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homeStreet)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.homeStreet)}
                         >
-                          {localAddresses?.homeStreet || '—'}
+                          {addresses?.homeStreet || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>City</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homeCity)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.homeCity)}
                         >
-                          {localAddresses?.homeCity || '—'}
+                          {addresses?.homeCity || '—'}
                         </p>
                       </div>
                     </div>
@@ -182,18 +296,18 @@ const CardOverlay = ({
                         <label className={overlayStyles.displayMode.field.label}>State/Province</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homeState)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.homeState)}
                         >
-                          {localAddresses?.homeState || '—'}
+                          {addresses?.homeState || '—'}
                         </p>
                       </div>
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Zip/Postal Code</label>
                         <p 
                           className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homePostalCode)}
+                          style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.homePostalCode)}
                         >
-                          {localAddresses?.homePostalCode || '—'}
+                          {addresses?.homePostalCode || '—'}
                         </p>
                       </div>
                     </div>
@@ -201,9 +315,9 @@ const CardOverlay = ({
                       <label className={overlayStyles.displayMode.field.label}>Country</label>
                       <p 
                         className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.homeCountry)}
+                        style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.homeCountry)}
                       >
-                        {localAddresses?.homeCountry || 'United States'}
+                        {addresses?.homeCountry || 'United States'}
                       </p>
                     </div>
                   </div>
@@ -211,7 +325,7 @@ const CardOverlay = ({
 
                 {section === 'mailing' && (
                   <div className="space-y-6">
-                    {localAddresses?.sameAsHome ? (
+                    {addresses?.sameAsHome ? (
                       <div>
                         <label className={overlayStyles.displayMode.field.label}>Mailing Address</label>
                         <p className={overlayStyles.displayMode.field.value}>
@@ -225,18 +339,18 @@ const CardOverlay = ({
                             <label className={overlayStyles.displayMode.field.label}>Street Address</label>
                             <p 
                               className={overlayStyles.displayMode.field.value}
-                              style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingStreet)}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.mailingStreet)}
                             >
-                              {localAddresses?.mailingStreet || '—'}
+                              {addresses?.mailingStreet || '—'}
                             </p>
                           </div>
                           <div>
                             <label className={overlayStyles.displayMode.field.label}>City</label>
                             <p 
                               className={overlayStyles.displayMode.field.value}
-                              style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingCity)}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.mailingCity)}
                             >
-                              {localAddresses?.mailingCity || '—'}
+                              {addresses?.mailingCity || '—'}
                             </p>
                           </div>
                         </div>
@@ -245,18 +359,18 @@ const CardOverlay = ({
                             <label className={overlayStyles.displayMode.field.label}>State/Province</label>
                             <p 
                               className={overlayStyles.displayMode.field.value}
-                              style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingState)}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.mailingState)}
                             >
-                              {localAddresses?.mailingState || '—'}
+                              {addresses?.mailingState || '—'}
                             </p>
                           </div>
                           <div>
                             <label className={overlayStyles.displayMode.field.label}>Zip/Postal Code</label>
                             <p 
                               className={overlayStyles.displayMode.field.value}
-                              style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingPostalCode)}
+                              style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.mailingPostalCode)}
                             >
-                              {localAddresses?.mailingPostalCode || '—'}
+                              {addresses?.mailingPostalCode || '—'}
                             </p>
                           </div>
                         </div>
@@ -264,9 +378,9 @@ const CardOverlay = ({
                           <label className={overlayStyles.displayMode.field.label}>Country</label>
                           <p 
                             className={overlayStyles.displayMode.field.value}
-                            style={overlayStyles.displayMode.field.getFieldStyle(!localAddresses?.mailingCountry)}
+                            style={overlayStyles.displayMode.field.getFieldStyle(!addresses?.mailingCountry)}
                           >
-                            {localAddresses?.mailingCountry || 'United States'}
+                            {addresses?.mailingCountry || 'United States'}
                           </p>
                         </div>
                       </>
@@ -275,48 +389,53 @@ const CardOverlay = ({
                 )}
               </div>
             ) : (
-              /* Edit Mode - Update local state only */
+              /* Edit Mode */
               <div className={overlayStyles.body.content}>
                 {section === 'home' && (
                   <div className="space-y-4">
                     <Input
                       label="Street Address *"
                       type="text"
-                      value={localAddresses?.homeStreet || ''}
-                      onChange={(e) => setLocalAddresses({...localAddresses, homeStreet: e.target.value})}
-                      disabled={savingSection === 'addresses'}
+                      value={addresses?.homeStreet || ''}
+                      onChange={(e) => setAddresses({...addresses, homeStreet: e.target.value})}
+                      disabled={isOverlaySaving}
+                      error={currentErrors.homeStreet}
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="City *"
                         type="text"
-                        value={localAddresses?.homeCity || ''}
-                        onChange={(e) => setLocalAddresses({...localAddresses, homeCity: e.target.value})}
-                        disabled={savingSection === 'addresses'}
+                        value={addresses?.homeCity || ''}
+                        onChange={(e) => setAddresses({...addresses, homeCity: e.target.value})}
+                        disabled={isOverlaySaving}
+                        error={currentErrors.homeCity}
                       />
                       <Input
                         label="State/Province *"
                         type="text"
-                        value={localAddresses?.homeState || ''}
-                        onChange={(e) => setLocalAddresses({...localAddresses, homeState: e.target.value})}
-                        disabled={savingSection === 'addresses'}
+                        value={addresses?.homeState || ''}
+                        onChange={(e) => setAddresses({...addresses, homeState: e.target.value})}
+                        disabled={isOverlaySaving}
+                        error={currentErrors.homeState}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Zip/Postal Code *"
                         type="text"
-                        value={localAddresses?.homePostalCode || ''}
-                        onChange={(e) => setLocalAddresses({...localAddresses, homePostalCode: e.target.value})}
-                        disabled={savingSection === 'addresses'}
+                        value={addresses?.homePostalCode || ''}
+                        onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
+                        disabled={isOverlaySaving}
+                        error={currentErrors.homePostalCode}
                       />
                       <Input
                         label="Country *"
                         type="text"
-                        value={localAddresses?.homeCountry || ''}
+                        value={addresses?.homeCountry || ''}
                         placeholder="United States"
-                        onChange={(e) => setLocalAddresses({...localAddresses, homeCountry: e.target.value})}
-                        disabled={savingSection === 'addresses'}
+                        onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
+                        disabled={isOverlaySaving}
+                        error={currentErrors.homeCountry}
                       />
                     </div>
                   </div>
@@ -326,51 +445,56 @@ const CardOverlay = ({
                   <div className="space-y-4">
                     <Checkbox
                       label="Mailing address is the same as home address"
-                      checked={localAddresses?.sameAsHome || false}
-                      onChange={(e) => setLocalAddresses({...localAddresses, sameAsHome: e.target.checked})}
-                      disabled={savingSection === 'addresses'}
+                      checked={addresses?.sameAsHome || false}
+                      onChange={(e) => setAddresses({...addresses, sameAsHome: e.target.checked})}
+                      disabled={isOverlaySaving}
                     />
                     
-                    {!localAddresses?.sameAsHome && (
+                    {!addresses?.sameAsHome && (
                       <>
                         <Input
                           label="Street Address *"
                           type="text"
-                          value={localAddresses?.mailingStreet || ''}
-                          onChange={(e) => setLocalAddresses({...localAddresses, mailingStreet: e.target.value})}
-                          disabled={savingSection === 'addresses'}
+                          value={addresses?.mailingStreet || ''}
+                          onChange={(e) => setAddresses({...addresses, mailingStreet: e.target.value})}
+                          disabled={isOverlaySaving}
+                          error={currentErrors.mailingStreet}
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             label="City *"
                             type="text"
-                            value={localAddresses?.mailingCity || ''}
-                            onChange={(e) => setLocalAddresses({...localAddresses, mailingCity: e.target.value})}
-                            disabled={savingSection === 'addresses'}
+                            value={addresses?.mailingCity || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingCity: e.target.value})}
+                            disabled={isOverlaySaving}
+                            error={currentErrors.mailingCity}
                           />
                           <Input
                             label="State/Province *"
                             type="text"
-                            value={localAddresses?.mailingState || ''}
-                            onChange={(e) => setLocalAddresses({...localAddresses, mailingState: e.target.value})}
-                            disabled={savingSection === 'addresses'}
+                            value={addresses?.mailingState || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingState: e.target.value})}
+                            disabled={isOverlaySaving}
+                            error={currentErrors.mailingState}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             label="Zip/Postal Code *"
                             type="text"
-                            value={localAddresses?.mailingPostalCode || ''}
-                            onChange={(e) => setLocalAddresses({...localAddresses, mailingPostalCode: e.target.value})}
-                            disabled={savingSection === 'addresses'}
+                            value={addresses?.mailingPostalCode || ''}
+                            onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
+                            disabled={isOverlaySaving}
+                            error={currentErrors.mailingPostalCode}
                           />
                           <Input
                             label="Country *"
                             type="text"
-                            value={localAddresses?.mailingCountry || ''}
+                            value={addresses?.mailingCountry || ''}
                             placeholder="United States"
-                            onChange={(e) => setLocalAddresses({...localAddresses, mailingCountry: e.target.value})}
-                            disabled={savingSection === 'addresses'}
+                            onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
+                            disabled={isOverlaySaving}
+                            error={currentErrors.mailingCountry}
                           />
                         </div>
                       </>
@@ -383,10 +507,10 @@ const CardOverlay = ({
 
           {/* Footer */}
           <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
+            {!overlayEditMode ? (
               <PurpleButton
                 text="Edit"
-                onClick={handleEdit}
+                onClick={handleOverlayEdit}
                 className={buttonStyles.overlayButtons.save}
                 spinStar={buttonStyles.starConfig.enabled}
               />
@@ -394,16 +518,17 @@ const CardOverlay = ({
               <>
                 <WhiteButton
                   text="Cancel"
-                  onClick={handleCancel}
+                  onClick={handleOverlayCancel}
                   className={buttonStyles.overlayButtons.cancel}
                   spinStar={buttonStyles.starConfig.enabled}
+                  disabled={isOverlaySaving}
                 />
                 <PurpleButton
-                  text={savingSection === 'addresses' ? 'Saving...' : 'Save'}
-                  onClick={handleSave}
+                  text={isOverlaySaving ? 'Saving...' : 'Save'}
+                  onClick={handleOverlaySave}
                   className={buttonStyles.overlayButtons.save}
                   spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'addresses'}
+                  disabled={isOverlaySaving}
                 />
               </>
             )}
@@ -426,9 +551,9 @@ const AddressesSection = ({
   setAddressValidationModal,
   memberCategory,
   sectionImage,
-  sectionLabel
+  sectionLabel,
+  fieldErrors = {}
 }) => {
-  // Ensure addresses is always an object
   const safeAddresses = addresses || {};
   const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -438,19 +563,16 @@ const AddressesSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
-  // Add flag to track if we're saving from regular edit mode
-  const [saveFromEdit, setSaveFromEdit] = useState(false);
 
   // Inject animation styles
   useEffect(() => {
     const style = animationStyles.injectStyles();
-    
     return () => {
       document.head.removeChild(style);
     };
   }, []);
 
-  // Intersection Observer for scroll-triggered animation
+  // Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -487,58 +609,20 @@ const AddressesSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Handle save from regular edit mode
-  useEffect(() => {
-    if (saveFromEdit) {
-      console.log('🔵 AddressesSection useEffect: saveFromEdit is true, calling saveAddresses');
-      console.log('🔵 Current addresses state:', addresses);
-      
-      // Call the parent's save function
-      saveAddresses();
-      
-      // Reset the flag
-      setSaveFromEdit(false);
-    }
-  }, [saveFromEdit]); // Removed addresses and saveAddresses from dependencies
-
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = async (updatedAddresses) => {
-    console.log('🔵 handleOverlaySave called with:', updatedAddresses);
-    
-    // The updatedAddresses are already normalized by the overlay
-    // Update parent state with the normalized data
-    setAddresses(updatedAddresses);
-    
-    // Call save directly and wait for it
-    try {
-      await saveAddresses();
-      return true; // Success
-    } catch (error) {
-      console.error('Error saving addresses:', error);
-      return false; // Failure
-    }
-  };
-
-  // Custom save handler that normalizes countries
   const handleSaveWithNormalization = () => {
-    console.log('🔵 handleSaveWithNormalization called');
-    
-    // Normalize country codes before saving
     const normalizedAddresses = normalizeAddressCountries(safeAddresses);
-    console.log('🔵 Normalized addresses:', normalizedAddresses);
-    
-    // Update state first
     setAddresses(normalizedAddresses);
-    
-    // Set flag to trigger save after state updates
-    setSaveFromEdit(true);
+    setTimeout(() => {
+      saveAddresses();
+    }, 0);
   };
 
-  // Field configuration for completion wheel
+  // Field configuration
   const fieldConfig = {
     required: {
       homeStreet: { field: 'homeStreet', source: 'addresses', label: 'Home Street' },
@@ -562,14 +646,6 @@ const AddressesSection = ({
     }
   };
 
-  // Format address for display
-  const formatAddress = (street, city, state, postalCode, country) => {
-    const parts = [street, city, state, postalCode, country].filter(Boolean);
-    if (parts.length === 0) return '—';
-    return parts.join(', ');
-  };
-
-  // Helper function to check if addresses are effectively the same
   const areAddressesSame = () => {
     if (safeAddresses.sameAsHome === true) return true;
     
@@ -594,9 +670,13 @@ const AddressesSection = ({
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        data={{ addresses: safeAddresses }}
-        onSave={handleOverlaySave}
+        addresses={safeAddresses}
+        setAddresses={setAddresses}
+        onSave={saveAddresses}
         savingSection={savingSection}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
+        memberCategory={memberCategory}
       />
 
       {isMobile ? (
@@ -609,7 +689,11 @@ const AddressesSection = ({
           saveAddresses={handleSaveWithNormalization}
           savingSection={savingSection}
           fieldConfig={fieldConfig}
-          formatAddress={formatAddress}
+          formatAddress={(street, city, state, postalCode, country) => {
+            const parts = [street, city, state, postalCode, country].filter(Boolean);
+            if (parts.length === 0) return '—';
+            return parts.join(', ');
+          }}
           areAddressesSame={areAddressesSame}
         />
       ) : (

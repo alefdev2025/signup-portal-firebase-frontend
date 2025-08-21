@@ -1,10 +1,7 @@
 // MedicalInfoMobile.js
 import React, { useState } from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
-import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // FormTextarea component for mobile
 const MobileFormTextarea = ({ label, value, onChange, placeholder, rows = 3, disabled = false }) => (
@@ -37,7 +34,15 @@ const MedicalInfoMobile = ({
   getMissingFieldsMessage,
   ProfileImprovementNotice
 }) => {
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode?.medical) {
+      setLocalErrors({});
+    }
+  }, [editMode]);
   
   // Calculate completion percentage
   const calculateCompletion = () => {
@@ -46,7 +51,7 @@ const MedicalInfoMobile = ({
     
     Object.values(fieldConfig.required).forEach(field => {
       const value = medicalInfo?.[field.field];
-      if (value && value.trim() !== '') {
+      if (value && value.toString().trim() !== '') {
         filledRequired++;
       }
     });
@@ -58,7 +63,7 @@ const MedicalInfoMobile = ({
         }
       } else {
         const value = medicalInfo?.[field.field];
-        if (value && value.trim() !== '') {
+        if (value && value.toString().trim() !== '') {
           filledRecommended++;
         }
       }
@@ -91,23 +96,39 @@ const MedicalInfoMobile = ({
     return previewParts.length > 0 ? previewParts.slice(0, 2).join(' • ') : 'No medical information provided';
   };
 
-  const formatDoctorAddress = () => {
-    const parts = [
-      medicalInfo?.physicianAddress,
-      medicalInfo?.physicianCity,
-      medicalInfo?.physicianState,
-      medicalInfo?.physicianZip,
-      medicalInfo?.physicianCountry
-    ].filter(Boolean);
+  // Handle save with complete validation
+  const handleSave = () => {
+    const errors = {};
     
-    return parts.length > 0 ? parts.join(', ') : '—';
-  };
-
-  const formatDoctorPhones = () => {
-    const phones = [];
-    if (medicalInfo?.physicianHomePhone) phones.push(`Home: ${medicalInfo.physicianHomePhone}`);
-    if (medicalInfo?.physicianWorkPhone) phones.push(`Work: ${medicalInfo.physicianWorkPhone}`);
-    return phones.length > 0 ? phones.join(' | ') : '—';
+    // Validate sex (required)
+    if (!medicalInfo?.sex || !medicalInfo.sex.trim()) {
+      errors.sex = "Sex is required";
+    }
+    
+    // Validate height (required)
+    if (!medicalInfo?.height || !medicalInfo.height.toString().trim()) {
+      errors.height = "Height is required";
+    }
+    
+    // Validate weight (required)
+    if (!medicalInfo?.weight || !medicalInfo.weight.toString().trim()) {
+      errors.weight = "Weight is required";
+    }
+    
+    // Validate blood type (required)
+    if (!medicalInfo?.bloodType || !medicalInfo.bloodType.trim()) {
+      errors.bloodType = "Blood type is required";
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    saveMedicalInfo();
   };
 
   return (
@@ -136,35 +157,35 @@ const MedicalInfoMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Medical Details</h3>
-                      <p className="text-sm text-gray-600">Your health information and emergency contacts</p>
+                      <p className="text-sm text-gray-600">Your health information and<br />emergency contacts</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator with thicker stroke matching FamilyInfoMobile */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -196,7 +217,7 @@ const MedicalInfoMobile = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">Sex, Blood Type</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Sex, Height, Weight, Blood Type</p>
                       </div>
                     </div>
                     
@@ -207,7 +228,7 @@ const MedicalInfoMobile = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-gray-900">Recommended Information</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">Height, Weight, Primary Physician, Medical History</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Primary Physician, Medical History</p>
                       </div>
                     </div>
                   </div>
@@ -215,7 +236,7 @@ const MedicalInfoMobile = ({
               </div>
               
               {/* Display Mode - Medical Preview */}
-              {!editMode.medical && (
+              {!editMode?.medical && (
                 <>
                   <div className="bg-blue-50/30 rounded-lg p-4">
                     <p className="text-sm text-gray-600 text-center">{getPreviewText()}</p>
@@ -233,19 +254,38 @@ const MedicalInfoMobile = ({
         </div>
 
         {/* Edit Form Section */}
-        {editMode.medical && (
+        {editMode?.medical && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      {Object.entries(localErrors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               {/* Basic Health Information */}
               <div>
                 <h4 className="text-base font-medium text-gray-900 mb-4">Basic Health Information</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <FormSelect
-                    label="Sex"
+                    label="Sex *"
                     value={medicalInfo?.sex || ''}
                     onChange={(e) => setMedicalInfo({...medicalInfo, sex: e.target.value})}
                     disabled={savingSection === 'medical'}
-                    error={fieldErrors.sex}
+                    error={fieldErrors.sex || localErrors.sex}
                   >
                     <option value="">Select...</option>
                     <option value="Male">Male</option>
@@ -254,16 +294,17 @@ const MedicalInfoMobile = ({
                   </FormSelect>
                   
                   <FormInput
-                    label="Height (inches)"
+                    label="Height (inches) *"
                     type="text"
                     value={medicalInfo?.height || ''}
                     onChange={(e) => setMedicalInfo({...medicalInfo, height: e.target.value})}
                     placeholder="e.g., 68 for 5'8"
                     disabled={savingSection === 'medical'}
+                    error={fieldErrors.height || localErrors.height}
                   />
                   
                   <FormInput
-                    label="Weight (lbs)"
+                    label="Weight (lbs) *"
                     type="text"
                     value={medicalInfo?.weight ? medicalInfo.weight.toString().replace(' lbs', '').replace(' lb', '').replace('lbs', '').replace('lb', '').trim() : ''}
                     onChange={(e) => {
@@ -275,13 +316,15 @@ const MedicalInfoMobile = ({
                     }}
                     placeholder="190"
                     disabled={savingSection === 'medical'}
+                    error={fieldErrors.weight || localErrors.weight}
                   />
                   
                   <FormSelect
-                    label="Blood Type"
+                    label="Blood Type *"
                     value={medicalInfo?.bloodType || ''}
                     onChange={(e) => setMedicalInfo({...medicalInfo, bloodType: e.target.value})}
                     disabled={savingSection === 'medical'}
+                    error={fieldErrors.bloodType || localErrors.bloodType}
                   >
                     <option value="">Select...</option>
                     <option value="A+">A+</option>
@@ -469,13 +512,7 @@ const MedicalInfoMobile = ({
                 Close
               </button>
               <button
-                onClick={() => {
-                  if (!medicalInfo?.sex || medicalInfo.sex === '') {
-                    alert('Please select a sex before saving.');
-                    return;
-                  }
-                  saveMedicalInfo();
-                }}
+                onClick={handleSave}
                 disabled={savingSection === 'medical'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >
@@ -486,7 +523,7 @@ const MedicalInfoMobile = ({
         )}
 
         {/* View/Edit button when not in edit mode */}
-        {!editMode.medical && (
+        {!editMode?.medical && (
           <div className="bg-white px-6 pb-6">
             <button
               onClick={() => toggleEditMode && toggleEditMode('medical')}

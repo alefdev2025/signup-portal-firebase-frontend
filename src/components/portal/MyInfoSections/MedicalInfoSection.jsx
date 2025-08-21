@@ -34,130 +34,22 @@ const FormTextarea = ({ label, value, onChange, placeholder, rows = 3, disabled 
   </div>
 );
 
-// Overlay Component - Updated to use local state like other sections
+// Simplified Overlay Component - Just a visual wrapper, NO state management
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   section, 
-  data, 
-  onSave,
-  savingSection,
-  fieldErrors = {}
+  children,  // The actual edit form will be passed as children
+  fieldInfo  // Title and description for the header
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  // Local state for editing - completely separate from parent
-  const [localMedicalInfo, setLocalMedicalInfo] = useState({});
-
-  useEffect(() => {
-    if (isOpen) {
-      setEditMode(false);  // Start in view mode
-      setShowSuccess(false);
-      // Reset local state to current data when opening - create copy not reference
-      setLocalMedicalInfo({...data.medicalInfo} || {});
-    }
-  }, [isOpen, data.medicalInfo]);
-
   if (!isOpen) return null;
-
-  const handleEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = () => {
-    if (section === 'basic' && (!localMedicalInfo?.sex || localMedicalInfo.sex === '')) {
-      alert('Please select a sex before saving.');
-      return;
-    }
-    // Pass the local data back to parent via callback
-    onSave(localMedicalInfo);
-    setEditMode(false);
-    setShowSuccess(true);
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  const handleCancel = () => {
-    // Reset to original data - create new copy
-    setLocalMedicalInfo({...data.medicalInfo} || {});
-    setEditMode(false);
-  };
-
-  const formatHeight = (heightValue) => {
-    if (!heightValue) return '—';
-    if (typeof heightValue === 'string' && (heightValue.includes("'") || heightValue.includes('"'))) {
-      return heightValue;
-    }
-    const heightNum = parseInt(heightValue);
-    if (isNaN(heightNum)) return heightValue;
-    const feet = Math.floor(heightNum / 12);
-    const inches = heightNum % 12;
-    return `${feet}' ${inches}"`;
-  };
-
-  const formatWeight = (weight) => {
-    if (!weight) return '—';
-    const weightNum = weight.toString()
-      .replace(' lbs', '')
-      .replace(' lb', '')
-      .replace('lbs', '')
-      .replace('lb', '')
-      .trim();
-    return `${weightNum} lb`;
-  };
-
-  const formatDoctorAddress = () => {
-    const parts = [
-      localMedicalInfo?.physicianAddress,
-      localMedicalInfo?.physicianCity,
-      localMedicalInfo?.physicianState,
-      localMedicalInfo?.physicianZip,
-      localMedicalInfo?.physicianCountry
-    ].filter(Boolean);
-    
-    return parts.length > 0 ? parts.join(', ') : '—';
-  };
-
-  const formatDoctorPhones = () => {
-    const phones = [];
-    if (localMedicalInfo?.physicianHomePhone) phones.push(`Home: ${localMedicalInfo.physicianHomePhone}`);
-    if (localMedicalInfo?.physicianWorkPhone) phones.push(`Work: ${localMedicalInfo.physicianWorkPhone}`);
-    return phones.length > 0 ? phones.join(' | ') : '—';
-  };
-
-  const getFieldDescriptions = () => {
-    switch (section) {
-      case 'basic':
-        return {
-          title: 'Basic Health Information',
-          description: 'Your fundamental health metrics including sex, height, weight, and blood type. This information is essential for medical care and emergency situations.',
-        };
-      case 'physician':
-        return {
-          title: 'Primary Care Physician',
-          description: 'Your primary doctor\'s contact information ensures Alcor can quickly reach your physician in emergency situations and coordinate care.',
-        };
-      case 'history':
-        return {
-          title: 'Medical History',
-          description: 'Comprehensive medical history including current conditions, medications, allergies, and past medical events. This information is crucial for proper medical care.',
-        };
-      default:
-        return { title: '', description: '' };
-    }
-  };
-
-  const fieldInfo = getFieldDescriptions();
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
-        <div className={overlayStyles.contentBox}>
+        <div className={`${overlayStyles.contentBox} overflow-hidden`}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
@@ -185,448 +77,21 @@ const CardOverlay = ({
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
                   <span className={overlayStyles.header.title} style={{ display: 'block' }}>
-                    {fieldInfo.title}
+                    {fieldInfo?.title || ''}
                   </span>
                   <p className={overlayStyles.header.description}>
-                    {fieldInfo.description}
+                    {fieldInfo?.description || ''}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content */}
+          {/* Body - Just render the children (the edit form) */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
-              </div>
-            )}
-
-            {/* Fields */}
-            {!editMode ? (
-              /* Display Mode - Use local state */
-              <div className={overlayStyles.body.content}>
-                {section === 'basic' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Sex</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.sex)}
-                        >
-                          {localMedicalInfo?.sex || '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Height</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.height)}
-                        >
-                          {formatHeight(localMedicalInfo?.height)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Weight</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.weight)}
-                        >
-                          {formatWeight(localMedicalInfo?.weight)}
-                        </p>
-                      </div>
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Blood Type</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.bloodType)}
-                        >
-                          {localMedicalInfo?.bloodType || '—'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {section === 'physician' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Doctor Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.primaryPhysician)}
-                        >
-                          {localMedicalInfo?.primaryPhysician || '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Hospital</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.hospital)}
-                        >
-                          {localMedicalInfo?.hospital || '—'}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Doctor Address</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!formatDoctorAddress() || formatDoctorAddress() === '—')}
-                      >
-                        {formatDoctorAddress()}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Phone Numbers</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!formatDoctorPhones() || formatDoctorPhones() === '—')}
-                      >
-                        {formatDoctorPhones()}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Will Cooperate with Alcor?</label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.willDoctorCooperate)}
-                      >
-                        {localMedicalInfo?.willDoctorCooperate || '—'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {section === 'history' && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Health Problems</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.healthProblems)}
-                      >
-                        {localMedicalInfo?.healthProblems || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Allergies (including to drugs)</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.allergies)}
-                      >
-                        {localMedicalInfo?.allergies || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Current/Recent Medications</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.medications)}
-                      >
-                        {localMedicalInfo?.medications || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Identifying Scars or Deformities</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.identifyingScars)}
-                      >
-                        {localMedicalInfo?.identifyingScars || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Artificial Appliances/Implants/Prosthetics</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.artificialAppliances)}
-                      >
-                        {localMedicalInfo?.artificialAppliances || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Past Medical History</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.pastMedicalHistory)}
-                      >
-                        {localMedicalInfo?.pastMedicalHistory || '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>Hereditary Illnesses or Tendencies</label>
-                      <p 
-                        className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localMedicalInfo?.hereditaryIllnesses)}
-                      >
-                        {localMedicalInfo?.hereditaryIllnesses || '—'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Edit Mode - Update local state only */
-              <div className={overlayStyles.body.content}>
-                {section === 'basic' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Select
-                        label="Sex"
-                        value={localMedicalInfo?.sex || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, sex: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                        error={fieldErrors.sex}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </Select>
-                      
-                      <Input
-                        label="Height (inches)"
-                        type="text"
-                        value={localMedicalInfo?.height || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, height: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                        placeholder="e.g., 68 for 5'8"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Weight (lbs)"
-                        type="text"
-                        value={localMedicalInfo?.weight ? localMedicalInfo.weight.toString().replace(' lbs', '').replace(' lb', '').replace('lbs', '').replace('lb', '').trim() : ''}
-                        onChange={(e) => {
-                          const weightValue = e.target.value.trim();
-                          setLocalMedicalInfo({
-                            ...localMedicalInfo, 
-                            weight: weightValue ? `${weightValue} lb` : ''
-                          });
-                        }}
-                        disabled={savingSection === 'medical'}
-                        placeholder="190"
-                      />
-                      
-                      <Select
-                        label="Blood Type"
-                        value={localMedicalInfo?.bloodType || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, bloodType: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      >
-                        <option value="">Select...</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                        <option value="Unknown">Unknown</option>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
-                {section === 'physician' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Doctor Name"
-                        value={localMedicalInfo?.primaryPhysician || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, primaryPhysician: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                      
-                      <Input
-                        label="Hospital"
-                        value={localMedicalInfo?.hospital || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, hospital: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                    </div>
-                    
-                    <Input
-                      label="Doctor Address"
-                      value={localMedicalInfo?.physicianAddress || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianAddress: e.target.value})}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="City"
-                        value={localMedicalInfo?.physicianCity || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianCity: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                      
-                      <Input
-                        label="State/Province"
-                        value={localMedicalInfo?.physicianState || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianState: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Zip/Postal Code"
-                        value={localMedicalInfo?.physicianZip || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianZip: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                      
-                      <Input
-                        label="Country"
-                        value={localMedicalInfo?.physicianCountry || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianCountry: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Doctor Home Phone"
-                        type="tel"
-                        value={localMedicalInfo?.physicianHomePhone || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianHomePhone: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                        placeholder="(555) 123-4567"
-                      />
-                      
-                      <Input
-                        label="Doctor Work Phone"
-                        type="tel"
-                        value={localMedicalInfo?.physicianWorkPhone || ''}
-                        onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, physicianWorkPhone: e.target.value})}
-                        disabled={savingSection === 'medical'}
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                    
-                    <Select
-                      label="Will Doctor Cooperate with Alcor?"
-                      value={localMedicalInfo?.willDoctorCooperate || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, willDoctorCooperate: e.target.value})}
-                      disabled={savingSection === 'medical'}
-                    >
-                      <option value="">Select...</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                      <option value="Unknown">Unknown</option>
-                    </Select>
-                  </div>
-                )}
-
-                {section === 'history' && (
-                  <div className="space-y-4">
-                    <FormTextarea
-                      label="Health Problems"
-                      value={localMedicalInfo?.healthProblems || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, healthProblems: e.target.value})}
-                      placeholder="List any current or chronic health problems"
-                      rows={3}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Allergies (including to drugs)"
-                      value={localMedicalInfo?.allergies || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, allergies: e.target.value})}
-                      placeholder="e.g., Penicillin; Vicodin"
-                      rows={3}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Medications Currently or Recently Taken"
-                      value={localMedicalInfo?.medications || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, medications: e.target.value})}
-                      placeholder="e.g., Statin 20 mg; Nicotinamide Riboside 250 mg"
-                      rows={3}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Identifying Scars or Deformities"
-                      value={localMedicalInfo?.identifyingScars || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, identifyingScars: e.target.value})}
-                      rows={2}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Artificial Appliances, Implants or Prosthetics"
-                      value={localMedicalInfo?.artificialAppliances || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, artificialAppliances: e.target.value})}
-                      placeholder="e.g., Tooth Implants: #3 #4 #5 #12"
-                      rows={2}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Past Medical History"
-                      value={localMedicalInfo?.pastMedicalHistory || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, pastMedicalHistory: e.target.value})}
-                      placeholder="List any significant past medical conditions, surgeries, or hospitalizations"
-                      rows={4}
-                      disabled={savingSection === 'medical'}
-                    />
-                    
-                    <FormTextarea
-                      label="Hereditary Illnesses or Tendencies in Family"
-                      value={localMedicalInfo?.hereditaryIllnesses || ''}
-                      onChange={(e) => setLocalMedicalInfo({...localMedicalInfo, hereditaryIllnesses: e.target.value})}
-                      placeholder="List any hereditary conditions in your family"
-                      rows={3}
-                      disabled={savingSection === 'medical'}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
-              <PurpleButton
-                text="Edit"
-                onClick={handleEdit}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
-            ) : (
-              <>
-                <WhiteButton
-                  text="Cancel"
-                  onClick={handleCancel}
-                  className={buttonStyles.overlayButtons.cancel}
-                  spinStar={buttonStyles.starConfig.enabled}
-                />
-                <PurpleButton
-                  text={savingSection === 'medical' ? 'Saving...' : 'Save'}
-                  onClick={handleSave}
-                  className={buttonStyles.overlayButtons.save}
-                  spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'medical'}
-                />
-              </>
-            )}
+            <div className={overlayStyles.body.content}>
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -659,8 +124,49 @@ const MedicalInfoSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlaySection, setOverlaySection] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
-  // Add pendingSave flag for triggering save after state update
-  const [pendingSave, setPendingSave] = useState(false);
+  
+  // Track whether we're in overlay edit mode
+  const [overlayEditMode, setOverlayEditMode] = useState(false);
+  
+  // Track if save was successful to show success message
+  const [showOverlaySuccess, setShowOverlaySuccess] = useState(false);
+  
+  // Track if we're currently saving
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  
+  // Track overlay-specific field errors
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
+  
+  // Track if we're waiting for save to complete
+  const [overlayWaitingForSave, setOverlayWaitingForSave] = useState(false);
+
+  // Watch for save completion when we're waiting for it
+  useEffect(() => {
+    if (overlayWaitingForSave && savingSection !== 'medical') {
+      // Save completed (either success or error)
+      setOverlayWaitingForSave(false);
+      setIsOverlaySaving(false);
+      
+      // Check if there are any field errors
+      const hasErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+      
+      if (!hasErrors) {
+        // Success! Show success message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          setOverlayOpen(false);
+          setShowOverlaySuccess(false);
+        }, 1500);
+      } else {
+        // There were errors, keep overlay open in edit mode
+        setOverlayFieldErrors(fieldErrors);
+      }
+    }
+  }, [savingSection, overlayWaitingForSave, fieldErrors]);
 
   useEffect(() => {
     // Inject animation styles
@@ -708,35 +214,97 @@ const MedicalInfoSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Trigger save after state update from overlay
-  useEffect(() => {
-    if (pendingSave) {
-      saveMedicalInfo();
-      setPendingSave(false);
-    }
-  }, [pendingSave, medicalInfo]);
-
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
+    setOverlayEditMode(false); // Start in view mode
+    setShowOverlaySuccess(false); // Reset success message
+    setOverlayFieldErrors({}); // Clear any previous errors
   };
 
-  const handleOverlaySave = (updatedMedicalInfo) => {
-    // Update parent state with the new data
-    setMedicalInfo(updatedMedicalInfo);
-    // Set flag to trigger save after state updates
-    setPendingSave(true);
+  const handleOverlayEdit = () => {
+    // Set the main edit mode to true if not already
+    if (!editMode.medical) {
+      toggleEditMode('medical');
+    }
+    setOverlayEditMode(true);
+    setShowOverlaySuccess(false);
+  };
+
+  const handleOverlaySave = () => {
+    // Do local validation first
+    const errors = {};
+    
+    // Validate based on section
+    if (overlaySection === 'basic') {
+      if (!safeMedicalInfo?.sex || !safeMedicalInfo.sex.trim()) {
+        errors.sex = "Sex is required";
+      }
+      if (!safeMedicalInfo?.bloodType || !safeMedicalInfo.bloodType.trim()) {
+        errors.bloodType = "Blood type is required";
+      }
+      if (!safeMedicalInfo?.height || !safeMedicalInfo.height.toString().trim()) {
+        errors.height = "Height is required";
+      }
+      if (!safeMedicalInfo?.weight || !safeMedicalInfo.weight.toString().trim()) {
+        errors.weight = "Weight is required";
+      }
+    }
+    
+    // No required fields for physician or history sections
+    
+    if (Object.keys(errors).length > 0) {
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
+      return;
+    }
+    
+    // Clear errors and set waiting state
+    setOverlayFieldErrors({});
+    setIsOverlaySaving(true);
+    setOverlayWaitingForSave(true);
+    setShowOverlaySuccess(false);
+    
+    // Call the parent's save function
+    saveMedicalInfo();
+    // The useEffect will handle the result when savingSection changes
+  };
+
+  const handleOverlayCancel = () => {
+    // Call the parent's cancel function
+    cancelEdit('medical');
+    setOverlayEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const handleOverlayClose = () => {
+    // If we're saving, don't allow close
+    if (isOverlaySaving || overlayWaitingForSave || savingSection === 'medical') {
+      return;
+    }
+    
+    // If we're in edit mode, cancel first
+    if (overlayEditMode) {
+      cancelEdit('medical');
+      setOverlayEditMode(false);
+    }
+    setOverlayOpen(false);
+    setShowOverlaySuccess(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
   };
 
   // Field configuration for completion wheel
   const fieldConfig = {
     required: {
       sex: { field: 'sex', source: 'medicalInfo', label: 'Sex' },
-      bloodType: { field: 'bloodType', source: 'medicalInfo', label: 'Blood Type' }
+      bloodType: { field: 'bloodType', source: 'medicalInfo', label: 'Blood Type' },
+      height: { field: 'height', source: 'medicalInfo', label: 'Height' },
+      weight: { field: 'weight', source: 'medicalInfo', label: 'Weight' }
     },
     recommended: {
-      height: { field: 'height', source: 'medicalInfo', label: 'Height' },
-      weight: { field: 'weight', source: 'medicalInfo', label: 'Weight' },
       primaryPhysician: { field: 'primaryPhysician', source: 'medicalInfo', label: 'Primary Physician' },
       healthProblems: { field: 'healthProblems', source: 'medicalInfo', label: 'Health Problems' },
       medications: { field: 'medications', source: 'medicalInfo', label: 'Medications' },
@@ -766,6 +334,47 @@ const MedicalInfoSection = ({
       .replace('lb', '')
       .trim();
     return `${weightNum} lb`;
+  };
+
+  const formatDoctorAddress = () => {
+    const parts = [
+      safeMedicalInfo?.physicianAddress,
+      safeMedicalInfo?.physicianCity,
+      safeMedicalInfo?.physicianState,
+      safeMedicalInfo?.physicianZip,
+      safeMedicalInfo?.physicianCountry
+    ].filter(Boolean);
+    
+    return parts.length > 0 ? parts.join(', ') : '—';
+  };
+
+  const formatDoctorPhones = () => {
+    const phones = [];
+    if (safeMedicalInfo?.physicianHomePhone) phones.push(`Home: ${safeMedicalInfo.physicianHomePhone}`);
+    if (safeMedicalInfo?.physicianWorkPhone) phones.push(`Work: ${safeMedicalInfo.physicianWorkPhone}`);
+    return phones.length > 0 ? phones.join(' | ') : '—';
+  };
+
+  const getFieldDescriptions = () => {
+    switch (overlaySection) {
+      case 'basic':
+        return {
+          title: 'Basic Health Information',
+          description: 'Your fundamental health metrics including sex, height, weight, and blood type. This information is essential for medical care and emergency situations.',
+        };
+      case 'physician':
+        return {
+          title: 'Primary Care Physician',
+          description: 'Your primary doctor\'s contact information ensures Alcor can quickly reach your physician in emergency situations and coordinate care.',
+        };
+      case 'history':
+        return {
+          title: 'Medical History',
+          description: 'Comprehensive medical history including current conditions, medications, allergies, and past medical events. This information is crucial for proper medical care.',
+        };
+      default:
+        return { title: '', description: '' };
+    }
   };
 
   const needsProfileImprovement = () => {
@@ -808,72 +417,539 @@ const MedicalInfoSection = ({
   };
 
   // Profile improvement notice component
-// Profile improvement notice component
-const ProfileImprovementNotice = () => (
-  <div className={isMobile ? "flex items-center gap-2" : "flex items-center gap-4"}>
-    <svg className={isMobile ? "w-5 h-5 text-orange-500 flex-shrink-0" : "w-10 h-10 text-orange-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    
-    <div className="flex-1">
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold text-gray-900">
-          Improve Your Member Profile
-        </p>
-        <div className="relative">
-          <HelpCircle 
-            className={isMobile ? "w-4 h-4 text-gray-600 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"}
-            strokeWidth={2}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onClick={() => setShowTooltip(!showTooltip)}
-          />
-          {showTooltip && (
-            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
-              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900">
-                    Why Does Alcor Need This?
-                  </h3>
-                  <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                  </svg>
+  const ProfileImprovementNotice = () => (
+    <div className={isMobile ? "flex items-center gap-2" : "flex items-center gap-4"}>
+      <svg className={isMobile ? "w-5 h-5 text-orange-500 flex-shrink-0" : "w-10 h-10 text-orange-500 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-gray-900">
+            Improve Your Member Profile
+          </p>
+          <div className="relative">
+            <HelpCircle 
+              className={isMobile ? "w-4 h-4 text-gray-600 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"}
+              strokeWidth={2}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(!showTooltip)}
+            />
+            {showTooltip && (
+              <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
+                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Why Does Alcor Need This?
+                    </h3>
+                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-sm text-gray-700">
+                    Complete medical information helps Alcor provide better care in emergency situations and ensures your physician can be contacted quickly if needed.
+                  </p>
+                </div>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
                 </div>
               </div>
-              <div className="px-4 py-3">
-                <p className="text-sm text-gray-700">
-                  Complete medical information helps Alcor provide better care in emergency situations and ensures your physician can be contacted quickly if needed.
+            )}
+          </div>
+        </div>
+        {!isMobile && (
+          <p className="text-sm text-gray-600 font-light">
+            {getMissingFieldsMessage()}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  // Create the edit form component that will be reused
+  const renderEditForm = (isInOverlay = false) => {
+    // Use overlay-specific errors when in overlay, otherwise use parent fieldErrors
+    const currentErrors = isInOverlay ? overlayFieldErrors : fieldErrors;
+    
+    return (
+      <>
+        {isInOverlay && overlaySection === 'basic' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Sex *"
+                value={safeMedicalInfo?.sex || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, sex: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                error={currentErrors.sex}
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </Select>
+              
+              <Input
+                label="Height (inches) *"
+                type="text"
+                value={safeMedicalInfo?.height || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, height: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                placeholder="e.g., 68 for 5'8"
+                error={currentErrors.height}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Weight (lbs) *"
+                type="text"
+                value={safeMedicalInfo?.weight ? safeMedicalInfo.weight.toString().replace(' lbs', '').replace(' lb', '').replace('lbs', '').replace('lb', '').trim() : ''}
+                onChange={(e) => {
+                  const weightValue = e.target.value.trim();
+                  setMedicalInfo({
+                    ...safeMedicalInfo, 
+                    weight: weightValue ? `${weightValue} lb` : ''
+                  });
+                }}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                placeholder="190"
+                error={currentErrors.weight}
+              />
+              
+              <Select
+                label="Blood Type *"
+                value={safeMedicalInfo?.bloodType || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, bloodType: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                error={currentErrors.bloodType}
+              >
+                <option value="">Select...</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="Unknown">Unknown</option>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {isInOverlay && overlaySection === 'physician' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Doctor Name"
+                value={safeMedicalInfo?.primaryPhysician || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, primaryPhysician: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+              
+              <Input
+                label="Hospital"
+                value={safeMedicalInfo?.hospital || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, hospital: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+            </div>
+            
+            <Input
+              label="Doctor Address"
+              value={safeMedicalInfo?.physicianAddress || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianAddress: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="City"
+                value={safeMedicalInfo?.physicianCity || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianCity: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+              
+              <Input
+                label="State/Province"
+                value={safeMedicalInfo?.physicianState || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianState: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Zip/Postal Code"
+                value={safeMedicalInfo?.physicianZip || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianZip: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+              
+              <Input
+                label="Country"
+                value={safeMedicalInfo?.physicianCountry || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianCountry: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Doctor Home Phone"
+                type="tel"
+                value={safeMedicalInfo?.physicianHomePhone || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianHomePhone: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                placeholder="(555) 123-4567"
+              />
+              
+              <Input
+                label="Doctor Work Phone"
+                type="tel"
+                value={safeMedicalInfo?.physicianWorkPhone || ''}
+                onChange={(e) => setMedicalInfo({...safeMedicalInfo, physicianWorkPhone: e.target.value})}
+                disabled={isOverlaySaving || savingSection === 'medical'}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+            
+            <Select
+              label="Will Doctor Cooperate with Alcor?"
+              value={safeMedicalInfo?.willDoctorCooperate || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, willDoctorCooperate: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            >
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Unknown">Unknown</option>
+            </Select>
+          </div>
+        )}
+
+        {isInOverlay && overlaySection === 'history' && (
+          <div className="space-y-4">
+            <FormTextarea
+              label="Health Problems"
+              value={safeMedicalInfo?.healthProblems || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, healthProblems: e.target.value})}
+              placeholder="List any current or chronic health problems"
+              rows={3}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Allergies (including to drugs)"
+              value={safeMedicalInfo?.allergies || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, allergies: e.target.value})}
+              placeholder="e.g., Penicillin; Vicodin"
+              rows={3}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Medications Currently or Recently Taken"
+              value={safeMedicalInfo?.medications || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, medications: e.target.value})}
+              placeholder="e.g., Statin 20 mg; Nicotinamide Riboside 250 mg"
+              rows={3}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Identifying Scars or Deformities"
+              value={safeMedicalInfo?.identifyingScars || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, identifyingScars: e.target.value})}
+              rows={2}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Artificial Appliances, Implants or Prosthetics"
+              value={safeMedicalInfo?.artificialAppliances || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, artificialAppliances: e.target.value})}
+              placeholder="e.g., Tooth Implants: #3 #4 #5 #12"
+              rows={2}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Past Medical History"
+              value={safeMedicalInfo?.pastMedicalHistory || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, pastMedicalHistory: e.target.value})}
+              placeholder="List any significant past medical conditions, surgeries, or hospitalizations"
+              rows={4}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+            
+            <FormTextarea
+              label="Hereditary Illnesses or Tendencies in Family"
+              value={safeMedicalInfo?.hereditaryIllnesses || ''}
+              onChange={(e) => setMedicalInfo({...safeMedicalInfo, hereditaryIllnesses: e.target.value})}
+              placeholder="List any hereditary conditions in your family"
+              rows={3}
+              disabled={isOverlaySaving || savingSection === 'medical'}
+            />
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // Create the view content for overlay
+  const renderOverlayViewContent = () => {
+    return (
+      <div className="space-y-6">
+        {overlaySection === 'basic' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Sex</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.sex)}
+                >
+                  {safeMedicalInfo?.sex || '—'}
                 </p>
               </div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Height</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.height)}
+                >
+                  {formatHeight(safeMedicalInfo?.height)}
+                </p>
               </div>
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Weight</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.weight)}
+                >
+                  {formatWeight(safeMedicalInfo?.weight)}
+                </p>
+              </div>
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Blood Type</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.bloodType)}
+                >
+                  {safeMedicalInfo?.bloodType || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {overlaySection === 'physician' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Doctor Name</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.primaryPhysician)}
+                >
+                  {safeMedicalInfo?.primaryPhysician || '—'}
+                </p>
+              </div>
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Hospital</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.hospital)}
+                >
+                  {safeMedicalInfo?.hospital || '—'}
+                </p>
+              </div>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Doctor Address</label>
+              <p 
+                className={overlayStyles.displayMode.field.value}
+                style={overlayStyles.displayMode.field.getFieldStyle(!formatDoctorAddress() || formatDoctorAddress() === '—')}
+              >
+                {formatDoctorAddress()}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Phone Numbers</label>
+              <p 
+                className={overlayStyles.displayMode.field.value}
+                style={overlayStyles.displayMode.field.getFieldStyle(!formatDoctorPhones() || formatDoctorPhones() === '—')}
+              >
+                {formatDoctorPhones()}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Will Cooperate with Alcor?</label>
+              <p 
+                className={overlayStyles.displayMode.field.value}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.willDoctorCooperate)}
+              >
+                {safeMedicalInfo?.willDoctorCooperate || '—'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {overlaySection === 'history' && (
+          <div className="space-y-6">
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Health Problems</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.healthProblems)}
+              >
+                {safeMedicalInfo?.healthProblems || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Allergies (including to drugs)</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.allergies)}
+              >
+                {safeMedicalInfo?.allergies || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Current/Recent Medications</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.medications)}
+              >
+                {safeMedicalInfo?.medications || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Identifying Scars or Deformities</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.identifyingScars)}
+              >
+                {safeMedicalInfo?.identifyingScars || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Artificial Appliances/Implants/Prosthetics</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.artificialAppliances)}
+              >
+                {safeMedicalInfo?.artificialAppliances || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Past Medical History</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.pastMedicalHistory)}
+              >
+                {safeMedicalInfo?.pastMedicalHistory || '—'}
+              </p>
+            </div>
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>Hereditary Illnesses or Tendencies</label>
+              <p 
+                className={`${overlayStyles.displayMode.field.value} whitespace-pre-wrap`}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeMedicalInfo?.hereditaryIllnesses)}
+              >
+                {safeMedicalInfo?.hereditaryIllnesses || '—'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-      {!isMobile && (
-        <p className="text-sm text-gray-600 font-light">
-          {getMissingFieldsMessage()}
-        </p>
-      )}
-    </div>
-  </div>
-);
+    );
+  };
 
   return (
     <div ref={sectionRef} className={`medical-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
-        onClose={() => setOverlayOpen(false)}
+        onClose={handleOverlayClose}
         section={overlaySection}
-        data={{ medicalInfo: safeMedicalInfo }}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-      />
+        fieldInfo={getFieldDescriptions()}
+      >
+        {/* Success Message */}
+        {showOverlaySuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-800">Information updated successfully!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message for validation errors */}
+        {overlayEditMode && (overlayFieldErrors && Object.keys(overlayFieldErrors).length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Please complete all required fields</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content based on edit mode */}
+        {!overlayEditMode ? (
+          <>
+            {/* View Mode */}
+            {renderOverlayViewContent()}
+            
+            {/* Footer with Edit button */}
+            <div className={overlayStyles.footer.wrapper}>
+              <PurpleButton
+                text="Edit"
+                onClick={handleOverlayEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Edit Mode - Reuse the same form */}
+            {renderEditForm(true)}
+            
+            {/* Footer with Cancel/Save buttons */}
+            <div className={overlayStyles.footer.wrapper}>
+              <WhiteButton
+                text="Cancel"
+                onClick={handleOverlayCancel}
+                className={buttonStyles.overlayButtons.cancel}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+              <PurpleButton
+                text={isOverlaySaving ? 'Saving...' : 'Save'}
+                onClick={handleOverlaySave}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+            </div>
+          </>
+        )}
+      </CardOverlay>
 
       {isMobile ? (
         <MedicalInfoMobile
@@ -921,10 +997,10 @@ const ProfileImprovementNotice = () => (
                             Your medical history, health details, and emergency contact information.
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-2">
-                            Required: Sex, Blood Type
+                            Required: Sex, Height, Weight, Blood Type
                           </p>
                           <p className="text-gray-400 text-sm leading-5 mt-1">
-                            Recommended: Height, Weight, Primary Physician, Medical History
+                            Recommended: Primary Physician, Medical History
                           </p>
                         </div>
                       </div>
@@ -962,8 +1038,8 @@ const ProfileImprovementNotice = () => (
                     isVisible={cardsVisible}
                   >
                     <InfoField label="Sex" value={safeMedicalInfo?.sex || '—'} isRequired />
-                    <InfoField label="Height" value={formatHeight(safeMedicalInfo?.height)} isRecommended />
-                    <InfoField label="Weight" value={formatWeight(safeMedicalInfo?.weight)} isRecommended />
+                    <InfoField label="Height" value={formatHeight(safeMedicalInfo?.height)} isRequired />
+                    <InfoField label="Weight" value={formatWeight(safeMedicalInfo?.weight)} isRequired />
                     <InfoField label="Blood Type" value={safeMedicalInfo?.bloodType || '—'} isRequired />
                   </InfoCard>
 

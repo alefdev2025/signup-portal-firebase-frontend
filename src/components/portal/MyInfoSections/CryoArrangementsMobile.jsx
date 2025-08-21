@@ -21,6 +21,16 @@ const CryoArrangementsMobile = ({
   fieldConfig
 }) => {
   const [viewMode, setViewMode] = useState(false);
+  
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.cryoArrangements) {
+      setLocalErrors({});
+    }
+  }, [editMode.cryoArrangements]);
 
   // Calculate completion percentage
   const calculateCompletion = () => {
@@ -164,6 +174,45 @@ const CryoArrangementsMobile = ({
     </div>
   );
 
+  // Handle save with validation
+  const handleSave = () => {
+    const errors = {};
+    
+    // Only validate Remains Handling fields since that's all that can be edited
+    if (!cryoArrangements?.remainsHandling || !cryoArrangements.remainsHandling.trim()) {
+      errors.remainsHandling = "Remains handling preference is required";
+    }
+    
+    // If returning to recipient, validate additional fields
+    if (cryoArrangements?.remainsHandling === 'return') {
+      if (!cryoArrangements?.recipientName || !cryoArrangements.recipientName.trim()) {
+        errors.recipientName = "Recipient name is required";
+      }
+      if (!cryoArrangements?.recipientPhone || !cryoArrangements.recipientPhone.trim()) {
+        errors.recipientPhone = "Recipient phone is required";
+      }
+      if (!cryoArrangements?.recipientEmail || !cryoArrangements.recipientEmail.trim()) {
+        errors.recipientEmail = "Recipient email is required";
+      }
+      if (!cryoArrangements?.recipientMailingStreet || !cryoArrangements.recipientMailingStreet.trim()) {
+        errors.recipientMailingStreet = "Recipient street address is required";
+      }
+      if (!cryoArrangements?.recipientMailingCity || !cryoArrangements.recipientMailingCity.trim()) {
+        errors.recipientMailingCity = "Recipient city is required";
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    saveCryoArrangements();
+  };
+
   return (
     <div className="-mx-2">
       <div className="rounded-2xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.15)] border border-gray-200 w-full">
@@ -190,35 +239,35 @@ const CryoArrangementsMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Arrangement Details</h3>
-                      <p className="text-sm text-gray-600">Your cryopreservation method and preferences</p>
+                      <p className="text-sm text-gray-600">Your cryopreservation method<br />and preferences</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator with thicker stroke */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -386,34 +435,54 @@ const CryoArrangementsMobile = ({
         {/* Edit Form Section */}
         {editMode.cryoArrangements && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      {Object.entries(localErrors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               {/* Method - Read Only */}
               <ReadOnlyField
                 label="Method of Cryopreservation *"
                 value={formatMethod(cryoArrangements?.method)}
-                helperText="(Contact Alcor staff to make changes)"
+                helperText="(Contact Alcor staff to change)"
               />
 
               {/* CMS Waiver - Read Only */}
               <ReadOnlyField
                 label="CMS Fee Waiver *"
                 value={cryoArrangements?.cmsWaiver ? 'Yes - Waiving $200 annual fee with $20,000 additional funding' : 'No'}
-                helperText="(Contact Alcor staff to make changes)"
+                helperText="(Contact Alcor staff to change)"
               />
 
-              {/* Remains Handling */}
+              {/* Remains Handling - EDITABLE */}
               <FormSelect
                 label="Non-Cryopreserved Remains Handling *"
                 value={cryoArrangements?.remainsHandling || ''}
                 onChange={(e) => setCryoArrangements({...cryoArrangements, remainsHandling: e.target.value})}
                 disabled={savingSection === 'cryoArrangements'}
+                error={fieldErrors.remainsHandling || localErrors.remainsHandling}
               >
                 <option value="">Select...</option>
                 <option value="return">Return to designated recipient</option>
                 <option value="donate">Donate to medical research or dispose at Alcor's discretion</option>
               </FormSelect>
 
-              {/* Recipient Information */}
+              {/* Recipient Information - EDITABLE when "return" is selected */}
               {cryoArrangements?.remainsHandling === 'return' && (
                 <>
                   <div>
@@ -424,6 +493,7 @@ const CryoArrangementsMobile = ({
                         value={cryoArrangements?.recipientName || ''}
                         onChange={(e) => setCryoArrangements({...cryoArrangements, recipientName: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
+                        error={fieldErrors.recipientName || localErrors.recipientName}
                       />
                       <FormInput
                         label="Recipient Phone *"
@@ -431,6 +501,7 @@ const CryoArrangementsMobile = ({
                         value={cryoArrangements?.recipientPhone || ''}
                         onChange={(e) => setCryoArrangements({...cryoArrangements, recipientPhone: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
+                        error={fieldErrors.recipientPhone || localErrors.recipientPhone}
                       />
                       <FormInput
                         label="Recipient Email *"
@@ -438,11 +509,12 @@ const CryoArrangementsMobile = ({
                         value={cryoArrangements?.recipientEmail || ''}
                         onChange={(e) => setCryoArrangements({...cryoArrangements, recipientEmail: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
+                        error={fieldErrors.recipientEmail || localErrors.recipientEmail}
                       />
                     </div>
                   </div>
 
-                  {/* Recipient Address */}
+                  {/* Recipient Address - EDITABLE */}
                   <div>
                     <h4 className="text-base font-medium text-gray-900 mb-4">Recipient Mailing Address</h4>
                     <div className="space-y-4">
@@ -451,6 +523,7 @@ const CryoArrangementsMobile = ({
                         value={cryoArrangements?.recipientMailingStreet || ''}
                         onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingStreet: e.target.value})}
                         disabled={savingSection === 'cryoArrangements'}
+                        error={fieldErrors.recipientMailingStreet || localErrors.recipientMailingStreet}
                       />
                       <div className="grid grid-cols-2 gap-3">
                         <FormInput
@@ -458,6 +531,7 @@ const CryoArrangementsMobile = ({
                           value={cryoArrangements?.recipientMailingCity || ''}
                           onChange={(e) => setCryoArrangements({...cryoArrangements, recipientMailingCity: e.target.value})}
                           disabled={savingSection === 'cryoArrangements'}
+                          error={fieldErrors.recipientMailingCity || localErrors.recipientMailingCity}
                         />
                         <FormInput
                           label="State/Province"
@@ -488,33 +562,28 @@ const CryoArrangementsMobile = ({
                 </>
               )}
 
-              {/* Disclosure Preferences */}
+              {/* Disclosure Preferences - Read Only */}
               <div>
                 <h4 className="text-base font-medium text-gray-900 mb-4">Disclosure Preferences</h4>
                 <div className="space-y-4">
-                  <FormSelect
+                  <ReadOnlyField
                     label="Cryopreservation Information Disclosure *"
-                    value={cryoArrangements?.cryopreservationDisclosure || ''}
-                    onChange={(e) => setCryoArrangements({...cryoArrangements, cryopreservationDisclosure: e.target.value})}
-                    disabled={savingSection === 'cryoArrangements'}
-                  >
-                    <option value="">Select...</option>
-                    <option value="freely">Alcor is authorized to freely release Cryopreservation Member information</option>
-                    <option value="confidential">Alcor will make reasonable efforts to maintain confidentiality</option>
-                  </FormSelect>
+                    value={formatCryoDisclosure(cryoArrangements?.cryopreservationDisclosure)}
+                    helperText="(Contact Alcor staff to change)"
+                  />
 
-                  <FormSelect
+                  <ReadOnlyField
                     label="Member Name Disclosure *"
-                    value={cryoArrangements?.memberPublicDisclosure || ''}
-                    onChange={(e) => setCryoArrangements({...cryoArrangements, memberPublicDisclosure: e.target.value})}
-                    disabled={savingSection === 'cryoArrangements'}
-                  >
-                    <option value="">Select...</option>
-                    <option value="freely">I give Alcor permission to freely release my name</option>
-                    <option value="confidential">Alcor is to make reasonable efforts to maintain confidentiality</option>
-                  </FormSelect>
+                    value={formatMemberDisclosure(cryoArrangements?.memberPublicDisclosure)}
+                    helperText="(Contact Alcor staff to change)"
+                  />
                 </div>
               </div>
+              
+              {/* Note about editable fields */}
+              <p className="text-xs text-gray-500 italic">
+                * Only Non-Cryopreserved Remains Handling can be edited. Contact Alcor staff to change other selections.
+              </p>
             </div>
             
             {/* Action buttons */}
@@ -526,17 +595,8 @@ const CryoArrangementsMobile = ({
               >
                 Close
               </button>
-              {validationError && (
-                <button
-                  onClick={handleSaveAnyway}
-                  className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
-                  disabled={savingSection === 'cryoArrangements'}
-                >
-                  Save Anyway
-                </button>
-              )}
               <button
-                onClick={handleSaveWithValidation}
+                onClick={handleSave}
                 disabled={savingSection === 'cryoArrangements' || validatingAddress}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >

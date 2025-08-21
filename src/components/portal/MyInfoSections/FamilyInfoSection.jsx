@@ -1,3 +1,5 @@
+// FamilyInfoSection.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Button, ButtonGroup } from '../FormComponents';
@@ -18,131 +20,24 @@ import {
 import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
 import { HelpCircle } from 'lucide-react';
+import { memberCategoryConfig } from '../memberCategoryConfig';
 
-// Overlay Component - Updated to use local state like other sections
+// Simplified Overlay Component - Just a visual wrapper, NO state management
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   section, 
-  data, 
-  onSave,
-  savingSection,
-  fieldErrors = {}
+  children,  // The actual edit form will be passed as children
+  fieldInfo  // Title and description for the header
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  // Local state for editing - completely separate from parent
-  const [localFamilyInfo, setLocalFamilyInfo] = useState({});
-  // Local validation errors
-  const [localErrors, setLocalErrors] = useState({});
-
-  useEffect(() => {
-    if (isOpen) {
-      setEditMode(false);  // Start in view mode
-      setShowSuccess(false);
-      // Reset local state to current data when opening - create copy not reference
-      setLocalFamilyInfo({...data.familyInfo} || {});
-      setLocalErrors({});
-    }
-  }, [isOpen, data.familyInfo]);
-
   if (!isOpen) return null;
-
-  // Validation function for birthplace
-  const validateBirthplace = (value) => {
-    if (!value || !value.trim()) return null;
-    
-    const trimmedValue = value.trim().toLowerCase();
-    
-    // Check if it's "unknown"
-    if (trimmedValue === 'unknown') return null;
-    
-    // Check if it has at least 2 commas (city, state, country format)
-    const commaCount = (value.match(/,/g) || []).length;
-    if (commaCount >= 2) return null;
-    
-    // Return error message
-    return 'Please include city, state/province, and country (or enter "Unknown")';
-  };
-
-  const handleEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = () => {
-    const errors = {};
-    
-    // Validate father's birthplace if editing father section
-    if (section === 'father' && localFamilyInfo?.fathersBirthplace) {
-      const error = validateBirthplace(localFamilyInfo.fathersBirthplace);
-      if (error) {
-        errors.fathersBirthplace = error;
-        setLocalErrors(errors);
-        return;
-      }
-    }
-    
-    // Validate mother's birthplace if editing mother section
-    if (section === 'mother' && localFamilyInfo?.mothersBirthplace) {
-      const error = validateBirthplace(localFamilyInfo.mothersBirthplace);
-      if (error) {
-        errors.mothersBirthplace = error;
-        setLocalErrors(errors);
-        return;
-      }
-    }
-    
-    // Clear errors and proceed with save
-    setLocalErrors({});
-    // Pass the local data back to parent via callback
-    onSave(localFamilyInfo);
-    setEditMode(false);
-    setShowSuccess(true);
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  const handleCancel = () => {
-    // Reset to original data - create new copy
-    setLocalFamilyInfo({...data.familyInfo} || {});
-    setEditMode(false);
-    setLocalErrors({});
-  };
-
-  const getFieldDescriptions = () => {
-    switch (section) {
-      case 'father':
-        return {
-          title: 'Father Information',
-          description: 'Information about your father including his full name and birthplace. This information is required for legal documentation.',
-        };
-      case 'mother':
-        return {
-          title: 'Mother Information',
-          description: 'Information about your mother including her full maiden name and birthplace. This information is required for legal documentation.',
-        };
-      case 'spouse':
-        return {
-          title: 'Spouse Information',
-          description: 'Information about your spouse. This section is required if your marital status is "Married".',
-        };
-      default:
-        return { title: '', description: '' };
-    }
-  };
-
-  const fieldInfo = getFieldDescriptions();
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
-        <div className={overlayStyles.contentBox}>
+        <div className={`${overlayStyles.contentBox} overflow-hidden`}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
@@ -170,201 +65,21 @@ const CardOverlay = ({
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
                   <span className={overlayStyles.header.title} style={{ display: 'block' }}>
-                    {fieldInfo.title}
+                    {fieldInfo?.title || ''}
                   </span>
                   <p className={overlayStyles.header.description}>
-                    {fieldInfo.description}
+                    {fieldInfo?.description || ''}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content */}
+          {/* Body - Just render the children (the edit form) */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Information updated successfully!</p>
-              </div>
-            )}
-
-            {/* Fields */}
-            {!editMode ? (
-              /* Display Mode - Use local state */
-              <div className={overlayStyles.body.content}>
-                {section === 'father' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Father's Full Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.fathersName)}
-                        >
-                          {localFamilyInfo?.fathersName || '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Father's Birthplace</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.fathersBirthplace)}
-                        >
-                          {localFamilyInfo?.fathersBirthplace || '—'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {section === 'mother' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Mother's Full Maiden Name</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.mothersMaidenName)}
-                        >
-                          {localFamilyInfo?.mothersMaidenName || '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className={overlayStyles.displayMode.field.label}>Mother's Birthplace</label>
-                        <p 
-                          className={overlayStyles.displayMode.field.value}
-                          style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.mothersBirthplace)}
-                        >
-                          {localFamilyInfo?.mothersBirthplace || '—'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {section === 'spouse' && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className={overlayStyles.displayMode.field.label}>
-                        {data.personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
-                      </label>
-                      <p 
-                        className={overlayStyles.displayMode.field.value}
-                        style={overlayStyles.displayMode.field.getFieldStyle(!localFamilyInfo?.spousesName)}
-                      >
-                        {localFamilyInfo?.spousesName || '—'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Edit Mode - Update local state only */
-              <div className={overlayStyles.body.content}>
-                {section === 'father' && (
-                  <div className="space-y-4">
-                    <Input
-                      label="Father's Full Name *"
-                      type="text"
-                      value={localFamilyInfo?.fathersName || ''}
-                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, fathersName: e.target.value})}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.fathersName}
-                    />
-                    <Input
-                      label="Father's Birthplace *"
-                      type="text"
-                      placeholder="City, State/Province, Country"
-                      value={localFamilyInfo?.fathersBirthplace || ''}
-                      onChange={(e) => {
-                        setLocalFamilyInfo({...localFamilyInfo, fathersBirthplace: e.target.value});
-                        // Clear error on change
-                        setLocalErrors({});
-                      }}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.fathersBirthplace || localErrors.fathersBirthplace}
-                    />
-                    <p className="text-xs text-gray-500 -mt-2">
-                      Enter "Unknown" if not known
-                    </p>
-                  </div>
-                )}
-
-                {section === 'mother' && (
-                  <div className="space-y-4">
-                    <Input
-                      label="Mother's Full Maiden Name *"
-                      type="text"
-                      value={localFamilyInfo?.mothersMaidenName || ''}
-                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, mothersMaidenName: e.target.value})}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.mothersMaidenName}
-                    />
-                    <Input
-                      label="Mother's Birthplace *"
-                      type="text"
-                      placeholder="City, State/Province, Country"
-                      value={localFamilyInfo?.mothersBirthplace || ''}
-                      onChange={(e) => {
-                        setLocalFamilyInfo({...localFamilyInfo, mothersBirthplace: e.target.value});
-                        // Clear error on change
-                        setLocalErrors({});
-                      }}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.mothersBirthplace || localErrors.mothersBirthplace}
-                    />
-                    <p className="text-xs text-gray-500 -mt-2">
-                      Enter "Unknown" if not known
-                    </p>
-                  </div>
-                )}
-
-                {section === 'spouse' && (
-                  <div className="space-y-4">
-                    <Input
-                      label={`${data.personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
-                      type="text"
-                      value={localFamilyInfo?.spousesName || ''}
-                      onChange={(e) => setLocalFamilyInfo({...localFamilyInfo, spousesName: e.target.value})}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.spousesName}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
-              <PurpleButton
-                text="Edit"
-                onClick={handleEdit}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
-            ) : (
-              <>
-                <WhiteButton
-                  text="Cancel"
-                  onClick={handleCancel}
-                  className={buttonStyles.overlayButtons.cancel}
-                  spinStar={buttonStyles.starConfig.enabled}
-                />
-                <PurpleButton
-                  text={savingSection === 'family' ? 'Saving...' : 'Save'}
-                  onClick={handleSave}
-                  className={buttonStyles.overlayButtons.save}
-                  spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'family'}
-                />
-              </>
-            )}
+            <div className={overlayStyles.body.content}>
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -399,10 +114,49 @@ const FamilyInfoSection = ({
   const [overlaySection, setOverlaySection] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false);
-  // Add pendingSave flag for triggering save after state update
-  const [pendingSave, setPendingSave] = useState(false);
-  // Local validation errors for main form
-  const [localErrors, setLocalErrors] = useState({});
+  
+  // Track whether we're in overlay edit mode
+  const [overlayEditMode, setOverlayEditMode] = useState(false);
+  
+  // Track if save was successful to show success message
+  const [showOverlaySuccess, setShowOverlaySuccess] = useState(false);
+  
+  // Track if we're currently saving
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  
+  // Track overlay-specific field errors
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
+  
+  // Track if we're waiting for save to complete
+  const [overlayWaitingForSave, setOverlayWaitingForSave] = useState(false);
+
+  // Watch for save completion when we're waiting for it
+  useEffect(() => {
+    if (overlayWaitingForSave && savingSection !== 'family') {
+      // Save completed (either success or error)
+      setOverlayWaitingForSave(false);
+      setIsOverlaySaving(false);
+      
+      // Check if there are any field errors
+      const hasErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+      
+      if (!hasErrors) {
+        // Success! Show success message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          setOverlayOpen(false);
+          setShowOverlaySuccess(false);
+        }, 1500);
+      } else {
+        // There were errors, keep overlay open in edit mode
+        setOverlayFieldErrors(fieldErrors);
+      }
+    }
+  }, [savingSection, overlayWaitingForSave, fieldErrors]);
 
   useEffect(() => {
     // Inject animation styles
@@ -450,14 +204,6 @@ const FamilyInfoSection = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Trigger save after state update from overlay
-  useEffect(() => {
-    if (pendingSave) {
-      saveFamilyInfo();
-      setPendingSave(false);
-    }
-  }, [pendingSave, familyInfo]);
-
   // Field configuration for completion wheel
   const fieldConfig = {
     required: {
@@ -477,13 +223,9 @@ const FamilyInfoSection = ({
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
-  };
-
-  const handleOverlaySave = (updatedFamilyInfo) => {
-    // Update parent state with the new data
-    setFamilyInfo(updatedFamilyInfo);
-    // Set flag to trigger save after state updates
-    setPendingSave(true);
+    setOverlayEditMode(false); // Start in view mode
+    setShowOverlaySuccess(false); // Reset success message
+    setOverlayFieldErrors({}); // Clear any previous errors
   };
 
   // Validation helpers
@@ -527,35 +269,117 @@ const FamilyInfoSection = ({
     return fatherIncomplete || motherIncomplete;
   };
 
-  // Handle save with validation for main form
-  const handleSaveWithValidation = () => {
+  const handleOverlayEdit = () => {
+    // Set the main edit mode to true if not already
+    if (!editMode.family) {
+      toggleEditMode('family');
+    }
+    setOverlayEditMode(true);
+    setShowOverlaySuccess(false);
+  };
+
+  const handleOverlaySave = () => {
+    // Do local validation first
     const errors = {};
     
-    // Validate father's birthplace
-    if (safeFamilyInfo?.fathersBirthplace) {
-      const fatherError = validateBirthplace(safeFamilyInfo.fathersBirthplace);
-      if (fatherError) {
-        errors.fathersBirthplace = fatherError;
+    // Validate based on section
+    if (overlaySection === 'father') {
+      if (!safeFamilyInfo?.fathersName || !safeFamilyInfo.fathersName.trim()) {
+        errors.fathersName = "Father's name is required";
+      }
+      if (!safeFamilyInfo?.fathersBirthplace || !safeFamilyInfo.fathersBirthplace.trim()) {
+        errors.fathersBirthplace = "Father's birthplace is required";
+      } else {
+        const birthplaceError = validateBirthplace(safeFamilyInfo.fathersBirthplace);
+        if (birthplaceError) {
+          errors.fathersBirthplace = birthplaceError;
+        }
       }
     }
     
-    // Validate mother's birthplace
-    if (safeFamilyInfo?.mothersBirthplace) {
-      const motherError = validateBirthplace(safeFamilyInfo.mothersBirthplace);
-      if (motherError) {
-        errors.mothersBirthplace = motherError;
+    if (overlaySection === 'mother') {
+      if (!safeFamilyInfo?.mothersMaidenName || !safeFamilyInfo.mothersMaidenName.trim()) {
+        errors.mothersMaidenName = "Mother's maiden name is required";
+      }
+      if (!safeFamilyInfo?.mothersBirthplace || !safeFamilyInfo.mothersBirthplace.trim()) {
+        errors.mothersBirthplace = "Mother's birthplace is required";
+      } else {
+        const birthplaceError = validateBirthplace(safeFamilyInfo.mothersBirthplace);
+        if (birthplaceError) {
+          errors.mothersBirthplace = birthplaceError;
+        }
       }
     }
     
-    // If there are validation errors, set them and don't save
+    if (overlaySection === 'spouse' && safePersonalInfo?.maritalStatus === 'Married') {
+      if (!safeFamilyInfo?.spousesName || !safeFamilyInfo.spousesName.trim()) {
+        errors.spousesName = "Spouse's name is required";
+      }
+    }
+    
     if (Object.keys(errors).length > 0) {
-      setLocalErrors(errors);
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
       return;
     }
     
-    // Clear errors and proceed with save
-    setLocalErrors({});
+    // Clear errors and set waiting state
+    setOverlayFieldErrors({});
+    setIsOverlaySaving(true);
+    setOverlayWaitingForSave(true);
+    setShowOverlaySuccess(false);
+    
+    // Call the parent's save function
     saveFamilyInfo();
+    // The useEffect will handle the result when savingSection changes
+  };
+
+  const handleOverlayCancel = () => {
+    // Call the parent's cancel function
+    cancelEdit('family');
+    setOverlayEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const handleOverlayClose = () => {
+    // If we're saving, don't allow close
+    if (isOverlaySaving || overlayWaitingForSave || savingSection === 'family') {
+      return;
+    }
+    
+    // If we're in edit mode, cancel first
+    if (overlayEditMode) {
+      cancelEdit('family');
+      setOverlayEditMode(false);
+    }
+    setOverlayOpen(false);
+    setShowOverlaySuccess(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const getFieldDescriptions = () => {
+    switch (overlaySection) {
+      case 'father':
+        return {
+          title: 'Father Information',
+          description: 'Information about your father including his full name and birthplace. This information is required for legal documentation.',
+        };
+      case 'mother':
+        return {
+          title: 'Mother Information',
+          description: 'Information about your mother including her full maiden name and birthplace. This information is required for legal documentation.',
+        };
+      case 'spouse':
+        return {
+          title: 'Spouse Information',
+          description: 'Information about your spouse. This section is required if your marital status is "Married".',
+        };
+      default:
+        return { title: '', description: '' };
+    }
   };
 
   // Profile improvement notice component
@@ -610,18 +434,278 @@ const FamilyInfoSection = ({
     </div>
   );
 
+  // Create the edit form component that will be reused
+  const renderEditForm = (isInOverlay = false) => {
+    const containerClass = isInOverlay ? "space-y-4" : "grid grid-cols-2 gap-4";
+    // Use overlay-specific errors when in overlay, otherwise use parent fieldErrors
+    const currentErrors = isInOverlay ? overlayFieldErrors : fieldErrors;
+    
+    return (
+      <div className={containerClass}>
+        {isInOverlay && overlaySection === 'father' && (
+          <>
+            <Input
+              label="Father's Full Name *"
+              type="text"
+              value={safeFamilyInfo?.fathersName || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersName: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'family'}
+              error={currentErrors.fathersName}
+            />
+            <Input
+              label="Father's Birthplace *"
+              type="text"
+              placeholder="City, State/Province, Country"
+              value={safeFamilyInfo?.fathersBirthplace || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersBirthplace: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'family'}
+              error={currentErrors.fathersBirthplace}
+            />
+            <p className="text-xs text-gray-500 -mt-2">
+              Enter "Unknown" if not known
+            </p>
+          </>
+        )}
+
+        {isInOverlay && overlaySection === 'mother' && (
+          <>
+            <Input
+              label="Mother's Full Maiden Name *"
+              type="text"
+              value={safeFamilyInfo?.mothersMaidenName || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersMaidenName: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'family'}
+              error={currentErrors.mothersMaidenName}
+            />
+            <Input
+              label="Mother's Birthplace *"
+              type="text"
+              placeholder="City, State/Province, Country"
+              value={safeFamilyInfo?.mothersBirthplace || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersBirthplace: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'family'}
+              error={currentErrors.mothersBirthplace}
+            />
+            <p className="text-xs text-gray-500 -mt-2">
+              Enter "Unknown" if not known
+            </p>
+          </>
+        )}
+
+        {isInOverlay && overlaySection === 'spouse' && (
+          <Input
+            label={`${safePersonalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+            type="text"
+            value={safeFamilyInfo?.spousesName || ''}
+            onChange={(e) => setFamilyInfo({...safeFamilyInfo, spousesName: e.target.value})}
+            disabled={isOverlaySaving || savingSection === 'family'}
+            error={currentErrors.spousesName}
+          />
+        )}
+
+        {!isInOverlay && (
+          <>
+            <Input
+              label="Father's Full Name *"
+              type="text"
+              value={safeFamilyInfo.fathersName || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersName: e.target.value})}
+              disabled={savingSection === 'family'}
+              error={currentErrors.fathersName}
+            />
+            <Input
+              label="Father's Birthplace *"
+              type="text"
+              placeholder="City, State/Province, Country"
+              value={safeFamilyInfo.fathersBirthplace || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersBirthplace: e.target.value})}
+              disabled={savingSection === 'family'}
+              error={currentErrors.fathersBirthplace}
+            />
+            <Input
+              label="Mother's Full Maiden Name *"
+              type="text"
+              value={safeFamilyInfo.mothersMaidenName || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersMaidenName: e.target.value})}
+              disabled={savingSection === 'family'}
+              error={currentErrors.mothersMaidenName}
+            />
+            <Input
+              label="Mother's Birthplace *"
+              type="text"
+              placeholder="City, State/Province, Country"
+              value={safeFamilyInfo.mothersBirthplace || ''}
+              onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersBirthplace: e.target.value})}
+              disabled={savingSection === 'family'}
+              error={currentErrors.mothersBirthplace}
+            />
+            {safePersonalInfo.maritalStatus === 'Married' && (
+              <div className="col-span-2">
+                <Input
+                  label={`${safePersonalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                  type="text"
+                  value={safeFamilyInfo.spousesName || ''}
+                  onChange={(e) => setFamilyInfo({...safeFamilyInfo, spousesName: e.target.value})}
+                  disabled={savingSection === 'family'}
+                  error={currentErrors.spousesName}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Create the view content for overlay
+  const renderOverlayViewContent = () => {
+    return (
+      <div className="space-y-6">
+        {overlaySection === 'father' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Father's Full Name</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeFamilyInfo?.fathersName)}
+                >
+                  {safeFamilyInfo?.fathersName || '—'}
+                </p>
+              </div>
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Father's Birthplace</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeFamilyInfo?.fathersBirthplace)}
+                >
+                  {safeFamilyInfo?.fathersBirthplace || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {overlaySection === 'mother' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Mother's Full Maiden Name</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeFamilyInfo?.mothersMaidenName)}
+                >
+                  {safeFamilyInfo?.mothersMaidenName || '—'}
+                </p>
+              </div>
+              <div>
+                <label className={overlayStyles.displayMode.field.label}>Mother's Birthplace</label>
+                <p 
+                  className={overlayStyles.displayMode.field.value}
+                  style={overlayStyles.displayMode.field.getFieldStyle(!safeFamilyInfo?.mothersBirthplace)}
+                >
+                  {safeFamilyInfo?.mothersBirthplace || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {overlaySection === 'spouse' && (
+          <div className="space-y-6">
+            <div>
+              <label className={overlayStyles.displayMode.field.label}>
+                {safePersonalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"}
+              </label>
+              <p 
+                className={overlayStyles.displayMode.field.value}
+                style={overlayStyles.displayMode.field.getFieldStyle(!safeFamilyInfo?.spousesName)}
+              >
+                {safeFamilyInfo?.spousesName || '—'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div ref={sectionRef} className={`family-info-section ${hasLoaded && isVisible ? animationStyles.classes.fadeIn : 'opacity-0'}`}>
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
-        onClose={() => setOverlayOpen(false)}
+        onClose={handleOverlayClose}
         section={overlaySection}
-        data={{ familyInfo: safeFamilyInfo, personalInfo: safePersonalInfo }}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-      />
+        fieldInfo={getFieldDescriptions()}
+      >
+        {/* Success Message */}
+        {showOverlaySuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-800">Information updated successfully!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message for validation errors */}
+        {overlayEditMode && (overlayFieldErrors && Object.keys(overlayFieldErrors).length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Please complete all required fields</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content based on edit mode */}
+        {!overlayEditMode ? (
+          <>
+            {/* View Mode */}
+            {renderOverlayViewContent()}
+            
+            {/* Footer with Edit button */}
+            <div className={overlayStyles.footer.wrapper}>
+              <PurpleButton
+                text="Edit"
+                onClick={handleOverlayEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Edit Mode - Reuse the same form */}
+            {renderEditForm(true)}
+            
+            {/* Footer with Cancel/Save buttons */}
+            <div className={overlayStyles.footer.wrapper}>
+              <WhiteButton
+                text="Cancel"
+                onClick={handleOverlayCancel}
+                className={buttonStyles.overlayButtons.cancel}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+              <PurpleButton
+                text={isOverlaySaving ? 'Saving...' : 'Save'}
+                onClick={handleOverlaySave}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+            </div>
+          </>
+        )}
+      </CardOverlay>
 
       {isMobile ? (
         <FamilyInfoMobile
@@ -775,62 +859,7 @@ const FamilyInfoSection = ({
               ) : (
                 /* Edit Mode */
                 <div className="max-w-2xl">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Father's Full Name *"
-                      type="text"
-                      value={safeFamilyInfo.fathersName || ''}
-                      onChange={(e) => setFamilyInfo({...safeFamilyInfo, fathersName: e.target.value})}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.fathersName}
-                    />
-                    <Input
-                      label="Father's Birthplace *"
-                      type="text"
-                      placeholder="City, State/Province, Country"
-                      value={safeFamilyInfo.fathersBirthplace || ''}
-                      onChange={(e) => {
-                        setFamilyInfo({...safeFamilyInfo, fathersBirthplace: e.target.value});
-                        // Clear error on change
-                        setLocalErrors(prev => ({ ...prev, fathersBirthplace: null }));
-                      }}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.fathersBirthplace || localErrors.fathersBirthplace}
-                    />
-                    <Input
-                      label="Mother's Full Maiden Name *"
-                      type="text"
-                      value={safeFamilyInfo.mothersMaidenName || ''}
-                      onChange={(e) => setFamilyInfo({...safeFamilyInfo, mothersMaidenName: e.target.value})}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.mothersMaidenName}
-                    />
-                    <Input
-                      label="Mother's Birthplace *"
-                      type="text"
-                      placeholder="City, State/Province, Country"
-                      value={safeFamilyInfo.mothersBirthplace || ''}
-                      onChange={(e) => {
-                        setFamilyInfo({...safeFamilyInfo, mothersBirthplace: e.target.value});
-                        // Clear error on change
-                        setLocalErrors(prev => ({ ...prev, mothersBirthplace: null }));
-                      }}
-                      disabled={savingSection === 'family'}
-                      error={fieldErrors.mothersBirthplace || localErrors.mothersBirthplace}
-                    />
-                    {safePersonalInfo.maritalStatus === 'Married' && (
-                      <div className="col-span-2">
-                        <Input
-                          label={`${safePersonalInfo.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
-                          type="text"
-                          value={safeFamilyInfo.spousesName || ''}
-                          onChange={(e) => setFamilyInfo({...safeFamilyInfo, spousesName: e.target.value})}
-                          disabled={savingSection === 'family'}
-                          error={fieldErrors.spousesName}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  {renderEditForm(false)}
                   <p className="text-sm text-gray-500 mt-4">
                     * Please include city, state/province, and country for birthplaces. Enter "Unknown" if not known.
                   </p>
@@ -849,7 +878,7 @@ const FamilyInfoSection = ({
                     />
                     <PurpleButton
                       text={buttonStyles.getSaveButtonText(savingSection)}
-                      onClick={handleSaveWithValidation}
+                      onClick={saveFamilyInfo}
                       className={buttonStyles.purpleButton.base}
                       spinStar={buttonStyles.starConfig.enabled}
                       disabled={savingSection === 'family'}

@@ -20,6 +20,16 @@ const OccupationMobile = ({
   needsOccupationUpdate,
   ProfileImprovementNotice
 }) => {
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.occupation) {
+      setLocalErrors({});
+    }
+  }, [editMode.occupation]);
+  
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
@@ -31,38 +41,36 @@ const OccupationMobile = ({
       militaryServiceAnswered: occupation?.hasMilitaryService !== undefined && occupation?.hasMilitaryService !== null ? 'answered' : ''
     };
     
-    Object.entries(fieldConfig.required).forEach(([key, field]) => {
-      // Check if field has a condition
-      if (field.condition && !field.condition({ occupation })) {
-        return; // Skip this field if condition is not met
-      }
-      
-      const value = occupationForCheck[field.field];
-      if (value && value.toString().trim() !== '') {
+    // For required fields, we need to check dynamically based on military service
+    // Always required: occupation and militaryServiceAnswered
+    if (occupationForCheck?.occupation && occupationForCheck.occupation.trim() !== '') {
+      filledRequired++;
+    }
+    if (occupationForCheck?.militaryServiceAnswered) {
+      filledRequired++;
+    }
+    
+    // If they served, check additional required fields
+    if (occupation?.hasMilitaryService === true) {
+      if (occupation?.militaryBranch && occupation.militaryBranch.trim() !== '') {
         filledRequired++;
       }
-    });
-    
-    Object.values(fieldConfig.recommended).forEach(field => {
-      if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue({ occupation })) {
-          filledRecommended++;
-        }
-      } else {
-        const value = occupation?.[field.field];
-        if (value && value.trim() !== '') {
-          filledRecommended++;
-        }
+      if (occupation?.servedFrom && occupation.servedFrom.trim() !== '') {
+        filledRequired++;
       }
-    });
+      if (occupation?.servedTo && occupation.servedTo.trim() !== '') {
+        filledRequired++;
+      }
+    }
     
-    // Count only active required fields
-    const activeRequiredFields = Object.entries(fieldConfig.required).filter(([key, field]) => {
-      return !field.condition || field.condition({ occupation });
-    });
+    // Check recommended fields
+    if (occupation?.occupationalIndustry && occupation.occupationalIndustry.trim() !== '') {
+      filledRecommended++;
+    }
     
-    const totalRequired = activeRequiredFields.length;
-    const totalRecommended = Object.keys(fieldConfig.recommended).length;
+    // Calculate total required fields based on military service
+    const totalRequired = occupation?.hasMilitaryService === true ? 5 : 2;
+    const totalRecommended = 1; // Just industry
     
     const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 70 : 0;
     const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 30 : 0;
@@ -84,6 +92,44 @@ const OccupationMobile = ({
     }
     
     return parts.length > 0 ? parts.join(' • ') : 'No occupation information provided';
+  };
+  
+  // Handle save with complete validation
+  const handleSave = () => {
+    const errors = {};
+    
+    // Validate job title (required)
+    if (!occupation?.occupation || !occupation.occupation.trim()) {
+      errors.occupation = "Job title is required";
+    }
+    
+    // Military service status is always required (must be answered yes/no)
+    if (occupation?.hasMilitaryService === undefined || occupation?.hasMilitaryService === null) {
+      errors.hasMilitaryService = "Please indicate if you served in the military";
+    }
+    
+    // If they served, validate additional fields
+    if (occupation?.hasMilitaryService === true) {
+      if (!occupation?.militaryBranch || !occupation.militaryBranch.trim()) {
+        errors.militaryBranch = "Military branch is required";
+      }
+      if (!occupation?.servedFrom || !occupation.servedFrom.trim()) {
+        errors.servedFrom = "Service start year is required";
+      }
+      if (!occupation?.servedTo || !occupation.servedTo.trim()) {
+        errors.servedTo = "Service end year is required";
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    saveOccupation();
   };
 
   return (
@@ -112,35 +158,35 @@ const OccupationMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Career Details</h3>
-                      <p className="text-sm text-gray-600">Your occupation and military service</p>
+                      <p className="text-sm text-gray-600">Your occupation and<br />military service</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator with correct dimensions to match FamilyInfo */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -174,7 +220,7 @@ const OccupationMobile = ({
                         <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
                         <p className="text-xs text-gray-500 mt-0.5">
                           Job Title, Military Service Status
-                          {occupation?.hasMilitaryService && ' (Branch, Service Years)'}
+                          {occupation?.hasMilitaryService === true && ' (Branch, Service Years)'}
                         </p>
                       </div>
                     </div>
@@ -214,6 +260,25 @@ const OccupationMobile = ({
         {/* Edit Form Section */}
         {editMode.occupation && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      {Object.entries(localErrors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               {/* Career Information */}
               <div>
@@ -221,11 +286,11 @@ const OccupationMobile = ({
                 <div className="space-y-4">
                   <div>
                     <FormInput
-                      label="Job Title"
+                      label="Job Title *"
                       value={occupation?.occupation || ''}
                       onChange={(e) => setOccupation({...occupation, occupation: e.target.value})}
                       disabled={savingSection === 'occupation'}
-                      error={fieldErrors.occupation}
+                      error={fieldErrors.occupation || localErrors.occupation}
                     />
                     {!occupation?.occupation && (
                       <p className="text-gray-500 text-sm mt-1 font-light">
@@ -312,8 +377,11 @@ const OccupationMobile = ({
                     disabled={savingSection === 'occupation'}
                     className="w-4 h-4 rounded mr-3 text-purple-600 focus:ring-purple-500"
                   />
-                  <span className="text-sm text-gray-700 font-medium">Have you served in the US Military?</span>
+                  <span className="text-sm text-gray-700 font-medium">Have you served in the US Military? *</span>
                 </label>
+                {localErrors.hasMilitaryService && (
+                  <p className="text-red-600 text-xs mt-1">{localErrors.hasMilitaryService}</p>
+                )}
                 
                 {occupation?.hasMilitaryService && (
                   <div className="mt-4 space-y-4">
@@ -322,7 +390,7 @@ const OccupationMobile = ({
                       value={occupation?.militaryBranch || ''}
                       onChange={(e) => setOccupation({...occupation, militaryBranch: e.target.value})}
                       disabled={savingSection === 'occupation'}
-                      error={fieldErrors.militaryBranch}
+                      error={fieldErrors.militaryBranch || localErrors.militaryBranch}
                     >
                       <option value="">Select...</option>
                       <option value="Army">Army</option>
@@ -348,7 +416,7 @@ const OccupationMobile = ({
                         maxLength="4"
                         pattern="\d{4}"
                         disabled={savingSection === 'occupation'}
-                        error={fieldErrors.servedFrom}
+                        error={fieldErrors.servedFrom || localErrors.servedFrom}
                       />
                       <FormInput
                         label="Service End Year *"
@@ -364,7 +432,7 @@ const OccupationMobile = ({
                         maxLength="4"
                         pattern="\d{4}"
                         disabled={savingSection === 'occupation'}
-                        error={fieldErrors.servedTo}
+                        error={fieldErrors.servedTo || localErrors.servedTo}
                       />
                     </div>
                   </div>
@@ -375,14 +443,16 @@ const OccupationMobile = ({
             {/* Action buttons */}
             <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={() => cancelEdit && cancelEdit('occupation')}
+                onClick={() => {
+                  cancelEdit && cancelEdit('occupation');
+                }}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'occupation'}
               >
                 Close
               </button>
               <button
-                onClick={saveOccupation}
+                onClick={handleSave}
                 disabled={savingSection === 'occupation'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >
