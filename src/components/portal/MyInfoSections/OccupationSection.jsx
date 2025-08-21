@@ -357,58 +357,58 @@ const OccupationSection = ({
   const needsOccupationUpdate = () => {
     return !safeOccupation.occupation || isJustRetired(safeOccupation.occupation);
   };
-
-  // Profile improvement notice component
-  const ProfileImprovementNotice = () => (
-    <div className={isMobile ? "mt-4 mb-4" : "flex items-center gap-4"}>
-      <svg className={isMobile ? "w-8 h-8 text-red-600 flex-shrink-0 mb-2" : "w-10 h-10 text-red-600 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <p className={isMobile ? "text-sm font-semibold text-white/90" : "text-sm font-semibold text-gray-900"}>
-            Update Your Occupation
-          </p>
-          <div className="relative">
-            <HelpCircle 
-              className={isMobile ? "w-4 h-4 text-white/60 hover:text-white/80 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"} 
-              strokeWidth={2}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(!showTooltip)}
-            />
-            {showTooltip && (
-              <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
-                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Why Does Alcor Need This?
-                    </h3>
-                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-sm text-gray-700">
-                    Alcor needs complete occupation information to better obtain a death certificate
-                  </p>
-                </div>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+// Profile improvement notice component
+// Profile improvement notice component
+const ProfileImprovementNotice = () => (
+  <div className={isMobile ? "flex items-start space-x-2" : "flex items-center gap-4"}>
+    <svg className={isMobile ? "w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" : "w-10 h-10 text-red-600 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    
+    <div className="flex-1">
+      <div className="flex items-center gap-2">
+        <p className={isMobile ? "text-sm font-semibold text-gray-900" : "text-sm font-semibold text-gray-900"}>
+          Update Your Occupation
+        </p>
+        <div className="relative">
+          <HelpCircle 
+            className={isMobile ? "w-4 h-4 text-gray-600 hover:text-gray-800 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"} 
+            strokeWidth={2}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+          />
+          {showTooltip && (
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Why Does Alcor Need This?
+                  </h3>
+                  <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                  </svg>
                 </div>
               </div>
-            )}
-          </div>
+              <div className="px-4 py-3">
+                <p className="text-sm text-gray-700">
+                  Alcor needs complete occupation information to better obtain a death certificate
+                </p>
+              </div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+              </div>
+            </div>
+          )}
         </div>
-        <p className={isMobile ? "text-sm text-white/70 font-light" : "text-sm text-gray-600 font-light"}>
-          {!safeOccupation.occupation ? "Please add your occupation information" : "Please include your occupation before retirement"}
-        </p>
       </div>
+      <p className={isMobile ? "text-sm text-gray-700 font-light" : "text-sm text-gray-600 font-light"}>
+        {!safeOccupation.occupation ? "Please add your occupation information" : "Please include your occupation before retirement"}
+      </p>
     </div>
-  );
+  </div>
+);
 
   // Create the edit form component that will be reused
   const renderEditForm = (isInOverlay = false) => {

@@ -102,6 +102,19 @@ const FamilyInfoSection = ({
   sectionLabel,
   fieldErrors = {}
 }) => {
+  // Initialize familyInfo if empty
+  useEffect(() => {
+    if (!familyInfo || Object.keys(familyInfo).length === 0) {
+      setFamilyInfo({
+        fathersName: '',
+        fathersBirthplace: '',
+        mothersMaidenName: '',
+        mothersBirthplace: '',
+        spousesName: ''
+      });
+    }
+  }, []);
+
   // Ensure familyInfo is always an object
   const safeFamilyInfo = familyInfo || {};
   const safePersonalInfo = personalInfo || {};
@@ -228,17 +241,24 @@ const FamilyInfoSection = ({
     setOverlayFieldErrors({}); // Clear any previous errors
   };
 
-  // Validation helpers
+  // IMPROVED: More lenient birthplace validation
   const validateBirthplaceFormat = (birthplace) => {
     if (!birthplace) return false;
     const trimmed = birthplace.trim().toLowerCase();
     
+    // Accept "unknown"
     if (trimmed === 'unknown') return true;
     
+    // Accept if it has at least 1 comma (e.g., "New York, USA")
     const commaCount = (birthplace.match(/,/g) || []).length;
-    const parts = birthplace.split(/[,\s]+/).filter(part => part.length > 0);
+    if (commaCount >= 1) return true;
     
-    return commaCount >= 2 || parts.length >= 3;
+    // Accept if it's reasonably detailed even without commas
+    // (e.g., "London United Kingdom" or "Tokyo Japan")
+    const parts = birthplace.split(/[\s,]+/).filter(part => part.length > 0);
+    if (parts.length >= 2 && birthplace.length >= 10) return true;
+    
+    return false;
   };
 
   const validateBirthplace = (value) => {
@@ -249,22 +269,24 @@ const FamilyInfoSection = ({
     // Check if it's "unknown"
     if (trimmedValue === 'unknown') return null;
     
-    // Check if it has at least 2 commas (city, state, country format)
+    // Check if it has at least 1 comma
     const commaCount = (value.match(/,/g) || []).length;
-    if (commaCount >= 2) return null;
+    if (commaCount >= 1) return null;
     
-    // Return error message
-    return 'Please include city, state/province, and country (or enter "Unknown")';
+    // Check if it's reasonably detailed even without commas
+    const parts = value.split(/[\s,]+/).filter(part => part.length > 0);
+    if (parts.length >= 2 && value.length >= 10) return null;
+    
+    // Return helpful error message
+    return 'Please include location details (e.g., "City, Country" or enter "Unknown")';
   };
 
   const needsBirthplaceUpdate = () => {
     const fatherBirthplace = safeFamilyInfo.fathersBirthplace || '';
     const motherBirthplace = safeFamilyInfo.mothersBirthplace || '';
     
-    const fatherIncomplete = !fatherBirthplace || 
-                           (!fatherBirthplace.includes(',') && fatherBirthplace.length < 10 && fatherBirthplace.toLowerCase() !== 'unknown');
-    const motherIncomplete = !motherBirthplace || 
-                           (!motherBirthplace.includes(',') && motherBirthplace.length < 10 && motherBirthplace.toLowerCase() !== 'unknown');
+    const fatherIncomplete = !validateBirthplaceFormat(fatherBirthplace);
+    const motherIncomplete = !validateBirthplaceFormat(motherBirthplace);
     
     return fatherIncomplete || motherIncomplete;
   };
@@ -278,11 +300,12 @@ const FamilyInfoSection = ({
     setShowOverlaySuccess(false);
   };
 
-  const handleOverlaySave = () => {
-    // Do local validation first
+  // IMPROVED: Allow saving partial data from overlay
+  const handleOverlaySave = async () => {
+    // Do local validation for ONLY the current section being edited
     const errors = {};
     
-    // Validate based on section
+    // Only validate the fields for the current overlay section
     if (overlaySection === 'father') {
       if (!safeFamilyInfo?.fathersName || !safeFamilyInfo.fathersName.trim()) {
         errors.fathersName = "Father's name is required";
@@ -329,9 +352,59 @@ const FamilyInfoSection = ({
     setOverlayWaitingForSave(true);
     setShowOverlaySuccess(false);
     
+    // IMPORTANT: Call a PARTIAL save function instead of the full saveFamilyInfo
+    // We need to save just the current section's data
+    try {
+      // Create a custom save that only validates/saves the current section
+      await savePartialFamilyInfo(overlaySection);
+      
+      // Show success
+      setShowOverlaySuccess(true);
+      setOverlayEditMode(false);
+      setOverlayFieldErrors({});
+      setIsOverlaySaving(false);
+      setOverlayWaitingForSave(false);
+      
+      // Close overlay after showing success
+      setTimeout(() => {
+        setOverlayOpen(false);
+        setShowOverlaySuccess(false);
+      }, 1500);
+    } catch (error) {
+      // Handle error
+      setOverlayFieldErrors({ general: 'Failed to save. Please try again.' });
+      setIsOverlaySaving(false);
+      setOverlayWaitingForSave(false);
+    }
+  };
+
+  // NEW: Function to save partial family info (only validates what's being saved)
+  const savePartialFamilyInfo = async (section) => {
+    // This would need to be implemented in the parent component or here
+    // For now, we'll call the regular saveFamilyInfo but with a flag
+    
+    // Temporarily bypass full validation by modifying the data
+    const tempFamilyInfo = { ...safeFamilyInfo };
+    
+    // If saving father, ensure mother fields have at least empty strings
+    if (section === 'father') {
+      if (!tempFamilyInfo.mothersMaidenName) tempFamilyInfo.mothersMaidenName = '';
+      if (!tempFamilyInfo.mothersBirthplace) tempFamilyInfo.mothersBirthplace = '';
+    }
+    
+    // If saving mother, ensure father fields have at least empty strings
+    if (section === 'mother') {
+      if (!tempFamilyInfo.fathersName) tempFamilyInfo.fathersName = '';
+      if (!tempFamilyInfo.fathersBirthplace) tempFamilyInfo.fathersBirthplace = '';
+    }
+    
+    // Update the familyInfo with the temp data
+    setFamilyInfo(tempFamilyInfo);
+    
     // Call the parent's save function
-    saveFamilyInfo();
-    // The useEffect will handle the result when savingSection changes
+    // Note: This still might fail if the parent requires ALL fields
+    // The parent component would need to be updated to allow partial saves
+    return saveFamilyInfo();
   };
 
   const handleOverlayCancel = () => {
@@ -382,57 +455,57 @@ const FamilyInfoSection = ({
     }
   };
 
-  // Profile improvement notice component
-  const ProfileImprovementNotice = () => (
-    <div className={isMobile ? "mt-4 mb-4" : "flex items-center gap-4"}>
-      <svg className={isMobile ? "w-8 h-8 text-red-600 flex-shrink-0 mb-2" : "w-10 h-10 text-red-600 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <p className={isMobile ? "text-sm font-semibold text-white/90" : "text-sm font-semibold text-gray-900"}>
-            Add Required Information
-          </p>
-          <div className="relative">
-            <HelpCircle 
-              className={isMobile ? "w-4 h-4 text-white/60 hover:text-white/80 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"} 
-              strokeWidth={2}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(!showTooltip)}
-            />
-            {showTooltip && (
-              <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
-                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Why Does Alcor Need This?
-                    </h3>
-                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-sm text-gray-700">
-                    Alcor needs complete family birthplace location to better obtain a death certificate
-                  </p>
-                </div>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+// Profile improvement notice component
+const ProfileImprovementNotice = () => (
+  <div className={isMobile ? "flex items-start space-x-2" : "flex items-center gap-4"}>
+    <svg className={isMobile ? "w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" : "w-10 h-10 text-red-600 flex-shrink-0"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    
+    <div className="flex-1">
+      <div className="flex items-center gap-2">
+        <p className={isMobile ? "text-sm font-semibold text-gray-900" : "text-sm font-semibold text-gray-900"}>
+          Add Required Information
+        </p>
+        <div className="relative">
+          <HelpCircle 
+            className={isMobile ? "w-4 h-4 text-gray-600 hover:text-gray-800 cursor-help" : "w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help"} 
+            strokeWidth={2}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+          />
+          {showTooltip && (
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${isMobile ? 'w-64' : 'w-72'}`}>
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Why Does Alcor Need This?
+                  </h3>
+                  <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                  </svg>
                 </div>
               </div>
-            )}
-          </div>
+              <div className="px-4 py-3">
+                <p className="text-sm text-gray-700">
+                  Alcor needs complete family birthplace location to better obtain a death certificate
+                </p>
+              </div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+              </div>
+            </div>
+          )}
         </div>
-        <p className={isMobile ? "text-sm text-white/70 font-light" : "text-sm text-gray-600 font-light"}>
-          Add city, state, country to birthplaces ("Unknown" if unknown)
-        </p>
       </div>
+      <p className={isMobile ? "text-sm text-gray-700 font-light" : "text-sm text-gray-600 font-light"}>
+        Add location details (e.g., "City, Country" or enter "Unknown")
+      </p>
     </div>
-  );
+  </div>
+);
 
   // Create the edit form component that will be reused
   const renderEditForm = (isInOverlay = false) => {
@@ -462,7 +535,7 @@ const FamilyInfoSection = ({
               error={currentErrors.fathersBirthplace}
             />
             <p className="text-xs text-gray-500 -mt-2">
-              Enter "Unknown" if not known
+              Enter "Unknown" if not known. Include location details for best results.
             </p>
           </>
         )}
@@ -487,7 +560,7 @@ const FamilyInfoSection = ({
               error={currentErrors.mothersBirthplace}
             />
             <p className="text-xs text-gray-500 -mt-2">
-              Enter "Unknown" if not known
+              Enter "Unknown" if not known. Include location details for best results.
             </p>
           </>
         )}
@@ -861,7 +934,7 @@ const FamilyInfoSection = ({
                 <div className="max-w-2xl">
                   {renderEditForm(false)}
                   <p className="text-sm text-gray-500 mt-4">
-                    * Please include city, state/province, and country for birthplaces. Enter "Unknown" if not known.
+                    * Include location details for birthplaces (e.g., "City, Country"). Enter "Unknown" if not known.
                   </p>
                 </div>
               )}

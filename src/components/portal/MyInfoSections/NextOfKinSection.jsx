@@ -18,108 +18,22 @@ import {
 import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
 
-// Overlay Component with proper local state management
+// Simplified Overlay Component - Just a visual wrapper, NO state management
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   nokIndex,
-  nextOfKinList,
-  onSave,
-  savingSection,
-  fieldErrors = {},
-  validateEmail,
-  formatPhoneDisplay
+  children,  // The actual edit form will be passed as children
+  fieldInfo  // Title and description for the header
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  // Local state for editing - completely separate from parent
-  const [localNok, setLocalNok] = useState({});
-
-  useEffect(() => {
-    if (isOpen && nokIndex !== null && nextOfKinList[nokIndex]) {
-      setEditMode(false);  // Start in display mode
-      setShowSuccess(false);
-      // Deep copy the NOK data to avoid reference issues
-      setLocalNok({
-        ...nextOfKinList[nokIndex],
-        address: nextOfKinList[nokIndex]?.address ? {...nextOfKinList[nokIndex].address} : {}
-      });
-    }
-  }, [isOpen, nokIndex, nextOfKinList]);
-
   if (!isOpen || nokIndex === null) return null;
-
-  const handleEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = () => {
-    // Pass the local data back to parent via callback
-    onSave(nokIndex, localNok);
-    setEditMode(false);
-    setShowSuccess(true);
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  const handleCancel = () => {
-    // Reset to original data - deep copy again
-    if (nextOfKinList[nokIndex]) {
-      setLocalNok({
-        ...nextOfKinList[nokIndex],
-        address: nextOfKinList[nokIndex]?.address ? {...nextOfKinList[nokIndex].address} : {}
-      });
-    }
-    setEditMode(false);
-  };
-
-  const updateLocalNok = (field, value) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setLocalNok(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
-      }));
-    } else {
-      setLocalNok(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    }
-  };
-
-  const formatAddress = (address) => {
-    if (!address || typeof address !== 'object') return '—';
-    const parts = [
-      address.street1,
-      address.street2,
-      address.city,
-      address.state,
-      address.postalCode,
-      address.country
-    ].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : '—';
-  };
-
-  // Local validateEmail if not provided
-  const validateEmailLocal = validateEmail || ((email) => {
-    if (!email) return false;
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  });
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
-        <div className={overlayStyles.contentBox}>
+        <div className={`${overlayStyles.contentBox} overflow-hidden`}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
@@ -139,311 +53,21 @@ const CardOverlay = ({
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
                   <h3 className={overlayStyles.header.title}>
-                    Emergency Contact {nokIndex + 1}
+                    {fieldInfo?.title || ''}
                   </h3>
                   <p className={overlayStyles.header.description}>
-                    Details for {localNok?.firstName && localNok?.lastName ? 
-                      `${localNok.firstName} ${localNok.lastName}` : 
-                      'this emergency contact'}
+                    {fieldInfo?.description || ''}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content */}
+          {/* Body - Just render the children (the edit form) */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Emergency contact updated successfully!</p>
-              </div>
-            )}
-
-            {/* Fields */}
-            {!editMode ? (
-              /* Display Mode - Use local state */
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>First Name</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.firstName)}
-                    >
-                      {localNok?.firstName || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Middle Name</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.middleName)}
-                    >
-                      {localNok?.middleName || '—'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Last Name</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.lastName)}
-                    >
-                      {localNok?.lastName || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Relationship</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.relationship)}
-                    >
-                      {localNok?.relationship || '—'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Email</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.email)}
-                    >
-                      {localNok?.email || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Mobile Phone</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.mobilePhone)}
-                    >
-                      {formatPhoneDisplay(localNok?.mobilePhone) || '—'}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={overlayStyles.displayMode.field.label}>Address</label>
-                  <p 
-                    className={overlayStyles.displayMode.field.value}
-                    style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.address || !localNok?.address?.street1)}
-                  >
-                    {formatAddress(localNok?.address)}
-                  </p>
-                </div>
-
-                <div>
-                  <label className={overlayStyles.displayMode.field.label}>Willing to Sign Affidavit?</label>
-                  <p 
-                    className={overlayStyles.displayMode.field.value}
-                    style={overlayStyles.displayMode.field.getFieldStyle(!localNok?.willingToSignAffidavit)}
-                  >
-                    {localNok?.willingToSignAffidavit || '—'}
-                  </p>
-                </div>
-
-                {localNok?.comments && (
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Comments</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(false)}
-                    >
-                      {localNok.comments}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Edit Mode - Update local state only */
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="First Name *"
-                    value={localNok?.firstName || ''}
-                    onChange={(e) => updateLocalNok('firstName', e.target.value)}
-                    error={fieldErrors[`nok_${nokIndex}_firstName`]}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                  <Input
-                    label="Middle Name"
-                    value={localNok?.middleName || ''}
-                    onChange={(e) => updateLocalNok('middleName', e.target.value)}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Last Name *"
-                    value={localNok?.lastName || ''}
-                    onChange={(e) => updateLocalNok('lastName', e.target.value)}
-                    error={fieldErrors[`nok_${nokIndex}_lastName`]}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                  <Input
-                    label="Relationship *"
-                    value={localNok?.relationship || ''}
-                    onChange={(e) => updateLocalNok('relationship', e.target.value)}
-                    placeholder="e.g., Spouse, Child, Parent"
-                    error={fieldErrors[`nok_${nokIndex}_relationship`]}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Date of Birth"
-                    type="date"
-                    value={localNok?.dateOfBirth || ''}
-                    onChange={(e) => updateLocalNok('dateOfBirth', e.target.value)}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                  <Input
-                    label="Email *"
-                    type="email"
-                    value={localNok?.email || ''}
-                    onChange={(e) => updateLocalNok('email', e.target.value)}
-                    error={fieldErrors[`nok_${nokIndex}_email`] || 
-                           (!validateEmailLocal(localNok?.email) && localNok?.email ? 'Invalid email format' : '')}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Mobile Phone *"
-                    type="tel"
-                    value={localNok?.mobilePhone || ''}
-                    onChange={(e) => updateLocalNok('mobilePhone', e.target.value)}
-                    placeholder="(555) 123-4567"
-                    error={fieldErrors[`nok_${nokIndex}_mobilePhone`]}
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                  <Input
-                    label="Home Phone"
-                    type="tel"
-                    value={localNok?.homePhone || ''}
-                    onChange={(e) => updateLocalNok('homePhone', e.target.value)}
-                    placeholder="(555) 123-4567"
-                    disabled={savingSection === 'nextOfKin'}
-                  />
-                </div>
-                
-                <div>
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Address</h5>
-                  <div className="space-y-3">
-                    <Input
-                      label=""
-                      value={localNok?.address?.street1 || ''}
-                      onChange={(e) => updateLocalNok('address.street1', e.target.value)}
-                      placeholder="Street Address Line 1"
-                      disabled={savingSection === 'nextOfKin'}
-                    />
-                    <Input
-                      label=""
-                      value={localNok?.address?.street2 || ''}
-                      onChange={(e) => updateLocalNok('address.street2', e.target.value)}
-                      placeholder="Street Address Line 2"
-                      disabled={savingSection === 'nextOfKin'}
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label=""
-                        value={localNok?.address?.city || ''}
-                        onChange={(e) => updateLocalNok('address.city', e.target.value)}
-                        placeholder="City"
-                        disabled={savingSection === 'nextOfKin'}
-                      />
-                      <Input
-                        label=""
-                        value={localNok?.address?.state || ''}
-                        onChange={(e) => updateLocalNok('address.state', e.target.value)}
-                        placeholder="State/Province"
-                        disabled={savingSection === 'nextOfKin'}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label=""
-                        value={localNok?.address?.postalCode || ''}
-                        onChange={(e) => updateLocalNok('address.postalCode', e.target.value)}
-                        placeholder="Zip/Postal Code"
-                        disabled={savingSection === 'nextOfKin'}
-                      />
-                      <Input
-                        label=""
-                        value={localNok?.address?.country || ''}
-                        onChange={(e) => updateLocalNok('address.country', e.target.value)}
-                        placeholder="Country"
-                        disabled={savingSection === 'nextOfKin'}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <Select
-                  label="Willing to Sign Affidavit?"
-                  value={localNok?.willingToSignAffidavit || ''}
-                  onChange={(e) => updateLocalNok('willingToSignAffidavit', e.target.value)}
-                  disabled={savingSection === 'nextOfKin'}
-                >
-                  <option value="">Select...</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                  <option value="Unknown">Unknown</option>
-                </Select>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Comments about attitude toward cryonics
-                  </label>
-                  <textarea
-                    value={localNok?.comments || ''}
-                    onChange={(e) => updateLocalNok('comments', e.target.value)}
-                    disabled={savingSection === 'nextOfKin'}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
-              <PurpleButton
-                text="Edit"
-                onClick={handleEdit}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
-            ) : (
-              <>
-                <WhiteButton
-                  text="Cancel"
-                  onClick={handleCancel}
-                  className={buttonStyles.overlayButtons.cancel}
-                  spinStar={buttonStyles.starConfig.enabled}
-                />
-                <PurpleButton
-                  text={savingSection === 'nextOfKin' ? 'Saving...' : 'Save'}
-                  onClick={handleSave}
-                  className={buttonStyles.overlayButtons.save}
-                  spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'nextOfKin'}
-                />
-              </>
-            )}
+            <div className={overlayStyles.body.content}>
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -474,6 +98,17 @@ const NextOfKinSection = ({
   validateEmail,
   getFieldError // This might not be passed, so we'll handle it
 }) => {
+  // Ensure nextOfKinList is always an array
+  const safeNextOfKinList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
+  
+  // If nextOfKinList is not an array, fix it immediately
+  useEffect(() => {
+    if (!Array.isArray(nextOfKinList)) {
+      console.warn('nextOfKinList is not an array, fixing it:', nextOfKinList);
+      setNextOfKinList([]);
+    }
+  }, [nextOfKinList, setNextOfKinList]);
+  
   // State management
   const [isMobile, setIsMobile] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -483,8 +118,50 @@ const NextOfKinSection = ({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlayNokIndex, setOverlayNokIndex] = useState(null);
   const [cardsVisible, setCardsVisible] = useState(false);
-  // Add pendingSave flag for triggering save after state update
-  const [pendingSave, setPendingSave] = useState(false);
+  
+  // Track whether we're in overlay edit mode
+  const [overlayEditMode, setOverlayEditMode] = useState(false);
+  
+  // Track if save was successful to show success message
+  const [showOverlaySuccess, setShowOverlaySuccess] = useState(false);
+  
+  // Track if we're currently saving
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  
+  // Track overlay-specific field errors
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
+  
+  // Track if we're waiting for save to complete
+  const [overlayWaitingForSave, setOverlayWaitingForSave] = useState(false);
+
+  // Watch for save completion when we're waiting for it
+  useEffect(() => {
+    if (overlayWaitingForSave && savingSection !== 'nextOfKin') {
+      // Save completed (either success or error)
+      setOverlayWaitingForSave(false);
+      setIsOverlaySaving(false);
+      
+      // Check if there are any field errors
+      const hasErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+      
+      if (!hasErrors) {
+        // Success! Show success message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          setOverlayOpen(false);
+          setShowOverlaySuccess(false);
+          setOverlayNokIndex(null);
+        }, 1500);
+      } else {
+        // There were errors, keep overlay open in edit mode
+        setOverlayFieldErrors(fieldErrors);
+      }
+    }
+  }, [savingSection, overlayWaitingForSave, fieldErrors]);
 
   // Define default implementations if not provided
   const validateEmailLocal = validateEmail || ((email) => {
@@ -528,17 +205,21 @@ const NextOfKinSection = ({
 
   // Define updateNextOfKin if not provided
   const updateNextOfKinLocal = updateNextOfKin || ((index, field, value) => {
-    const newList = [...nextOfKinList];
+    const currentList = Array.isArray(nextOfKinList) ? [...nextOfKinList] : [];
+    if (!currentList[index]) {
+      console.error('No NOK at index:', index);
+      return;
+    }
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      if (!newList[index][parent]) {
-        newList[index][parent] = {};
+      if (!currentList[index][parent]) {
+        currentList[index][parent] = {};
       }
-      newList[index][parent][child] = value;
+      currentList[index][parent][child] = value;
     } else {
-      newList[index][field] = value;
+      currentList[index][field] = value;
     }
-    setNextOfKinList(newList);
+    setNextOfKinList(currentList);
   });
 
   // Define addNextOfKin if not provided
@@ -564,26 +245,23 @@ const NextOfKinSection = ({
       willingToSignAffidavit: '',
       comments: ''
     };
-    setNextOfKinList([...nextOfKinList, newNok]);
+    // Ensure we're always working with an array
+    const currentList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
+    setNextOfKinList([...currentList, newNok]);
   });
 
   // Define removeNextOfKin if not provided
   const removeNextOfKinLocal = removeNextOfKin || ((index) => {
-    const newList = nextOfKinList.filter((_, i) => i !== index);
+    // Ensure we're always working with an array
+    const currentList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
+    const newList = currentList.filter((_, i) => i !== index);
     setNextOfKinList(newList);
   });
 
-  // Define saveNextOfKin if not provided
+  // Use the provided saveNextOfKin or create a simple fallback
   const saveNextOfKinLocal = saveNextOfKin || (() => {
     console.log('Saving next of kin...', nextOfKinList);
-    // Ensure all IDs are strings before saving
-    const normalizedList = nextOfKinList.map(nok => ({
-      ...nok,
-      id: nok.id ? String(nok.id) : `nok_${Date.now()}_${Math.random()}`
-    }));
-    setNextOfKinList(normalizedList);
-    
-    // Add your actual save logic here
+    // Just toggle edit mode off - don't modify the list here
     if (toggleEditMode) {
       toggleEditMode('nextOfKin');
     }
@@ -598,9 +276,9 @@ const NextOfKinSection = ({
   
   // Normalize IDs to ensure they're all strings
   useEffect(() => {
-    const hasNumericIds = nextOfKinList.some(nok => typeof nok.id === 'number');
+    const hasNumericIds = safeNextOfKinList.some(nok => typeof nok.id === 'number');
     if (hasNumericIds) {
-      const normalizedList = nextOfKinList.map(nok => ({
+      const normalizedList = safeNextOfKinList.map(nok => ({
         ...nok,
         id: nok.id ? String(nok.id) : `nok_${Date.now()}_${Math.random()}`
       }));
@@ -655,14 +333,6 @@ const NextOfKinSection = ({
       }
     };
   }, [isVisible]);
-
-  // Trigger save after state update from overlay
-  useEffect(() => {
-    if (pendingSave) {
-      saveNextOfKinLocal();
-      setPendingSave(false);
-    }
-  }, [pendingSave, nextOfKinList]);
 
   // Field configuration for completion wheel
   const fieldConfigLocal = fieldConfig || {
@@ -728,15 +398,375 @@ const NextOfKinSection = ({
   const handleCardClick = (index) => {
     setOverlayNokIndex(index);
     setOverlayOpen(true);
+    setOverlayEditMode(false); // Start in view mode
+    setShowOverlaySuccess(false); // Reset success message
+    setOverlayFieldErrors({}); // Clear any previous errors
   };
 
-  const handleOverlaySave = (index, updatedNok) => {
-    // Update the nextOfKinList with the updated NOK data
-    const newList = [...nextOfKinList];
-    newList[index] = updatedNok;
-    setNextOfKinList(newList);
-    // Set flag to trigger save after state updates
-    setPendingSave(true);
+  const handleOverlayEdit = () => {
+    // Set the main edit mode to true if not already
+    if (!editMode.nextOfKin) {
+      toggleEditMode('nextOfKin');
+    }
+    setOverlayEditMode(true);
+    setShowOverlaySuccess(false);
+  };
+
+  const handleOverlaySave = () => {
+    // Do local validation first
+    const errors = {};
+    const nok = nextOfKinList[overlayNokIndex];
+    
+    // Check if we have a valid NOK at this index
+    if (!nok) {
+      console.error('No NOK found at index:', overlayNokIndex);
+      setOverlayOpen(false);
+      setOverlayNokIndex(null);
+      return;
+    }
+    
+    if (!nok?.firstName || !nok.firstName.trim()) {
+      errors[`nok_${overlayNokIndex}_firstName`] = "First name is required";
+    }
+    if (!nok?.lastName || !nok.lastName.trim()) {
+      errors[`nok_${overlayNokIndex}_lastName`] = "Last name is required";
+    }
+    if (!nok?.relationship || !nok.relationship.trim()) {
+      errors[`nok_${overlayNokIndex}_relationship`] = "Relationship is required";
+    }
+    if (!nok?.email || !nok.email.trim()) {
+      errors[`nok_${overlayNokIndex}_email`] = "Email is required";
+    } else if (!validateEmailLocal(nok.email)) {
+      errors[`nok_${overlayNokIndex}_email`] = "Invalid email format";
+    }
+    if (!nok?.mobilePhone || !nok.mobilePhone.trim()) {
+      errors[`nok_${overlayNokIndex}_mobilePhone`] = "Mobile phone is required";
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
+      return;
+    }
+    
+    // Clear errors and set waiting state
+    setOverlayFieldErrors({});
+    setIsOverlaySaving(true);
+    setOverlayWaitingForSave(true);
+    setShowOverlaySuccess(false);
+    
+    // Call the parent's save function
+    saveNextOfKinLocal();
+    // The useEffect will handle the result when savingSection changes
+  };
+
+  const handleOverlayCancel = () => {
+    // Call the parent's cancel function
+    cancelEditLocal('nextOfKin');
+    setOverlayEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const handleOverlayClose = () => {
+    // If we're saving, don't allow close
+    if (isOverlaySaving || overlayWaitingForSave || savingSection === 'nextOfKin') {
+      return;
+    }
+    
+    // If we're in edit mode, cancel first
+    if (overlayEditMode) {
+      cancelEditLocal('nextOfKin');
+      setOverlayEditMode(false);
+    }
+    setOverlayOpen(false);
+    setOverlayNokIndex(null);
+    setShowOverlaySuccess(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const getFieldDescriptions = () => {
+    const nok = nextOfKinList[overlayNokIndex];
+    return {
+      title: `Emergency Contact ${overlayNokIndex + 1}`,
+      description: `Details for ${nok?.firstName && nok?.lastName ? 
+        `${nok.firstName} ${nok.lastName}` : 
+        'this emergency contact'}`
+    };
+  };
+
+  // Create the edit form component that will be reused
+  const renderEditForm = (isInOverlay = false, nokIndex = null) => {
+    const containerClass = isInOverlay ? "space-y-4" : "";
+    // Use overlay-specific errors when in overlay, otherwise use parent fieldErrors
+    const currentErrors = isInOverlay ? overlayFieldErrors : fieldErrors;
+    const nok = isInOverlay ? nextOfKinList[nokIndex] : null;
+    
+    if (isInOverlay && nokIndex !== null && nok) {
+      return (
+        <div className={containerClass}>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Name *"
+              value={nok?.firstName || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'firstName', e.target.value)}
+              error={currentErrors[`nok_${nokIndex}_firstName`]}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+            <Input
+              label="Middle Name"
+              value={nok?.middleName || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'middleName', e.target.value)}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Last Name *"
+              value={nok?.lastName || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'lastName', e.target.value)}
+              error={currentErrors[`nok_${nokIndex}_lastName`]}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+            <Input
+              label="Relationship *"
+              value={nok?.relationship || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'relationship', e.target.value)}
+              placeholder="e.g., Spouse, Child, Parent"
+              error={currentErrors[`nok_${nokIndex}_relationship`]}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={nok?.dateOfBirth || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'dateOfBirth', e.target.value)}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+            <Input
+              label="Email *"
+              type="email"
+              value={nok?.email || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'email', e.target.value)}
+              error={currentErrors[`nok_${nokIndex}_email`] || 
+                     (!validateEmailLocal(nok?.email) && nok?.email ? 'Invalid email format' : '')}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Mobile Phone *"
+              type="tel"
+              value={nok?.mobilePhone || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'mobilePhone', e.target.value)}
+              placeholder="(555) 123-4567"
+              error={currentErrors[`nok_${nokIndex}_mobilePhone`]}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+            <Input
+              label="Home Phone"
+              type="tel"
+              value={nok?.homePhone || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'homePhone', e.target.value)}
+              placeholder="(555) 123-4567"
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+            />
+          </div>
+          
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2">Address</h5>
+            <div className="space-y-3">
+              <Input
+                label=""
+                value={nok?.address?.street1 || ''}
+                onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.street1', e.target.value)}
+                placeholder="Street Address Line 1"
+                disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+              />
+              <Input
+                label=""
+                value={nok?.address?.street2 || ''}
+                onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.street2', e.target.value)}
+                placeholder="Street Address Line 2"
+                disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label=""
+                  value={nok?.address?.city || ''}
+                  onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.city', e.target.value)}
+                  placeholder="City"
+                  disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+                />
+                <Input
+                  label=""
+                  value={nok?.address?.state || ''}
+                  onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.state', e.target.value)}
+                  placeholder="State/Province"
+                  disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label=""
+                  value={nok?.address?.postalCode || ''}
+                  onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.postalCode', e.target.value)}
+                  placeholder="Zip/Postal Code"
+                  disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+                />
+                <Input
+                  label=""
+                  value={nok?.address?.country || ''}
+                  onChange={(e) => updateNextOfKinLocal(nokIndex, 'address.country', e.target.value)}
+                  placeholder="Country"
+                  disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <Select
+            label="Willing to Sign Affidavit?"
+            value={nok?.willingToSignAffidavit || ''}
+            onChange={(e) => updateNextOfKinLocal(nokIndex, 'willingToSignAffidavit', e.target.value)}
+            disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+          >
+            <option value="">Select...</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="Unknown">Unknown</option>
+          </Select>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Comments about attitude toward cryonics
+            </label>
+            <textarea
+              value={nok?.comments || ''}
+              onChange={(e) => updateNextOfKinLocal(nokIndex, 'comments', e.target.value)}
+              disabled={isOverlaySaving || savingSection === 'nextOfKin'}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    // Return null if not in overlay (main edit form is handled separately)
+    return null;
+  };
+
+  // Create the view content for overlay
+  const renderOverlayViewContent = () => {
+    const nok = nextOfKinList[overlayNokIndex];
+    if (!nok) return null;
+    
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>First Name</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.firstName)}
+            >
+              {nok?.firstName || '—'}
+            </p>
+          </div>
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Middle Name</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.middleName)}
+            >
+              {nok?.middleName || '—'}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Last Name</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.lastName)}
+            >
+              {nok?.lastName || '—'}
+            </p>
+          </div>
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Relationship</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.relationship)}
+            >
+              {nok?.relationship || '—'}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Email</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.email)}
+            >
+              {nok?.email || '—'}
+            </p>
+          </div>
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Mobile Phone</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!nok?.mobilePhone)}
+            >
+              {formatPhoneDisplayLocal(nok?.mobilePhone) || '—'}
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label className={overlayStyles.displayMode.field.label}>Address</label>
+          <p 
+            className={overlayStyles.displayMode.field.value}
+            style={overlayStyles.displayMode.field.getFieldStyle(!nok?.address || !nok?.address?.street1)}
+          >
+            {formatAddressLocal(nok?.address)}
+          </p>
+        </div>
+
+        <div>
+          <label className={overlayStyles.displayMode.field.label}>Willing to Sign Affidavit?</label>
+          <p 
+            className={overlayStyles.displayMode.field.value}
+            style={overlayStyles.displayMode.field.getFieldStyle(!nok?.willingToSignAffidavit)}
+          >
+            {nok?.willingToSignAffidavit || '—'}
+          </p>
+        </div>
+
+        {nok?.comments && (
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Comments</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(false)}
+            >
+              {nok.comments}
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -744,18 +774,77 @@ const NextOfKinSection = ({
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
-        onClose={() => {
-          setOverlayOpen(false);
-          setOverlayNokIndex(null);
-        }}
+        onClose={handleOverlayClose}
         nokIndex={overlayNokIndex}
-        nextOfKinList={nextOfKinList}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-        validateEmail={validateEmailLocal}
-        formatPhoneDisplay={formatPhoneDisplayLocal}
-      />
+        fieldInfo={getFieldDescriptions()}
+      >
+        {/* Success Message */}
+        {showOverlaySuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-800">Emergency contact updated successfully!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message for validation errors */}
+        {overlayEditMode && (overlayFieldErrors && Object.keys(overlayFieldErrors).length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Please complete all required fields</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content based on edit mode */}
+        {!overlayEditMode ? (
+          <>
+            {/* View Mode */}
+            {renderOverlayViewContent()}
+            
+            {/* Footer with Edit button */}
+            <div className={overlayStyles.footer.wrapper}>
+              <PurpleButton
+                text="Edit"
+                onClick={handleOverlayEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Edit Mode - Reuse the same form */}
+            {renderEditForm(true, overlayNokIndex)}
+            
+            {/* Footer with Cancel/Save buttons */}
+            <div className={overlayStyles.footer.wrapper}>
+              <WhiteButton
+                text="Cancel"
+                onClick={handleOverlayCancel}
+                className={buttonStyles.overlayButtons.cancel}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+              <PurpleButton
+                text={isOverlaySaving ? 'Saving...' : 'Save'}
+                onClick={handleOverlaySave}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+            </div>
+          </>
+        )}
+      </CardOverlay>
 
       {isMobile ? (
         <NextOfKinMobile

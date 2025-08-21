@@ -21,6 +21,16 @@ const FundingMobile = ({
   isFieldRequired
 }) => {
   const [viewMode, setViewMode] = useState(false);
+  
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.funding) {
+      setLocalErrors({});
+    }
+  }, [editMode.funding]);
 
   // Calculate completion percentage
   const calculateCompletion = () => {
@@ -130,32 +140,6 @@ const FundingMobile = ({
     </div>
   );
 
-  // Render company name with link if matched
-  const renderCompanyName = () => {
-    const companyMatch = findInsuranceCompany(funding?.companyName);
-    
-    if (companyMatch) {
-      return (
-        <span className="flex items-center gap-2">
-          {funding.companyName || '—'}
-          <a 
-            href={companyMatch.url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 inline-flex"
-            title={`Visit ${funding.companyName} website`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </span>
-      );
-    }
-    
-    return funding.companyName || '—';
-  };
-
   // Get company match for view mode
   const getCompanyLinkData = () => {
     const companyMatch = findInsuranceCompany(funding?.companyName);
@@ -168,20 +152,41 @@ const FundingMobile = ({
     return null;
   };
 
-  // Wrap saveFunding to prevent duplicate calls
-  const handleSaveFunding = async () => {
-    // Prevent multiple simultaneous saves
-    if (savingSection === 'funding') {
-      console.log('⚠️ Save already in progress, ignoring duplicate call');
+  // Handle save with complete validation
+  const handleSave = () => {
+    const errors = {};
+    
+    // Validate funding type (always required)
+    if (!funding?.fundingType || !funding.fundingType.trim()) {
+      errors.fundingType = "Funding type is required";
+    }
+    
+    // If Life Insurance, validate additional required fields
+    if (funding?.fundingType === 'Life Insurance') {
+      if (!funding?.companyName || !funding.companyName.trim()) {
+        errors.companyName = "Company name is required";
+      }
+      if (!funding?.policyNumber || !funding.policyNumber.trim()) {
+        errors.policyNumber = "Policy number is required";
+      }
+      if (!funding?.policyType || !funding.policyType.trim()) {
+        errors.policyType = "Policy type is required";
+      }
+      if (!funding?.faceAmount || funding.faceAmount === '') {
+        errors.faceAmount = "Face amount is required";
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
       return;
     }
     
+    // Clear errors and proceed with save
+    setLocalErrors({});
     if (saveFunding) {
-      try {
-        await saveFunding();
-      } catch (error) {
-        console.error('Error in handleSaveFunding:', error);
-      }
+      saveFunding();
     }
   };
 
@@ -211,35 +216,35 @@ const FundingMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Funding Details</h3>
-                      <p className="text-sm text-gray-600">Your cryopreservation funding arrangements</p>
+                      <p className="text-sm text-gray-600">Your cryopreservation<br />funding arrangements</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Fixed completion indicator - matching Family and Occupation */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -272,7 +277,8 @@ const FundingMobile = ({
                       <div className="flex-1">
                         <h4 className="text-sm font-semibold text-gray-900">Required Information</h4>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Funding type and details (if life insurance)
+                          Funding type
+                          {funding?.fundingType === 'Life Insurance' && ' and insurance details'}
                         </p>
                       </div>
                     </div>
@@ -400,6 +406,25 @@ const FundingMobile = ({
         {/* Edit Form Section */}
         {editMode.funding && canEdit && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      {Object.entries(localErrors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-4">Funding Information</h4>
@@ -409,7 +434,7 @@ const FundingMobile = ({
                     label="Funding Type *"
                     value={funding?.fundingType || ''}
                     onChange={(e) => setFunding({...funding, fundingType: e.target.value})}
-                    error={fieldErrors?.fundingType}
+                    error={fieldErrors?.fundingType || localErrors.fundingType}
                     disabled={savingSection === 'funding'}
                     required={isFieldRequired ? isFieldRequired('fundingType') : true}
                   >
@@ -429,7 +454,7 @@ const FundingMobile = ({
                           label="Company Name *"
                           value={funding?.companyName || ''}
                           onChange={(e) => setFunding({...funding, companyName: e.target.value})}
-                          error={fieldErrors?.companyName}
+                          error={fieldErrors?.companyName || localErrors.companyName}
                           disabled={savingSection === 'funding'}
                           required={isFieldRequired ? isFieldRequired('companyName') : true}
                           placeholder="e.g., MetLife, Prudential"
@@ -451,7 +476,7 @@ const FundingMobile = ({
                           label="Policy Number *"
                           value={funding?.policyNumber || ''}
                           onChange={(e) => setFunding({...funding, policyNumber: e.target.value})}
-                          error={fieldErrors?.policyNumber}
+                          error={fieldErrors?.policyNumber || localErrors.policyNumber}
                           disabled={savingSection === 'funding'}
                           required={isFieldRequired ? isFieldRequired('policyNumber') : true}
                           placeholder="Enter policy number"
@@ -460,7 +485,7 @@ const FundingMobile = ({
                           label="Policy Type *"
                           value={funding?.policyType || ''}
                           onChange={(e) => setFunding({...funding, policyType: e.target.value})}
-                          error={fieldErrors?.policyType}
+                          error={fieldErrors?.policyType || localErrors.policyType}
                           disabled={savingSection === 'funding'}
                           required={isFieldRequired ? isFieldRequired('policyType') : true}
                         >
@@ -474,7 +499,7 @@ const FundingMobile = ({
                           type="number"
                           value={funding?.faceAmount || ''}
                           onChange={(e) => setFunding({...funding, faceAmount: e.target.value})}
-                          error={fieldErrors?.faceAmount}
+                          error={fieldErrors?.faceAmount || localErrors.faceAmount}
                           disabled={savingSection === 'funding'}
                           required={isFieldRequired ? isFieldRequired('faceAmount') : true}
                           placeholder="e.g., 200000"
@@ -503,14 +528,17 @@ const FundingMobile = ({
             {/* Action buttons */}
             <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={() => cancelEdit && cancelEdit('funding')}
+                onClick={() => {
+                  setLocalErrors({});
+                  cancelEdit && cancelEdit('funding');
+                }}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'funding'}
               >
                 Close
               </button>
               <button
-                onClick={handleSaveFunding}
+                onClick={handleSave}
                 disabled={savingSection === 'funding'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >

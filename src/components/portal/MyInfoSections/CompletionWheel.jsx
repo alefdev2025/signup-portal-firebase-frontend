@@ -55,7 +55,7 @@ const CompletionWheel = ({
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 640;
-      console.log('Mobile check:', mobile, 'Width:', window.innerWidth);
+      //console.log('Mobile check:', mobile, 'Width:', window.innerWidth);
       setIsMobile(mobile);
     };
     checkMobile();
@@ -67,7 +67,7 @@ const CompletionWheel = ({
   const actualRadius = isMobile ? 50 : radius; // Smaller radius on mobile
   const actualStrokeWidth = isMobile ? 10 : strokeWidth; // Slightly thinner on mobile
   
-  console.log('Wheel rendering - Mobile:', isMobile, 'Radius:', actualRadius, 'Stroke:', actualStrokeWidth);
+  //console.log('Wheel rendering - Mobile:', isMobile, 'Radius:', actualRadius, 'Stroke:', actualStrokeWidth);
   
   const normalizedRadius = actualRadius - actualStrokeWidth * 2;
   const circumference = normalizedRadius * 2 * Math.PI;

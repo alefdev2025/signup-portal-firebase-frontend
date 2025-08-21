@@ -253,7 +253,7 @@ const MyInformationTab = () => {
     cryoArrangements: {},
     funding: {},
     legal: {},
-    nextOfKin: {},
+    nextOfKin: [], // changed from object
     fundingAllocations: {}
   });
 
@@ -2193,11 +2193,7 @@ const loadMemberCategory = async () => {
     return payload;
   };
   
-  const saveFamilyInfo = async () => {
-    ////console.log('🎯 saveFamilyInfo function called!');
-    ////console.log('Current familyInfo state:', familyInfo);
-    ////console.log('Current salesforceContactId:', salesforceContactId);
-    
+  const saveFamilyInfo = async (isPartialSave = false, partialSection = null) => {
     // Store current state for rollback
     const previousFamilyInfo = { ...familyInfo };
     const previousPersonalInfo = { ...personalInfo };
@@ -2206,74 +2202,70 @@ const loadMemberCategory = async () => {
     setSaveMessage({ type: '', text: '' });
     
     try {
-      ////console.log('🚀 === SAVE FAMILY INFO START ===');
-      ////console.log('Member category:', memberCategory);
-      ////console.log('📤 Current family state before save:', familyInfo);
-      //console.log('📤 Current personal state before save:', personalInfo);
-      
       // Get required fields for this category
       const requiredFields = memberCategoryConfig[memberCategory]?.sections.family?.requiredFields || [];
-      //console.log('Required fields for family section:', requiredFields);
-      
-      // Check if cleanDataBeforeSave exists
-      //console.log('🔍 Checking cleanDataBeforeSave function exists:', typeof cleanDataBeforeSave);
       
       // Clean the family data
       let cleanedFamilyInfo, cleanedPersonalInfo;
       try {
-        //console.log('🧹 About to clean family info...');
         cleanedFamilyInfo = cleanDataBeforeSave(familyInfo, 'family');
-        //console.log('🧹 Cleaned family info successfully:', cleanedFamilyInfo);
-        
-        //console.log('🧹 About to clean personal info...');
         cleanedPersonalInfo = cleanDataBeforeSave(personalInfo, 'personal');
-        //console.log('🧹 Cleaned personal info successfully:', cleanedPersonalInfo);
       } catch (cleanError) {
-        console.error('❌ Error during data cleaning:', cleanError);
+        console.error('Error during data cleaning:', cleanError);
         throw cleanError;
       }
       
-      // Validate required fields
+      // Validate required fields - but skip validation for partial saves
       const errors = {};
       
-      requiredFields.forEach(field => {
-        //console.log(`📋 Checking required field: ${field}`);
-        switch(field) {
-          case 'fathersName':
-            if (!cleanedFamilyInfo.fathersName) {
-              errors.fathersName = "Father's name is required";
-              //console.log('❌ Father\'s name is missing');
-            }
-            break;
-          case 'fathersBirthplace':
-            if (!cleanedFamilyInfo.fathersBirthplace || 
-                (!cleanedFamilyInfo.fathersBirthplace.includes(',') && 
-                 cleanedFamilyInfo.fathersBirthplace.toLowerCase() !== 'unknown' &&
-                 cleanedFamilyInfo.fathersBirthplace.length < 10)) {
-              errors.fathersBirthplace = "Father's complete birthplace (city, state, country) is required";
-              //console.log('❌ Father\'s birthplace is invalid');
-            }
-            break;
-          case 'mothersMaidenName':
-            if (!cleanedFamilyInfo.mothersMaidenName) {
-              errors.mothersMaidenName = "Mother's maiden name is required";
-              //console.log('❌ Mother\'s maiden name is missing');
-            }
-            break;
-          case 'mothersBirthplace':
-            if (!cleanedFamilyInfo.mothersBirthplace || 
-                (!cleanedFamilyInfo.mothersBirthplace.includes(',') && 
-                 cleanedFamilyInfo.mothersBirthplace.toLowerCase() !== 'unknown' &&
-                 cleanedFamilyInfo.mothersBirthplace.length < 10)) {
-              errors.mothersBirthplace = "Mother's complete birthplace (city, state, country) is required";
-              //console.log('❌ Mother\'s birthplace is invalid');
-            }
-            break;
+      if (!isPartialSave) {
+        // Full validation - all fields required
+        requiredFields.forEach(field => {
+          switch(field) {
+            case 'fathersName':
+              if (!cleanedFamilyInfo.fathersName) {
+                errors.fathersName = "Father's name is required";
+              }
+              break;
+            case 'fathersBirthplace':
+              if (!cleanedFamilyInfo.fathersBirthplace) {
+                errors.fathersBirthplace = "Father's birthplace is required";
+              }
+              break;
+            case 'mothersMaidenName':
+              if (!cleanedFamilyInfo.mothersMaidenName) {
+                errors.mothersMaidenName = "Mother's maiden name is required";
+              }
+              break;
+            case 'mothersBirthplace':
+              if (!cleanedFamilyInfo.mothersBirthplace) {
+                errors.mothersBirthplace = "Mother's birthplace is required";
+              }
+              break;
+          }
+        });
+      } else {
+        // Partial validation - only validate the section being saved
+        if (partialSection === 'father') {
+          if (!cleanedFamilyInfo.fathersName) {
+            errors.fathersName = "Father's name is required";
+          }
+          if (!cleanedFamilyInfo.fathersBirthplace) {
+            errors.fathersBirthplace = "Father's birthplace is required";
+          }
+        } else if (partialSection === 'mother') {
+          if (!cleanedFamilyInfo.mothersMaidenName) {
+            errors.mothersMaidenName = "Mother's maiden name is required";
+          }
+          if (!cleanedFamilyInfo.mothersBirthplace) {
+            errors.mothersBirthplace = "Mother's birthplace is required";
+          }
+        } else if (partialSection === 'spouse' && cleanedPersonalInfo.maritalStatus === 'Married') {
+          if (!cleanedFamilyInfo.spousesName) {
+            errors.spousesName = "Spouse's name is required";
+          }
         }
-      });
-      
-      //console.log('❓ Validation errors:', errors);
-      //console.log('❓ Number of errors:', Object.keys(errors).length);
+      }
       
       if (Object.keys(errors).length > 0) {
         let errorMessage = Object.values(errors).join('. ');
@@ -2283,68 +2275,38 @@ const loadMemberCategory = async () => {
         // Rollback state
         setFamilyInfo(previousFamilyInfo);
         setPersonalInfo(previousPersonalInfo);
-        //console.log('🔙 Rolled back due to validation errors');
-        return;
+        
+        // Return failure indication
+        return { success: false, errors: errors };
       }
-      
-      //console.log('✅ Validation passed, preparing data for API call...');
       
       // Transform data to match backend expectations
       const dataToSend = {
-        fatherName: cleanedFamilyInfo.fathersName,
-        fatherBirthplace: cleanedFamilyInfo.fathersBirthplace,
-        motherMaidenName: cleanedFamilyInfo.mothersMaidenName,
-        motherBirthplace: cleanedFamilyInfo.mothersBirthplace,
+        fatherName: cleanedFamilyInfo.fathersName || null,
+        fatherBirthplace: cleanedFamilyInfo.fathersBirthplace || null,
+        motherMaidenName: cleanedFamilyInfo.mothersMaidenName || null,
+        motherBirthplace: cleanedFamilyInfo.mothersBirthplace || null,
         // Include spouse name if married
-        spouseName: cleanedPersonalInfo.maritalStatus === 'Married' ? cleanedFamilyInfo.spousesName : null
+        spouseName: cleanedPersonalInfo.maritalStatus === 'Married' ? (cleanedFamilyInfo.spousesName || null) : null
       };
       
-      //console.log('📦 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
-      //console.log('📞 Calling updateMemberFamilyInfo with ID:', salesforceContactId);
-      
       // Check if updateMemberFamilyInfo exists
-      //console.log('🔍 Checking updateMemberFamilyInfo function exists:', typeof updateMemberFamilyInfo);
-      
       if (typeof updateMemberFamilyInfo !== 'function') {
-        console.error('❌ updateMemberFamilyInfo is not a function!');
-        console.error('❌ Type:', typeof updateMemberFamilyInfo);
-        console.error('❌ Value:', updateMemberFamilyInfo);
+        console.error('updateMemberFamilyInfo is not a function!');
         throw new Error('updateMemberFamilyInfo is not properly imported');
       }
       
       let result;
       try {
-        //console.log('📞 === CALLING API NOW ===');
-        //console.log(`📞 API URL will be: /api/salesforce/member/${salesforceContactId}/family-info`);
-        
         result = await updateMemberFamilyInfo(salesforceContactId, dataToSend);
-        
-        //console.log('📨 === API CALL COMPLETED ===');
-        //console.log('📨 Save result:', result);
-        //console.log('📨 Result type:', typeof result);
-        //console.log('📨 Result keys:', result ? Object.keys(result) : 'null');
-        //console.log('📨 Result success:', result?.success);
-        //console.log('📨 Result data:', result?.data);
-        //console.log('📨 Result error:', result?.error);
-        //console.log('📨 Result partialSuccess:', result?.partialSuccess);
       } catch (apiError) {
-        console.error('❌ === API CALL FAILED ===');
-        console.error('❌ Error type:', apiError.name);
-        console.error('❌ Error message:', apiError.message);
-        console.error('❌ Error stack:', apiError.stack);
-        console.error('❌ Full error object:', apiError);
-        
-        // Check if it's a network error
-        if (apiError.message.includes('fetch')) {
-          console.error('❌ This appears to be a network/fetch error');
-        }
-        
+        console.error('API call failed:', apiError);
         throw apiError;
       }
       
       // Check if result is undefined or null
       if (!result) {
-        console.error('❌ API returned null or undefined result');
+        console.error('API returned null or undefined result');
         throw new Error('API returned no result');
       }
       
@@ -2352,16 +2314,8 @@ const loadMemberCategory = async () => {
       const contactUpdateSuccessful = result?.data?.updateResults?.contact?.success;
       const agreementUpdateSuccessful = result?.data?.updateResults?.agreement?.success;
       
-      //console.log('📊 Update results analysis:');
-      //console.log('  - Contact update successful:', contactUpdateSuccessful);
-      //console.log('  - Agreement update successful:', agreementUpdateSuccessful);
-      //console.log('  - Overall success:', result?.success);
-      //console.log('  - Partial success:', result?.partialSuccess);
-      
       // If neither update was successful, it's a complete failure
       if (!contactUpdateSuccessful && !agreementUpdateSuccessful && !result?.success) {
-        //console.log('❌ Complete save failure - no fields were updated');
-        
         // Rollback on complete failure
         setFamilyInfo(previousFamilyInfo);
         setPersonalInfo(previousPersonalInfo);
@@ -2371,11 +2325,12 @@ const loadMemberCategory = async () => {
           text: result?.error || 'Failed to save family information. Please try again.' 
         });
         setSavingSection('');
-        return;
+        
+        // Return failure indication
+        return { success: false, error: result?.error };
       }
       
       // If we get here, at least something was saved successfully
-      //console.log('✅ At least partial save successful');
       
       // Determine the appropriate message based on what was saved
       let successMessage = 'Family information saved successfully!';
@@ -2383,13 +2338,11 @@ const loadMemberCategory = async () => {
       
       if (result?.partialSuccess && contactUpdateSuccessful && !agreementUpdateSuccessful) {
         // Only contact was updated (common case)
-        //console.log('⚠️ Partial success - Contact updated but Agreement update failed');
         // For users, this is still a success - their data is saved
         successMessage = 'Family information saved successfully!';
         messageType = 'success';
       } else if (result?.success) {
         // Both were updated successfully
-        //console.log('✅ Complete success - both Contact and Agreement updated');
         successMessage = 'Family information saved successfully!';
         messageType = 'success';
       }
@@ -2405,20 +2358,14 @@ const loadMemberCategory = async () => {
       setEditMode(prev => ({ ...prev, family: false }));
       
       // Clear cache after successful save
-      //console.log('🗑️ Clearing cache...');
       if (typeof memberDataService !== 'undefined' && memberDataService.clearCache) {
         memberDataService.clearCache(salesforceContactId);
-        //console.log('✅ Cache cleared');
-      } else {
-        console.warn('⚠️ memberDataService not available for cache clearing');
       }
       
       // Fetch fresh data to ensure sync - but DON'T overwrite if it fails
       try {
-        //console.log('🔄 Fetching fresh data...');
         if (typeof memberDataService !== 'undefined' && memberDataService.getFamilyInfo) {
           const freshData = await memberDataService.getFamilyInfo(salesforceContactId);
-          //console.log('📥 Fresh data received:', freshData);
           
           if (freshData.success && freshData.data) {
             const familyData = freshData.data.data || freshData.data;
@@ -2435,14 +2382,9 @@ const loadMemberCategory = async () => {
                 mothersBirthplace: formatCity(familyData.motherBirthplace || cleanedFamilyInfo.mothersBirthplace),
                 spousesName: formatPersonName(familyData.spouseName || cleanedFamilyInfo.spousesName)
               };
-              //console.log('🔄 Setting refreshed family data:', cleanedFamily);
               setFamilyInfo(cleanedFamily);
               setOriginalData(prev => ({ ...prev, family: cleanedFamily }));
-            } else {
-              //console.log('⚠️ Fresh data fetch returned empty data, keeping current state');
             }
-          } else {
-            //console.log('⚠️ Fresh data fetch failed, keeping current state');
           }
         }
       } catch (refreshError) {
@@ -2453,19 +2395,15 @@ const loadMemberCategory = async () => {
       // Refresh the main cache
       if (refreshMemberInfo) {
         setTimeout(() => {
-          //console.log('🔄 [MyInformationTab] Refreshing cache after save...');
           refreshMemberInfo();
         }, 500);
-      } else {
-        //console.log('⚠️ refreshMemberInfo function not available');
       }
       
+      // Return success indication
+      return { success: true };
+      
     } catch (error) {
-      console.error('❌ === ERROR IN saveFamilyInfo ===');
-      console.error('❌ Error name:', error.name);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
-      console.error('❌ Full error:', error);
+      console.error('Error in saveFamilyInfo:', error);
       
       // Rollback on error
       setFamilyInfo(previousFamilyInfo);
@@ -2475,28 +2413,23 @@ const loadMemberCategory = async () => {
         type: 'error', 
         text: 'Failed to save family information: ' + error.message 
       });
-    } finally {
-      //console.log('🏁 === FINALLY BLOCK ===');
-      //console.log('🏁 Current savingSection:', savingSection);
       
+      // Return failure indication
+      return { success: false, error: error.message };
+      
+    } finally {
       // Keep the 'saved' state for a moment before clearing
       if (savingSection === 'saved') {
-        //console.log('🏁 Keeping saved state for 2 seconds...');
         setTimeout(() => {
-          //console.log('🏁 Clearing saved state');
           setSavingSection('');
         }, 2000);
       } else {
-        //console.log('🏁 Clearing saving state immediately');
         setSavingSection('');
       }
       
       setTimeout(() => {
-        //console.log('🏁 Clearing save message after 5 seconds');
         setSaveMessage({ type: '', text: '' });
       }, 5000);
-      
-      //console.log('🚀 === SAVE FAMILY INFO END ===\n');
     }
   };
   
@@ -3203,26 +3136,26 @@ const saveFunding = async () => {
         const phone = nok.mobilePhone || nok.homePhone || '';
         
         const nokData = {
-          firstName: nok.firstName,
-          middleName: nok.middleName || '',
-          lastName: nok.lastName,
-          fullName: fullName, // Add computed fullName for backend
-          relationship: formatRelationship(nok.relationship || ''), 
+          firstName: formatPersonName(nok.firstName || ''),       // ✅ ADD FORMATTING
+          middleName: formatPersonName(nok.middleName || ''),     // ✅ ADD FORMATTING
+          lastName: formatPersonName(nok.lastName || ''),         // ✅ ADD FORMATTING
+          fullName: `${formatPersonName(nok.firstName || '')} ${formatPersonName(nok.lastName || '')}`.trim(), // ✅ FIX
+          relationship: formatRelationship(nok.relationship || ''),
           dateOfBirth: nok.dateOfBirth || null,
-          homePhone: formatPhone(nok.homePhone || ''),  // Format the phone
-          mobilePhone: formatPhone(nok.mobilePhone || ''),  // Format the phone
-          phone: formatPhone(phone) || '', // Format the computed phone field for backend
-          email: nok.email || '',
+          homePhone: formatPhone(nok.homePhone || ''),
+          mobilePhone: formatPhone(nok.mobilePhone || ''),
+          phone: formatPhone(phone) || '',
+          email: formatEmail(nok.email || ''),                    // ✅ ADD FORMATTING
           address: {
-            street1: nok.address?.street1 || '',
-            street2: nok.address?.street2 || '',
-            city: nok.address?.city || '',
-            state: nok.address?.state || '',
-            postalCode: nok.address?.postalCode || '',
-            country: nok.address?.country || ''
+            street1: formatStreetAddress(nok.address?.street1 || ''),    // ✅ ADD FORMATTING
+            street2: formatStreetAddress(nok.address?.street2 || ''),    // ✅ ADD FORMATTING
+            city: formatCity(nok.address?.city || ''),                   // ✅ ADD FORMATTING
+            state: formatStateProvince(nok.address?.state || ''),        // ✅ ADD FORMATTING
+            postalCode: formatPostalCode(nok.address?.postalCode || ''),  // ✅ ADD FORMATTING
+            country: formatCountry(nok.address?.country || '')           // ✅ ADD FORMATTING
           },
           willingToSignAffidavit: nok.willingToSignAffidavit || '',
-          comments: cleanComments(nok.longComments || nok.comments || '')
+          comments: cleanComments(nok.longComments || nok.comments || '')  // ✅ This IS formatted
         };
         
         //console.log(`[${callId}] 16. NOK ${idx + 1} data prepared:`, nokData);
@@ -3675,13 +3608,13 @@ const saveFunding = async () => {
   {/* Contact Information */}
   {isSectionVisible(memberCategory, 'contact') && (
     <>
-    {console.log('🚨 RENDER CHECK:', {
+    {/*{console.log('🚨 RENDER CHECK:', {
       isSectionVisible: isSectionVisible(memberCategory, 'contact'),
       sectionsLoaded_contact: sectionsLoaded.contact,
       isLoading,
       contactInfo: !!contactInfo,
       personalInfo: !!personalInfo
-    })}
+    })}*/}
       {!sectionsLoaded.contact ? (
         <SectionSkeleton />
       ) : (

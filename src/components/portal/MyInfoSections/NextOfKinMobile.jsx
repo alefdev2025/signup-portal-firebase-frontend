@@ -24,6 +24,78 @@ const NextOfKinMobile = ({
   validateEmail,
   getFieldError
 }) => {
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.nextOfKin) {
+      setLocalErrors({});
+    }
+  }, [editMode.nextOfKin]);
+
+  // Define fallback implementations if parent doesn't provide them
+  const updateNextOfKinLocal = updateNextOfKin || ((index, field, value) => {
+    const newList = [...nextOfKinList];
+    if (!newList[index]) {
+      console.error('No NOK at index:', index);
+      return;
+    }
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      if (!newList[index][parent]) {
+        newList[index][parent] = {};
+      }
+      newList[index][parent][child] = value;
+    } else {
+      newList[index][field] = value;
+    }
+    setNextOfKinList(newList);
+  });
+
+  const addNextOfKinLocal = addNextOfKin || (() => {
+    const newNok = {
+      id: `nok_${Date.now()}`,
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      relationship: '',
+      dateOfBirth: '',
+      email: '',
+      mobilePhone: '',
+      homePhone: '',
+      address: {
+        street1: '',
+        street2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: ''
+      },
+      willingToSignAffidavit: '',
+      comments: ''
+    };
+    const currentList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
+    setNextOfKinList([...currentList, newNok]);
+  });
+
+  const removeNextOfKinLocal = removeNextOfKin || ((index) => {
+    const currentList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
+    const newList = currentList.filter((_, i) => i !== index);
+    setNextOfKinList(newList);
+  });
+
+  const getFieldErrorLocal = getFieldError || ((index, field) => {
+    if (!fieldErrors) return null;
+    return fieldErrors[`nok_${index}_${field}`] || null;
+  });
+
+  const validateEmailLocal = validateEmail || ((email) => {
+    if (!email) return false;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  });
+
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
@@ -57,7 +129,7 @@ const NextOfKinMobile = ({
   const completionPercentage = calculateCompletion();
 
   const getPreviewText = () => {
-    if (nextOfKinList.length === 0) {
+    if (!nextOfKinList || nextOfKinList.length === 0) {
       return "No emergency contacts on file";
     }
     const previewParts = [];
@@ -73,22 +145,59 @@ const NextOfKinMobile = ({
     return previewParts.join(' • ') || "No emergency contacts on file";
   };
 
-  // Wrap saveNextOfKin to prevent duplicate calls
-  const handleSaveNextOfKin = async () => {
-    // Prevent multiple simultaneous saves
-    if (savingSection === 'nextOfKin') {
-      console.log('⚠️ Save already in progress, ignoring duplicate call');
+  // Handle save with complete validation
+  const handleSave = () => {
+    const errors = {};
+    
+    // Ensure nextOfKinList is an array
+    if (!Array.isArray(nextOfKinList)) {
+      console.error('nextOfKinList is not an array:', nextOfKinList);
       return;
     }
     
-    if (saveNextOfKin) {
-      try {
-        await saveNextOfKin();
-      } catch (error) {
-        console.error('Error in handleSaveNextOfKin:', error);
+    // Check if at least one emergency contact exists
+    if (nextOfKinList.length === 0) {
+      errors.general = "At least one emergency contact is required";
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Validate each emergency contact
+    nextOfKinList.forEach((nok, index) => {
+      if (!nok?.firstName || !nok.firstName.trim()) {
+        errors[`nok_${index}_firstName`] = "First name is required";
       }
+      if (!nok?.lastName || !nok.lastName.trim()) {
+        errors[`nok_${index}_lastName`] = "Last name is required";
+      }
+      if (!nok?.relationship || !nok.relationship.trim()) {
+        errors[`nok_${index}_relationship`] = "Relationship is required";
+      }
+      if (!nok?.email || !nok.email.trim()) {
+        errors[`nok_${index}_email`] = "Email is required";
+      } else if (!validateEmailLocal(nok.email)) {
+        errors[`nok_${index}_email`] = "Invalid email format";
+      }
+      if (!nok?.mobilePhone || !nok.mobilePhone.trim()) {
+        errors[`nok_${index}_mobilePhone`] = "Mobile phone is required";
+      }
+    });
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    if (saveNextOfKin) {
+      saveNextOfKin();
     }
   };
+
+  // Ensure nextOfKinList is always treated as an array
+  const safeNextOfKinList = Array.isArray(nextOfKinList) ? nextOfKinList : [];
 
   return (
     <div className="-mx-2">
@@ -116,35 +225,35 @@ const NextOfKinMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Emergency Contact Details</h3>
-                      <p className="text-sm text-gray-600">People who can be contacted on your behalf</p>
+                      <p className="text-sm text-gray-600">People who can be<br />contacted on your behalf</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator with thicker stroke and larger size */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -198,14 +307,55 @@ const NextOfKinMobile = ({
         {/* Edit Form Section */}
         {editMode.nextOfKin && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Please fix the following errors:</p>
+                    {localErrors.general ? (
+                      <p className="mt-1">{localErrors.general}</p>
+                    ) : (
+                      <ul className="mt-1 list-disc list-inside">
+                        {Object.entries(localErrors).map(([field, error]) => {
+                          // Extract the index from field name for better display
+                          const match = field.match(/nok_(\d+)_(.+)/);
+                          if (match) {
+                            const [, index, fieldName] = match;
+                            return (
+                              <li key={field}>Contact {parseInt(index) + 1}: {error}</li>
+                            );
+                          }
+                          return <li key={field}>{error}</li>;
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
-              {nextOfKinList.map((nok, index) => (
+              {safeNextOfKinList.map((nok, index) => (
                 <div key={nok.id || index} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-medium text-gray-900">Emergency Contact {index + 1}</h4>
-                    {nextOfKinList.length > 0 && (
+                    {safeNextOfKinList.length > 0 && (
                       <button
-                        onClick={() => removeNextOfKin(index)}
+                        onClick={() => {
+                          removeNextOfKinLocal(index);
+                          // Clear errors for this contact when removing
+                          const newErrors = {...localErrors};
+                          Object.keys(newErrors).forEach(key => {
+                            if (key.startsWith(`nok_${index}_`)) {
+                              delete newErrors[key];
+                            }
+                          });
+                          setLocalErrors(newErrors);
+                        }}
                         className="text-red-600 hover:text-red-700 text-sm"
                         disabled={savingSection === 'nextOfKin'}
                       >
@@ -219,14 +369,14 @@ const NextOfKinMobile = ({
                       <FormInput
                         label="First Name *"
                         value={nok.firstName || ''}
-                        onChange={(e) => updateNextOfKin(index, 'firstName', e.target.value)}
-                        error={getFieldError ? getFieldError(index, 'firstName') : null}
+                        onChange={(e) => updateNextOfKinLocal(index, 'firstName', e.target.value)}
+                        error={getFieldErrorLocal(index, 'firstName') || localErrors[`nok_${index}_firstName`]}
                         disabled={savingSection === 'nextOfKin'}
                       />
                       <FormInput
                         label="Middle Name"
                         value={nok.middleName || ''}
-                        onChange={(e) => updateNextOfKin(index, 'middleName', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'middleName', e.target.value)}
                         disabled={savingSection === 'nextOfKin'}
                       />
                     </div>
@@ -235,16 +385,16 @@ const NextOfKinMobile = ({
                       <FormInput
                         label="Last Name *"
                         value={nok.lastName || ''}
-                        onChange={(e) => updateNextOfKin(index, 'lastName', e.target.value)}
-                        error={getFieldError ? getFieldError(index, 'lastName') : null}
+                        onChange={(e) => updateNextOfKinLocal(index, 'lastName', e.target.value)}
+                        error={getFieldErrorLocal(index, 'lastName') || localErrors[`nok_${index}_lastName`]}
                         disabled={savingSection === 'nextOfKin'}
                       />
                       <FormInput
                         label="Relationship *"
                         value={nok.relationship || ''}
-                        onChange={(e) => updateNextOfKin(index, 'relationship', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'relationship', e.target.value)}
                         placeholder="e.g., Spouse, Child, Parent"
-                        error={getFieldError ? getFieldError(index, 'relationship') : null}
+                        error={getFieldErrorLocal(index, 'relationship') || localErrors[`nok_${index}_relationship`]}
                         disabled={savingSection === 'nextOfKin'}
                       />
                     </div>
@@ -254,16 +404,17 @@ const NextOfKinMobile = ({
                         label="Date of Birth"
                         type="date"
                         value={nok.dateOfBirth || ''}
-                        onChange={(e) => updateNextOfKin(index, 'dateOfBirth', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'dateOfBirth', e.target.value)}
                         disabled={savingSection === 'nextOfKin'}
                       />
                       <FormInput
                         label="Email *"
                         type="email"
                         value={nok.email || ''}
-                        onChange={(e) => updateNextOfKin(index, 'email', e.target.value)}
-                        error={(getFieldError ? getFieldError(index, 'email') : null) || 
-                               (validateEmail && !validateEmail(nok.email) && nok.email ? 'Invalid email format' : '')}
+                        onChange={(e) => updateNextOfKinLocal(index, 'email', e.target.value)}
+                        error={getFieldErrorLocal(index, 'email') || 
+                               localErrors[`nok_${index}_email`] ||
+                               (!validateEmailLocal(nok.email) && nok.email ? 'Invalid email format' : '')}
                         disabled={savingSection === 'nextOfKin'}
                       />
                     </div>
@@ -273,16 +424,16 @@ const NextOfKinMobile = ({
                         label="Mobile Phone *"
                         type="tel"
                         value={nok.mobilePhone || ''}
-                        onChange={(e) => updateNextOfKin(index, 'mobilePhone', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'mobilePhone', e.target.value)}
                         placeholder="(555) 123-4567"
-                        error={getFieldError ? getFieldError(index, 'mobilePhone') : null}
+                        error={getFieldErrorLocal(index, 'mobilePhone') || localErrors[`nok_${index}_mobilePhone`]}
                         disabled={savingSection === 'nextOfKin'}
                       />
                       <FormInput
                         label="Home Phone"
                         type="tel"
                         value={nok.homePhone || ''}
-                        onChange={(e) => updateNextOfKin(index, 'homePhone', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'homePhone', e.target.value)}
                         placeholder="(555) 123-4567"
                         disabled={savingSection === 'nextOfKin'}
                       />
@@ -294,14 +445,14 @@ const NextOfKinMobile = ({
                         <FormInput
                           label=""
                           value={nok.address?.street1 || ''}
-                          onChange={(e) => updateNextOfKin(index, 'address.street1', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'address.street1', e.target.value)}
                           placeholder="Street Address Line 1"
                           disabled={savingSection === 'nextOfKin'}
                         />
                         <FormInput
                           label=""
                           value={nok.address?.street2 || ''}
-                          onChange={(e) => updateNextOfKin(index, 'address.street2', e.target.value)}
+                          onChange={(e) => updateNextOfKinLocal(index, 'address.street2', e.target.value)}
                           placeholder="Street Address Line 2"
                           disabled={savingSection === 'nextOfKin'}
                         />
@@ -309,14 +460,14 @@ const NextOfKinMobile = ({
                           <FormInput
                             label=""
                             value={nok.address?.city || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.city', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.city', e.target.value)}
                             placeholder="City"
                             disabled={savingSection === 'nextOfKin'}
                           />
                           <FormInput
                             label=""
                             value={nok.address?.state || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.state', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.state', e.target.value)}
                             placeholder="State/Province"
                             disabled={savingSection === 'nextOfKin'}
                           />
@@ -325,14 +476,14 @@ const NextOfKinMobile = ({
                           <FormInput
                             label=""
                             value={nok.address?.postalCode || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.postalCode', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.postalCode', e.target.value)}
                             placeholder="Zip/Postal Code"
                             disabled={savingSection === 'nextOfKin'}
                           />
                           <FormInput
                             label=""
                             value={nok.address?.country || ''}
-                            onChange={(e) => updateNextOfKin(index, 'address.country', e.target.value)}
+                            onChange={(e) => updateNextOfKinLocal(index, 'address.country', e.target.value)}
                             placeholder="Country"
                             disabled={savingSection === 'nextOfKin'}
                           />
@@ -343,7 +494,7 @@ const NextOfKinMobile = ({
                     <FormSelect
                       label="Willing to Sign Affidavit?"
                       value={nok.willingToSignAffidavit || ''}
-                      onChange={(e) => updateNextOfKin(index, 'willingToSignAffidavit', e.target.value)}
+                      onChange={(e) => updateNextOfKinLocal(index, 'willingToSignAffidavit', e.target.value)}
                       disabled={savingSection === 'nextOfKin'}
                     >
                       <option value="">Select...</option>
@@ -358,7 +509,7 @@ const NextOfKinMobile = ({
                       </label>
                       <textarea
                         value={nok.comments || ''}
-                        onChange={(e) => updateNextOfKin(index, 'comments', e.target.value)}
+                        onChange={(e) => updateNextOfKinLocal(index, 'comments', e.target.value)}
                         disabled={savingSection === 'nextOfKin'}
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
@@ -369,25 +520,28 @@ const NextOfKinMobile = ({
               ))}
               
               <button
-                onClick={addNextOfKin}
+                onClick={addNextOfKinLocal}
                 className="w-full py-2 text-purple-600 border border-purple-600 rounded-md hover:bg-purple-50"
                 disabled={savingSection === 'nextOfKin'}
               >
-                {nextOfKinList.length > 0 ? 'Add Another Emergency Contact' : 'Add Emergency Contact'}
+                {safeNextOfKinList.length > 0 ? 'Add Another Emergency Contact' : 'Add Emergency Contact'}
               </button>
             </div>
             
             {/* Action buttons */}
             <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={() => cancelEdit && cancelEdit('nextOfKin')}
+                onClick={() => {
+                  setLocalErrors({});
+                  cancelEdit && cancelEdit('nextOfKin');
+                }}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'nextOfKin'}
               >
                 Close
               </button>
               <button
-                onClick={handleSaveNextOfKin}
+                onClick={handleSave}
                 disabled={savingSection === 'nextOfKin'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >
@@ -400,9 +554,9 @@ const NextOfKinMobile = ({
         {/* Display Mode Content when not in edit mode */}
         {!editMode.nextOfKin && (
           <div className="bg-white px-6 pb-6">
-            {nextOfKinList.length > 0 && (
+            {safeNextOfKinList.length > 0 && (
               <div className="space-y-4 mb-6">
-                {nextOfKinList.slice(0, 2).map((nok, index) => (
+                {safeNextOfKinList.slice(0, 2).map((nok, index) => (
                   <div key={nok.id || index} className="border border-gray-200 rounded-lg p-4">
                     <h5 className="font-medium text-gray-900 mb-3">
                       {`${nok.firstName} ${nok.lastName}`.trim() || `Emergency Contact ${index + 1}`}
@@ -423,9 +577,9 @@ const NextOfKinMobile = ({
                     </div>
                   </div>
                 ))}
-                {nextOfKinList.length > 2 && (
+                {safeNextOfKinList.length > 2 && (
                   <p className="text-sm text-gray-500 text-center">
-                    +{nextOfKinList.length - 2} more emergency contact{nextOfKinList.length - 2 > 1 ? 's' : ''}
+                    +{safeNextOfKinList.length - 2} more emergency contact{safeNextOfKinList.length - 2 > 1 ? 's' : ''}
                   </p>
                 )}
               </div>
