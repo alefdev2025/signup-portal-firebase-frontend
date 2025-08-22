@@ -60,7 +60,7 @@ const infoCardStyles = {
         boxShadow: 'inset 0 1px 3px rgba(255, 255, 255, 0.08), 0 3px 6px rgba(0, 0, 0, 0.4)' // Enhanced shadow
       }
     },
-    icon: "w-6 h-6 transition-all duration-1000 ease-out",
+    icon: "w-4 h-4 sm:w-5 sm:h-5 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-all duration-1000 ease-out",
     iconColor: {
       default: "text-white",
       hover: "text-gray-100" // Brighter icon on hover for contrast

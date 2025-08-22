@@ -36,7 +36,7 @@ import React, { useState, useEffect } from 'react';
  *   fieldConfig={fieldConfig}
  * />
  */
-const CompletionWheel = ({ 
+ const CompletionWheel = ({ 
   data, 
   fieldConfig, 
   radius = 75,
@@ -50,24 +50,51 @@ const CompletionWheel = ({
     label: '#021859'
   }
 }) => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [screenSize, setScreenSize] = useState('2xl');
 
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 640;
-      //console.log('Mobile check:', mobile, 'Width:', window.innerWidth);
-      setIsMobile(mobile);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      let size;
+      
+      if (width < 640) {
+        size = 'mobile';
+      } else if (width < 1024) {
+        size = 'sm'; // Small desktop
+      } else if (width < 1280) {
+        size = 'lg'; // Medium desktop
+      } else if (width < 1536) {
+        size = 'xl'; // Large desktop
+      } else {
+        size = '2xl'; // Extra large desktop
+      }
+      
+      setScreenSize(size);
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Use different values for mobile - more dramatic differences
-  const actualRadius = isMobile ? 50 : radius; // Smaller radius on mobile
-  const actualStrokeWidth = isMobile ? 10 : strokeWidth; // Slightly thinner on mobile
-  
-  //console.log('Wheel rendering - Mobile:', isMobile, 'Radius:', actualRadius, 'Stroke:', actualStrokeWidth);
+  // Responsive sizing with progressively thinner strokes
+  const getResponsiveValues = () => {
+    switch(screenSize) {
+      case 'mobile':
+        return { radius: 50, strokeWidth: 8 };   // Thinner on mobile
+      case 'sm':
+        return { radius: 60, strokeWidth: 8 };   // Much thinner on small desktop
+      case 'lg':
+        return { radius: 65, strokeWidth: 9 };   // Thinner on medium desktop
+      case 'xl':
+        return { radius: 70, strokeWidth: 10 };  // Moderately thin on large desktop
+      case '2xl':
+      default:
+        return { radius: 75, strokeWidth: 12 };  // Full thickness on XL desktop
+    }
+  };
+
+  const { radius: actualRadius, strokeWidth: actualStrokeWidth } = getResponsiveValues();
   
   const normalizedRadius = actualRadius - actualStrokeWidth * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
@@ -104,6 +131,24 @@ const CompletionWheel = ({
 
   // Generate unique ID for gradient
   const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Responsive text sizes
+  const getTextSize = () => {
+    switch(screenSize) {
+      case 'mobile':
+        return { percentage: 'text-xl', label: 'text-[10px]' };
+      case 'sm':
+        return { percentage: 'text-xl', label: 'text-[11px]' };
+      case 'lg':
+        return { percentage: 'text-2xl', label: 'text-xs' };
+      case 'xl':
+      case '2xl':
+      default:
+        return { percentage: 'text-2xl', label: 'text-xs' };
+    }
+  };
+
+  const textSizes = getTextSize();
 
   return (
     <div className="relative inline-flex">
@@ -153,13 +198,13 @@ const CompletionWheel = ({
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
           <div 
-            className={`font-semibold ${isMobile ? 'text-xl' : 'text-2xl'}`} 
+            className={`font-semibold ${textSizes.percentage}`} 
             style={{ color: colors.text }}
           >
             {completionPercentage}%
           </div>
           <div 
-            className={`${isMobile ? 'text-[10px]' : 'text-xs'}`} 
+            className={textSizes.label} 
             style={{ color: colors.label }}
           >
             Complete

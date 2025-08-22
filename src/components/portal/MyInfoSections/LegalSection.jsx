@@ -19,98 +19,22 @@ import {
 import { InfoField, InfoCard } from './SharedInfoComponents';
 import { CompletionWheelWithLegend } from './CompletionWheel';
 
-// Overlay Component
+// Simplified Overlay Component - Just a visual wrapper, NO state management
 const CardOverlay = ({ 
   isOpen, 
   onClose, 
   section, 
-  data, 
-  legal,
-  onSave,
-  savingSection,
-  memberCategory
+  children,  // The actual edit form will be passed as children
+  fieldInfo  // Title and description for the header
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [localLegal, setLocalLegal] = useState(legal);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const tooltipRef = useRef(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setEditMode(false);  // Start in display mode
-      setShowSuccess(false);
-      // Reset local legal to match the current legal when opening
-      setLocalLegal(legal);
-    }
-  }, [isOpen, legal]);
-
-  // Handle click outside to close tooltip
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
-        setShowTooltip(false);
-      }
-    };
-
-    if (showTooltip) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showTooltip]);
-
   if (!isOpen) return null;
-
-  const isRequired = memberCategory === 'CryoApplicant' || memberCategory === 'CryoMember';
-
-  const handleEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = () => {
-    // Pass the local data back to parent via callback
-    onSave(localLegal);
-    setEditMode(false);
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
-  };
-
-  const handleCancel = () => {
-    // Reset local legal to original values
-    setLocalLegal(legal);
-    setEditMode(false);
-  };
-
-  const getFieldDescriptions = () => {
-    return {
-      title: 'Legal/Will Information',
-      description: 'Information about your will and cryonics-related provisions. These fields help ensure your cryopreservation arrangements are legally valid.',
-      fields: {
-        'Do you have a will?': 'Whether you currently have a last will and testament.',
-        'Contains contrary provisions?': 'Whether your will contains provisions that might conflict with cryopreservation (e.g., cremation, burial requirements).'
-      }
-    };
-  };
-
-  const fieldInfo = getFieldDescriptions();
-
-  const hasWillYes = () => {
-    const value = localLegal?.hasWill;
-    return value === 'Yes' || value === true || value === 'true';
-  };
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
       <div className={overlayStyles.backdrop} onClick={onClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
-        <div className={overlayStyles.contentBox}>
+        <div className={`${overlayStyles.contentBox} overflow-hidden`}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
@@ -129,184 +53,22 @@ const CardOverlay = ({
                   </svg>
                 </div>
                 <div className={overlayStyles.header.textWrapper}>
-                  <h3 className={overlayStyles.header.title}>
-                    {fieldInfo.title}
-                  </h3>
+                  <span className={overlayStyles.header.title} style={{ display: 'block' }}>
+                    {fieldInfo?.title || ''}
+                  </span>
                   <p className={overlayStyles.header.description}>
-                    {fieldInfo.description}
+                    {fieldInfo?.description || ''}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content */}
+          {/* Body - Just render the children (the edit form) */}
           <div className={overlayStyles.body.wrapper}>
-            {/* Success Message */}
-            {showSuccess && (
-              <div className={overlayStyles.body.successMessage.container}>
-                <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className={overlayStyles.body.successMessage.text}>Legal information updated successfully!</p>
-              </div>
-            )}
-
-            {/* Help Tooltip Button */}
-            <div className="mb-6 flex items-center gap-2">
-              <p className="text-sm font-semibold text-gray-900">
-                Have Questions About Wills?
-              </p>
-              <div className="relative" ref={tooltipRef}>
-                <button
-                  type="button"
-                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  onClick={() => setShowTooltip(!showTooltip)}
-                >
-                  <HelpCircle 
-                    className="w-4 h-4 text-gray-400 hover:text-gray-600" 
-                    strokeWidth={2}
-                  />
-                </button>
-                {showTooltip && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-96">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Why Does Alcor Need This?
-                        </h3>
-                        <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
-                        </svg>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowTooltip(false)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="px-4 py-3 overflow-y-auto max-h-80">
-                      <div className="space-y-3">
-                        <p className="text-sm text-gray-700">
-                          Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <em className="font-semibold">these provisions may invalidate your Cryopreservation Agreement.</em>
-                        </p>
-                        <p className="text-sm text-gray-900 font-semibold">
-                          If you have a will, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
-                        </p>
-                        <p className="text-sm text-gray-600 pt-2 border-t border-gray-100">
-                          Both will-related fields are mandatory in the application process, and you must answer whether you have a will and whether it contains any provisions that might conflict with cryopreservation arrangements.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
-                      <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
-                      <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className={overlayStyles.body.content}>
+              {children}
             </div>
-
-            {/* Fields */}
-            {!editMode ? (
-              /* Display Mode */
-              <div className="space-y-6">
-                <div>
-                  <label className={overlayStyles.displayMode.field.label}>Do you have a will?</label>
-                  <p 
-                    className={overlayStyles.displayMode.field.value}
-                    style={overlayStyles.displayMode.field.getFieldStyle(!localLegal?.hasWill)}
-                  >
-                    {localLegal?.hasWill || '—'}
-                  </p>
-                </div>
-                {hasWillYes() && (
-                  <div>
-                    <label className={overlayStyles.displayMode.field.label}>Contains contrary provisions?</label>
-                    <p 
-                      className={overlayStyles.displayMode.field.value}
-                      style={overlayStyles.displayMode.field.getFieldStyle(!localLegal?.willContraryToCryonics)}
-                    >
-                      {localLegal?.willContraryToCryonics || '—'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Edit Mode */
-              <div className="space-y-6">
-                <Select
-                  label="Do you have a will? *"
-                  value={localLegal?.hasWill || ''}
-                  onChange={(e) => setLocalLegal({...localLegal, hasWill: e.target.value})}
-                  disabled={savingSection === 'legal'}
-                  required={isRequired}
-                >
-                  <option value="">Select...</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </Select>
-                
-                {localLegal?.hasWill === 'Yes' && (
-                  <>
-                    <Select
-                      label="Does your will contain any provisions contrary to cryonics? *"
-                      value={localLegal?.willContraryToCryonics || ''}
-                      onChange={(e) => setLocalLegal({...localLegal, willContraryToCryonics: e.target.value})}
-                      disabled={savingSection === 'legal'}
-                      required={isRequired}
-                    >
-                      <option value="">Select...</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </Select>
-                    
-                    {localLegal?.willContraryToCryonics === 'Yes' && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600 flex items-center">
-                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                          <strong>Action Required:</strong> You must update your will to remove any provisions contrary to cryonics.
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className={overlayStyles.footer.wrapper}>
-            {!editMode ? (
-              <PurpleButton
-                text="Edit"
-                onClick={handleEdit}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
-            ) : (
-              <>
-                <WhiteButton
-                  text="Cancel"
-                  onClick={handleCancel}
-                  className={buttonStyles.overlayButtons.cancel}
-                  spinStar={buttonStyles.starConfig.enabled}
-                />
-                <PurpleButton
-                  text={savingSection === 'legal' ? 'Saving...' : 'Save'}
-                  onClick={handleSave}
-                  className={buttonStyles.overlayButtons.save}
-                  spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'legal'}
-                />
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -326,7 +88,7 @@ const LegalSection = ({
   memberCategory,
   sectionImage,
   sectionLabel,
-  fieldErrors,
+  fieldErrors = {},
   fieldConfig,
   getFieldError
 }) => {
@@ -341,8 +103,49 @@ const LegalSection = ({
   const [cardsVisible, setCardsVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef(null);
-  // Add pendingSave flag for triggering save after state update
-  const [pendingSave, setPendingSave] = useState(false);
+  
+  // Track whether we're in overlay edit mode
+  const [overlayEditMode, setOverlayEditMode] = useState(false);
+  
+  // Track if save was successful to show success message
+  const [showOverlaySuccess, setShowOverlaySuccess] = useState(false);
+  
+  // Track if we're currently saving
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  
+  // Track overlay-specific field errors
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
+  
+  // Track if we're waiting for save to complete
+  const [overlayWaitingForSave, setOverlayWaitingForSave] = useState(false);
+
+  // Watch for save completion when we're waiting for it
+  useEffect(() => {
+    if (overlayWaitingForSave && savingSection !== 'legal') {
+      // Save completed (either success or error)
+      setOverlayWaitingForSave(false);
+      setIsOverlaySaving(false);
+      
+      // Check if there are any field errors
+      const hasErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+      
+      if (!hasErrors) {
+        // Success! Show success message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          setOverlayOpen(false);
+          setShowOverlaySuccess(false);
+        }, 1500);
+      } else {
+        // There were errors, keep overlay open in edit mode
+        setOverlayFieldErrors(fieldErrors);
+      }
+    }
+  }, [savingSection, overlayWaitingForSave, fieldErrors]);
   
   // Detect mobile
   useEffect(() => {
@@ -408,14 +211,6 @@ const LegalSection = ({
       }
     };
   }, [isVisible]);
-  
-  // Trigger save after state update from overlay
-  useEffect(() => {
-    if (pendingSave) {
-      saveLegal();
-      setPendingSave(false);
-    }
-  }, [pendingSave, legal]);
 
   // Helper to check if will is "Yes"
   const hasWillYes = () => {
@@ -452,13 +247,163 @@ const LegalSection = ({
   const handleCardClick = (sectionKey) => {
     setOverlaySection(sectionKey);
     setOverlayOpen(true);
+    setOverlayEditMode(false); // Start in view mode
+    setShowOverlaySuccess(false); // Reset success message
+    setOverlayFieldErrors({}); // Clear any previous errors
   };
 
-  const handleOverlaySave = (updatedLegal) => {
-    // Update parent state with the new data
-    setLegal(updatedLegal);
-    // Set flag to trigger save after state updates
-    setPendingSave(true);
+  const handleOverlayEdit = () => {
+    // Set the main edit mode to true if not already
+    if (!editMode.legal) {
+      toggleEditMode('legal');
+    }
+    setOverlayEditMode(true);
+    setShowOverlaySuccess(false);
+  };
+
+  const handleOverlaySave = () => {
+    // Do local validation first
+    const errors = {};
+    
+    // Validate required fields
+    if (!legal?.hasWill || !legal.hasWill.trim()) {
+      errors.hasWill = "Please indicate if you have a will";
+    }
+    
+    // If they have a will, validate the contrary provisions field
+    if (legal?.hasWill === 'Yes') {
+      if (!legal?.willContraryToCryonics || !legal.willContraryToCryonics.trim()) {
+        errors.willContraryToCryonics = "Please indicate if your will contains contrary provisions";
+      }
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
+      return;
+    }
+    
+    // Clear errors and set waiting state
+    setOverlayFieldErrors({});
+    setIsOverlaySaving(true);
+    setOverlayWaitingForSave(true);
+    setShowOverlaySuccess(false);
+    
+    // Call the parent's save function
+    saveLegal();
+    // The useEffect will handle the result when savingSection changes
+  };
+
+  const handleOverlayCancel = () => {
+    // Call the parent's cancel function
+    cancelEdit('legal');
+    setOverlayEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const handleOverlayClose = () => {
+    // If we're saving, don't allow close
+    if (isOverlaySaving || overlayWaitingForSave || savingSection === 'legal') {
+      return;
+    }
+    
+    // If we're in edit mode, cancel first
+    if (overlayEditMode) {
+      cancelEdit('legal');
+      setOverlayEditMode(false);
+    }
+    setOverlayOpen(false);
+    setShowOverlaySuccess(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({}); // Clear errors
+  };
+
+  const getFieldDescriptions = () => {
+    return {
+      title: 'Legal/Will Information',
+      description: 'Information about your will and cryonics-related provisions. These fields help ensure your cryopreservation arrangements are legally valid.',
+    };
+  };
+
+  // Create the edit form component that will be reused
+  const renderEditForm = (isInOverlay = false) => {
+    // Use overlay-specific errors when in overlay, otherwise use parent fieldErrors
+    const currentErrors = isInOverlay ? overlayFieldErrors : fieldErrors;
+    
+    return (
+      <div className="space-y-4">
+        <Select
+          label="Do you have a will? *"
+          value={legal?.hasWill || ''}
+          onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
+          disabled={isOverlaySaving || savingSection === 'legal'}
+          required={isRequired}
+          error={currentErrors.hasWill}
+        >
+          <option value="">Select...</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </Select>
+        
+        {legal?.hasWill === 'Yes' && (
+          <>
+            <Select
+              label="Does your will contain any provisions contrary to cryonics? *"
+              value={legal?.willContraryToCryonics || ''}
+              onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
+              disabled={isOverlaySaving || savingSection === 'legal'}
+              required={isRequired}
+              error={currentErrors.willContraryToCryonics}
+            >
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </Select>
+            
+            {legal?.willContraryToCryonics === 'Yes' && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <strong>Action Required:</strong> You must update your will to remove any provisions contrary to cryonics.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Create the view content for overlay
+  const renderOverlayViewContent = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <label className={overlayStyles.displayMode.field.label}>Do you have a will?</label>
+          <p 
+            className={overlayStyles.displayMode.field.value}
+            style={overlayStyles.displayMode.field.getFieldStyle(!legal?.hasWill)}
+          >
+            {legal?.hasWill || '—'}
+          </p>
+        </div>
+        {hasWillYes() && (
+          <div>
+            <label className={overlayStyles.displayMode.field.label}>Contains contrary provisions?</label>
+            <p 
+              className={overlayStyles.displayMode.field.value}
+              style={overlayStyles.displayMode.field.getFieldStyle(!legal?.willContraryToCryonics)}
+            >
+              {legal?.willContraryToCryonics || '—'}
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -466,29 +411,152 @@ const LegalSection = ({
       {/* Overlay */}
       <CardOverlay
         isOpen={overlayOpen}
-        onClose={() => setOverlayOpen(false)}
+        onClose={handleOverlayClose}
         section={overlaySection}
-        data={{ legal }}
-        legal={legal}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        memberCategory={memberCategory}
-      />
+        fieldInfo={getFieldDescriptions()}
+      >
+        {/* Success Message */}
+        {showOverlaySuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-800">Legal information updated successfully!</p>
+            </div>
+          </div>
+        )}
 
+        {/* Error Message for validation errors */}
+        {overlayEditMode && (overlayFieldErrors && Object.keys(overlayFieldErrors).length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Please complete all required fields</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Help Tooltip Section - Always visible at top */}
+        <div className="mb-6 flex items-center gap-2">
+          <p className="text-sm font-semibold text-gray-900">
+            Have Questions About Wills?
+          </p>
+          <div className="relative" ref={tooltipRef}>
+            <button
+              type="button"
+              className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              onClick={() => setShowTooltip(!showTooltip)}
+            >
+              <HelpCircle 
+                className="w-4 h-4 text-gray-400 hover:text-gray-600" 
+                strokeWidth={2}
+              />
+            </button>
+            {showTooltip && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-96">
+                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Why Does Alcor Need This?
+                    </h3>
+                    <svg className="w-4 h-4 text-[#734477]" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12,1L9,9L1,12L9,15L12,23L15,15L23,12L15,9L12,1Z" />
+                    </svg>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTooltip(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="px-4 py-3 overflow-y-auto max-h-80">
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-700">
+                      Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <em className="font-semibold">these provisions may invalidate your Cryopreservation Agreement.</em>
+                    </p>
+                    <p className="text-sm text-gray-900 font-semibold">
+                      If you have a will, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
+                    </p>
+                    <p className="text-sm text-gray-600 pt-2 border-t border-gray-100">
+                      Both will-related fields are mandatory in the application process, and you must answer whether you have a will and whether it contains any provisions that might conflict with cryopreservation arrangements.
+                    </p>
+                  </div>
+                </div>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px]">
+                  <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-white"></div>
+                  <div className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-gray-200"></div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content based on edit mode */}
+        {!overlayEditMode ? (
+          <>
+            {/* View Mode */}
+            {renderOverlayViewContent()}
+            
+            {/* Footer with Edit button */}
+            <div className={overlayStyles.footer.wrapper}>
+              <PurpleButton
+                text="Edit"
+                onClick={handleOverlayEdit}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Edit Mode - Reuse the same form */}
+            {renderEditForm(true)}
+            
+            {/* Footer with Cancel/Save buttons */}
+            <div className={overlayStyles.footer.wrapper}>
+              <WhiteButton
+                text="Cancel"
+                onClick={handleOverlayCancel}
+                className={buttonStyles.overlayButtons.cancel}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+              <PurpleButton
+                text={isOverlaySaving ? 'Saving...' : 'Save'}
+                onClick={handleOverlaySave}
+                className={buttonStyles.overlayButtons.save}
+                spinStar={buttonStyles.starConfig.enabled}
+                disabled={isOverlaySaving}
+              />
+            </div>
+          </>
+        )}
+      </CardOverlay>
+
+      {/* Rest of the component remains the same... */}
       {isMobile ? (
         <LegalMobile
-        legal={legal}
-        setLegal={setLegal}
-        editMode={editMode}
-        toggleEditMode={toggleEditMode}
-        cancelEdit={cancelEdit}
-        saveLegal={saveLegal}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
-        fieldConfig={fieldConfigLocal}
-        memberCategory={memberCategory}
-        getFieldError={getFieldError}
-      />
+          legal={legal}
+          setLegal={setLegal}
+          editMode={editMode}
+          toggleEditMode={toggleEditMode}
+          cancelEdit={cancelEdit}
+          saveLegal={saveLegal}
+          savingSection={savingSection}
+          fieldErrors={fieldErrors}
+          fieldConfig={fieldConfigLocal}
+          memberCategory={memberCategory}
+          getFieldError={getFieldError}
+        />
       ) : (
         /* Desktop view */
         <div className={styleConfig2.section.wrapperEnhanced}>
@@ -574,7 +642,6 @@ const LegalSection = ({
                     <div></div>
                   </div>
 
-                  
                   {/* "Have Questions About Wills?" section - Always visible at bottom */}
                   <div className="mt-16 flex items-center justify-between">
                     {/* Left side - Info Notice */}
@@ -662,46 +729,18 @@ const LegalSection = ({
                 /* Edit Mode - Form */
                 <div className="max-w-2xl">
                   <div className="mb-6">
-                    <div className="space-y-4">
-                      <Select
-                        label="Do you have a will? *"
-                        value={legal.hasWill || ''}
-                        onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
-                        disabled={!editMode.legal}
-                        required={isRequired}
-                      >
-                        <option value="">Select...</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </Select>
-                      
-                      {legal.hasWill === 'Yes' && (
-                        <>
-                          <Select
-                            label="Does your will contain any provisions contrary to cryonics? *"
-                            value={legal.willContraryToCryonics || ''}
-                            onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
-                            disabled={!editMode.legal}
-                            required={isRequired}
-                          >
-                            <option value="">Select...</option>
-                            <option value="Yes">Yes</option>
-                            <option value="No">No</option>
-                          </Select>
-                          
-                          {/* Add helpful text for desktop users */}
-                          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Important Information:</h4>
-                            <p className="text-sm text-gray-700 mb-2">
-                              Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <strong>these provisions may invalidate your Cryopreservation Agreement.</strong>
-                            </p>
-                            {legal.willContraryToCryonics === 'Yes' && (
-                              <p className="text-sm text-red-700 font-medium mt-2 p-2 bg-red-50 rounded">
-                                <strong>Action Required:</strong> If you have a will with contrary provisions, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
-                              </p>
-                            )}
-                          </div>
-                        </>
+                    {renderEditForm(false)}
+                    
+                    {/* Add helpful text for desktop users */}
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Important Information:</h4>
+                      <p className="text-sm text-gray-700 mb-2">
+                        Alcor does not require that you have a will in order to become a member. However, if you already have a will which has provisions contrary to the goals of cryonics (for example, if your will states that you do not want cryopreservation, or if it requires cremation, burial, or other disposition of your human remains after your legal death), <strong>these provisions may invalidate your Cryopreservation Agreement.</strong>
+                      </p>
+                      {legal?.willContraryToCryonics === 'Yes' && (
+                        <p className="text-sm text-red-700 font-medium mt-2 p-2 bg-red-50 rounded">
+                          <strong>Action Required:</strong> If you have a will with contrary provisions, it is your responsibility to change it through a new codicil or a new will; otherwise, your cryopreservation arrangements may not be valid.
+                        </p>
                       )}
                     </div>
                   </div>

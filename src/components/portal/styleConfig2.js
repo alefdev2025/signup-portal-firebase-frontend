@@ -42,7 +42,7 @@ const styleConfig2 = {
   header: {
     wrapper: "mb-8 sm:mb-8 md:mb-9 flex items-start", // More space below header on mobile
     iconContainer: "p-2.5 rounded-lg transform transition duration-300", // Moderate padding
-    icon: "w-9 h-9 sm:w-10 sm:h-10 text-white stroke-[0.8] scale-[0.85] origin-center", // Added scale to make inner lines smaller
+    icon: "w-6 h-6 sm:w-7 sm:h-7 xl:w-8 xl:h-8 2xl:w-9 2xl:h-9 text-white stroke-[0.8] scale-[0.85] origin-center",// Added scale to make inner lines smaller
     iconStrokeWidth: "0.8", // Thinner stroke
     textContainer: "ml-5 pt-0.5", // More space between icon and text
     title: "text-lg sm:text-[1.375rem] font-light text-gray-800",
@@ -152,7 +152,7 @@ mobileSection: {
 // Section-specific dark backgrounds for mobile, icon styles for desktop
 sectionIcons: {
   // Same gradient for all sections but keeping the blue borders - SMALLER BOXES
-  contact: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#3B82F6] shadow-md",
+  contact: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 sm:p-2.5 2xl:p-3 rounded-lg transform transition duration-300 border-2 border-[#3B82F6] shadow-md",
   personal: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#60A5FA] shadow-md",
   addresses: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#818CF8] shadow-md",
   family: "bg-gradient-to-r from-[#0a1628] to-[#6e4376] p-2 rounded-lg transform transition duration-300 border-2 border-[#A78BFA] shadow-md",

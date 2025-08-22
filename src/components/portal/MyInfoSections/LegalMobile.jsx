@@ -18,34 +18,42 @@ const LegalMobile = ({
   memberCategory,
   getFieldError
 }) => {
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = React.useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.legal) {
+      setLocalErrors({});
+    }
+  }, [editMode.legal]);
+
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
-    let filledRecommended = 0;
     
-    Object.values(fieldConfig.required).forEach(field => {
-      if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue({ legal })) {
-          filledRequired++;
-        }
+    // Check if hasWill is filled
+    if (legal?.hasWill && legal.hasWill !== '') {
+      filledRequired++;
+    }
+    
+    // Only check willContraryToCryonics if hasWill is "Yes"
+    if (legal?.hasWill === 'Yes') {
+      // They have a will, so we need to check the second field
+      if (legal?.willContraryToCryonics && legal.willContraryToCryonics !== '') {
+        filledRequired++;
       }
-    });
-    
-    Object.values(fieldConfig.recommended).forEach(field => {
-      if (field.checkValue && typeof field.checkValue === 'function') {
-        if (field.checkValue({ legal })) {
-          filledRecommended++;
-        }
-      }
-    });
-    
-    const totalRequired = Object.keys(fieldConfig.required).length;
-    const totalRecommended = Object.keys(fieldConfig.recommended).length;
-    
-    const requiredPercentage = totalRequired > 0 ? (filledRequired / totalRequired) * 100 : 0;
-    const recommendedPercentage = totalRecommended > 0 ? (filledRecommended / totalRecommended) * 0 : 0; // No recommended fields for Legal
-    
-    return Math.round(requiredPercentage + recommendedPercentage);
+      // Total required is 2 when they have a will
+      const totalRequired = 2;
+      const requiredPercentage = (filledRequired / totalRequired) * 100;
+      return Math.round(requiredPercentage);
+    } else {
+      // They either said "No" or haven't answered yet
+      // Only hasWill field is required
+      const totalRequired = 1;
+      const requiredPercentage = (filledRequired / totalRequired) * 100;
+      return Math.round(requiredPercentage);
+    }
   };
 
   const completionPercentage = calculateCompletion();
@@ -66,20 +74,46 @@ const LegalMobile = ({
   // Check if fields are required based on member category
   const isRequired = memberCategory === 'CryoApplicant' || memberCategory === 'CryoMember';
 
-  // Wrap saveLegal to prevent duplicate calls
-  const handleSaveLegal = async () => {
-    // Prevent multiple simultaneous saves
-    if (savingSection === 'legal') {
-      console.log('⚠️ Save already in progress, ignoring duplicate call');
+  // Handle save with complete validation
+  const handleSave = async () => {
+    const errors = {};
+    
+    // Validate hasWill (always required)
+    if (!legal?.hasWill || !legal.hasWill.trim()) {
+      errors.hasWill = "Please indicate if you have a will";
+    }
+    
+    // If they have a will, validate willContraryToCryonics
+    if (legal?.hasWill === 'Yes') {
+      if (!legal?.willContraryToCryonics || !legal.willContraryToCryonics.trim()) {
+        errors.willContraryToCryonics = "Please indicate if your will contains contrary provisions";
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
       return;
     }
     
-    if (saveLegal) {
-      try {
-        await saveLegal();
-      } catch (error) {
-        console.error('Error in handleSaveLegal:', error);
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    
+    // Call saveLegal and check if it returns a result
+    try {
+      const result = await saveLegal();
+      
+      // If saveLegal returns a failure indication, show errors
+      if (result && !result.success) {
+        const errorMessage = result.errors 
+          ? Object.values(result.errors).join('. ')
+          : result.error || 'Failed to save legal information';
+        
+        setLocalErrors({ general: errorMessage });
       }
+    } catch (error) {
+      console.error('Error saving legal info:', error);
+      setLocalErrors({ general: 'Failed to save. Please try again.' });
     }
   };
 
@@ -109,40 +143,40 @@ const LegalMobile = ({
                 <div className="px-6 py-6">
                   {/* Header with completion */}
                   <div className="flex items-center justify-between mb-6">
-                    <div>
+                    <div className="pr-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Legal Details</h3>
-                      <p className="text-sm text-gray-600">Information about your will and cryonics provisions</p>
+                      <p className="text-sm text-gray-600">Information about your will<br />and cryonics provisions</p>
                     </div>
                     
-                    {/* Compact completion indicator */}
+                    {/* Updated completion indicator to match FamilyInfo and Occupation */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <circle
                           stroke="url(#gradient)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}
+                          strokeDasharray={`${264} ${264}`}
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}
+                          cx={50}
+                          cy={50}
                         />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#F26430" />
-                            <stop offset="100%" stopColor="#512BD9" />
+                            <stop offset="0%" stopColor="#512BD9" />
+                            <stop offset="100%" stopColor="#F26430" />
                           </linearGradient>
                         </defs>
                       </svg>
@@ -191,6 +225,31 @@ const LegalMobile = ({
         {/* Edit Form Section */}
         {editMode.legal && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    {localErrors.general ? (
+                      <p>{localErrors.general}</p>
+                    ) : (
+                      <>
+                        <p className="font-medium">Please fix the following errors:</p>
+                        <ul className="mt-1 list-disc list-inside">
+                          {Object.entries(localErrors).filter(([field]) => field !== 'general').map(([field, error]) => (
+                            <li key={field}>{error}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-4">Legal Information</h4>
@@ -200,7 +259,7 @@ const LegalMobile = ({
                     label="Do you have a will? *"
                     value={legal?.hasWill || ''}
                     onChange={(e) => setLegal({...legal, hasWill: e.target.value})}
-                    error={fieldErrors?.hasWill}
+                    error={fieldErrors?.hasWill || localErrors.hasWill}
                     disabled={savingSection === 'legal'}
                     required={isRequired}
                   >
@@ -214,7 +273,7 @@ const LegalMobile = ({
                       label="Does your will contain any provisions contrary to cryonics? *"
                       value={legal?.willContraryToCryonics || ''}
                       onChange={(e) => setLegal({...legal, willContraryToCryonics: e.target.value})}
-                      error={fieldErrors?.willContraryToCryonics}
+                      error={fieldErrors?.willContraryToCryonics || localErrors.willContraryToCryonics}
                       disabled={savingSection === 'legal'}
                       required={isRequired}
                     >
@@ -251,14 +310,17 @@ const LegalMobile = ({
             {/* Action buttons */}
             <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={() => cancelEdit && cancelEdit('legal')}
+                onClick={() => {
+                  setLocalErrors({});
+                  cancelEdit && cancelEdit('legal');
+                }}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'legal'}
               >
                 Close
               </button>
               <button
-                onClick={handleSaveLegal}
+                onClick={handleSave}
                 disabled={savingSection === 'legal'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >
