@@ -349,32 +349,41 @@ const FamilyInfoSection = ({
     // Clear errors and set waiting state
     setOverlayFieldErrors({});
     setIsOverlaySaving(true);
-    setOverlayWaitingForSave(true);
     setShowOverlaySuccess(false);
     
-    // IMPORTANT: Call a PARTIAL save function instead of the full saveFamilyInfo
-    // We need to save just the current section's data
     try {
-      // Create a custom save that only validates/saves the current section
-      await savePartialFamilyInfo(overlaySection);
+      // Call the parent's saveFamilyInfo with partial save flag
+      const result = await saveFamilyInfo(true, overlaySection);
       
-      // Show success
-      setShowOverlaySuccess(true);
-      setOverlayEditMode(false);
-      setOverlayFieldErrors({});
-      setIsOverlaySaving(false);
-      setOverlayWaitingForSave(false);
-      
-      // Close overlay after showing success
-      setTimeout(() => {
-        setOverlayOpen(false);
-        setShowOverlaySuccess(false);
-      }, 1500);
+      // Check if save was successful
+      if (result && result.success) {
+        // Success! Show success message and close
+        setShowOverlaySuccess(true);
+        setOverlayEditMode(false);
+        setOverlayFieldErrors({});
+        setIsOverlaySaving(false);
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          setOverlayOpen(false);
+          setShowOverlaySuccess(false);
+          setOverlaySection(null);
+        }, 1500);
+      } else {
+        // Save failed
+        const errorMessage = result?.errors 
+          ? Object.values(result.errors).join('. ')
+          : result?.error || 'Failed to save. Please try again.';
+        
+        setOverlayFieldErrors({ general: errorMessage });
+        setIsOverlaySaving(false);
+        
+        // Don't close overlay on failure
+      }
     } catch (error) {
-      // Handle error
+      console.error('Error in handleOverlaySave:', error);
       setOverlayFieldErrors({ general: 'Failed to save. Please try again.' });
       setIsOverlaySaving(false);
-      setOverlayWaitingForSave(false);
     }
   };
 

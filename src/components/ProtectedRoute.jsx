@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
   const [checkingPortalAccess, setCheckingPortalAccess] = useState(false);
   const [isPortalUser, setIsPortalUser] = useState(null);
   
-  console.log('[ProtectedRoute] INITIAL RENDER:', {
+  /*console.log('[ProtectedRoute] INITIAL RENDER:', {
     path: location.pathname,
     requirePortalAccess,
     requireSignupComplete,
@@ -20,24 +20,24 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
     signupCompleted: signupState?.signupCompleted,
     signupProgress: signupState?.signupProgress,
     signupStep: signupState?.signupStep
-  });
+  });*/
   
   // Check if user is a portal user from Firestore
   useEffect(() => {
     const checkPortalUser = async () => {
       if (!currentUser || !requirePortalAccess) {
-        console.log('[ProtectedRoute] Skipping portal check - no user or not required');
+        //console.log('[ProtectedRoute] Skipping portal check - no user or not required');
         return;
       }
       
-      console.log('[ProtectedRoute] Checking portal access for user:', currentUser.uid);
+      //console.log('[ProtectedRoute] Checking portal access for user:', currentUser.uid);
       setCheckingPortalAccess(true);
       
       try {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         const userData = userDoc.data();
         
-        console.log('[ProtectedRoute] Firestore user data:', {
+        /*console.log('[ProtectedRoute] Firestore user data:', {
           uid: currentUser.uid,
           isPortalUser: userData?.isPortalUser,
           userType: userData?.userType,
@@ -47,7 +47,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
           twoFactorEnabled: userData?.twoFactorEnabled,
           membershipType: userData?.membershipType,
           alcorIdStatus: userData?.alcorIdStatus
-        });
+        });*/
         
         setIsPortalUser(userData?.isPortalUser === true);
       } catch (error) {
@@ -63,7 +63,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
   
   // Log access attempts for security monitoring
   useEffect(() => {
-    console.log('[ProtectedRoute] Access attempt FULL LOG:', {
+    /*console.log('[ProtectedRoute] Access attempt FULL LOG:', {
       path: location.pathname,
       hasUser: !!currentUser,
       userEmail: currentUser?.email,
@@ -78,12 +78,12 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
       isPortalUserNull: isPortalUser === null,
       isPortalUserTrue: isPortalUser === true,
       isPortalUserFalse: isPortalUser === false
-    });
+    });*/
   }, [location.pathname, currentUser, isLoading, checkingPortalAccess, requirePortalAccess, requireSignupComplete, salesforceCustomer, signupState, isPortalUser]);
   
   // Show loading spinner while checking auth or portal access
   if (isLoading || (requirePortalAccess && checkingPortalAccess)) {
-    console.log('[ProtectedRoute] SHOWING LOADING SPINNER');
+    //console.log('[ProtectedRoute] SHOWING LOADING SPINNER');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -105,10 +105,10 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  console.log('[ProtectedRoute] CHECKING ROUTE TYPE:', {
+  /*console.log('[ProtectedRoute] CHECKING ROUTE TYPE:', {
     requireSignupComplete,
     signupCompleted: signupState?.signupCompleted
-  });
+  });*/
   
   // Check if this is a signup-related route that requires signup completion
   if (requireSignupComplete && !signupState?.signupCompleted) {
@@ -118,19 +118,19 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
   
   // Additional check for portal access
   if (requirePortalAccess) {
-    console.log('[ProtectedRoute] PORTAL ACCESS REQUIRED - Checking access...');
-    console.log('[ProtectedRoute] isPortalUser value:', isPortalUser);
-    console.log('[ProtectedRoute] isPortalUser type:', typeof isPortalUser);
+    //console.log('[ProtectedRoute] PORTAL ACCESS REQUIRED - Checking access...');
+    //console.log('[ProtectedRoute] isPortalUser value:', isPortalUser);
+    //console.log('[ProtectedRoute] isPortalUser type:', typeof isPortalUser);
     
     // PRIMARY CHECK: Use the isPortalUser field from Firestore
     if (isPortalUser === true) {
-      console.log('[ProtectedRoute] ✅ User has isPortalUser=true - ALLOWING PORTAL ACCESS');
+      //console.log('[ProtectedRoute] ✅ User has isPortalUser=true - ALLOWING PORTAL ACCESS');
       return children;
     }
     
     // If we're still checking, wait
     if (isPortalUser === null && checkingPortalAccess) {
-      console.log('[ProtectedRoute] Still checking portal access...');
+      //console.log('[ProtectedRoute] Still checking portal access...');
       return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
           <div className="text-center">
@@ -143,7 +143,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
     
     // If isPortalUser is false or still null after checking, check other indicators
     if (isPortalUser === false || isPortalUser === null) {
-      console.log('[ProtectedRoute] ❌ User has isPortalUser=false or null - checking other indicators...');
+      //console.log('[ProtectedRoute] ❌ User has isPortalUser=false or null - checking other indicators...');
       
       // Check for other portal indicators as fallback
       const hasPortalIndicators = 
@@ -154,27 +154,27 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
         signupState?.paymentCompleted === true ||
         (salesforceCustomer && salesforceCustomer.id);
       
-      console.log('[ProtectedRoute] Other portal indicators:', {
+      /*console.log('[ProtectedRoute] Other portal indicators:', {
         hasPortalIndicators,
         userType: signupState?.userType,
         isPortalUserFromState: signupState?.isPortalUser,
         portalSetupComplete: signupState?.portalSetupComplete,
         paymentCompleted: signupState?.paymentCompleted,
         hasSalesforceId: !!(salesforceCustomer && salesforceCustomer.id)
-      });
+      });*/
       
       if (hasPortalIndicators) {
-        console.log('[ProtectedRoute] ✅ User has other portal indicators - ALLOWING ACCESS');
+        //console.log('[ProtectedRoute] ✅ User has other portal indicators - ALLOWING ACCESS');
         return children;
       }
       
       // Check if they're in the middle of signup
       if (signupState && signupState.signupProgress >= 0 && signupState.signupProgress < 100) {
-        console.log('[ProtectedRoute] User appears to be in signup process - redirecting to signup');
+        //console.log('[ProtectedRoute] User appears to be in signup process - redirecting to signup');
         return <Navigate to="/signup" replace />;
       }
       
-      console.log('[ProtectedRoute] ❌ DENYING PORTAL ACCESS - No portal indicators found');
+      //console.log('[ProtectedRoute] ❌ DENYING PORTAL ACCESS - No portal indicators found');
       
       // Otherwise show access denied
       return (
@@ -212,7 +212,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
     
     // Fallback - check if they need to wait for data
     if (!salesforceCustomer) {
-      console.log('[ProtectedRoute] Waiting for Salesforce customer data...');
+      //console.log('[ProtectedRoute] Waiting for Salesforce customer data...');
       
       // Give it a moment to load if we just authenticated
       const timeSinceLogin = Date.now() - (signupState?.lastLoginTime || 0);
@@ -230,7 +230,7 @@ const ProtectedRoute = ({ children, requirePortalAccess = false, requireSignupCo
   }
   
   // User is authenticated and has necessary access, render the protected content
-  console.log('[ProtectedRoute] ✅ ALLOWING ACCESS - All checks passed');
+  //console.log('[ProtectedRoute] ✅ ALLOWING ACCESS - All checks passed');
   return children;
 };
 

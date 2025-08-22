@@ -402,7 +402,8 @@ const MyInformationTab = () => {
         
         if (memberInfoData.cryo?.success && memberInfoData.cryo.data) {
           const cryoData = memberInfoData.cryo.data.data || memberInfoData.cryo.data;
-          //console.log('🔍 Cached cryo data:', cryoData);
+          console.log('🔍 === CACHED CRYO DATA PROCESSING START ===');
+          console.log('🔍 Cached cryo data:', cryoData);
           
           const transformedCryo = {
             method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
@@ -412,7 +413,6 @@ const MyInformationTab = () => {
             recipientName: formatPersonName(cryoData.recipientName),
             recipientPhone: formatPhone(cryoData.recipientPhone),
             recipientEmail: formatEmail(cryoData.recipientEmail),
-            // NEW: Individual recipient mailing address fields
             recipientMailingStreet: formatStreetAddress(cryoData.recipientMailingStreet),
             recipientMailingCity: formatCity(cryoData.recipientMailingCity),
             recipientMailingState: formatStateProvince(cryoData.recipientMailingState),
@@ -430,6 +430,209 @@ const MyInformationTab = () => {
           
           setCryoArrangements(transformedCryo);
           setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+          
+          // Extract funding allocation fields with debugging
+          console.log('💰 === FUNDING ALLOCATIONS FROM CACHE START ===');
+          console.log('📦 Raw funding data from cached backend:', {
+            Patient_Care_Trust__c: cryoData.Patient_Care_Trust__c,
+            General_Operating_Fund__c: cryoData.General_Operating_Fund__c,
+            Alcor_Research_Fund__c: cryoData.Alcor_Research_Fund__c,
+            Endowment_Fund__c: cryoData.Endowment_Fund__c,
+            Individuals__c: cryoData.Individuals__c,
+            Others__c: cryoData.Others__c,
+            Following_Person_s__c: cryoData.Following_Person_s__c,
+            Other__c: cryoData.Other__c
+          });
+          
+          // Log individual field details for debugging
+          console.log('\n🔍 CACHED PRIMARY ALLOCATION RAW VALUES:');
+          console.log('  Patient_Care_Trust__c:', {
+            value: cryoData.Patient_Care_Trust__c,
+            type: typeof cryoData.Patient_Care_Trust__c,
+            isNull: cryoData.Patient_Care_Trust__c === null,
+            isUndefined: cryoData.Patient_Care_Trust__c === undefined,
+            isZero: cryoData.Patient_Care_Trust__c === 0
+          });
+          console.log('  General_Operating_Fund__c:', {
+            value: cryoData.General_Operating_Fund__c,
+            type: typeof cryoData.General_Operating_Fund__c,
+            isNull: cryoData.General_Operating_Fund__c === null,
+            isUndefined: cryoData.General_Operating_Fund__c === undefined,
+            isZero: cryoData.General_Operating_Fund__c === 0
+          });
+          console.log('  Individuals__c:', {
+            value: cryoData.Individuals__c,
+            type: typeof cryoData.Individuals__c,
+            isNull: cryoData.Individuals__c === null,
+            isUndefined: cryoData.Individuals__c === undefined,
+            isZero: cryoData.Individuals__c === 0,
+            is100: cryoData.Individuals__c === 100
+          });
+          
+          // Parse all allocation values with proper null handling
+          const primaryAllocations = {
+            pct: cryoData.Patient_Care_Trust__c !== null && cryoData.Patient_Care_Trust__c !== undefined 
+                 ? parseFloat(cryoData.Patient_Care_Trust__c) : null,
+            gof: cryoData.General_Operating_Fund__c !== null && cryoData.General_Operating_Fund__c !== undefined 
+                 ? parseFloat(cryoData.General_Operating_Fund__c) : null,
+            arf: cryoData.Alcor_Research_Fund__c !== null && cryoData.Alcor_Research_Fund__c !== undefined 
+                 ? parseFloat(cryoData.Alcor_Research_Fund__c) : null,
+            ef: cryoData.Endowment_Fund__c !== null && cryoData.Endowment_Fund__c !== undefined 
+                ? parseFloat(cryoData.Endowment_Fund__c) : null,
+            ind: cryoData.Individuals__c !== null && cryoData.Individuals__c !== undefined 
+                 ? parseFloat(cryoData.Individuals__c) : null,
+            oth: cryoData.Others__c !== null && cryoData.Others__c !== undefined 
+                 ? parseFloat(cryoData.Others__c) : null
+          };
+          
+          const overMinAllocations = {
+            pct: cryoData.Patient_Care_Trust_Over_Minimum__c !== null && cryoData.Patient_Care_Trust_Over_Minimum__c !== undefined 
+                 ? parseFloat(cryoData.Patient_Care_Trust_Over_Minimum__c) : null,
+            gof: cryoData.General_Operating_Fund_Over_Minimum__c !== null && cryoData.General_Operating_Fund_Over_Minimum__c !== undefined 
+                 ? parseFloat(cryoData.General_Operating_Fund_Over_Minimum__c) : null,
+            arf: cryoData.Alcor_Research_Fund_Over_Minimum__c !== null && cryoData.Alcor_Research_Fund_Over_Minimum__c !== undefined 
+                 ? parseFloat(cryoData.Alcor_Research_Fund_Over_Minimum__c) : null,
+            ef: cryoData.Endowment_Fund_Over_Minimum__c !== null && cryoData.Endowment_Fund_Over_Minimum__c !== undefined 
+                ? parseFloat(cryoData.Endowment_Fund_Over_Minimum__c) : null,
+            ind: cryoData.Individuals_OM__c !== null && cryoData.Individuals_OM__c !== undefined 
+                 ? parseFloat(cryoData.Individuals_OM__c) : null,
+            oth: cryoData.Others_OM__c !== null && cryoData.Others_OM__c !== undefined 
+                 ? parseFloat(cryoData.Others_OM__c) : null
+          };
+          
+          console.log('\n📊 PARSED CACHED PRIMARY ALLOCATIONS:', primaryAllocations);
+          console.log('📊 PARSED CACHED OVER-MIN ALLOCATIONS:', overMinAllocations);
+          
+          // Check if we have ANY funding allocation data
+          const hasPrimaryData = Object.values(primaryAllocations).some(val => val !== null);
+          const hasOverMinData = Object.values(overMinAllocations).some(val => val !== null);
+          
+          console.log('\n🔍 CACHED DATA PRESENCE CHECK:');
+          console.log('  Has primary data:', hasPrimaryData);
+          console.log('  Has over-min data:', hasOverMinData);
+          
+          // Determine if allocations are custom
+          let isCustomPrimary = false;
+          let isCustomOverMin = false;
+          
+          if (hasPrimaryData) {
+            console.log('\n🔍 CHECKING CACHED PRIMARY ALLOCATION TYPE:');
+            
+            // Calculate total with null-safe values
+            const primaryTotal = Object.values(primaryAllocations)
+              .filter(val => val !== null)
+              .reduce((sum, val) => sum + val, 0);
+            
+            console.log('  Primary total:', primaryTotal);
+            console.log('  Total equals 100?', Math.abs(primaryTotal - 100) < 0.01);
+            
+            if (Math.abs(primaryTotal - 100) < 0.01) {
+              // We have valid allocation data totaling 100%
+              const isDefault = (
+                primaryAllocations.pct === 50 &&
+                primaryAllocations.gof === 50 &&
+                (primaryAllocations.arf === null || primaryAllocations.arf === 0) &&
+                (primaryAllocations.ef === null || primaryAllocations.ef === 0) &&
+                (primaryAllocations.ind === null || primaryAllocations.ind === 0) &&
+                (primaryAllocations.oth === null || primaryAllocations.oth === 0)
+              );
+              
+              console.log('  Is default 50/50 pattern?', isDefault);
+              isCustomPrimary = !isDefault;
+              
+              // CRITICAL FIX: If Individuals has ANY value > 0, it's ALWAYS custom
+              if (primaryAllocations.ind > 0) {
+                console.log('  🚨 OVERRIDE: Individuals = ' + primaryAllocations.ind + ' > 0, FORCING CUSTOM');
+                isCustomPrimary = true;
+              }
+              
+            } else if (primaryTotal > 0) {
+              // We have some data but it doesn't total 100 - treat as custom
+              isCustomPrimary = true;
+              console.log('  Partial data detected, treating as CUSTOM');
+            } else {
+              // No data or all zeros - treat as default
+              isCustomPrimary = false;
+              console.log('  No data, treating as DEFAULT');
+            }
+            
+            console.log('  ✅ CACHED PRIMARY RESULT:', isCustomPrimary ? 'CUSTOM' : 'DEFAULT');
+          } else {
+            console.log('  ❌ NO PRIMARY DATA - Using DEFAULT');
+          }
+          
+          if (hasOverMinData) {
+            console.log('\n🔍 CHECKING CACHED OVER-MIN ALLOCATION TYPE:');
+            
+            const overMinTotal = Object.values(overMinAllocations)
+              .filter(val => val !== null)
+              .reduce((sum, val) => sum + val, 0);
+            
+            console.log('  Over-min total:', overMinTotal);
+            
+            if (Math.abs(overMinTotal - 100) < 0.01) {
+              const isDefault = (
+                overMinAllocations.pct === 50 &&
+                overMinAllocations.gof === 50 &&
+                (overMinAllocations.arf === null || overMinAllocations.arf === 0) &&
+                (overMinAllocations.ef === null || overMinAllocations.ef === 0) &&
+                (overMinAllocations.ind === null || overMinAllocations.ind === 0) &&
+                (overMinAllocations.oth === null || overMinAllocations.oth === 0)
+              );
+              
+              isCustomOverMin = !isDefault;
+              
+              // CRITICAL FIX: If Individuals OM has ANY value > 0, it's ALWAYS custom
+              if (overMinAllocations.ind > 0) {
+                console.log('  🚨 OVERRIDE: Individuals OM = ' + overMinAllocations.ind + ' > 0, FORCING CUSTOM');
+                isCustomOverMin = true;
+              }
+              
+            } else if (overMinTotal > 0) {
+              isCustomOverMin = true;
+              console.log('  Partial data detected, treating as CUSTOM');
+            } else {
+              isCustomOverMin = false;
+              console.log('  No data, treating as DEFAULT');
+            }
+            
+            console.log('  ✅ CACHED OVER-MIN RESULT:', isCustomOverMin ? 'CUSTOM' : 'DEFAULT');
+          } else {
+            console.log('  ❌ NO OVER-MIN DATA - Using DEFAULT');
+          }
+          
+          // Build the funding allocations object
+          const fundingAllocationsData = {
+            // Control fields - use the calculated values
+            customPrimary: isCustomPrimary,
+            customOverMinimum: isCustomOverMin,
+            
+            // Primary allocations - use actual values or 0 for display
+            patientCareTrust: primaryAllocations.pct ?? 0,
+            generalOperatingFund: primaryAllocations.gof ?? 0,
+            alcorResearchFund: primaryAllocations.arf ?? 0,
+            endowmentFund: primaryAllocations.ef ?? 0,
+            individuals: primaryAllocations.ind ?? 0,
+            others: primaryAllocations.oth ?? 0,
+            followingPersons: cryoData.Following_Person_s__c || '',
+            other: cryoData.Other__c || '',
+            
+            // Over-minimum allocations
+            patientCareTrustOM: overMinAllocations.pct ?? 0,
+            generalOperatingFundOM: overMinAllocations.gof ?? 0,
+            alcorResearchFundOM: overMinAllocations.arf ?? 0,
+            endowmentFundOM: overMinAllocations.ef ?? 0,
+            individualsOM: overMinAllocations.ind ?? 0,
+            othersOM: overMinAllocations.oth ?? 0,
+            followingPersonsOM: cryoData.Following_Person_s_Over_Minimum__c || '',
+            otherOM: cryoData.Other_Over_Minimum__c || ''
+          };
+          
+          console.log('\n📦 FINAL CACHED fundingAllocationsData:', fundingAllocationsData);
+          console.log('💰 === FUNDING ALLOCATIONS FROM CACHE END ===\n');
+          
+          setFundingAllocations(fundingAllocationsData);
+          setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
         }
         
         if (memberInfoData.emergency?.success && memberInfoData.emergency.data) {
@@ -849,8 +1052,205 @@ const MyInformationTab = () => {
         setMedicalInfo(cleanedMedical);
         setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
       }
+
+    // In MyInformationTab.js - Replace the existing funding allocations extraction section (around line 775)
+    // This is inside the loadAllData function, in the cryoRes.success condition
+
+    if (results.cryoRes.success && results.cryoRes.data) {
+      const cryoData = results.cryoRes.data.data || results.cryoRes.data;
       
-      if (results.cryoRes.success && results.cryoRes.data) {
+      // Transform and clean the cryo arrangement data (existing code remains the same)
+      const transformedCryo = {
+        method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
+                cryoData.methodOfPreservation?.includes('Neuro') ? 'Neuro' : '',
+        cmsWaiver: cryoData.cmsWaiver === 'Yes',
+        remainsHandling: mapRemainsHandling(cryoData.nonCryoRemainArrangements),
+        recipientName: formatPersonName(cryoData.recipientName),
+        recipientPhone: formatPhone(cryoData.recipientPhone),
+        recipientEmail: formatEmail(cryoData.recipientEmail),
+        recipientMailingStreet: formatStreetAddress(cryoData.recipientMailingStreet),
+        recipientMailingCity: formatCity(cryoData.recipientMailingCity),
+        recipientMailingState: formatStateProvince(cryoData.recipientMailingState),
+        recipientMailingPostalCode: formatPostalCode(cryoData.recipientMailingPostalCode),
+        recipientMailingCountry: formatCountry(cryoData.recipientMailingCountry),
+        cryopreservationDisclosure: mapPublicDisclosure(cryoData.cryopreservationDisclosure),
+        memberPublicDisclosure: mapPublicDisclosure(cryoData.memberPublicDisclosure),
+        fundingStatus: cryoData.fundingStatus,
+        contractDate: cryoData.contractDate,
+        memberJoinDate: cryoData.memberJoinDate,
+        contractComplete: cryoData.contractComplete,
+        isPatient: cryoData.isPatient,
+        recipientAddress: cryoData.recipientAddress
+      };
+      
+      setCryoArrangements(transformedCryo);
+      setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
+      
+      // Extract funding allocation fields
+      console.log('💰 === FUNDING ALLOCATIONS EXTRACTION START ===');
+      console.log('📦 Raw funding data from backend:', {
+        Patient_Care_Trust__c: cryoData.Patient_Care_Trust__c,
+        General_Operating_Fund__c: cryoData.General_Operating_Fund__c,
+        Alcor_Research_Fund__c: cryoData.Alcor_Research_Fund__c,
+        Endowment_Fund__c: cryoData.Endowment_Fund__c,
+        Individuals__c: cryoData.Individuals__c,
+        Others__c: cryoData.Others__c,
+        Following_Person_s__c: cryoData.Following_Person_s__c,
+        Other__c: cryoData.Other__c
+      });
+      
+      // Parse all allocation values with proper null handling
+      const primaryAllocations = {
+        pct: cryoData.Patient_Care_Trust__c !== null && cryoData.Patient_Care_Trust__c !== undefined 
+            ? parseFloat(cryoData.Patient_Care_Trust__c) : null,
+        gof: cryoData.General_Operating_Fund__c !== null && cryoData.General_Operating_Fund__c !== undefined 
+            ? parseFloat(cryoData.General_Operating_Fund__c) : null,
+        arf: cryoData.Alcor_Research_Fund__c !== null && cryoData.Alcor_Research_Fund__c !== undefined 
+            ? parseFloat(cryoData.Alcor_Research_Fund__c) : null,
+        ef: cryoData.Endowment_Fund__c !== null && cryoData.Endowment_Fund__c !== undefined 
+            ? parseFloat(cryoData.Endowment_Fund__c) : null,
+        ind: cryoData.Individuals__c !== null && cryoData.Individuals__c !== undefined 
+            ? parseFloat(cryoData.Individuals__c) : null,
+        oth: cryoData.Others__c !== null && cryoData.Others__c !== undefined 
+            ? parseFloat(cryoData.Others__c) : null
+      };
+      
+      const overMinAllocations = {
+        pct: cryoData.Patient_Care_Trust_Over_Minimum__c !== null && cryoData.Patient_Care_Trust_Over_Minimum__c !== undefined 
+            ? parseFloat(cryoData.Patient_Care_Trust_Over_Minimum__c) : null,
+        gof: cryoData.General_Operating_Fund_Over_Minimum__c !== null && cryoData.General_Operating_Fund_Over_Minimum__c !== undefined 
+            ? parseFloat(cryoData.General_Operating_Fund_Over_Minimum__c) : null,
+        arf: cryoData.Alcor_Research_Fund_Over_Minimum__c !== null && cryoData.Alcor_Research_Fund_Over_Minimum__c !== undefined 
+            ? parseFloat(cryoData.Alcor_Research_Fund_Over_Minimum__c) : null,
+        ef: cryoData.Endowment_Fund_Over_Minimum__c !== null && cryoData.Endowment_Fund_Over_Minimum__c !== undefined 
+            ? parseFloat(cryoData.Endowment_Fund_Over_Minimum__c) : null,
+        ind: cryoData.Individuals_OM__c !== null && cryoData.Individuals_OM__c !== undefined 
+            ? parseFloat(cryoData.Individuals_OM__c) : null,
+        oth: cryoData.Others_OM__c !== null && cryoData.Others_OM__c !== undefined 
+            ? parseFloat(cryoData.Others_OM__c) : null
+      };
+      
+      // Determine if we have any allocation data
+      const hasPrimaryData = Object.values(primaryAllocations).some(val => val !== null);
+      const hasOverMinData = Object.values(overMinAllocations).some(val => val !== null);
+      
+      console.log('Primary allocation values:', primaryAllocations);
+      console.log('Over-min allocation values:', overMinAllocations);
+      console.log('Has primary data:', hasPrimaryData);
+      console.log('Has over-min data:', hasOverMinData);
+      
+      // Determine if allocations are custom
+      let isCustomPrimary = false;
+      let isCustomOverMin = false;
+      
+      if (hasPrimaryData) {
+        // Calculate total with null-safe values
+        const primaryTotal = Object.values(primaryAllocations)
+          .filter(val => val !== null)
+          .reduce((sum, val) => sum + val, 0);
+        
+        console.log('Primary total:', primaryTotal);
+        
+        // It's custom if ANY of these conditions are true:
+        // 1. Total is approximately 100 (valid data) AND not the default 50/50 split
+        // 2. Any allocation to research, endowment, individuals, or others
+        // 3. PCT or GOF are not null but not 50 each
+        
+        if (Math.abs(primaryTotal - 100) < 0.01) {
+          // We have valid allocation data totaling 100%
+          const isDefault = (
+            primaryAllocations.pct === 50 &&
+            primaryAllocations.gof === 50 &&
+            (primaryAllocations.arf === null || primaryAllocations.arf === 0) &&
+            (primaryAllocations.ef === null || primaryAllocations.ef === 0) &&
+            (primaryAllocations.ind === null || primaryAllocations.ind === 0) &&
+            (primaryAllocations.oth === null || primaryAllocations.oth === 0)
+          );
+          
+          isCustomPrimary = !isDefault;
+          console.log('Primary is default 50/50?', isDefault);
+        } else if (primaryTotal > 0) {
+          // We have some data but it doesn't total 100 - treat as custom (needs fixing)
+          isCustomPrimary = true;
+          console.log('Primary has partial data, treating as custom');
+        } else {
+          // No data or all zeros - treat as default
+          isCustomPrimary = false;
+          console.log('Primary has no data, treating as default');
+        }
+        
+        console.log('Primary allocations:', isCustomPrimary ? 'CUSTOM' : 'DEFAULT (50/50)');
+      }
+      
+      if (hasOverMinData) {
+        // Calculate total with null-safe values
+        const overMinTotal = Object.values(overMinAllocations)
+          .filter(val => val !== null)
+          .reduce((sum, val) => sum + val, 0);
+        
+        console.log('Over-minimum total:', overMinTotal);
+        
+        if (Math.abs(overMinTotal - 100) < 0.01) {
+          // We have valid allocation data totaling 100%
+          const isDefault = (
+            overMinAllocations.pct === 50 &&
+            overMinAllocations.gof === 50 &&
+            (overMinAllocations.arf === null || overMinAllocations.arf === 0) &&
+            (overMinAllocations.ef === null || overMinAllocations.ef === 0) &&
+            (overMinAllocations.ind === null || overMinAllocations.ind === 0) &&
+            (overMinAllocations.oth === null || overMinAllocations.oth === 0)
+          );
+          
+          isCustomOverMin = !isDefault;
+          console.log('Over-min is default 50/50?', isDefault);
+        } else if (overMinTotal > 0) {
+          // We have some data but it doesn't total 100 - treat as custom (needs fixing)
+          isCustomOverMin = true;
+          console.log('Over-min has partial data, treating as custom');
+        } else {
+          // No data or all zeros - treat as default
+          isCustomOverMin = false;
+          console.log('Over-min has no data, treating as default');
+        }
+        
+        console.log('Over-minimum allocations:', isCustomOverMin ? 'CUSTOM' : 'DEFAULT (50/50)');
+      }
+      
+      // Build the funding allocations object with the correct custom flags
+      const fundingAllocationsData = {
+        // Control fields - use the calculated values
+        customPrimary: isCustomPrimary,
+        customOverMinimum: isCustomOverMin,
+        
+        // Primary allocations - use actual values or 0 for display
+        patientCareTrust: primaryAllocations.pct ?? 0,
+        generalOperatingFund: primaryAllocations.gof ?? 0,
+        alcorResearchFund: primaryAllocations.arf ?? 0,
+        endowmentFund: primaryAllocations.ef ?? 0,
+        individuals: primaryAllocations.ind ?? 0,
+        others: primaryAllocations.oth ?? 0,
+        followingPersons: cryoData.Following_Person_s__c || '',
+        other: cryoData.Other__c || '',
+        
+        // Over-minimum allocations
+        patientCareTrustOM: overMinAllocations.pct ?? 0,
+        generalOperatingFundOM: overMinAllocations.gof ?? 0,
+        alcorResearchFundOM: overMinAllocations.arf ?? 0,
+        endowmentFundOM: overMinAllocations.ef ?? 0,
+        individualsOM: overMinAllocations.ind ?? 0,
+        othersOM: overMinAllocations.oth ?? 0,
+        followingPersonsOM: cryoData.Following_Person_s_Over_Minimum__c || '',
+        otherOM: cryoData.Other_Over_Minimum__c || ''
+      };
+      
+      console.log('📦 Final fundingAllocationsData:', fundingAllocationsData);
+      console.log('💰 === FUNDING ALLOCATIONS EXTRACTION END ===\n');
+      
+      setFundingAllocations(fundingAllocationsData);
+      setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
+    }
+      
+      /*if (results.cryoRes.success && results.cryoRes.data) {
         const cryoData = results.cryoRes.data.data || results.cryoRes.data;
         //console.log('🔍 Raw cryo data from API:', cryoData);
         
@@ -1010,7 +1410,7 @@ const MyInformationTab = () => {
         
         setFundingAllocations(fundingAllocationsData);
         setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
-      }
+      }*/
 
       // Process Legal Info
       if (results.legalRes.success && results.legalRes.data) {
@@ -2008,7 +2408,7 @@ const loadMemberCategory = async () => {
   };
 
   const saveFundingAllocations = async () => {
-    setSavingSection('cryoArrangements');
+    setSavingSection('fundingAllocations'); // ← FIXED: was 'cryoArrangements'
     setSaveMessage({ type: '', text: '' });
     
     // Store current state for rollback
@@ -2034,7 +2434,7 @@ const loadMemberCategory = async () => {
       
       console.log('📤 Data being sent to backend:', JSON.stringify(dataToSend, null, 2));
       
-      // Send to backend
+      // Send to backend - using the CORRECT function
       const result = await updateMemberCryoArrangements(salesforceContactId, dataToSend);
       console.log('📨 Save result:', result);
       

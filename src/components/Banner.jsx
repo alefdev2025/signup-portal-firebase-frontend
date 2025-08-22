@@ -33,7 +33,7 @@ const Banner = ({
   // Handle sign out - Updated to properly redirect after sign out
   const handleSignOut = async () => {
     try {
-      console.log("Sign out initiated");
+      //console.log("Sign out initiated");
       
       // Clear all localStorage and sessionStorage
       localStorage.clear();
@@ -41,7 +41,7 @@ const Banner = ({
       
       // Sign out from Firebase
       await auth.signOut();
-      console.log("Firebase sign out successful");
+      //console.log("Firebase sign out successful");
       
       // Force redirect to welcome page using window.location
       // This ensures complete page refresh and state clearing

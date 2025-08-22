@@ -80,7 +80,7 @@ const FamilyInfoMobile = ({
    return parts.join(' • ');
  };
 
- // Validation function for birthplace
+ // IMPROVED: More lenient birthplace validation
  const validateBirthplace = (value) => {
    if (!value || !value.trim()) return null;
    
@@ -89,16 +89,21 @@ const FamilyInfoMobile = ({
    // Check if it's "unknown"
    if (trimmedValue === 'unknown') return null;
    
-   // Check if it has at least 2 commas (city, state, country format)
+   // Check if it has at least 1 comma (e.g., "New York, USA")
    const commaCount = (value.match(/,/g) || []).length;
-   if (commaCount >= 2) return null;
+   if (commaCount >= 1) return null;
    
-   // Return error message
-   return 'Please include city, state/province, and country (or enter "Unknown")';
+   // Check if it's reasonably detailed even without commas
+   // (e.g., "London United Kingdom" or "Tokyo Japan")
+   const parts = value.split(/[\s,]+/).filter(part => part.length > 0);
+   if (parts.length >= 2 && value.length >= 10) return null;
+   
+   // Return helpful error message
+   return 'Please include location details (e.g., "City, Country" or enter "Unknown")';
  };
 
  // Handle save with complete validation
- const handleSave = () => {
+ const handleSave = async () => {
    const errors = {};
    
    // Validate father's name (required)
@@ -144,7 +149,23 @@ const FamilyInfoMobile = ({
    
    // Clear errors and proceed with save
    setLocalErrors({});
-   saveFamilyInfo();
+   
+   // Call saveFamilyInfo and check if it returns a result
+   try {
+     const result = await saveFamilyInfo();
+     
+     // If saveFamilyInfo returns a failure indication, show errors
+     if (result && !result.success) {
+       const errorMessage = result.errors 
+         ? Object.values(result.errors).join('. ')
+         : result.error || 'Failed to save family information';
+       
+       setLocalErrors({ general: errorMessage });
+     }
+   } catch (error) {
+     console.error('Error saving family info:', error);
+     setLocalErrors({ general: 'Failed to save. Please try again.' });
+   }
  };
 
  return (
@@ -272,12 +293,18 @@ const FamilyInfoMobile = ({
                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                  </svg>
                  <div className="text-sm text-red-800">
-                   <p className="font-medium">Please fix the following errors:</p>
-                   <ul className="mt-1 list-disc list-inside">
-                     {Object.entries(localErrors).map(([field, error]) => (
-                       <li key={field}>{error}</li>
-                     ))}
-                   </ul>
+                   {localErrors.general ? (
+                     <p>{localErrors.general}</p>
+                   ) : (
+                     <>
+                       <p className="font-medium">Please fix the following errors:</p>
+                       <ul className="mt-1 list-disc list-inside">
+                         {Object.entries(localErrors).filter(([field]) => field !== 'general').map(([field, error]) => (
+                           <li key={field}>{error}</li>
+                         ))}
+                       </ul>
+                     </>
+                   )}
                  </div>
                </div>
              </div>
@@ -299,7 +326,7 @@ const FamilyInfoMobile = ({
                  />
                  <FormInput
                    label="Father's Birthplace *"
-                   placeholder="City, State/Province, Country (or 'Unknown')"
+                   placeholder="City, Country (or 'Unknown')"
                    value={familyInfo?.fathersBirthplace || ''}
                    onChange={(e) => {
                      setFamilyInfo({...familyInfo, fathersBirthplace: e.target.value});
@@ -325,7 +352,7 @@ const FamilyInfoMobile = ({
                  />
                  <FormInput
                    label="Mother's Birthplace *"
-                   placeholder="City, State/Province, Country (or 'Unknown')"
+                   placeholder="City, Country (or 'Unknown')"
                    value={familyInfo?.mothersBirthplace || ''}
                    onChange={(e) => {
                      setFamilyInfo({...familyInfo, mothersBirthplace: e.target.value});
@@ -353,7 +380,7 @@ const FamilyInfoMobile = ({
              )}
              
              <p className="text-xs text-gray-500">
-               * Please include city, state/province, and country for birthplaces. Enter "Unknown" if not known.
+               * Include location details for birthplaces (e.g., "City, Country"). Enter "Unknown" if not known.
              </p>
            </div>
            
@@ -361,6 +388,7 @@ const FamilyInfoMobile = ({
            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
              <button
                onClick={() => {
+                 setLocalErrors({});
                  cancelEdit && cancelEdit('family');
                }}
                className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"

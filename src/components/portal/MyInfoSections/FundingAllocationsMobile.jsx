@@ -1,5 +1,5 @@
 // FundingAllocationsMobile.js
-import React from 'react';
+import React, { useState } from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
 import styleConfig2 from '../styleConfig2';
 
@@ -16,6 +16,16 @@ const FundingAllocationsMobile = ({
   memberCategory,
   fieldConfig
 }) => {
+  // Local state for validation errors
+  const [localErrors, setLocalErrors] = useState({});
+  
+  // Clear errors when entering/exiting edit mode
+  React.useEffect(() => {
+    if (editMode.fundingAllocations) {
+      setLocalErrors({});
+    }
+  }, [editMode.fundingAllocations]);
+
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filledRequired = 0;
@@ -78,7 +88,68 @@ const FundingAllocationsMobile = ({
     return parts.length > 0 ? parts.join(' • ') : 'No allocations specified';
   };
 
-  // No wrapper needed - just call the function directly like desktop does
+  // Handle save with validation
+  const handleSave = async () => {
+    const errors = {};
+    
+    // Validate primary allocations if customized
+    if (fundingAllocations?.customPrimary) {
+      const primaryTotal = calculateTotal();
+      if (Math.abs(primaryTotal - 100) > 0.01) {
+        errors.primaryTotal = `Primary allocations must total 100% (currently ${primaryTotal}%)`;
+      }
+      
+      if (fundingAllocations.individuals > 0 && !fundingAllocations.followingPersons?.trim()) {
+        errors.followingPersons = 'Individual recipients details are required';
+      }
+      
+      if (fundingAllocations.others > 0 && !fundingAllocations.other?.trim()) {
+        errors.other = 'Other recipients details are required';
+      }
+    }
+    
+    // Validate over-minimum allocations if customized
+    if (fundingAllocations?.customOverMinimum) {
+      const overMinTotal = calculateTotal('OM');
+      if (Math.abs(overMinTotal - 100) > 0.01) {
+        errors.overMinTotal = `Over-minimum allocations must total 100% (currently ${overMinTotal}%)`;
+      }
+      
+      if (fundingAllocations.individualsOM > 0 && !fundingAllocations.followingPersonsOM?.trim()) {
+        errors.followingPersonsOM = 'Over-minimum individual recipients details are required';
+      }
+      
+      if (fundingAllocations.othersOM > 0 && !fundingAllocations.otherOM?.trim()) {
+        errors.otherOM = 'Over-minimum other recipients details are required';
+      }
+    }
+    
+    // If there are validation errors, set them and don't save
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors);
+      return;
+    }
+    
+    // Clear errors and proceed with save
+    setLocalErrors({});
+    
+    // Call saveFundingAllocations and check if it returns a result
+    try {
+      const result = await saveFundingAllocations();
+      
+      // If saveFundingAllocations returns a failure indication, show errors
+      if (result && !result.success) {
+        const errorMessage = result.errors 
+          ? Object.values(result.errors).join('. ')
+          : result.error || 'Failed to save funding allocations';
+        
+        setLocalErrors({ general: errorMessage });
+      }
+    } catch (error) {
+      console.error('Error saving funding allocations:', error);
+      setLocalErrors({ general: 'Failed to save. Please try again.' });
+    }
+  };
 
   return (
     <div className="-mx-2">
@@ -112,29 +183,30 @@ const FundingAllocationsMobile = ({
                     </div>
                     
                     {/* Compact completion indicator */}
+                    {/* Compact completion indicator - FIXED TO MATCH FAMILY */}
                     <div className="relative">
-                      <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+                      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
                         <circle
                           stroke="#f5f5f5"
                           fill="transparent"
-                          strokeWidth={4}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          strokeWidth={8}  // ← Changed from 4 to 8
+                          r={42}           // ← Changed from 36 to 42
+                          cx={50}          // ← Changed from 40 to 50
+                          cy={50}          // ← Changed from 40 to 50
                         />
                         <circle
                           stroke="url(#gradient-funding-allocations)"
                           fill="transparent"
-                          strokeWidth={4}
-                          strokeDasharray={`${226.19} ${226.19}`}
+                          strokeWidth={8}  // ← Changed from 4 to 8
+                          strokeDasharray={`${264} ${264}`}  // ← Changed from 226.19 to 264
                           style={{ 
-                            strokeDashoffset: 226.19 - (completionPercentage / 100) * 226.19,
+                            strokeDashoffset: 264 - (completionPercentage / 100) * 264,  // ← Updated calculation
                             transition: 'stroke-dashoffset 0.5s ease',
                             strokeLinecap: 'round'
                           }}
-                          r={36}
-                          cx={40}
-                          cy={40}
+                          r={42}           // ← Changed from 36 to 42
+                          cx={50}          // ← Changed from 40 to 50
+                          cy={50}          // ← Changed from 40 to 50
                         />
                         <defs>
                           <linearGradient id="gradient-funding-allocations" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -199,6 +271,31 @@ const FundingAllocationsMobile = ({
         {/* Edit Form Section */}
         {editMode.fundingAllocations && (
           <div className="bg-white px-6 py-6 border-t border-gray-200">
+            {/* Error Message Section - Only show if there are errors after attempting to save */}
+            {localErrors && Object.keys(localErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-800">
+                    {localErrors.general ? (
+                      <p>{localErrors.general}</p>
+                    ) : (
+                      <>
+                        <p className="font-medium">Please fix the following errors:</p>
+                        <ul className="mt-1 list-disc list-inside">
+                          {Object.entries(localErrors).filter(([field]) => field !== 'general').map(([field, error]) => (
+                            <li key={field}>{error}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-6">
               {/* Primary Allocations */}
               <div>
@@ -222,8 +319,8 @@ const FundingAllocationsMobile = ({
 
                 {fundingAllocations?.customPrimary && (
                   <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-xs text-yellow-800">
+                    <div className={`border rounded-lg p-3 ${localErrors.primaryTotal ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                      <p className={`text-xs ${localErrors.primaryTotal ? 'text-red-800' : 'text-yellow-800'}`}>
                         <strong>Total must equal 100%</strong> (Current: {calculateTotal()}%)
                       </p>
                     </div>
@@ -293,6 +390,7 @@ const FundingAllocationsMobile = ({
                         value={fundingAllocations?.followingPersons || ''}
                         onChange={(e) => setFundingAllocations && setFundingAllocations({...fundingAllocations, followingPersons: e.target.value})}
                         disabled={savingSection === 'fundingAllocations'}
+                        error={localErrors.followingPersons}
                       />
                     )}
 
@@ -304,6 +402,7 @@ const FundingAllocationsMobile = ({
                         value={fundingAllocations?.other || ''}
                         onChange={(e) => setFundingAllocations && setFundingAllocations({...fundingAllocations, other: e.target.value})}
                         disabled={savingSection === 'fundingAllocations'}
+                        error={localErrors.other}
                       />
                     )}
                   </div>
@@ -332,8 +431,8 @@ const FundingAllocationsMobile = ({
 
                 {fundingAllocations?.customOverMinimum && (
                   <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-xs text-yellow-800">
+                    <div className={`border rounded-lg p-3 ${localErrors.overMinTotal ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                      <p className={`text-xs ${localErrors.overMinTotal ? 'text-red-800' : 'text-yellow-800'}`}>
                         <strong>Total must equal 100%</strong> (Current: {calculateTotal('OM')}%)
                       </p>
                     </div>
@@ -403,6 +502,7 @@ const FundingAllocationsMobile = ({
                         value={fundingAllocations?.followingPersonsOM || ''}
                         onChange={(e) => setFundingAllocations && setFundingAllocations({...fundingAllocations, followingPersonsOM: e.target.value})}
                         disabled={savingSection === 'fundingAllocations'}
+                        error={localErrors.followingPersonsOM}
                       />
                     )}
 
@@ -414,6 +514,7 @@ const FundingAllocationsMobile = ({
                         value={fundingAllocations?.otherOM || ''}
                         onChange={(e) => setFundingAllocations && setFundingAllocations({...fundingAllocations, otherOM: e.target.value})}
                         disabled={savingSection === 'fundingAllocations'}
+                        error={localErrors.otherOM}
                       />
                     )}
                   </div>
@@ -424,14 +525,17 @@ const FundingAllocationsMobile = ({
             {/* Action buttons */}
             <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
               <button
-                onClick={() => cancelEdit && typeof cancelEdit === 'function' && cancelEdit('fundingAllocations')}
+                onClick={() => {
+                  setLocalErrors({});
+                  cancelEdit && typeof cancelEdit === 'function' && cancelEdit('fundingAllocations');
+                }}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
                 disabled={savingSection === 'fundingAllocations'}
               >
                 Close
               </button>
               <button
-                onClick={saveFundingAllocations}
+                onClick={handleSave}
                 disabled={savingSection === 'fundingAllocations'}
                 className="px-4 py-2.5 bg-[#162740] hover:bg-[#0f1e33] text-white rounded-lg transition-all font-medium disabled:opacity-50"
               >

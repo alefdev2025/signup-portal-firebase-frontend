@@ -30,38 +30,65 @@ const getEffectiveMemberCategory = (actualCategory) => {
 };
 
 // Card Overlay Component
-const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSection, fieldErrors, fundingAllocations, setFundingAllocations, saveFundingAllocations, canEdit, memberCategory }) => {
+const CardOverlay = ({ 
+  isOpen, 
+  onClose, 
+  section, 
+  fundingAllocations, 
+  setFundingAllocations, 
+  saveFundingAllocations, 
+  savingSection,
+  fieldErrors,
+  canEdit, 
+  memberCategory,
+  toggleEditMode,
+  cancelEdit
+}) => {
   const [editMode, setEditMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  const [overlayFieldErrors, setOverlayFieldErrors] = useState({});
+  const [overlayWaitingForSave, setOverlayWaitingForSave] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setEditMode(canEdit);
+      setEditMode(false); // Start in view mode
       setShowSuccess(false);
+      setOverlayFieldErrors({});
+      setIsOverlaySaving(false);
+      setOverlayWaitingForSave(false);
     }
-  }, [isOpen, canEdit]);
+  }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  const handleSave = async () => {
-    if (canEdit) {
-      const success = await saveFundingAllocations();
-      if (success) {
-        setEditMode(false);
+  // Watch for save completion when we're waiting for it
+  useEffect(() => {
+    if (overlayWaitingForSave && savingSection !== 'fundingAllocations') {
+      // Save completed (either success or error)
+      setOverlayWaitingForSave(false);
+      setIsOverlaySaving(false);
+      
+      // Check if there are any field errors from parent
+      const hasErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+      
+      if (!hasErrors) {
+        // Success! Show success message and close
         setShowSuccess(true);
+        setEditMode(false);
+        setOverlayFieldErrors({});
+        
+        // Close overlay after showing success
         setTimeout(() => {
-          setShowSuccess(false);
           onClose();
-        }, 2000);
+          setShowSuccess(false);
+        }, 1500);
+      } else {
+        // There were errors, keep overlay open in edit mode
+        setOverlayFieldErrors(fieldErrors);
       }
     }
-  };
+  }, [savingSection, overlayWaitingForSave, fieldErrors, onClose]);
 
-  const handleCancel = () => {
-    setFundingAllocations(data.fundingAllocations);
-    setEditMode(false);
-    onClose();
-  };
+  if (!isOpen) return null;
 
   const calculateTotal = (allocations, prefix = '') => {
     const fields = prefix ? [
@@ -84,6 +111,131 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
     
     // Round to 2 decimal places to avoid floating point issues
     return Math.round(total * 100) / 100;
+  };
+
+  const handleEdit = () => {
+    if (!canEdit) return;
+    
+    // Set the main edit mode to true if not already
+    if (toggleEditMode && !editMode) {
+      toggleEditMode('fundingAllocations');
+    }
+    setEditMode(true);
+    setShowSuccess(false);
+    setOverlayFieldErrors({});
+  };
+
+  const handleSave = async () => {
+    if (!canEdit) return;
+    
+    // Local validation
+    const errors = {};
+    
+    // Validate primary allocations if customized
+    if (fundingAllocations?.customPrimary) {
+      const primaryTotal = calculateTotal(fundingAllocations);
+      if (Math.abs(primaryTotal - 100) > 0.01) {
+        errors.primaryTotal = `Primary allocations must total 100% (currently ${primaryTotal}%)`;
+      }
+      
+      if (fundingAllocations.individuals > 0 && !fundingAllocations.followingPersons?.trim()) {
+        errors.followingPersons = 'Individual recipients details are required';
+      }
+      
+      if (fundingAllocations.others > 0 && !fundingAllocations.other?.trim()) {
+        errors.other = 'Other recipients details are required';
+      }
+    }
+    
+    // Validate over-minimum allocations if customized
+    if (fundingAllocations?.customOverMinimum) {
+      const overMinTotal = calculateTotal(fundingAllocations, 'OM');
+      if (Math.abs(overMinTotal - 100) > 0.01) {
+        errors.overMinTotal = `Over-minimum allocations must total 100% (currently ${overMinTotal}%)`;
+      }
+      
+      if (fundingAllocations.individualsOM > 0 && !fundingAllocations.followingPersonsOM?.trim()) {
+        errors.followingPersonsOM = 'Over-minimum individual recipients details are required';
+      }
+      
+      if (fundingAllocations.othersOM > 0 && !fundingAllocations.otherOM?.trim()) {
+        errors.otherOM = 'Over-minimum other recipients details are required';
+      }
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      // Validation failed - show errors and stay open
+      setOverlayFieldErrors(errors);
+      return;
+    }
+    
+    // Clear errors and set waiting state
+    setOverlayFieldErrors({});
+    setIsOverlaySaving(true);
+    setOverlayWaitingForSave(true);
+    setShowSuccess(false);
+    
+    // Call the parent's save function and wait for result
+    try {
+      const result = await saveFundingAllocations();
+      
+      // Check if save was successful
+      if (result === true || (result && result.success)) {
+        // Success! Show success message and close
+        setShowSuccess(true);
+        setEditMode(false);
+        setOverlayFieldErrors({});
+        setIsOverlaySaving(false);
+        setOverlayWaitingForSave(false);
+        
+        // Close overlay after showing success
+        setTimeout(() => {
+          onClose();
+          setShowSuccess(false);
+        }, 1500);
+      } else if (result === false || (result && !result.success)) {
+        // Save failed
+        const errorMessage = result?.error || 'Failed to save funding allocations';
+        setOverlayFieldErrors({ general: errorMessage });
+        setIsOverlaySaving(false);
+        setOverlayWaitingForSave(false);
+      } else {
+        // If no explicit result, wait for the useEffect to handle it
+        // This handles the case where saveFundingAllocations doesn't return a value
+      }
+    } catch (error) {
+      console.error('Error in handleSave:', error);
+      setOverlayFieldErrors({ general: 'Failed to save. Please try again.' });
+      setIsOverlaySaving(false);
+      setOverlayWaitingForSave(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Call the parent's cancel function to restore original data
+    if (cancelEdit) {
+      cancelEdit('fundingAllocations');
+    }
+    setEditMode(false);
+    setIsOverlaySaving(false);
+    setOverlayWaitingForSave(false);
+    setOverlayFieldErrors({});
+  };
+
+  const handleClose = () => {
+    // If we're saving, don't allow close
+    if (isOverlaySaving || overlayWaitingForSave || savingSection === 'fundingAllocations') {
+      return;
+    }
+    
+    // If we're in edit mode, cancel first
+    if (editMode) {
+      handleCancel();
+    }
+    
+    onClose();
+    setShowSuccess(false);
+    setOverlayFieldErrors({});
   };
 
   const getFieldDescriptions = () => {
@@ -116,17 +268,18 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
   };
 
   const fieldInfo = getFieldDescriptions();
+  const currentErrors = editMode ? overlayFieldErrors : {};
 
   return ReactDOM.createPortal(
     <div className={overlayStyles.container}>
-      <div className={overlayStyles.backdrop} onClick={onClose}></div>
+      <div className={overlayStyles.backdrop} onClick={handleClose}></div>
       
       <div className={overlayStyles.contentWrapper}>
         <div className={overlayStyles.contentBox}>
           {/* Header */}
           <div className={overlayStyles.header.wrapper}>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className={overlayStyles.header.closeButton}
             >
               <svg className={overlayStyles.header.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -154,17 +307,44 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
           {/* Success Message */}
           {showSuccess && (
-            <div className={overlayStyles.body.successMessage.container}>
-              <svg className={overlayStyles.body.successMessage.icon} fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <p className={overlayStyles.body.successMessage.text}>Funding allocations updated successfully!</p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mx-6 mt-4">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-sm text-green-800">Funding allocations updated successfully!</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message for validation errors */}
+          {editMode && currentErrors && Object.keys(currentErrors).length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-6 mt-4">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-red-800">
+                  {currentErrors.general ? (
+                    <p>{currentErrors.general}</p>
+                  ) : (
+                    <>
+                      <p className="font-medium">Please fix the following errors:</p>
+                      <ul className="mt-1 list-disc list-inside">
+                        {Object.entries(currentErrors).map(([field, error]) => (
+                          <li key={field}>{error}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
           {/* Content */}
           <div className={overlayStyles.body.wrapper}>
-            {!editMode || !canEdit ? (
+            {!editMode ? (
               /* Display Mode */
               <div className={overlayStyles.body.content}>
                 {section === 'primary' && (
@@ -347,7 +527,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                           type="checkbox"
                           checked={fundingAllocations?.customPrimary || false}
                           onChange={(e) => setFundingAllocations({...fundingAllocations, customPrimary: e.target.checked})}
-                          disabled={savingSection === 'fundingAllocations'}
+                          disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-600">
@@ -373,7 +553,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.patientCareTrust || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, patientCareTrust: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="General Operating Fund (%)"
@@ -382,7 +562,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.generalOperatingFund || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, generalOperatingFund: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Alcor Research Fund (%)"
@@ -391,7 +571,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.alcorResearchFund || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, alcorResearchFund: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Endowment Fund (%)"
@@ -400,7 +580,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.endowmentFund || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, endowmentFund: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Individuals (%)"
@@ -409,7 +589,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.individuals || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, individuals: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.individuals}
                           />
                           <Input
                             label="Others (%)"
@@ -418,7 +599,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.others || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, others: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.others}
                           />
                         </div>
 
@@ -429,7 +611,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             placeholder="e.g., John Smith, Father, 50%"
                             value={fundingAllocations?.followingPersons || ''}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, followingPersons: e.target.value})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.followingPersons}
                           />
                         )}
 
@@ -440,7 +623,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             placeholder="e.g., ASPCA, 20%"
                             value={fundingAllocations?.other || ''}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, other: e.target.value})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.other}
                           />
                         )}
                       </>
@@ -463,7 +647,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                           type="checkbox"
                           checked={fundingAllocations?.customOverMinimum || false}
                           onChange={(e) => setFundingAllocations({...fundingAllocations, customOverMinimum: e.target.checked})}
-                          disabled={savingSection === 'fundingAllocations'}
+                          disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-600">
@@ -489,7 +673,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.patientCareTrustOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, patientCareTrustOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="General Operating Fund (%)"
@@ -498,7 +682,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.generalOperatingFundOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, generalOperatingFundOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Alcor Research Fund (%)"
@@ -507,7 +691,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.alcorResearchFundOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, alcorResearchFundOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Endowment Fund (%)"
@@ -516,7 +700,7 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.endowmentFundOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, endowmentFundOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
                           />
                           <Input
                             label="Individuals (%)"
@@ -525,7 +709,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.individualsOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, individualsOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.individualsOM}
                           />
                           <Input
                             label="Others (%)"
@@ -534,7 +719,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             max="100"
                             value={fundingAllocations?.othersOM || 0}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, othersOM: parseFloat(e.target.value) || 0})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.othersOM}
                           />
                         </div>
 
@@ -545,7 +731,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             placeholder="e.g., John Smith, Father, 50%"
                             value={fundingAllocations?.followingPersonsOM || ''}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, followingPersonsOM: e.target.value})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.followingPersonsOM}
                           />
                         )}
 
@@ -556,7 +743,8 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
                             placeholder="e.g., ASPCA, 20%"
                             value={fundingAllocations?.otherOM || ''}
                             onChange={(e) => setFundingAllocations({...fundingAllocations, otherOM: e.target.value})}
-                            disabled={savingSection === 'fundingAllocations'}
+                            disabled={isOverlaySaving || savingSection === 'fundingAllocations'}
+                            error={currentErrors.otherOM}
                           />
                         )}
                       </>
@@ -569,29 +757,39 @@ const CardOverlay = ({ isOpen, onClose, section, data, onEdit, onSave, savingSec
 
           {/* Footer */}
           <div className={overlayStyles.footer.wrapper}>
-            {canEdit && editMode ? (
+            {!editMode ? (
+              canEdit ? (
+                <PurpleButton
+                  text="Edit"
+                  onClick={handleEdit}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+              ) : (
+                <PurpleButton
+                  text="Close"
+                  onClick={handleClose}
+                  className={buttonStyles.overlayButtons.save}
+                  spinStar={buttonStyles.starConfig.enabled}
+                />
+              )
+            ) : (
               <>
                 <WhiteButton
                   text="Cancel"
                   onClick={handleCancel}
                   className={buttonStyles.overlayButtons.cancel}
                   spinStar={buttonStyles.starConfig.enabled}
+                  disabled={isOverlaySaving}
                 />
                 <PurpleButton
-                  text={savingSection === 'fundingAllocations' ? 'Saving...' : 'Save'}
+                  text={isOverlaySaving ? 'Saving...' : 'Save'}
                   onClick={handleSave}
                   className={buttonStyles.overlayButtons.save}
                   spinStar={buttonStyles.starConfig.enabled}
-                  disabled={savingSection === 'fundingAllocations'}
+                  disabled={isOverlaySaving}
                 />
               </>
-            ) : (
-              <PurpleButton
-                text="Close"
-                onClick={onClose}
-                className={buttonStyles.overlayButtons.save}
-                spinStar={buttonStyles.starConfig.enabled}
-              />
             )}
           </div>
         </div>
@@ -748,10 +946,6 @@ const FundingAllocationsSection = ({
     setOverlayOpen(true);
   };
 
-  const handleOverlaySave = () => {
-    saveFundingAllocations();
-  };
-
   // Calculate totals for display
   const calculateTotal = (prefix = '') => {
     const fields = prefix ? [
@@ -783,16 +977,15 @@ const FundingAllocationsSection = ({
         isOpen={overlayOpen}
         onClose={() => setOverlayOpen(false)}
         section={overlaySection}
-        data={{ fundingAllocations }}
-        onEdit={() => {}}
-        onSave={handleOverlaySave}
-        savingSection={savingSection}
-        fieldErrors={fieldErrors}
         fundingAllocations={fundingAllocations}
         setFundingAllocations={setFundingAllocations}
         saveFundingAllocations={saveFundingAllocations}
+        savingSection={savingSection}
+        fieldErrors={fieldErrors}
         canEdit={canEdit}
         memberCategory={effectiveMemberCategory}
+        toggleEditMode={toggleEditMode}
+        cancelEdit={cancelEdit}
       />
 
       {isMobile ? (
@@ -1128,99 +1321,99 @@ const FundingAllocationsSection = ({
                                 value={fundingAllocations.endowmentFundOM || 0}
                                 onChange={(e) => setFundingAllocations({...fundingAllocations, endowmentFundOM: parseFloat(e.target.value) || 0})}
                                 disabled={savingSection === 'fundingAllocations'}
-                              />
-                              <Input
-                                label="Individuals (%)"
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={fundingAllocations.individualsOM || 0}
-                                onChange={(e) => setFundingAllocations({...fundingAllocations, individualsOM: parseFloat(e.target.value) || 0})}
-                                disabled={savingSection === 'fundingAllocations'}
-                              />
-                              <Input
-                                label="Others (%)"
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={fundingAllocations.othersOM || 0}
-                                onChange={(e) => setFundingAllocations({...fundingAllocations, othersOM: parseFloat(e.target.value) || 0})}
-                                disabled={savingSection === 'fundingAllocations'}
-                              />
-                            </div>
+                             />
+                             <Input
+                               label="Individuals (%)"
+                               type="number"
+                               min="0"
+                               max="100"
+                               value={fundingAllocations.individualsOM || 0}
+                               onChange={(e) => setFundingAllocations({...fundingAllocations, individualsOM: parseFloat(e.target.value) || 0})}
+                               disabled={savingSection === 'fundingAllocations'}
+                             />
+                             <Input
+                               label="Others (%)"
+                               type="number"
+                               min="0"
+                               max="100"
+                               value={fundingAllocations.othersOM || 0}
+                               onChange={(e) => setFundingAllocations({...fundingAllocations, othersOM: parseFloat(e.target.value) || 0})}
+                               disabled={savingSection === 'fundingAllocations'}
+                             />
+                           </div>
 
-                            {fundingAllocations.individualsOM > 0 && (
-                              <Input
-                                label="Individual Recipients (Name, Relationship, Percentage) *"
-                                type="text"
-                                placeholder="e.g., John Smith, Father, 50%"
-                                value={fundingAllocations.followingPersonsOM || ''}
-                                onChange={(e) => setFundingAllocations({...fundingAllocations, followingPersonsOM: e.target.value})}
-                                disabled={savingSection === 'fundingAllocations'}
-                              />
-                            )}
+                           {fundingAllocations.individualsOM > 0 && (
+                             <Input
+                               label="Individual Recipients (Name, Relationship, Percentage) *"
+                               type="text"
+                               placeholder="e.g., John Smith, Father, 50%"
+                               value={fundingAllocations.followingPersonsOM || ''}
+                               onChange={(e) => setFundingAllocations({...fundingAllocations, followingPersonsOM: e.target.value})}
+                               disabled={savingSection === 'fundingAllocations'}
+                             />
+                           )}
 
-                            {fundingAllocations.othersOM > 0 && (
-                              <Input
-                                label="Other Recipients (Organization, Percentage) *"
-                                type="text"
-                                placeholder="e.g., ASPCA, 20%"
-                                value={fundingAllocations.otherOM || ''}
-                                onChange={(e) => setFundingAllocations({...fundingAllocations, otherOM: e.target.value})}
-                                disabled={savingSection === 'fundingAllocations'}
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Action buttons */}
-              {editMode?.fundingAllocations ? (
-                <div className={buttonStyles.actionContainer}>
-                  <div className={buttonStyles.buttonGroup}>
-                    <WhiteButton
-                      text="Cancel"
-                      onClick={() => cancelEdit && cancelEdit('fundingAllocations')}
-                      className={buttonStyles.whiteButton.withMargin}
-                      spinStar={buttonStyles.starConfig.enabled}
-                    />
-                    <PurpleButton
-                      text={savingSection === 'fundingAllocations' ? 'Saving...' : 'Save'}
-                      onClick={saveFundingAllocations}
-                      className={buttonStyles.purpleButton.base}
-                      spinStar={buttonStyles.starConfig.enabled}
-                      disabled={savingSection === 'fundingAllocations'}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {!canEdit ? (
-                    <div className="text-sm text-gray-500 italic mt-12 pt-6 text-right">
-                      Contact Alcor to update funding allocations
-                    </div>
-                  ) : (
-                    <div className={buttonStyles.actionContainer}>
-                      <WhiteButton
-                        text="Edit"
-                        onClick={() => toggleEditMode && toggleEditMode('fundingAllocations')}
-                        className={buttonStyles.whiteButton.base}
-                        spinStar={buttonStyles.starConfig.enabled}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+                           {fundingAllocations.othersOM > 0 && (
+                             <Input
+                               label="Other Recipients (Organization, Percentage) *"
+                               type="text"
+                               placeholder="e.g., ASPCA, 20%"
+                               value={fundingAllocations.otherOM || ''}
+                               onChange={(e) => setFundingAllocations({...fundingAllocations, otherOM: e.target.value})}
+                               disabled={savingSection === 'fundingAllocations'}
+                             />
+                           )}
+                         </>
+                       )}
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             )}
+             
+             {/* Action buttons */}
+             {editMode?.fundingAllocations ? (
+               <div className={buttonStyles.actionContainer}>
+                 <div className={buttonStyles.buttonGroup}>
+                   <WhiteButton
+                     text="Cancel"
+                     onClick={() => cancelEdit && cancelEdit('fundingAllocations')}
+                     className={buttonStyles.whiteButton.withMargin}
+                     spinStar={buttonStyles.starConfig.enabled}
+                   />
+                   <PurpleButton
+                     text={savingSection === 'fundingAllocations' ? 'Saving...' : 'Save'}
+                     onClick={saveFundingAllocations}
+                     className={buttonStyles.purpleButton.base}
+                     spinStar={buttonStyles.starConfig.enabled}
+                     disabled={savingSection === 'fundingAllocations'}
+                   />
+                 </div>
+               </div>
+             ) : (
+               <>
+                 {!canEdit ? (
+                   <div className="text-sm text-gray-500 italic mt-12 pt-6 text-right">
+                     Contact Alcor to update funding allocations
+                   </div>
+                 ) : (
+                   <div className={buttonStyles.actionContainer}>
+                     <WhiteButton
+                       text="Edit"
+                       onClick={() => toggleEditMode && toggleEditMode('fundingAllocations')}
+                       className={buttonStyles.whiteButton.base}
+                       spinStar={buttonStyles.starConfig.enabled}
+                     />
+                   </div>
+                 )}
+               </>
+             )}
+           </div>
+         </div>
+       </div>
+     )}
+   </div>
+ );
 };
 
 export default FundingAllocationsSection;
