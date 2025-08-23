@@ -15,7 +15,7 @@ import PaymentSetupForm from './PaymentSetupForm';
 // Import the new data service
 import { paymentMethodsDataService } from './services/paymentMethodsDataService';
 
-const ENABLE_AUTOPAY_FEATURE = false; // Set to true when feature is ready
+const ENABLE_AUTOPAY_FEATURE = true; // Set to true when feature is ready
 
 // Import card logos
 import visaLogo from '../../assets/images/cards/visa.png';
