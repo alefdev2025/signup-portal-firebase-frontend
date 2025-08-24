@@ -8,7 +8,7 @@ import documentImage from '../../assets/images/document-image.png';
 import pdfImage from '../../assets/images/pdf-image.png';
 import documentsHeaderImage from '../../assets/images/documents-image.jpg';
 import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../../config/api';
 
 const DocumentsTab = ({ contactId }) => {
   // Get preloaded documents from context
@@ -302,7 +302,7 @@ const handleDownload = async (doc) => {
     const token = await currentUser.getIdToken();
     
     // Direct download approach
-    const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+    //import { API_BASE_URL } from '../../config/api';
     
     // Determine the correct URL format based on document type
     let url;
@@ -428,7 +428,7 @@ const handleDownload = async (doc) => {
       
       //console.log('[DocumentsTab] Uploading document:', titleWithPrefix);
       
-      const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+      //const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
       const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents`;
       
       // Send with auth header

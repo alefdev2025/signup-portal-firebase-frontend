@@ -1,7 +1,8 @@
 // services/staffApi.js
 import { auth } from './firebase';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../config/api';
 
 // Helper to get auth token
 const getAuthToken = async () => {

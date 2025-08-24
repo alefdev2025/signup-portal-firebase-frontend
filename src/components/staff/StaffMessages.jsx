@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, User, Search, CheckCircle, XCircle, AlertCircle, Calendar, Mail, Inbox } from 'lucide-react';
 import { auth } from '../../services/firebase';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../../config/api';
 
 const StaffMessages = () => {
   const [loading, setLoading] = useState(false);

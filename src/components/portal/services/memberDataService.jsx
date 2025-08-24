@@ -27,7 +27,8 @@ import {
   getVideoDownloadUrl,
 } from './salesforce/memberInfo';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../../../config/api';
 
 class MemberDataService {
   constructor() {

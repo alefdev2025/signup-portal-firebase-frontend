@@ -4,7 +4,9 @@ import { auth, db } from './firebase';  // Add db import
 import { doc, getDoc } from 'firebase/firestore';  // Add Firestore imports
 
 // Base URL for API calls
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 
@@ -60,7 +62,7 @@ export const createPaymentIntent = async (paymentData) => {
       requestBody.iceCode = paymentData.iceCode;
     }
     
-    const fetchPromise = fetch(`${API_BASE_URL}/payment/create-intent`, {
+    const fetchPromise = fetch(`${API_URL}/payment/create-intent`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -172,7 +174,7 @@ export const createInvoicePaymentIntent = async (invoicePaymentData) => {
     
     console.log('📦 DEBUG - Request body being sent:', JSON.stringify(requestBody, null, 2));
     
-    const fetchPromise = fetch(`${API_BASE_URL}/invoice-payment/create-invoice-payment`, {
+    const fetchPromise = fetch(`${API_URL}/invoice-payment/create-invoice-payment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -256,7 +258,7 @@ export const confirmPayment = async (confirmationData) => {
     
     console.log("Confirming payment:", confirmationData);
     
-    const fetchPromise = fetch(`${API_BASE_URL}/payment/confirm`, {
+    const fetchPromise = fetch(`${API_URL}/payment/confirm`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -310,7 +312,7 @@ export const confirmInvoicePayment = async (confirmationData) => {
     
     console.log("Confirming invoice payment:", confirmationData);
     
-    const fetchPromise = fetch(`${API_BASE_URL}/invoice-payment/confirm-invoice-payment`, {
+    const fetchPromise = fetch(`${API_URL}/invoice-payment/confirm-invoice-payment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -369,7 +371,7 @@ export const setupSepaDebit = async (sepaData) => {
     
     console.log("Setting up SEPA debit:", sepaData);
     
-    const fetchPromise = fetch(`${API_BASE_URL}/payment/setup-sepa`, {
+    const fetchPromise = fetch(`${API_URL}/payment/setup-sepa`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -477,7 +479,7 @@ export const setupSepaDebit = async (sepaData) => {
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
       
       try {
-        const response = await fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe/autopay`, {
+        const response = await fetch(`${API_URL}/netsuite/customers/${netsuiteCustomerId}/stripe/autopay`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -604,7 +606,7 @@ export const setupSepaDebit = async (sepaData) => {
       
       const token = await user.getIdToken();
       
-      const response = await fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe-sync`, {
+      const response = await fetch(`${API_URL}/netsuite/customers/${netsuiteCustomerId}/stripe-sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -648,7 +650,7 @@ export const setupSepaDebit = async (sepaData) => {
     
     console.log("Fetching Stripe integration status for customer:", netsuiteCustomerId);
     
-    const fetchPromise = fetch(`${API_BASE_URL}/netsuite/customers/${netsuiteCustomerId}/stripe`, {
+    const fetchPromise = fetch(`${API_URL}/netsuite/customers/${netsuiteCustomerId}/stripe`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

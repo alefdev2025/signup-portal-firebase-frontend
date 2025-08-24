@@ -39,6 +39,8 @@ import {
   clearVerificationState 
 } from './storage';
 
+import { API_BASE_URL } from '../config/api'; //${API_BASE_URL}
+
 // Environment flag - true for development, false for production
 const isDevelopment = import.meta.env.MODE === 'development';
 
@@ -946,7 +948,7 @@ export const checkUserStep = async (data) => {
       if (token) {
         try {
           // Call the VM endpoint with a timeout
-          const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
+          const fetchPromise = fetch(`${API_BASE_URL}/api/signup/progress`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -1104,7 +1106,7 @@ export const updateSignupProgressAPI = async (step, progress) => {
     console.log("📤 Sending to API:", payload);
     console.log("📤 JSON stringified payload:", JSON.stringify(payload));
     
-    const apiUrl = `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`;
+    const apiUrl = `${API_BASE_URL}/api/signup/progress`;
     console.log("📤 API URL:", apiUrl);
     
     // Call the VM endpoint with a timeout
@@ -1194,7 +1196,7 @@ export async function verifyEmailCodeOnly(verificationId, code) {
       }
       
       // Call the VM endpoint with a timeout
-      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/verification/verify-code`, {
+      const fetchPromise = fetch(`${API_BASE_URL}/api/verification/verify-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2209,7 +2211,7 @@ export const getUserProgressAPI = async () => {
       const token = await user.getIdToken();
       
       // Call the VM endpoint with a timeout
-      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/progress`, {
+      const fetchPromise = fetch(`${API_BASE_URL}/api/signup/progress`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2552,7 +2554,7 @@ export const verifyPortalCode = async (email, code) => {
 
 export const checkMemberAccount = async (email, alcorId = null) => {
   try {
-    const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+    //const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
     
     let endpoint, body;
     

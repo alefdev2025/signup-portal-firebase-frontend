@@ -1,5 +1,7 @@
 // services/paymentMethodsDataService.js
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../../../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 
 // Retry configuration
 const RETRY_CONFIG = {
@@ -265,7 +267,7 @@ class PaymentMethodsDataService {
       
       // Use the consolidated endpoint
       const response = await this.fetchWithRetry(
-        `${API_BASE_URL}/netsuite/customers/${customerId}/invoice-data`,
+        `${API_URL}/netsuite/customers/${customerId}/invoice-data`,
         {
           method: 'GET',
           headers: {
@@ -347,7 +349,7 @@ class PaymentMethodsDataService {
       console.log('💳 Fetching Stripe payment methods');
       
       const response = await this.fetchWithRetry(
-        `${API_BASE_URL}/payment-methods`,
+        `${API_URL}/payment-methods`,
         {
           method: 'GET',
           headers: {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Send, Megaphone, Mic, FileText, Users, Calendar, CheckCircle, XCircle, RefreshCw, Filter, Download } from 'lucide-react';
 import { auth } from '../../services/firebase';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../../config/api';
 
 const StaffNotifications = () => {
   const [notifications, setNotifications] = useState([]);

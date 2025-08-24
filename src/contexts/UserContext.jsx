@@ -5,6 +5,7 @@ import { auth, db } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { saveSignupState, clearSignupState, getSignupState } from "../services/storage";
 import { checkUserStep } from "../services/auth";
+import { API_BASE_URL } from '../config/api';
 
 const LOG_TO_TERMINAL = (message) => {
   //console.log(`[USER CONTEXT] ${message}`);
@@ -57,7 +58,7 @@ const UserProvider = ({ children }) => {
     LOG_TO_TERMINAL(`Fetching Salesforce customer by ID: ${salesforceCustomerId}`);
     
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+      //const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
       const token = await user.getIdToken();
       
       const response = await fetch(

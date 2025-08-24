@@ -2,6 +2,7 @@
 import { auth, db, functions } from './firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { API_BASE_URL } from '../config/api';   // ${API_BASE_URL}
 
 // In services/contact.js
 export const getContactInfo = async () => {
@@ -18,7 +19,7 @@ export const getContactInfo = async () => {
       console.log("Fetching contact info from API");
       
       // Call the VM endpoint with a timeout
-      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact`, {
+      const fetchPromise = fetch(`${API_BASE_URL}/api/contact`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -73,7 +74,7 @@ export const getVideoTestimonyStatus = async () => {
     const token = await user.getIdToken();
     
     const response = await fetch(
-      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/video-testimony-status`,
+      `${API_BASE_URL}/api/contact/video-testimony-status`,
       {
         method: 'GET',
         headers: {
@@ -110,7 +111,7 @@ export const updateVideoTestimonyStatus = async (hasVideo) => {
     const token = await user.getIdToken();
     
     const response = await fetch(
-      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/video-testimony-status`,
+      `${API_BASE_URL}/api/contact/video-testimony-status`,
       {
         method: 'POST',
         headers: {
@@ -146,7 +147,7 @@ export const getPortalWelcomeStatus = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/portal-welcome-status`, {
+    const response = await fetch(`${API_BASE_URL}/api/contact/portal-welcome-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -179,7 +180,7 @@ export const markPortalWelcomeShown = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact/mark-portal-welcome-shown`, {
+    const response = await fetch(`${API_BASE_URL}/api/contact/mark-portal-welcome-shown`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -215,7 +216,7 @@ export const getMemberProfilePicture = async (contactId) => {
     console.log("Fetching profile picture for contact:", contactId);
     
     const response = await fetch(
-      `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/salesforce/member/${contactId}/profile-picture`,
+      `${API_BASE_URL}/api/salesforce/member/${contactId}/profile-picture`,
       {
         method: 'GET',
         headers: {
@@ -239,7 +240,7 @@ export const getMemberProfilePicture = async (contactId) => {
     // If we have profile picture data, construct the full URL for the image
     if (result.data && result.data.imageUrl) {
       // The imageUrl is relative, so we need to prepend the base URL
-      result.data.fullImageUrl = `https://alcor-backend-dev-ik555kxdwq-uc.a.run.app${result.data.imageUrl}`;
+      result.data.fullImageUrl = `${API_BASE_URL}${result.data.imageUrl}`;
     }
     
     return {
@@ -270,7 +271,7 @@ export const saveContactInfo = async (contactData) => {
       console.log("Saving contact info to API");
       
       // Call the VM endpoint with a timeout
-      const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/contact`, {
+      const fetchPromise = fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

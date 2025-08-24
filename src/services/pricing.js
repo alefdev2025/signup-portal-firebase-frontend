@@ -1,6 +1,8 @@
 // File: services/pricing.js
 import { auth } from './firebase';
 
+import { API_BASE_URL } from '../config/api';
+
 /**
  * Get membership cost information from the backend
  * @returns {Promise<object>} Membership cost details based on user age
@@ -19,7 +21,7 @@ export const getMembershipCost = async () => {
     console.log("Fetching membership cost from API");
     
     // Call the VM endpoint with a timeout
-    const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/pricing/membership-cost`, {
+    const fetchPromise = fetch(`${API_BASE_URL}/api/pricing/membership-cost`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -2,7 +2,9 @@
 import { auth } from './firebase';
 
 // Base URL for API calls - using your existing config
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 /**
@@ -54,7 +56,7 @@ export const createStripeAutopaySubscription = async (params) => {
       }
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/autopay/create`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/autopay/create`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',
@@ -107,7 +109,7 @@ export const getStripeAutopayStatus = async (customerId) => {
     
     const headers = await getAuthHeaders();
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/autopay/status/${customerId}`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/autopay/status/${customerId}`, {
       method: 'GET',
       headers: headers,
       credentials: 'include'
@@ -173,7 +175,7 @@ export const cancelStripeAutopaySubscription = async (subscriptionId, customerId
       customerId
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/autopay/cancel`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/autopay/cancel`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',
@@ -232,7 +234,7 @@ export const updateStripeAutopayPaymentMethod = async (subscriptionId, paymentMe
       paymentMethodId
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/autopay/update-payment-method`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/autopay/update-payment-method`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',
@@ -283,7 +285,7 @@ export const getBillingSchedules = async () => {
     
     const headers = await getAuthHeaders();
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/autopay/billing-schedules`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/autopay/billing-schedules`, {
       method: 'GET',
       headers: headers,
       credentials: 'include'
@@ -340,7 +342,7 @@ export const getOrCreateStripeCustomer = async (netsuiteCustomerId, customerData
       ...customerData  // Include email, name, etc.
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/customer/get-or-create`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/customer/get-or-create`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',
@@ -393,7 +395,7 @@ export const getStripeCustomer = async (stripeCustomerId) => {
     
     const headers = await getAuthHeaders();
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/customer/${stripeCustomerId}`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/customer/${stripeCustomerId}`, {
       method: 'GET',
       headers: headers,
       credentials: 'include'
@@ -445,7 +447,7 @@ export const updateStripeCustomer = async (stripeCustomerId, updateData) => {
     
     const headers = await getAuthHeaders();
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/customer/${stripeCustomerId}`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/customer/${stripeCustomerId}`, {
       method: 'PUT',
       headers: headers,
       credentials: 'include',
@@ -504,7 +506,7 @@ export const linkNetSuiteCustomer = async (netsuiteCustomerId, stripeCustomerId)
       stripeCustomerId
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/stripe/customer/link`, {
+    const fetchPromise = fetch(`${API_URL}/stripe/customer/link`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',

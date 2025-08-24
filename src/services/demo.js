@@ -1,6 +1,8 @@
 // File: services/demo.js
 // Base URL for API calls
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 /**
@@ -16,7 +18,7 @@ export const validateDemoPassword = async (password) => {
       password: password
     };
     
-    const fetchPromise = fetch(`${API_BASE_URL}/demo/validate-password`, {
+    const fetchPromise = fetch(`${API_URL}/demo/validate-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -69,7 +71,7 @@ export const checkDemoAuth = async () => {
   try {
     console.log("Checking demo authentication status");
     
-    const fetchPromise = fetch(`${API_BASE_URL}/demo/check-auth`, {
+    const fetchPromise = fetch(`${API_URL}/demo/check-auth`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -125,7 +127,7 @@ export const logoutDemo = async () => {
   try {
     console.log("Logging out of demo session");
     
-    const fetchPromise = fetch(`${API_BASE_URL}/demo/logout`, {
+    const fetchPromise = fetch(`${API_URL}/demo/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

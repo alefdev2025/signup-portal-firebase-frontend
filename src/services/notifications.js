@@ -3,8 +3,9 @@ import { auth } from './firebase';
 
 //console.log('📢 [NotificationService] Module loaded');
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
 //console.log('🌐 [NotificationService] API_BASE_URL:', API_BASE_URL);
+import { API_BASE_URL } from '../config/api';
 
 // Get auth token
 const getAuthToken = async () => {

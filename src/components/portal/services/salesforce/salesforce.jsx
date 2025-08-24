@@ -1,5 +1,6 @@
 // src/components/portal/services/salesforce.jsx
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app' || 'http://localhost:8080';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app' || 'http://localhost:8080';
+import { API_BASE_URL } from '../../../../config/api';
 
 /**
  * Search for a Salesforce customer by email

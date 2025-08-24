@@ -6,7 +6,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ImageUploader from './ImageUploader';
 import podcastImage from '../../assets/images/podcast-image2.png';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+import { API_BASE_URL } from '../../config/api';
 
 const StaffContent = () => {
   const [activeTab, setActiveTab] = useState('announcements');

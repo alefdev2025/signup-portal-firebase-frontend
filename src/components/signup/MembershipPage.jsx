@@ -11,6 +11,7 @@ import alcorStar from "../../assets/images/alcor-yellow-star.png";
 import iceLogo from "../../assets/images/ICE-logo-temp.png";
 import navyALogo from "../../assets/images/navy-a-logo.png";
 import { auth } from "../../services/firebase";
+import { API_BASE_URL } from '../../config/api';
 
 // Import membership service
 import membershipService from "../../services/membership";
@@ -452,7 +453,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         const token = await auth.currentUser.getIdToken();
         
         // Call the signup membership endpoint which updates progress
-        const progressResponse = await fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/membership`, {
+        const progressResponse = await fetch(`${API_BASE_URL}/api/signup/membership`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

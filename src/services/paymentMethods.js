@@ -4,7 +4,9 @@
 import { auth } from './firebase';
 
 // Base URL for API calls
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 /**
@@ -19,7 +21,7 @@ export const getPaymentMethods = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/list`, {
+    const response = await fetch(`${API_URL}/paymentMethods/list`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -52,7 +54,7 @@ export const createPaymentMethodSetupIntent = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/setup-intent`, {
+    const response = await fetch(`${API_URL}/paymentMethods/setup-intent`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -86,7 +88,7 @@ export const attachPaymentMethod = async (paymentMethodId, setAsDefault = false)
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/attach`, {
+    const response = await fetch(`${API_URL}/paymentMethods/attach`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -123,7 +125,7 @@ export const setDefaultPaymentMethod = async (paymentMethodId) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/set-default/${paymentMethodId}`, {
+    const response = await fetch(`${API_URL}/paymentMethods/set-default/${paymentMethodId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -156,7 +158,7 @@ export const removePaymentMethod = async (paymentMethodId) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/${paymentMethodId}`, {
+    const response = await fetch(`${API_URL}/paymentMethods/${paymentMethodId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -189,7 +191,7 @@ export const updateAutoPaySettings = async (settings) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/autopay-settings`, {
+    const response = await fetch(`${API_URL}/paymentMethods/autopay-settings`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -220,7 +222,7 @@ export const savePaymentMethod = async (paymentMethodData) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/paymentMethods/save-payment-method`, {
+    const response = await fetch(`${API_URL}/paymentMethods/save-payment-method`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

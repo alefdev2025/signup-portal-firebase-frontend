@@ -9,6 +9,7 @@ import { auth } from '../services/firebase';
 import whiteALogoNoText from "../assets/images/alcor-white-logo-no-text.png";
 import dewars2 from "../assets/images/dewars2.jpg";
 import alcorStar from "../assets/images/alcor-star.png";
+import { API_BASE_URL } from '../config/api';
 
 // Font family from MembershipCompletionSteps
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -80,7 +81,7 @@ export default function WelcomeMember() {
      // Call backend to convert user to portal user
      const token = await auth.currentUser.getIdToken();
      
-     const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app'}/api/user/convert-to-portal`, {
+     const response = await fetch(`${API_BASE_URL}/api/user/convert-to-portal`, {
        method: 'POST',
        headers: {
          'Authorization': `Bearer ${token}`,

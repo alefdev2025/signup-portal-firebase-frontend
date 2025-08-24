@@ -2,7 +2,9 @@
 import { auth } from './firebase';
 
 // Base URL for API calls - should be configured through environment variables
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 /**
@@ -24,7 +26,7 @@ export const saveMembershipSelection = async (membershipData) => {
     console.log("Saving membership selection to API:", membershipData);
     
     // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/membership/save`, {
+    const fetchPromise = fetch(`${API_URL}/membership/save`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -78,7 +80,7 @@ export const getMembershipInfo = async () => {
     console.log("Fetching membership info for user");
     
     // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/membership/user-info`, {
+    const fetchPromise = fetch(`${API_URL}/membership/user-info`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -137,7 +139,7 @@ export const validateIceCode = async (iceCode) => {
     
     console.log("Validating ICE code:", iceCode);
     
-    const fetchPromise = fetch(`${API_BASE_URL}/salesforce/validate-ice-code`, {
+    const fetchPromise = fetch(`${API_URL}/salesforce/validate-ice-code`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -205,7 +207,7 @@ export const getMembershipCosts = async () => {
     console.log("Fetching membership costs");
     
     // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/membership/costs`, {
+    const fetchPromise = fetch(`${API_URL}/membership/costs`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -265,7 +267,7 @@ export const validateMembershipData = async (membershipData) => {
     console.log("Validating membership data:", membershipData);
     
     // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/membership/validate`, {
+    const fetchPromise = fetch(`${API_URL}/membership/validate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -314,7 +316,7 @@ export const checkMembershipCompletionStatus = async () => {
     console.log("Checking membership completion status...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/completion-status`, {
+    const response = await fetch(`${API_URL}/membership/completion-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -345,7 +347,7 @@ export const getDocuSignStatus = async () => {
     console.log("Getting DocuSign status...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/docusign-status`, {
+    const response = await fetch(`${API_URL}/membership/docusign-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -381,7 +383,7 @@ export const updateDocuSignPhone = async (phoneData) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/update-docusign-phone`, {
+    const response = await fetch(`${API_URL}/membership/update-docusign-phone`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -421,7 +423,7 @@ export const updateDocuSignStatus = async (documentType, status, envelopeId = nu
     
     console.log("Updating DocuSign status:", { documentType, status, envelopeId });
     
-    const response = await fetch(`${API_BASE_URL}/membership/update-docusign-status`, {
+    const response = await fetch(`${API_URL}/membership/update-docusign-status`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -465,7 +467,7 @@ export const updatePaymentStatus = async (status, paymentId = null, amount = nul
     
     console.log("Updating payment status:", { status, paymentId, amount });
     
-    const response = await fetch(`${API_BASE_URL}/membership/update-payment-status`, {
+    const response = await fetch(`${API_URL}/membership/update-payment-status`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -501,7 +503,7 @@ export const initiateDocuSign = async (docusignData = {}) => {
     console.log("Initiating DocuSign process with data:", docusignData);
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/initiate-docusign`, {
+    const response = await fetch(`${API_URL}/membership/initiate-docusign`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -534,7 +536,7 @@ export const initiatePayment = async (paymentData) => {
     console.log("Initiating payment process with data:", paymentData);
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/initiate-payment`, {
+    const response = await fetch(`${API_URL}/membership/initiate-payment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -566,7 +568,7 @@ export const initiatePayment = async (paymentData) => {
     console.log("Creating readyForPayment object...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/create-ready-for-payment`, {
+    const response = await fetch(`${API_URL}/membership/create-ready-for-payment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -597,7 +599,7 @@ export const getPaymentStatus = async () => {
     console.log("Getting payment status...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/payment-status`, {
+    const response = await fetch(`${API_URL}/membership/payment-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -630,7 +632,7 @@ export const updatePaymentProgress = async (status, paymentData = {}) => {
     console.log("Updating payment progress:", { status, ...paymentData });
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/update-payment-progress`, {
+    const response = await fetch(`${API_URL}/membership/update-payment-progress`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -665,7 +667,7 @@ export const updatePaymentProgress = async (status, paymentData = {}) => {
     console.log("Creating Salesforce contact...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/create-salesforce-contact`, {
+    const response = await fetch(`${API_URL}/membership/create-salesforce-contact`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -689,7 +691,7 @@ export const updatePaymentProgress = async (status, paymentData = {}) => {
 
 export const retrieveAndUploadDocuments = async (salesforceContactId, salesforceAgreementId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/membership/retrieve-and-upload-documents`, {
+    const response = await fetch(`${API_URL}/membership/retrieve-and-upload-documents`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -723,7 +725,7 @@ export const getSalesforceStatus = async () => {
     console.log("Getting Salesforce status...");
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/salesforce-status`, {
+    const response = await fetch(`${API_URL}/membership/salesforce-status`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -756,7 +758,7 @@ export const getReadyForDocuSign = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/ready-for-docusign`, {
+    const response = await fetch(`${API_URL}/membership/ready-for-docusign`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -792,7 +794,7 @@ export const getReadyForDocuSign = async () => {
     console.log("Updating member payment status in Salesforce...", { contactId, paymentData });
     const token = await auth.currentUser?.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/salesforce/members/${contactId}/payment-status`, {
+    const response = await fetch(`${API_URL}/salesforce/members/${contactId}/payment-status`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -824,7 +826,7 @@ export const getSignupPaymentHistory = async () => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/signup-payment-history`, {
+    const response = await fetch(`${API_URL}/membership/signup-payment-history`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -854,7 +856,7 @@ export const getSignupPaymentDetails = async (paymentIntentId) => {
     
     const token = await user.getIdToken();
     
-    const response = await fetch(`${API_BASE_URL}/membership/signup-payment-details/${paymentIntentId}`, {
+    const response = await fetch(`${API_URL}/membership/signup-payment-details/${paymentIntentId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

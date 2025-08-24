@@ -3,7 +3,8 @@
 
 import { getMemberProfile } from './salesforce/memberInfo';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../../../config/api';
 
 // Retry configuration
 const RETRY_CONFIG = {

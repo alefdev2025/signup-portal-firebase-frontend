@@ -1,5 +1,6 @@
 // File: services/package.js
 import { auth } from './firebase';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Save package selection information to the backend
@@ -20,7 +21,7 @@ export const savePackageInfo = async (packageData) => {
     console.log("Saving package info to API:", packageData);
     
     // Call the VM endpoint with a timeout
-    const fetchPromise = fetch(`https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api/signup/package`, {
+    const fetchPromise = fetch(`${API_BASE_URL}/api/signup/package`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

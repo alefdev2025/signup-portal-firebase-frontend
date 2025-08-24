@@ -16,6 +16,7 @@ import { auth } from '../../services/firebase';
 import ProcedureFormView from './ProcedureFormView';
 import ProcedureSuccessView from './ProcedureSuccessView';
 import { generateProcedurePDF } from './ProcedureUtils';
+import { API_BASE_URL } from '../../config/api';
 
 
 const ProcedureTab = ({ contactId }) => {
@@ -456,7 +457,7 @@ const ProcedureTab = ({ contactId }) => {
           const base64Data = e.target.result.split(',')[1];
           
           // Call the API
-          const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
+          //const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
           const url = `${API_BASE_URL}/api/salesforce/member/${contactId}/documents`;
           
           const requestBody = {

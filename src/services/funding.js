@@ -2,7 +2,9 @@
 import { auth } from './firebase';
 
 // Base URL for API calls - should be configured through environment variables
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+//const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 export const saveFundingSelection = async (fundingData) => {
@@ -19,7 +21,7 @@ export const saveFundingSelection = async (fundingData) => {
       console.log("Saving funding selection to API:", fundingData);
       
       // Call the CORRECT backend endpoint
-      const fetchPromise = fetch(`${API_BASE_URL}/funding/save`, { // Changed from update-funding to save
+      const fetchPromise = fetch(`${API_URL}/funding/save`, { // Changed from update-funding to save
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -69,7 +71,7 @@ export const getPackageInfoForFunding = async () => {
       console.log("Fetching package info for funding options");
       
       // Call the CORRECT backend endpoint
-      const fetchPromise = fetch(`${API_BASE_URL}/funding/user-package`, { // This is correct
+      const fetchPromise = fetch(`${API_URL}/funding/user-package`, { // This is correct
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -132,7 +134,7 @@ export const validateFundingData = async (fundingData) => {
     console.log("Validating funding data:", fundingData);
     
     // Call the backend endpoint with a timeout
-    const fetchPromise = fetch(`${API_BASE_URL}/funding/validate`, {
+    const fetchPromise = fetch(`${API_URL}/funding/validate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -192,7 +194,7 @@ export const validateFundingData = async (fundingData) => {
     console.log("Fetching user's funding info");
     
     // Call the backend endpoint
-    const fetchPromise = fetch(`${API_BASE_URL}/funding/user-info`, {
+    const fetchPromise = fetch(`${API_URL}/funding/user-info`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

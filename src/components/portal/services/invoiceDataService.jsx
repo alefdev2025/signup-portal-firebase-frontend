@@ -4,7 +4,8 @@
 import { getMemberProfile } from './salesforce/memberInfo';
 import { invoiceNotificationsApi } from '../../../services/invoiceNotificationsApi';
 
-const API_BASE_URL = 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app/api';
+import { API_BASE_URL } from '../../../config/api';
+const API_URL = `${API_BASE_URL}/api`;
 
 // Retry configuration
 const RETRY_CONFIG = {
@@ -350,7 +351,7 @@ class InvoiceDataService {
       const [invoiceDataPromise, alcorIdPromise, notificationSettingsPromise] = await Promise.allSettled([
         // Invoice data fetch
         this.fetchWithRetry(
-          `${API_BASE_URL}/netsuite/customers/${customerId}/invoice-data`,
+          `${API_URL}/netsuite/customers/${customerId}/invoice-data`,
           {
             method: 'GET',
             headers: {
@@ -517,7 +518,7 @@ class InvoiceDataService {
       
       const [invoicesRes, paymentsRes, stripeRes, legacyAutopayRes] = await Promise.allSettled([
         this.fetchWithRetry(
-          `${API_BASE_URL}/netsuite/customers/${customerId}/invoices?limit=100&offset=0`,
+          `${API_URL}/netsuite/customers/${customerId}/invoices?limit=100&offset=0`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -527,7 +528,7 @@ class InvoiceDataService {
         ),
         
         this.fetchWithRetry(
-          `${API_BASE_URL}/netsuite/customers/${customerId}/payments?limit=100&offset=0`,
+          `${API_URL}/netsuite/customers/${customerId}/payments?limit=100&offset=0`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -537,7 +538,7 @@ class InvoiceDataService {
         ),
         
         this.fetchWithRetry(
-          `${API_BASE_URL}/netsuite/customers/${customerId}/stripe`,
+          `${API_URL}/netsuite/customers/${customerId}/stripe`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -548,7 +549,7 @@ class InvoiceDataService {
         
         // Legacy autopay endpoint - only used in fallback scenario
         this.fetchWithRetry(
-          `${API_BASE_URL}/netsuite/customers/${customerId}/autopay`,
+          `${API_URL}/netsuite/customers/${customerId}/autopay`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
@@ -725,7 +726,7 @@ class InvoiceDataService {
       console.log(`📄 Fetching invoice details for ${invoiceId}`);
       
       const response = await this.fetchWithRetry(
-        `${API_BASE_URL}/netsuite/invoices/${invoiceId}`,
+        `${API_URL}/netsuite/invoices/${invoiceId}`,
         {
           method: 'GET',
           headers: {
