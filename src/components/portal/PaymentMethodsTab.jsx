@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
+import alcorLogo from '../../assets/images/navy-alcor-logo.png';
 
 // Import the PaymentSetupForm component
 import PaymentSetupForm from './PaymentSetupForm';
@@ -23,8 +24,16 @@ import mastercardLogo from '../../assets/images/cards/mastercard.png';
 import amexLogo from '../../assets/images/cards/american-express.png';
 import discoverLogo from '../../assets/images/cards/discover.png';
 
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.error('Stripe publishable key is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY in your .env file');
+}
+
+console.log('Using Stripe key:', STRIPE_PUBLISHABLE_KEY?.substring(0, 20) + '...'); // For debugging (only shows first part)
+
 // Initialize Stripe
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 // Payment Source Component
 const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopay, onRemove, updatingPaymentMethodId }) => {
@@ -98,9 +107,7 @@ const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopa
   };
 
   return (
-    <div className={`border rounded-lg p-5 sm:p-6 md:p-6 2xl:p-7 hover:shadow-md transition-all h-[110px] sm:h-[120px] md:h-[125px] 2xl:h-[130px] ${
-      isAutopayCard ? 'border-gray-300 shadow-sm' : 'border-gray-200 bg-white'
-    }`}>
+    <div className="border border-gray-200 bg-gray-50 rounded-lg p-4 sm:p-5 md:p-5 2xl:p-6 hover:shadow-md transition-all h-[95px] sm:h-[105px] md:h-[110px] 2xl:h-[115px]">
       <div className="flex justify-between items-start">
         <div className="flex items-start gap-3.5 sm:gap-4 2xl:gap-5">
           {getCardLogo(cardInfo.brand)}
@@ -113,16 +120,16 @@ const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopa
                 Expires {String(cardInfo.expMonth).padStart(2, '0')}/{cardInfo.expYear}
               </p>
             )}
-            {isAutopayCard && (
-              <div className="flex items-center gap-2 mt-1.5 sm:mt-2">
-                <span className="px-2 sm:px-2.5 2xl:px-3 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs 2xl:text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 2xl:w-3.5 2xl:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Autopay Active
-                </span>
-              </div>
-            )}
+              {isAutopayCard && (
+                <div className="flex items-center gap-2 mt-1 sm:mt-1.5">
+                  <span className="px-1.5 sm:px-2 2xl:px-2.5 py-0.5 rounded-md text-[9px] sm:text-[10px] 2xl:text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-0.5">
+                    <svg className="w-2 h-2 sm:w-2.5 sm:h-2.5 2xl:w-3 2xl:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Autopay Active
+                  </span>
+                </div>
+              )}
           </div>
         </div>
         
@@ -137,19 +144,19 @@ const PaymentMethodCard = ({ paymentMethod, source, isAutopayCard, onSetAsAutopa
                 {updatingPaymentMethodId === paymentMethod.id ? 'Enabling...' : 'Use for Autopay'}
               </button>
             )}
-            {!isAutopayCard ? (
-              <button
-                onClick={handleRemove}
-                disabled={isRemoving}
-                className={`text-xs sm:text-sm 2xl:text-base font-medium disabled:opacity-50 ml-3 sm:ml-4 transition-colors ${
-                  confirmRemove 
-                    ? 'text-orange-600 hover:text-orange-800' 
-                    : 'text-red-600 hover:text-red-800'
-                }`}
-              >
-                {isRemoving ? 'Removing...' : confirmRemove ? 'Verify Removal' : 'Remove'}
-              </button>
-            ) : (
+              {!isAutopayCard ? (
+                <button
+                  onClick={handleRemove}
+                  disabled={isRemoving}
+                  className={`text-xs sm:text-sm 2xl:text-base font-medium disabled:opacity-50 ml-3 sm:ml-4 transition-colors ${
+                    confirmRemove 
+                      ? 'text-orange-600 hover:text-orange-800' 
+                      : 'text-gray-900 hover:text-gray-700'
+                  }`}
+                >
+                  {isRemoving ? 'Removing...' : confirmRemove ? 'Verify Removal' : 'Remove'}
+                </button>
+              ) : (
               <button
                 disabled
                 className="text-xs sm:text-sm 2xl:text-base text-gray-400 font-medium ml-3 sm:ml-4 cursor-not-allowed"
@@ -406,19 +413,14 @@ const AutopaySection = ({
       return (
         <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-5 sm:p-6 md:p-7 2xl:p-8 mb-6 sm:mb-8 md:mb-10 animate-fadeIn"
              style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-            <div className="flex items-start gap-2.5 sm:gap-3">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#665a85] via-[#52476b] to-[#3e3551] border-2 border-[#E879F9] shadow-lg hover:shadow-xl">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Automatic Payments</h3>
-                <p className="text-xs sm:text-sm 2xl:text-base text-green-600 font-medium">
-                  Enabled - Your card will be charged automatically
-                </p>
-              </div>
+              <h3 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Automatic Payments</h3>
             </div>
             
             <div className="relative autopay-options-dropdown">
@@ -856,11 +858,11 @@ const PaymentMethodsTab = () => {
     source: 'stripe' 
   }));
 
-  // If showing add payment form, render that instead
   if (showAddPaymentForm) {
     return (
       <div className="payment-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-        <div className="h-8 md:h-12"></div>
+        {/* Reduced top padding to match forms page */}
+        <div className="h-8"></div>
         
         <div className="px-4 md:px-0">
           <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn" 
@@ -873,13 +875,11 @@ const PaymentMethodsTab = () => {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Add Payment Method</h2>
-                <p className="text-xs sm:text-sm 2xl:text-base text-gray-500 font-normal mt-1">
-                  Add a new card to your account
-                </p>
               </div>
             </div>
-
-            <div className="max-w-md mx-auto">
+  
+            {/* Made form container wider on desktop */}
+            <div className="max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
               <Elements stripe={stripePromise}>
                 <PaymentSetupForm 
                   onSuccess={handlePaymentFormSuccess}
@@ -897,6 +897,7 @@ const PaymentMethodsTab = () => {
                     </svg>
                     Secure
                   </span>
+                  <img src={alcorLogo} alt="Alcor" className="h-7 sm:h-8 2xl:h-9 w-auto opacity-70" />
                   <span>Powered by Stripe</span>
                 </div>
               </div>
@@ -910,7 +911,7 @@ const PaymentMethodsTab = () => {
   // Main payment methods view
   return (
     <div className="payment-page -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4 min-h-screen" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-      <div className="h-10 md:h-14"></div>
+      <div className="h-8"></div>
       
       <div className="px-4 md:px-0">
         {/* Payment Methods Section - moved to top */}

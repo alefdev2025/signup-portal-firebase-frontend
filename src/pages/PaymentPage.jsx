@@ -32,7 +32,16 @@ import yellowStar from "../assets/images/alcor-yellow-star.png";
 import TermsPrivacyModal from "../components/modals/TermsPrivacyModal";
 import HelpPanel from "../components/signup/HelpPanel";
 
-const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.error('Stripe publishable key is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY in your .env file');
+}
+
+console.log('Using Stripe key:', STRIPE_PUBLISHABLE_KEY?.substring(0, 20) + '...'); // For debugging (only shows first part)
+
+// Initialize Stripe
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 const CARD_ELEMENT_OPTIONS = {
   style: {

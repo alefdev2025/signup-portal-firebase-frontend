@@ -1,11 +1,11 @@
-// File: components/portal/PaymentSetupForm.jsx
 import React, { useState, useMemo } from 'react';
 import { savePaymentMethod } from '../../services/paymentMethods';
 import { syncStripeCustomerToNetSuite } from '../../services/payment';
 import { toast } from 'react-hot-toast';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useMemberPortal } from '../../contexts/MemberPortalProvider';
-import { getCountries } from './utils/countries';
+import { getCountries } from './countries'; // Import from adjacent file
+import alcorLogo from '../../assets/images/navy-alcor-logo.png';
 
 const CARD_ELEMENT_OPTIONS = {
    style: {
@@ -29,7 +29,7 @@ const CARD_ELEMENT_OPTIONS = {
  };
 
 // Payment Setup Form Component with international support
-const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId }) => {
+const PaymentSetupForm = ({ onSuccess, onCancel, customerId }) => {
    const stripe = useStripe();
    const elements = useElements();
    const { salesforceCustomer, currentUser } = useMemberPortal();
@@ -85,18 +85,6 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
        setError('Please enter the cardholder name');
        return;
      }
-     
-     if (!email.trim()) {
-       setError('Please enter your email address');
-       return;
-     }
-     
-     // Basic email validation
-     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-     if (!emailRegex.test(email)) {
-       setError('Please enter a valid email address');
-       return;
-     }
    
      if (!cardComplete) {
        setError('Please complete your card information');
@@ -122,8 +110,8 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
        // Build billing details object
        const billingDetails = {
          name: cardholderName.trim(),
-         email: email.trim(),
-         phone: phone.trim() || null,
+         email: email.trim() || null, // Email is now optional
+         phone: phone.trim() || null, // Phone is optional
          address: {
            line1: billingAddress.line1.trim(),
            city: billingAddress.city.trim(),
@@ -221,107 +209,49 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
  
    return (
      <form onSubmit={handleSubmit} className="space-y-4">
-       {/* Cardholder Name */}
-       <div>
-         <label className="block text-sm font-medium text-gray-700 mb-1">
-           Cardholder Name <span className="text-red-500">*</span>
-         </label>
-         <input
-           type="text"
-           required
-           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-           value={cardholderName}
-           onChange={(e) => setCardholderName(e.target.value)}
-           placeholder="John Doe"
-         />
-       </div>
- 
-       {/* Email */}
-       <div>
-         <label className="block text-sm font-medium text-gray-700 mb-1">
-           Email Address <span className="text-red-500">*</span>
-         </label>
-         <input
-           type="email"
-           required
-           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-           value={email}
-           onChange={(e) => setEmail(e.target.value)}
-           placeholder="john@example.com"
-         />
-         <p className="text-xs text-gray-500 mt-1">Receipt will be sent to this email</p>
-       </div>
- 
-       {/* Phone (Optional) */}
-       <div>
-         <label className="block text-sm font-medium text-gray-700 mb-1">
-           Phone Number
-         </label>
-         <input
-           type="tel"
-           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-           value={phone}
-           onChange={(e) => setPhone(e.target.value)}
-           placeholder="+1 (555) 123-4567"
-         />
-       </div>
- 
        {/* Billing Address Section */}
        <div className="border-t pt-4">
          <h4 className="text-sm font-medium text-gray-900 mb-3">Billing Address</h4>
          
-         {/* Country */}
-         <div className="mb-3">
-           <label className="block text-sm font-medium text-gray-700 mb-1">
-             Country <span className="text-red-500">*</span>
-           </label>
-           <select
-             required
-             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-             value={billingAddress.country}
-             onChange={(e) => {
-               setBillingAddress({...billingAddress, country: e.target.value, state: ''});
-             }}
-           >
-             {countries.map(country => (
-               <option key={country.code} value={country.code}>
-                 {country.name}
-               </option>
-             ))}
-           </select>
+         {/* Country and Street Address - Side by side */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Country <span className="text-red-500">*</span>
+             </label>
+             <select
+               required
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
+               value={billingAddress.country}
+               onChange={(e) => {
+                 setBillingAddress({...billingAddress, country: e.target.value, state: ''});
+               }}
+             >
+               {countries.map(country => (
+                 <option key={country.code} value={country.code}>
+                   {country.name}
+                 </option>
+               ))}
+             </select>
+           </div>
+           
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Street Address <span className="text-red-500">*</span>
+             </label>
+             <input
+               type="text"
+               required
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
+               value={billingAddress.line1}
+               onChange={(e) => setBillingAddress({...billingAddress, line1: e.target.value})}
+               placeholder="123 Main Street"
+             />
+           </div>
          </div>
          
-         {/* Street Address */}
-         <div className="mb-3">
-           <label className="block text-sm font-medium text-gray-700 mb-1">
-             Street Address <span className="text-red-500">*</span>
-           </label>
-           <input
-             type="text"
-             required
-             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-             value={billingAddress.line1}
-             onChange={(e) => setBillingAddress({...billingAddress, line1: e.target.value})}
-             placeholder="123 Main Street"
-           />
-         </div>
- 
-         {/* Address Line 2 (Optional) */}
-         <div className="mb-3">
-           <label className="block text-sm font-medium text-gray-700 mb-1">
-             Apartment, suite, etc.
-           </label>
-           <input
-             type="text"
-             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-             value={billingAddress.line2}
-             onChange={(e) => setBillingAddress({...billingAddress, line2: e.target.value})}
-             placeholder="Apt 4B"
-           />
-         </div>
- 
-         {/* City and State/Province */}
-         <div className="grid grid-cols-2 gap-3 mb-3">
+         {/* City and Apt - Side by side */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
            <div>
              <label className="block text-sm font-medium text-gray-700 mb-1">
                City <span className="text-red-500">*</span>
@@ -329,12 +259,29 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
              <input
                type="text"
                required
-               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
                value={billingAddress.city}
                onChange={(e) => setBillingAddress({...billingAddress, city: e.target.value})}
                placeholder={selectedCountry.code === 'GB' ? 'London' : 'New York'}
              />
            </div>
+           
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Apt, suite, etc.
+             </label>
+             <input
+               type="text"
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
+               value={billingAddress.line2}
+               onChange={(e) => setBillingAddress({...billingAddress, line2: e.target.value})}
+               placeholder="Apt 4B"
+             />
+           </div>
+         </div>
+         
+         {/* State and Postal Code - Side by side */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
            <div>
              <label className="block text-sm font-medium text-gray-700 mb-1">
                {selectedCountry.stateLabel} {selectedCountry.hasStates && <span className="text-red-500">*</span>}
@@ -342,56 +289,70 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
              <input
                type="text"
                required={selectedCountry.hasStates}
-               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
                value={billingAddress.state}
                onChange={(e) => setBillingAddress({...billingAddress, state: e.target.value})}
                placeholder={selectedCountry.code === 'GB' ? 'Greater London' : selectedCountry.code === 'CA' ? 'ON' : 'NY'}
                maxLength={selectedCountry.code === 'US' || selectedCountry.code === 'CA' ? '2' : '50'}
              />
            </div>
-         </div>
- 
-         {/* Postal Code */}
-         <div>
-           <label className="block text-sm font-medium text-gray-700 mb-1">
-             {selectedCountry.zipLabel} <span className="text-red-500">*</span>
-           </label>
-           <input
-             type="text"
-             required
-             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b5b7e] focus:border-transparent"
-             value={billingAddress.postal_code}
-             onChange={(e) => setBillingAddress({...billingAddress, postal_code: e.target.value})}
-             placeholder={selectedCountry.zipPlaceholder || '10001'}
-           />
+           
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               {selectedCountry.zipLabel} <span className="text-red-500">*</span>
+             </label>
+             <input
+               type="text"
+               required
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
+               value={billingAddress.postal_code}
+               onChange={(e) => setBillingAddress({...billingAddress, postal_code: e.target.value})}
+               placeholder={selectedCountry.zipPlaceholder || '10001'}
+             />
+           </div>
          </div>
        </div>
  
-       {/* Card Details */}
+       {/* Card Details - Half width on desktop */}
        <div className="border-t pt-4">
-       <label className="block text-sm font-medium text-gray-700 mb-1">
-           Card Details <span className="text-red-500">*</span>
-       </label>
-       <div className={`px-3 py-2 border rounded-lg transition-colors ${
-           cardError ? 'border-red-300 bg-red-50' : 'border-gray-300'
-       } focus-within:ring-2 focus-within:ring-[#6b5b7e] focus-within:border-transparent`}>
-           <CardElement 
-           options={CARD_ELEMENT_OPTIONS} 
-           onChange={handleCardChange}
-           />
-       </div>
-       {cardError && (
-           <p className="text-xs text-red-600 mt-1">{cardError}</p>
-       )}
-       </div>
- 
-       {autopayOnly && (
-         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-           <p className="text-sm text-blue-800">
-             This card will be used for automatic invoice payments
-           </p>
+         <h4 className="text-sm font-medium text-gray-900 mb-3">Payment Information</h4>
+         
+         {/* Cardholder Name and Card Details - Side by side on desktop */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           {/* Cardholder Name */}
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Cardholder Name <span className="text-red-500">*</span>
+             </label>
+             <input
+               type="text"
+               required
+               className="w-full px-3 py-2 border border-[#c5c5c5] rounded-lg focus:ring-1 focus:ring-[#6b5b7e] focus:border-[#6b5b7e] focus:outline-none"
+               value={cardholderName}
+               onChange={(e) => setCardholderName(e.target.value)}
+               placeholder="John Doe"
+             />
+           </div>
+     
+           {/* Card Details */}
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Card Number <span className="text-red-500">*</span>
+             </label>
+             <div className={`px-3 py-3 border rounded-lg transition-colors ${
+                 cardError ? 'border-red-300 bg-red-50' : 'border-[#c5c5c5]'
+             } focus-within:ring-1 focus-within:ring-[#6b5b7e] focus-within:border-[#6b5b7e]`}>
+                 <CardElement 
+                 options={CARD_ELEMENT_OPTIONS} 
+                 onChange={handleCardChange}
+                 />
+             </div>
+             {cardError && (
+                 <p className="text-xs text-red-600 mt-1">{cardError}</p>
+             )}
+           </div>
          </div>
-       )}
+       </div>
  
        {error && (
          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -410,10 +371,10 @@ const PaymentSetupForm = ({ onSuccess, onCancel, autopayOnly = false, customerId
          </button>
          <button
            type="submit"
-           disabled={!stripe || isProcessing || !cardComplete || !cardholderName || !email}
+           disabled={!stripe || isProcessing || !cardComplete || !cardholderName}
            className="flex-1 bg-[#6b5b7e] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#5a4a6d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
          >
-           {isProcessing ? 'Processing...' : (autopayOnly ? 'Save & Enable Autopay' : 'Save Card')}
+           {isProcessing ? 'Processing...' : 'Save Card'}
          </button>
        </div>
      </form>
