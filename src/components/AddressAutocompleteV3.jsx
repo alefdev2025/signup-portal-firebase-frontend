@@ -1,6 +1,7 @@
 // File: components/AddressAutocompleteV3.jsx
 // NO BULLSHIT - Just a working Google Places autocomplete
 import React, { useState, useEffect, useRef } from 'react';
+import { LabelWithIcon } from './signup/ContactFormFields';
 
 const AddressAutocompleteV3 = ({
   id,
@@ -196,11 +197,7 @@ const AddressAutocompleteV3 = ({
 
   return (
     <div className="w-full">
-      <div className="mb-1">
-        <span className="block text-gray-800 text-lg md:text-xl font-medium mb-3">
-          {label} {required && <span className="text-red-500">*</span>}
-        </span>
-      </div>
+<LabelWithIcon label={label} required={required} />
       
       <div className="relative">
         <input

@@ -2,10 +2,10 @@
 import React from 'react';
 import { countries } from '../utils/contactCountryConfig';
 
-// Custom styles for input labels
+// Custom styles for input labels - UPDATED WITH SMALLER TEXT
 export const LabelWithIcon = ({ label, required = false }) => (
   <div className="mb-1">
-    <span className="block text-gray-800 text-lg md:text-xl font-medium mb-3">{label} {required && '*'}</span>
+    <span className="block text-gray-800 text-base md:text-sm font-medium mb-2">{label} {required && '*'}</span>
   </div>
 );
 

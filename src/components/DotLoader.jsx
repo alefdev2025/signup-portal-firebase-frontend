@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Elegant pulse loader with purple tones for portal-wide use
@@ -90,6 +90,31 @@ export const CenteredLoader = ({ message = "Loading...", size = "md", color = "p
       <DotLoader size={size} color={color} message={message} />
     </div>
   </div>
+);
+
+
+// Delayed loader wrapper
+export const DelayedLoader = ({ delay = 5000, children, ...props }) => {
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoader(true);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  if (!showLoader) return null;
+  
+  return children || <CenteredLoader {...props} />;
+};
+
+// Update CenteredLoader to use delayed version
+export const DelayedCenteredLoader = ({ delay = 5000, ...props }) => (
+  <DelayedLoader delay={delay}>
+    <CenteredLoader {...props} />
+  </DelayedLoader>
 );
 
 // Demo component

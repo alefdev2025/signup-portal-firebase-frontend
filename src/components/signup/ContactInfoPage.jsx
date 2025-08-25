@@ -10,6 +10,12 @@ import { saveContactInfo, getContactInfo } from "../../services/contact";
 // Services
 import { addressValidationService } from "../../services/addressValidation";
 
+import PrimaryButton from './PrimaryButton';
+import SecondaryButton from './SecondaryButton';
+import { DelayedCenteredLoader } from '../../components/DotLoader';
+
+import IconBox from "./IconBox";
+
 // Components
 import AddressAutocompleteV3 from "../AddressAutocompleteV3";
 import HelpPanel from "./HelpPanel";
@@ -60,10 +66,6 @@ const contactInfoHelpContent = [
   {
     title: "Address Information",
     content: "Your residential address is required. We validate addresses to ensure accurate shipping. If you receive mail at a different location, select 'No' for 'Same Mailing Address'."
-  },
-  {
-    title: "Address Validation",
-    content: "When you click Continue, we'll validate your address using PostGrid to ensure it's deliverable. Any corrections will be applied automatically."
   },
   {
     title: "Phone Numbers",
@@ -133,6 +135,8 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
   const isCountyRequired = isCountyRequiredForCountry(formData.country, countryConfig);
   const isMailingCountyRequired = isCountyRequiredForCountry(formData.mailingCountry, mailingCountryConfig);
 
+  const [animationComplete, setAnimationComplete] = useState(false);
+
   // Toggle help panel
   const toggleHelpInfo = () => {
     setShowHelpInfo(prev => !prev);
@@ -178,7 +182,6 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     };
   }, []);
 
-  // Detect Safari browser and apply styles on initial render
   useEffect(() => {
     setIsSafariBrowser(isSafari());
     
@@ -186,9 +189,32 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
     
     const styleElement = applyContactFormStyles();
     
-    // Add custom styles for smaller fields
+    // Add custom styles for smaller fields AND Helvetica font
     const customStyles = document.createElement('style');
     customStyles.innerHTML = `
+      /* Helvetica font styling for entire form */
+      .contact-info-form * {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        font-weight: 300 !important;
+      }
+      .contact-info-form .font-bold {
+        font-weight: 700 !important;
+      }
+      .contact-info-form .font-semibold {
+        font-weight: 600 !important;
+      }
+      .contact-info-form .font-medium {
+        font-weight: 500 !important;
+      }
+      .contact-info-form h1 {
+        font-weight: 300 !important;
+      }
+      .contact-info-form h2,
+      .contact-info-form h3,
+      .contact-info-form h4 {
+        font-weight: 500 !important;
+      }
+      
       /* Reduce input field padding and height */
       .contact-info-form input[type="text"],
       .contact-info-form input[type="email"],
@@ -317,7 +343,11 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
         setFormData(createInitialFormData());
       } finally {
         setIsLoading(false);
-      }
+        // Trigger animations after loading
+        setTimeout(() => {
+          setAnimationComplete(true);
+        }, 100);
+      }      
     };
     
     loadDataFromBackend();
@@ -651,10 +681,13 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
-        <p className="ml-4 text-xl text-gray-700">Loading your information...</p>
-      </div>
+      <DelayedCenteredLoader 
+          message="Loading your information..." 
+          size="md" 
+          color="primary" 
+          minHeight="200px"
+          delay={5000}  // 5 seconds
+        />
     );
   }
 
@@ -695,22 +728,33 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 {/* Container that uses 80% of viewport width on desktop, full width on mobile */}
 <div className="w-full mx-auto px-5 sm:px-6 lg:px-8 lg:max-w-[80%]">
   <form onSubmit={handleSubmit} className="w-full contact-info-form" autoComplete="on">
-    {/* Personal Information */}
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
-      <div className="p-6 md:p-9">
-        <div className="mb-8 md:mb-9 flex items-start">
-          <div className="bg-[#775684] p-2.5 md:p-3.5 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+
+      {/* Personal Information */}
+      <div 
+        className={`bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full ${
+          animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}
+        style={{
+          transition: 'all 0.5s ease-in-out',
+          transitionDelay: '0ms',
+          transform: animationComplete ? 'translateY(0)' : 'translateY(2rem)',
+          opacity: animationComplete ? 1 : 0
+        }}
+      >
+        <div className="p-6 md:p-9">
+          <div className="mb-8 md:mb-9 flex items-start">
+            <IconBox>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </IconBox>
+            <div className="ml-4 pt-0.5">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-800">Personal Information</h2>
+              <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
+                Please provide your personal details for your member file.
+              </p>
+            </div>
           </div>
-          <div className="ml-4 pt-0.5">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Personal Information</h2>
-            <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
-              Please provide your personal details for your member file.
-            </p>
-          </div>
-        </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 pb-6">
                 <div>
@@ -872,15 +916,15 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
 <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
   <div className="p-6 md:p-9">
     <div className="mb-8 md:mb-9 flex items-start">
-      <div className="bg-[#775684] p-2.5 md:p-3.5 rounded-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      </div>
+    <IconBox>
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+</IconBox>
       <div className="ml-4 pt-0.5">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Address Information</h2>
-        <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800">Address Information</h2>
+        <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
           Start typing to search with Google Places. Addresses will be validated when you continue.
         </p>
       </div>
@@ -1009,14 +1053,14 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
               {showMailingAddress && (
                 <div className="mt-9 pt-8 border-t border-gray-200">
                   <div className="mb-8 flex items-start">
-                    <div className="bg-[#775684] p-2.5 md:p-3 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-6 md:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
+                  <IconBox>
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+</IconBox>
                     <div className="ml-4 pt-0.5">
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-800">Mailing Address</h3>
-                      <p className="text-sm md:text-sm text-gray-500 italic font-light mt-0.5">
+                      <h3 className="text-base md:text-lg font-semibold text-gray-800">Mailing Address</h3>
+                      <p className="text-xs md:text-sm text-gray-500 italic font-light mt-0.5">
                         Please provide the address where you would like to receive mail.
                       </p>
                     </div>
@@ -1128,40 +1172,23 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           
           {/* Navigation buttons */}
           <div className="flex justify-between mt-8 mb-6 w-full">
-            <button
-              type="button"
+            <SecondaryButton
               onClick={handleBack}
-              className="py-4 px-7 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm"
               disabled={isSubmitting}
+              showArrow={true}
+              arrowDirection="left"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
               Back
-            </button>
+            </SecondaryButton>
             
-            <button 
+            <PrimaryButton
               type="submit"
               disabled={isSubmitting}
-              className="py-4 px-7 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg bg-[#775684] text-white hover:bg-[#664573] disabled:opacity-70"
+              isLoading={isSubmitting}
+              loadingText={isValidatingAddresses ? 'Validating Addresses...' : 'Processing...'}
             >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isValidatingAddresses ? 'Validating Addresses...' : 'Processing...'}
-                </>
-              ) : (
-                <>
-                  Continue
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </>
-              )}
-            </button>
+              Continue
+            </PrimaryButton>
           </div>
         </form>
       </div>

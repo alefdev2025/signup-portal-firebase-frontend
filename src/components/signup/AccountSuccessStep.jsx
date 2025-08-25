@@ -1,5 +1,5 @@
 // File: pages/signup/AccountSuccessStep.jsx - FIXED VERSION
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSignupFlow } from '../../contexts/SignupFlowContext';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../services/firebase";
@@ -13,6 +13,50 @@ const AccountSuccessStep = () => {
   const { currentUser } = useUser();  // Removed refreshUserProgress
   const [loading, setLoading] = useState(true);
   const [isReady, setIsReady] = useState(false);
+  const styleRef = useRef(null);
+  
+  // Add Helvetica font styling - only once on mount
+  useEffect(() => {
+    // Check if style already exists to prevent duplicates
+    if (!styleRef.current) {
+      const style = document.createElement('style');
+      style.setAttribute('data-component', 'account-success-step');
+      style.innerHTML = `
+        .account-success-step * {
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+          font-weight: 300 !important;
+        }
+        .account-success-step .font-bold,
+        .account-success-step .font-semibold {
+          font-weight: 500 !important;
+        }
+        .account-success-step .font-bold {
+          font-weight: 700 !important;
+        }
+        .account-success-step h1 {
+          font-weight: 300 !important;
+        }
+        .account-success-step h2,
+        .account-success-step h3,
+        .account-success-step h4 {
+          font-weight: 400 !important;
+        }
+        .account-success-step .font-medium {
+          font-weight: 400 !important;
+        }
+      `;
+      document.head.appendChild(style);
+      styleRef.current = style;
+    }
+    
+    return () => {
+      // Clean up on unmount
+      if (styleRef.current && document.head.contains(styleRef.current)) {
+        document.head.removeChild(styleRef.current);
+        styleRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array - only run once
   
   // Add debugging
   useEffect(() => {
@@ -109,13 +153,17 @@ const AccountSuccessStep = () => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="account-success-step flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
       </div>
     );
   }
   
-  return <AccountCreationSuccess currentUser={currentUser} onNext={handleContinue} />;
+  return (
+    <div className="account-success-step">
+      <AccountCreationSuccess currentUser={currentUser} onNext={handleContinue} />
+    </div>
+  );
 };
 
 export default AccountSuccessStep;

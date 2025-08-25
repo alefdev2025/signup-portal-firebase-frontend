@@ -251,13 +251,13 @@ const ResponsiveBanner = ({
   };
 
   const getLogoSizeClass = () => {
-    if (isSignupPage || isLoginPage) return "h-16 md:h-20";
-    if (isWelcomePage) return "h-12 md:h-16";
-    return "h-16 md:h-20";
+    if (isSignupPage || isLoginPage) return "h-16 md:h-16";
+    if (isWelcomePage) return "h-12 md:h-14";
+    return "h-16 md:h-16";
   };
 
   const getTopPaddingClass = () => {
-    return "pt-8 md:pt-14";
+    return "pt-8 md:pt-10";
   };
   
   const logoPositioningClass = getLogoPositioningClass();
@@ -272,18 +272,18 @@ const ResponsiveBanner = ({
   const activeProgressDot = getProgressIndexFromStep(activeStep);
 
   // Changed from Marcellus to Helvetica
-  const helveticaStyle = {
-    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  const interStyle = {
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
   };
 
   return (
-    <div className="banner-container" style={helveticaStyle}>
+    <div className="banner-container" style={interStyle}>
       {/* Mobile Banner */}
       <div className="md:hidden">
         <div 
           className={`text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'pt-6 pb-16' : 'pt-6 pb-16'} relative overflow-hidden`}
           style={{
-            ...helveticaStyle,
+            ...interStyle,
             ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
           }}
         >
@@ -300,7 +300,7 @@ const ResponsiveBanner = ({
           </div>
 
           {/* Heading section stays in normal flow */}
-          <div className="flex items-center justify-end pt-8 pr-4" style={{ position: 'relative', zIndex: 2 }}>
+          <div className="flex items-center justify-end pt-8" style={{ position: 'relative', zIndex: 2 }}>
             <h1 className="flex items-center">
               {/* Changed from text-xl to text-lg for smaller mobile heading */}
               <span className="text-lg font-normal">
@@ -316,7 +316,7 @@ const ResponsiveBanner = ({
       <div 
         className="hidden md:block"
         style={{
-          ...helveticaStyle,
+          ...interStyle,
           ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
         }}
       >
@@ -341,14 +341,14 @@ const ResponsiveBanner = ({
           <div className={`${alignmentClasses.containerClass} max-w-4xl ${alignmentClasses.subtextClass}`}>
             <h1 className={`flex items-center ${alignmentClasses.headingClass}`}>
               {/* Changed from text-4xl/5xl to text-3xl/4xl and from font-bold to font-normal */}
-              <span className={`${isWelcomePage ? "text-3xl md:text-4xl font-normal" : "text-3xl md:text-4xl font-normal"} min-w-max`}>
+              <span className={`${isWelcomePage ? "text-3xl md:text-[2rem] font-normal" : "text-3xl md:text-[2rem] font-normal"} min-w-max`}>
                 {displayHeading}
               </span>
               {/* Adjusted star size from h-9 to h-7 to match smaller heading */}
               {showStar && <img src={yellowStar} alt="" className="h-7 ml-1" />}
             </h1>
             {/* Changed from text-xl/2xl to text-lg/xl with font-light */}
-            <p className={`text-lg md:text-xl mt-4 text-white/90 font-light ${alignmentClasses.subtextClass}`}>
+            <p className={`text-lg md:text-lg mt-4 text-white/90 font-light ${alignmentClasses.subtextClass}`}>
               {displaySubText}
             </p>
           </div>

@@ -1,9 +1,12 @@
-// File: pages/PackagePage.jsx - FIXED VERSION
+// File: pages/PackagePage.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getMembershipCost } from "../../services/pricing";
 import HelpPanel from "./HelpPanel";
 import { savePackageInfo, getPackageInfo } from "../../services/package";
 import { getContactInfo } from "../../services/contact";
+import PrimaryButton from './PrimaryButton';
+import SecondaryButton from './SecondaryButton';
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 import {
   planOptions,
   packageHelpContent,
@@ -40,6 +43,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   });
   // Add animation states
   const [contentLoaded, setContentLoaded] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   // Toggle help panel
   const toggleHelpInfo = () => {
@@ -198,9 +202,9 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         setError("Failed to load pricing information");
       } finally {
         setIsLoading(false);
-        // Set content loaded state after data is fetched
+        // Set animation to start once loading is complete
         setTimeout(() => {
-          setContentLoaded(true);
+          setAnimationComplete(true);
         }, 100);
       }
     }
@@ -398,13 +402,39 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   // Show loading indicator
   if (isLoading || userCountry === null) {
     console.log("⏳ PackagePage: Showing loading component");
-    return <LoadingComponent USE_UPDATED_VERSION={false} />;
+    return (
+      <DelayedCenteredLoader 
+        message="Loading pricing information..." 
+        size="md" 
+        color="primary" 
+        minHeight="256px"
+        delay={5000}
+      />
+    );
   }
   
   // Show error message
   if (error) {
     console.log("❌ PackagePage: Showing error component:", error);
-    return <ErrorComponent error={error} USE_UPDATED_VERSION={false} />;
+    return (
+      <div className="flex justify-center pt-8 bg-gray-100 min-h-screen">
+        <div className="text-center py-3 px-8 bg-white rounded-lg shadow-md max-w-md">
+          <div className="text-red-600 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#775684] text-white py-1.5 px-5 rounded-full hover:bg-[#664573] transition-colors text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
   
   console.log("🎨 PackagePage: Rendering component with state:");
@@ -431,14 +461,14 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   };
 
   // Create a unified component that includes both mobile and desktop views
-  const OriginalVersionOptionCard = ({ option }) => {
+  const OriginalVersionOptionCard = ({ option, index }) => {
     const planOption = planOptions[option];
+    const delayClass = index === 0 ? 'delay-150' : index === 1 ? 'delay-300' : 'delay-450';
     
     return (
       <div 
         onClick={() => selectOption(option)} 
-        className="cursor-pointer h-full" 
-        style={{...fadeInStyle, ...getAnimationDelay(option === "neuro" ? 0 : option === "wholebody" ? 1 : 2)}}
+        className={`cursor-pointer h-full ${animationComplete ? `animate-slide-up ${delayClass}` : 'opacity-0'}`}
       >
         <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01] h-full flex flex-col`}>
           {/* Mobile View */}
@@ -447,8 +477,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
               option={option}
               selectedOption={selectedOption}
               selectOption={selectOption}
-              fadeInStyle={fadeInStyle}
-              getAnimationDelay={getAnimationDelay}
+              fadeInStyle={{opacity: 1}}
+              getAnimationDelay={() => ({})}
               calculatePreservationEstimate={calculatePreservationEstimate}
               getPackagePrice={getPackagePrice}
               planOption={planOption}
@@ -461,8 +491,8 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
             option={option}
             selectedOption={selectedOption}
             selectOption={selectOption}
-            fadeInStyle={fadeInStyle}
-            getAnimationDelay={getAnimationDelay}
+            fadeInStyle={{opacity: 1}}
+            getAnimationDelay={() => ({})}
             calculatePreservationEstimate={calculatePreservationEstimate}
             getPackagePrice={getPackagePrice}
             planOption={planOption}
@@ -488,13 +518,13 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           {/* ORIGINAL VERSION Layout (always used) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-8 sm:px-12 md:px-0">
             {/* NEURO OPTION */}
-            <OriginalVersionOptionCard option="neuro" />
+            <OriginalVersionOptionCard option="neuro" index={0} />
             
             {/* WHOLE BODY OPTION */}
-            <OriginalVersionOptionCard option="wholebody" />
+            <OriginalVersionOptionCard option="wholebody" index={1} />
             
             {/* BASIC OPTION */}
-            <OriginalVersionOptionCard option="basic" />
+            <OriginalVersionOptionCard option="basic" index={2} />
           </div>
           
           {/* Mobile Selection Summary Section - only visible on mobile */}
@@ -582,54 +612,41 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           </div>
           
           {/* Important Information Section */}
-          <ImportantInformation 
-            membershipAge={membershipAge}
-            fadeInStyle={fadeInStyle}
-            getAnimationDelay={getAnimationDelay}
-            USE_UPDATED_VERSION={false}
-            showSurcharges={true}
-          />
+          <div className={`px-8 sm:px-12 md:px-0 transform transition-all duration-700 ease-in-out ${
+            animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`} style={{ transitionDelay: '750ms' }}>
+            <ImportantInformation 
+              membershipAge={membershipAge}
+              fadeInStyle={{opacity: 1}}
+              getAnimationDelay={() => ({})}
+              USE_UPDATED_VERSION={false}
+              showSurcharges={true}
+            />
+          </div>
         </div>
         
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-8 mb-6 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
-          <button
-            type="button"
+        <div className={`flex justify-between mt-8 mb-6 w-full transition-all duration-700 ease-in-out transform ${
+          animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`} style={{ transitionDelay: '900ms' }}>
+          <SecondaryButton
             onClick={handleBackClick}
-            className="py-4 px-8 border border-gray-300 rounded-full text-gray-700 font-medium text-lg flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
             disabled={isSubmitting || !isParentReady}
+            showArrow={true}
+            arrowDirection="left"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
             Back
-          </button>
+          </SecondaryButton>
           
-          <button 
+          <PrimaryButton
             type="button"
             onClick={handleNext}
-            disabled={isSubmitting || isLoading || !selectedOption || !isParentReady}
-            className={`py-4 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] ${
-              selectedOption && isParentReady ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            } disabled:opacity-70`}
+            disabled={isSubmitting || !selectedOption || !isParentReady}
+            isLoading={isSubmitting}
+            loadingText="Processing..."
           >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                Continue
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </>
-            )}
-          </button>
+            Continue
+          </PrimaryButton>
         </div>
       </div>
       
@@ -642,6 +659,32 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       
       {/* Global Styles */}
       <GlobalStyles />
+      
+      {/* Animation styles that will definitely work */}
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(2rem);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slideUp 0.5s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .delay-150 { animation-delay: 150ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-450 { animation-delay: 450ms; }
+        .delay-600 { animation-delay: 600ms; }
+        .delay-750 { animation-delay: 750ms; }
+        .delay-900 { animation-delay: 900ms; }
+      `}</style>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSignupFlow } from '../contexts/SignupFlowContext';
 import { useUser } from "../contexts/UserContext";
+import { DelayedCenteredLoader } from '../components/DotLoader';
 
 // Import step components
 import AccountCreationStep from "../components/signup/AccountCreationStep";
@@ -178,13 +179,14 @@ const getStepProps = () => {
         <div className="flex-1 overflow-auto">
           {/* Show loading spinner if not ready */}
           {(isLoading || !authResolved) ? (
-            <div className="min-h-96 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74] mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading...</p>
-              </div>
-            </div>
-          ) : (
+              <DelayedCenteredLoader 
+                message="Loading..." 
+                size="md" 
+                color="primary" 
+                minHeight="384px"
+                delay={5000}
+              />
+            ) : (
             /* Render step component */
             <div 
               className={`w-full transition-all duration-300 ${
@@ -221,19 +223,20 @@ const getStepProps = () => {
           
           {/* Show loading spinner if not ready */}
           {(isLoading || !authResolved) ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74] mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading...</p>
-              </div>
-            </div>
-          ) : (
+              <DelayedCenteredLoader 
+                message="Loading..." 
+                size="md" 
+                color="primary" 
+                minHeight="384px"
+                delay={5000}
+              />
+            ) : (
             /* Content container with smooth transition */
-            <div 
-              className={`transition-all duration-300 ${
-                isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-              }`}
-            >
+              <div 
+                className={`transition-opacity duration-300 ${
+                  isTransitioning ? 'opacity-50' : 'opacity-100'
+                }`}
+              >
               {/* Render current step component with key for clean transitions */}
               <div key={`step-${currentStepIndex}`}>
                 <StepComponent {...getStepProps()} />

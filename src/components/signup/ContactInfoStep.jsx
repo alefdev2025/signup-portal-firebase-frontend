@@ -4,6 +4,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useSignupFlow } from "../../contexts/SignupFlowContext";
 import { getUserProgressAPI, updateSignupProgressAPI } from "../../services/auth";
 import { getStepFormData, saveFormData } from "../../services/storage";
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 
 import ContactInfoPage from "./ContactInfoPage";
 
@@ -127,10 +128,13 @@ const ContactInfoStep = () => {
   // Show loading spinner while initializing
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#6f2d74]"></div>
-        <p className="ml-4 text-xl text-gray-700">Loading your information...</p>
-      </div>
+      <DelayedCenteredLoader 
+        message="Loading your information..." 
+        size="md" 
+        color="primary" 
+        minHeight="256px"
+        delay={5000}
+      />
     );
   }
   
