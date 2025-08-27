@@ -43,7 +43,57 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   });
   // Add animation states
   const [contentLoaded, setContentLoaded] = useState(false);
-  const [animationComplete, setAnimationComplete] = useState(false);
+  const [showCards, setShowCards] = useState(false);
+  
+  // Add the animation styles to the document once
+  useEffect(() => {
+    const styleId = 'package-page-animations';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes packageSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(2rem);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .package-cards-container.show-animation > div:first-child {
+          animation: packageSlideUp 0.5s ease-out 150ms both;
+        }
+        
+        .package-cards-container.show-animation > div:nth-child(2) {
+          animation: packageSlideUp 0.5s ease-out 300ms both;
+        }
+        
+        .package-cards-container.show-animation > div:nth-child(3) {
+          animation: packageSlideUp 0.5s ease-out 450ms both;
+        }
+        
+        .package-cards-container > div {
+          opacity: 0;
+        }
+        
+        .package-cards-container.show-animation > div {
+          opacity: 1;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    return () => {
+      // Cleanup on unmount
+      const style = document.getElementById(styleId);
+      if (style) {
+        style.remove();
+      }
+    };
+  }, []);
 
   // Toggle help panel
   const toggleHelpInfo = () => {
@@ -204,7 +254,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         setIsLoading(false);
         // Set animation to start once loading is complete
         setTimeout(() => {
-          setAnimationComplete(true);
+          setShowCards(true);
         }, 100);
       }
     }
@@ -463,12 +513,17 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
   // Create a unified component that includes both mobile and desktop views
   const OriginalVersionOptionCard = ({ option, index }) => {
     const planOption = planOptions[option];
-    const delayClass = index === 0 ? 'delay-150' : index === 1 ? 'delay-300' : 'delay-450';
+    const animationDelay = 150 + (index * 150);
     
     return (
       <div 
         onClick={() => selectOption(option)} 
-        className={`cursor-pointer h-full ${animationComplete ? `animate-slide-up ${delayClass}` : 'opacity-0'}`}
+        className={`cursor-pointer h-full transition-all duration-500 ease-in-out transform ${
+          showCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}
+        style={{
+          transitionDelay: `${animationDelay}ms`
+        }}
       >
         <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ${selectedOption === option ? "ring-2 ring-[#775684]" : ""} transition-all duration-300 hover:shadow-lg transform hover:scale-[1.01] h-full flex flex-col`}>
           {/* Mobile View */}
@@ -513,10 +568,10 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       animation: "fadeIn 0.5s forwards 0.1s"
     }}>
       {/* Main container */}
-      <div className="w-full mx-auto px-4 sm:px-8 py-8" style={{ maxWidth: "1200px" }}>
-        <div className="mb-8">
+      <div className="w-full mx-auto px-4 sm:px-8 py-8" style={{ maxWidth: "1100px" }}>
+        <div className="mb-4 sm:mb-6 md:mb-8">
           {/* ORIGINAL VERSION Layout (always used) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-8 sm:px-12 md:px-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 px-8 sm:px-12 md:px-0">
             {/* NEURO OPTION */}
             <OriginalVersionOptionCard option="neuro" index={0} />
             
@@ -528,7 +583,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           </div>
           
           {/* Mobile Selection Summary Section - only visible on mobile */}
-          <div className="mt-8 p-5 bg-white rounded-lg border border-gray-200 shadow-sm md:hidden mx-8 sm:mx-12 md:mx-0 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(3)}}>
+          <div className="mt-4 p-5 bg-white rounded-lg border border-gray-200 shadow-sm md:hidden mx-8 sm:mx-12 md:mx-0 transform transition-all duration-500" style={{...fadeInStyle, ...getAnimationDelay(3)}}>
             <div className="flex flex-col">
               <h4 className="text-gray-800 font-bold text-xl mb-3">Your Selection</h4>
               
@@ -613,7 +668,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
           
           {/* Important Information Section */}
           <div className={`px-8 sm:px-12 md:px-0 transform transition-all duration-700 ease-in-out ${
-            animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            showCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`} style={{ transitionDelay: '750ms' }}>
             <ImportantInformation 
               membershipAge={membershipAge}
@@ -627,7 +682,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         
         {/* Navigation buttons */}
         <div className={`flex justify-between mt-8 mb-6 w-full transition-all duration-700 ease-in-out transform ${
-          animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          showCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`} style={{ transitionDelay: '900ms' }}>
           <SecondaryButton
             onClick={handleBackClick}
@@ -660,30 +715,70 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
       {/* Global Styles */}
       <GlobalStyles />
       
-      {/* Animation styles that will definitely work */}
-      <style jsx>{`
-        @keyframes slideUp {
+      {/* Global animation styles like FundingPage */}
+      <style jsx global>{`
+        .transition-all {
+          transition-property: all;
+        }
+        .duration-200 {
+          transition-duration: 200ms;
+        }
+        .duration-300 {
+          transition-duration: 300ms;
+        }
+        .duration-500 {
+          transition-duration: 500ms;
+        }
+        .duration-700 {
+          transition-duration: 700ms;
+        }
+        .ease-in-out {
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .delay-150 {
+          transition-delay: 150ms;
+        }
+        .delay-300 {
+          transition-delay: 300ms;
+        }
+        .delay-450 {
+          transition-delay: 450ms;
+        }
+        .delay-600 {
+          transition-delay: 600ms;
+        }
+        .delay-750 {
+          transition-delay: 750ms;
+        }
+        .delay-900 {
+          transition-delay: 900ms;
+        }
+        .opacity-0 {
+          opacity: 0;
+        }
+        .opacity-100 {
+          opacity: 1;
+        }
+        .translate-y-0 {
+          transform: translateY(0);
+        }
+        .translate-y-4 {
+          transform: translateY(1rem);
+        }
+        .translate-y-8 {
+          transform: translateY(2rem);
+        }
+        .transform {
+          transform-origin: center;
+        }
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(2rem);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
           }
         }
-        
-        .animate-slide-up {
-          animation: slideUp 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        
-        .delay-150 { animation-delay: 150ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .delay-450 { animation-delay: 450ms; }
-        .delay-600 { animation-delay: 600ms; }
-        .delay-750 { animation-delay: 750ms; }
-        .delay-900 { animation-delay: 900ms; }
       `}</style>
     </div>
   );

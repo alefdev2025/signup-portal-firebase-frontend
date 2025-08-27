@@ -19,7 +19,10 @@ const DOCUMENT_NAMES = {
 export default function MembershipDocuSign({ 
   documentType,
   onBack,
-  onComplete 
+  onComplete,
+  membershipData,
+  packageData,
+  contactData 
 }) {
   const { user } = useUser();
   const iframeRef = useRef(null);
@@ -36,6 +39,9 @@ export default function MembershipDocuSign({
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [currentDocument, setCurrentDocument] = useState(documentType);
+
+  console.log('MembershipDocuSign props:', { contactData, documentType });
+  console.log('contactData.uid:', contactData?.uid);
   
   // Constants
   const MAX_RETRY_ATTEMPTS = 3;
@@ -53,9 +59,9 @@ export default function MembershipDocuSign({
   ];
   
   // Apply Marcellus font
-  const marcellusStyle = {
-    fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
-    fontSize: "1.05rem"
+  const helveticaStyle = {
+    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    fontSize: "1rem"  // Adjust size as needed
   };
 
   // Cleanup function
@@ -289,9 +295,9 @@ export default function MembershipDocuSign({
       // CRITICAL: Map ONLY from readyForDocuSign data - NO FALLBACKS
       const docuSignData = {
         // User ID for backend
-        userId: user?.uid || '',
-        uid: user?.uid || '',
-        firebaseUid: user?.uid || '',
+        userId: user?.uid || contactData?.uid || '',
+        uid: user?.uid || contactData?.uid || '',
+        firebaseUid: user?.uid || contactData?.uid || '',
 
         // Personal Information - ONLY from backend
         firstName: readyForDocuSignData.personalInfo?.firstName || '',
@@ -643,7 +649,7 @@ export default function MembershipDocuSign({
 
   if (error) {
     return (
-      <div className="w-screen h-screen fixed inset-0 bg-white flex items-center justify-center" style={marcellusStyle}>
+      <div className="w-screen h-screen fixed inset-0 bg-white flex items-center justify-center" style={helveticaStyle}>
         <div className="bg-white rounded-xl shadow-lg p-8 text-center">
           <div className="bg-red-500 rounded-full p-4 w-fit mx-auto mb-6">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -717,7 +723,7 @@ export default function MembershipDocuSign({
         flexDirection: 'column',
         overflow: 'hidden',
         zIndex: 999999,
-        ...marcellusStyle
+        ...helveticaStyle
       }}
     >
       {/* Headers remain the same */}

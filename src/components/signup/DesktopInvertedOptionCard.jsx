@@ -164,7 +164,7 @@ export const DesktopInvertedOptionCard = ({
               <>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                  <span>Member Events & Resources</span>
+                  <span>Member Events</span>
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />

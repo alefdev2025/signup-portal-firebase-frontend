@@ -8,6 +8,9 @@ import fundingService from "../../services/funding";
 import { getMembershipCost } from "../../services/pricing";
 import astronautLaunch from "../../assets/images/astronaut-launch.png";
 import { PageLoader, InlineLoader } from "../DotLoader";
+import PrimaryButton from '../signup/PrimaryButton';
+import SecondaryButton from '../signup/SecondaryButton';
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 
 export default function MembershipSummary({ 
   membershipData, 
@@ -253,41 +256,30 @@ export default function MembershipSummary({
 
   // Calculate local costs based on current selections
   const calculateLocalCosts = () => {
-    console.log("💵 === CALCULATE LOCAL COSTS DEBUG START ===");
-    
     const annualCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost || 540;
     const hasIceDiscount = localIceCodeValid === true;
-    
-    console.log("📊 Initial values:");
-    console.log("   - Annual cost:", annualCost);
-    console.log("   - Has ICE discount:", hasIceDiscount);
-    console.log("   - localIceCodeValid:", localIceCodeValid);
-    console.log("   - localIceDiscountPercent:", localIceDiscountPercent, "(type:", typeof localIceDiscountPercent, ")");
     
     const discountPercent = localIceDiscountPercent || 
                            summaryData?.membershipData?.iceCodeInfo?.discountPercent || 
                            (hasIceDiscount ? 25 : 0);
     
-    console.log("🎯 Discount calculation:");
-    console.log("   - Final discountPercent:", discountPercent, "(type:", typeof discountPercent, ")");
-    
     const discountAmount = hasIceDiscount ? Math.round(annualCost * (discountPercent / 100)) : 0;
-    
-    console.log("   - Final discountAmount:", discountAmount);
     
     const isBasicMembership = summaryData?.packageData?.preservationType === 'basic' || packageData?.preservationType === 'basic';
     const applicationFee = isBasicMembership ? 0 : 300;
-    const cmsAnnualFee = cmsWaiver ? 200 : 0;
+    // Remove CMS from today's payment
+    const cmsAnnualFee = 0; // Never charged today
     
     let paymentAmount = annualCost;
-    let firstPaymentAmount = hasIceDiscount ? annualCost - discountAmount + applicationFee + cmsAnnualFee : annualCost + applicationFee + cmsAnnualFee;
     
-    console.log("💰 Final calculations:");
-    console.log("   - Payment amount:", paymentAmount);
-    console.log("   - Application fee:", applicationFee);
-    console.log("   - First payment amount:", firstPaymentAmount);
-    
-    console.log("💵 === CALCULATE LOCAL COSTS DEBUG END ===");
+    // Basic members: pay annual membership (with possible ICE discount)
+    // Non-basic members: pay only application fee
+    let firstPaymentAmount;
+    if (isBasicMembership) {
+        firstPaymentAmount = annualCost - discountAmount;
+    } else {
+        firstPaymentAmount = applicationFee; // Only application fee today
+    }
     
     return {
       paymentAmount,
@@ -486,9 +478,13 @@ export default function MembershipSummary({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <PageLoader size="lg" color="primary" message="Loading your membership summary..." />
-      </div>
+      <DelayedCenteredLoader 
+        message="Loading your membership summary..." 
+        size="md" 
+        color="primary" 
+        minHeight="200px"
+        delay={500}
+      />
     );
   }
 
@@ -524,20 +520,16 @@ export default function MembershipSummary({
             )}
 
             {/* Contact Information Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-              <div className="mb-8 flex items-start pt-4">
-                <div className="p-3 rounded-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                       style={{
-                         backgroundSize: '400% 100%',
-                         backgroundPosition: '0% 50%'
-                       }}></div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-2">
-                  <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Contact Information</h2>
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Contact Information</h2>
                 </div>
               </div>
               
@@ -619,20 +611,16 @@ export default function MembershipSummary({
             </div>
 
             {/* Package Selection Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-              <div className="mb-8 flex items-start pt-4">
-                <div className="p-3 rounded-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                      style={{
-                        backgroundSize: '400% 100%',
-                        backgroundPosition: '33% 50%'
-                      }}></div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-2">
-                  <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">
                     {data.packageData?.preservationType === 'basic' ? 'Package' : 'Preservation Package'}
                   </h2>
                 </div>
@@ -661,20 +649,16 @@ export default function MembershipSummary({
 
             {/* Funding Details Section - Only show for non-basic packages */}
             {data.packageData?.preservationType !== 'basic' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-                <div className="mb-8 flex items-start pt-4">
-                  <div className="p-3 rounded-lg relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                        style={{
-                          backgroundSize: '400% 100%',
-                          backgroundPosition: '50% 50%'
-                        }}></div>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-4 pt-2">
-                    <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Cryopreservation Funding</h2>
+              <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                   style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Cryopreservation Funding</h2>
                   </div>
                 </div>
                 
@@ -730,20 +714,16 @@ export default function MembershipSummary({
 
             {/* CMS Waiver Section - Only show for cryopreservation members */}
             {data.packageData?.preservationType !== 'basic' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-                <div className="mb-6 flex items-start pt-4">
-                  <div className="p-3 rounded-lg relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                         style={{
-                           backgroundSize: '400% 100%',
-                           backgroundPosition: '75% 50%'
-                         }}></div>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
-                  </div>
-                  <div className="ml-4 pt-2">
-                    <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Comprehensive Member Standby (CMS)</h2>
+              <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                   style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Comprehensive Member Standby (CMS)</h2>
                   </div>
                 </div>
                 
@@ -765,8 +745,10 @@ export default function MembershipSummary({
                       className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
                     />
                     <div className="ml-3">
-                      <span className="text-gray-900 font-medium">Yes, I want to enroll in CMS immediately with the waiver</span>
-                      <p className="text-gray-600 text-sm mt-1">I understand this adds $200 to my annual dues and $20,000 to my funding minimum permanently.</p>
+                      <span className="text-gray-900 font-medium">Waive $200 annual CMS fee by increasing funding minimum by $20,000</span>
+                      <p className="text-gray-600 text-xs mt-1">
+                        Check this to avoid the annual CMS fee. Your preservation funding minimum will be permanently $20,000 higher.
+                      </p>
                     </div>
                   </label>
                 </div>
@@ -774,20 +756,16 @@ export default function MembershipSummary({
             )}
 
             {/* Membership Details Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-              <div className="mb-8 flex items-start pt-4">
-                <div className="p-3 rounded-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                       style={{
-                         backgroundSize: '400% 100%',
-                         backgroundPosition: '66% 50%'
-                       }}></div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-2">
-                  <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Membership Details</h2>
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Membership Details</h2>
                 </div>
               </div>
               
@@ -840,66 +818,90 @@ export default function MembershipSummary({
                 </div>
                 
                 <div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '18px' }}>Payment Summary</p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <p className="text-gray-600 text-sm font-light">Annual Membership</p>
-                        <p className="text-gray-900 text-sm font-light">
-                          {formatCurrency(calculateLocalCosts().paymentAmount)}/yr
-                        </p>
-                      </div>
-                      
-                      {data.packageData?.preservationType !== 'basic' && (
-                        <div className="flex justify-between items-center">
-                          <p className="text-gray-600 text-sm font-light">Application Fee (one-time)</p>
-                          <p className="text-gray-900 text-sm font-light">{formatCurrency(300)}</p>
-                        </div>
-                      )}
-                      
-                      {cmsWaiver && !isBasicMembership && (
-                        <div className="flex justify-between items-center">
-                          <p className="text-gray-600 text-sm font-light">CMS Annual Fee</p>
-                          <p className="text-gray-900 text-sm font-light">{formatCurrency(200)}</p>
-                        </div>
-                      )}
-                      
-                      {localIceCodeValid && (
-                        <div className="flex justify-between items-center">
-                          <p className="text-gray-600 text-sm font-light">ICE Discount ({calculateLocalCosts().discountPercent}%)</p>
-                          <p className="text-[#775684] text-sm font-light">
-                            -{formatCurrency(calculateLocalCosts().discountAmount)}
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <p className="text-gray-900 font-medium">Total Due Today</p>
-                        <p className="text-[#775684] font-semibold text-lg">
-                          {formatCurrency(calculateLocalCosts().firstPaymentAmount)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+  <p className="text-gray-900 font-medium mb-3" style={{ fontSize: '18px' }}>Payment Summary</p>
+  <div className="space-y-2">
+    
+    {/* Application Fee - only for cryo members */}
+    {!isBasicMembership && (
+      <div className="flex justify-between items-center">
+        <p className="text-gray-600 text-sm font-light">Application Fee (one-time)</p>
+        <p className="text-gray-900 text-sm font-light">{formatCurrency(300)}</p>
+      </div>
+    )}
+    
+    {/* CMS Annual Fee - show but not charged today */}
+    {!cmsWaiver && !isBasicMembership && (
+      <>
+        <div className="flex justify-between items-center">
+          <p className="text-gray-400 text-sm font-light">
+            CMS Annual Fee <span className="text-xs">(not due today)</span>
+          </p>
+          <p className="text-gray-400 text-sm font-light">
+            {formatCurrency(200)}/yr
+          </p>
+        </div>
+      </>
+    )}
+    
+    {/* CMS Waiver Note */}
+    {cmsWaiver && !isBasicMembership && (
+      <div className="text-xs text-green-600 italic">
+        ✓ CMS fee waived (funding minimum +$20,000)
+      </div>
+    )}
+    
+    {/* Annual Membership - Show for ALL members */}
+    <div className="flex justify-between items-center">
+      <p className={`text-sm font-light ${!isBasicMembership ? 'text-gray-400' : 'text-gray-600'}`}>
+        Annual Membership {!isBasicMembership && <span className="text-xs">(not due today)</span>}
+      </p>
+      <p className={`text-sm font-light ${!isBasicMembership ? 'text-gray-400' : 'text-gray-900'}`}>
+        {formatCurrency(summaryData?.calculatedCosts?.baseCost || 540)}/yr
+      </p>
+    </div>
+    
+    {/* ICE Discount - only for basic members */}
+    {localIceCodeValid && isBasicMembership && (
+      <div className="flex justify-between items-center">
+        <p className="text-gray-600 text-sm font-light">ICE Discount ({calculateLocalCosts().discountPercent}%)</p>
+        <p className="text-[#775684] text-sm font-light">
+          -{formatCurrency(calculateLocalCosts().discountAmount)}
+        </p>
+      </div>
+    )}
+    
+    {/* Total Due Today */}
+    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+      <p className="text-gray-900 font-medium">Total Due Today</p>
+      <p className="text-[#775684] font-semibold text-lg">
+        {formatCurrency(calculateLocalCosts().firstPaymentAmount)}
+      </p>
+    </div>
+    
+    {/* Note about when fees start */}
+    {!isBasicMembership && (
+      <div className="text-xs text-gray-500 italic pt-1">
+        *Annual dues and fees begin upon completion of cryopreservation contracts
+      </div>
+    )}
+  </div>
+</div>
                 </div>
               </div>
             </div>
             
             {/* Privacy Preferences Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-              <div className="mb-6 flex items-start pt-4">
-                <div className="p-3 rounded-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                       style={{
-                         backgroundSize: '400% 100%',
-                         backgroundPosition: '85% 50%'
-                       }}></div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <div className="ml-4 pt-2">
-                  <h2 className="text-xl font-normal text-[#323053]" style={{ fontSize: '20px' }}>Privacy Preferences</h2>
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8 animate-fadeIn animation-delay-100"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">Privacy Preferences</h2>
                 </div>
               </div>
               
@@ -933,24 +935,25 @@ export default function MembershipSummary({
             </div>
 
             {/* Payment Notice - Clean white background with border */}
-            {data.packageData?.preservationType !== 'basic' && (
-              <div className="bg-white border-2 border-gray-300 rounded-xl p-6 md:p-8 mb-6 relative overflow-hidden">
+            {(
+              <div className="bg-white border-2 border-gray-300 rounded-[1.25rem] p-6 md:p-8 mb-6 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center flex-1">
-                    <div className="p-3 rounded-lg flex-shrink-0 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#885c77] via-[#775684] via-[#5a4a6b] via-[#3d3852] to-[#1a1f3a]" 
-                          style={{
-                            backgroundSize: '400% 100%',
-                            backgroundPosition: '100% 50%'
-                          }}></div>
-                      <svg className="w-8 h-8 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg flex-shrink-0 transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div className="ml-5">
                       <p className="text-gray-800" style={{ fontSize: '18px' }}>
-                        You'll only be charged for your membership {data.packageData?.preservationType !== 'basic' && 'and application fee'} today.
+                        You'll only be charged {isBasicMembership ? 'your annual membership' : 'your application fee'} today.
                       </p>
+                      
+                      {!isBasicMembership && (
+                        <p className="text-gray-700 mt-3 font-light" style={{ fontSize: '16px' }}>
+                          Annual membership dues will begin when you complete your cryopreservation contracts.
+                        </p>
+                      )}
                       
                       {(data.fundingData?.fundingMethod === 'insurance' || data.fundingData?.method === 'insurance') && (
                         <p className="text-gray-700 mt-3 font-light" style={{ fontSize: '16px' }}>
@@ -977,44 +980,28 @@ export default function MembershipSummary({
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={onBack}
-                className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
-                style={{ fontFamily: SYSTEM_FONT }}
                 disabled={isSubmitting}
+                showArrow={true}
+                arrowDirection="left"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
                 Back
-              </button>
-                
-              <button
+              </SecondaryButton>
+              
+              <PrimaryButton
                 onClick={handleShowConfirmation}
                 disabled={isSubmitting}
-                className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
-                  !isSubmitting ? "bg-[#775684] text-white hover:bg-[#664573]" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                } disabled:opacity-70`}
-                style={{ fontFamily: SYSTEM_FONT }}
+                isLoading={isSubmitting}
+                loadingText="Processing..."
+                showArrow={false}
               >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Sign Agreement
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </>
-                )}
-              </button>
+                Sign Agreement
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -1024,72 +1011,73 @@ export default function MembershipSummary({
       {showDocuSignOverlay && createPortal(
         <div 
           onClick={() => setShowDocuSignOverlay(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999999,
-            padding: '0.5rem',
-            fontFamily: SYSTEM_FONT
-          }}
+          className="fixed inset-0 z-[100] overflow-y-auto"
         >
-          <div 
-            className="bg-white rounded-xl shadow-2xl p-7 sm:p-8 mx-2 sm:mx-4 max-w-2xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center">
-              {/* DocuSign Icon */}
-              <div className="mx-auto mb-6 w-16 h-16 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div 
+              className="relative bg-white rounded-2xl w-full max-w-3xl animate-fadeInUp shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+          <div className="px-10 py-6 border-b border-gray-100 relative">
+            <button 
+              onClick={() => setShowDocuSignOverlay(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300" 
+                  style={{
+                    background: 'linear-gradient(135deg, #512BD9 0%, #032CA6 100%)',
+                    border: '1px solid rgba(81, 43, 217, 0.2)',
+                    boxShadow: '0 4px 12px rgba(81, 43, 217, 0.15)'
+                  }}>
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-900">Confirm Your Information</h3>
+              </div>
+            </div>
+          </div>
               
-              {/* Title */}
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5">Confirm Your Information</h3>
-              
-              {/* Important Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="px-10 py-8 bg-white">
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <div className="text-left">
-                    <h4 className="text-sm sm:text-base font-semibold text-blue-800 mb-1.5">Ready to Proceed?</h4>
-                    <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
+                  <div>
+                    <h4 className="text-base font-semibold text-blue-800 mb-1">Ready to Proceed?</h4>
+                    <p className="text-blue-700 text-sm leading-relaxed">
                       Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
                     </p>
                   </div>
                 </div>
               </div>
               
-              {/* SMS Verification Notice */}
-              <div className="text-left bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 mr-2 sm:mr-3 mt-0.5 sm:mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                   <div className="flex-1">
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
-                    <p className="text-gray-700 text-xs sm:text-sm mb-3 leading-relaxed">
+                    <h4 className="text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
+                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">
                       DocuSign will send an SMS verification code to validate your identity for electronic signature.
                     </p>
                     
-                    {/* Phone Number Display/Edit */}
                     <div className="bg-white rounded-lg p-3 border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-gray-600 font-medium text-xs sm:text-sm">SMS will be sent to:</label>
+                        <label className="text-gray-600 font-medium text-sm">SMS will be sent to:</label>
                         <button
                           onClick={() => setIsEditingPhone(!isEditingPhone)}
-                          className="text-[#775684] hover:text-[#664573] font-medium text-xs sm:text-sm"
+                          className="text-[#775684] hover:text-[#664573] font-medium text-sm"
                         >
                           {isEditingPhone ? 'Cancel' : 'Change'}
                         </button>
@@ -1101,18 +1089,18 @@ export default function MembershipSummary({
                             type="tel"
                             value={smsPhoneNumber}
                             onChange={(e) => setSmsPhoneNumber(e.target.value)}
-                            className="flex-1 p-2 border border-gray-300 rounded-md text-sm sm:text-base"
+                            className="flex-1 p-2 border border-gray-300 rounded-md text-base"
                             placeholder="Enter phone number"
                           />
                           <button
                             onClick={() => setIsEditingPhone(false)}
-                            className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-xs sm:text-sm"
+                            className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-sm"
                           >
                             Save
                           </button>
                         </div>
                       ) : (
-                        <p className="text-gray-900 text-base sm:text-lg font-medium">
+                        <p className="text-gray-900 text-lg font-medium">
                           {smsPhoneNumber || 'No phone number provided'}
                         </p>
                       )}
@@ -1120,31 +1108,30 @@ export default function MembershipSummary({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
               
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row justify-center gap-3">
-                {/* Cancel button - hidden on mobile */}
+              <div className="px-10 py-5 border-t border-gray-100 flex justify-end gap-3">
                 <button
                   onClick={() => setShowDocuSignOverlay(false)}
-                  className="hidden sm:block px-6 py-4 border border-gray-300 rounded-full text-gray-700 font-medium text-base hover:bg-gray-50 transition-all duration-300"
+                  className="px-5 py-2 bg-transparent border border-gray-400 text-gray-700 rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300"
                   disabled={isSubmitting}
                 >
                   Cancel
                 </button>
                 
-                {/* Proceed button - full width on mobile */}
                 <button
                   onClick={handleProceedToDocuSign}
                   disabled={isSubmitting || !smsPhoneNumber}
-                  className={`w-full sm:w-auto px-8 py-5 sm:py-4 rounded-full font-semibold text-sm sm:text-base flex items-center justify-center transition-all duration-300 ${
+                  className={`px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
                     !isSubmitting && smsPhoneNumber
-                      ? "bg-[#775684] text-white hover:bg-[#664573] shadow-md hover:shadow-lg transform hover:scale-[1.02]" 
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  } disabled:opacity-70`}
+                      ? "bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50" 
+                      : "bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed"
+                  } disabled:opacity-50`}
                 >
                   {isSubmitting ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin inline -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -1165,90 +1152,89 @@ export default function MembershipSummary({
       {showSummaryIntroOverlay && createPortal(
         <div 
           onClick={() => setShowSummaryIntroOverlay(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999999,
-            padding: '1rem',
-            fontFamily: SYSTEM_FONT
-          }}
+          className="fixed inset-0 z-[100] overflow-y-auto"
         >
-          <div 
-            className="bg-white rounded-xl shadow-2xl p-6 sm:p-7 mx-2 sm:mx-4 max-w-xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center">
-              {/* Review Icon */}
-              <div className="mx-auto mb-4 w-14 h-14 bg-gradient-to-r from-[#885c77] via-[#775684] to-[#3d3852] rounded-full flex items-center justify-center">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-              </div>
-              
-              {/* Title */}
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Review Your Membership Summary</h2>
-              
-              {/* Main Message */}
-              <p className="text-gray-700 text-sm sm:text-base mb-5 leading-relaxed">
-                You're almost done! This page shows a complete summary of your membership selections.
-              </p>
-              
-              {/* Checklist */}
-              <div className="bg-gray-50 rounded-lg p-4 sm:p-5 mb-5 text-left">
-                <h3 className="text-base font-semibold text-gray-900 mb-3">Please verify the following:</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+          <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div 
+              className="relative bg-white rounded-2xl w-full max-w-3xl animate-fadeInUp shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-10 py-6 border-b border-gray-100 relative">
+                <button 
+                  onClick={() => setShowSummaryIntroOverlay(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
-                    <p className="text-gray-700 text-sm">Your contact information is correct</p>
                   </div>
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <p className="text-gray-700 text-sm">Your selected package type matches your preference</p>
-                  </div>
-                  {data.packageData?.preservationType !== 'basic' && (
-                    <div className="flex items-start">
-                      <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <p className="text-gray-700 text-sm">Your funding method selection is accurate</p>
-                    </div>
-                  )}
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <p className="text-gray-700 text-sm">The payment amount is what you expect</p>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold text-gray-900">Review Your Membership Summary</h2>
                   </div>
                 </div>
               </div>
               
-              {/* ICE Code Reminder */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5">
-                <p className="text-blue-800 text-xs sm:text-sm">
-                  <strong>Have an ICE discount code?</strong> You can enter it in the Membership Details section below to reduce your first-year dues.
-                </p>
+              <div className="px-10 py-8 bg-white">
+                <div className="space-y-6">
+                  <p className="text-gray-700 text-base leading-relaxed">
+                    You're almost done! This page shows a complete summary of your membership selections.
+                  </p>
+                  
+                  <div className="bg-gray-50 rounded-lg p-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">Please verify the following:</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-start">
+                        <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <p className="text-gray-700 text-sm">Your contact information is correct</p>
+                      </div>
+                      <div className="flex items-start">
+                        <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <p className="text-gray-700 text-sm">Your selected package type matches your preference</p>
+                      </div>
+                      {data.packageData?.preservationType !== 'basic' && (
+                        <div className="flex items-start">
+                          <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <p className="text-gray-700 text-sm">Your funding method selection is accurate</p>
+                        </div>
+                      )}
+                      <div className="flex items-start">
+                        <svg className="w-4 h-4 text-[#775684] mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <p className="text-gray-700 text-sm">The payment amount is what you expect</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-blue-800 text-sm">
+                      <strong>Have an ICE discount code?</strong> You can enter it in the Membership Details section below to reduce your first-year dues.
+                    </p>
+                  </div>
+                </div>
               </div>
               
-              {/* Button */}
+              <div className="px-10 py-5 border-t border-gray-100 flex justify-end gap-3">
               <button
                 onClick={() => setShowSummaryIntroOverlay(false)}
-                className="w-full sm:w-auto px-6 py-3 bg-[#775684] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#664573] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                className="px-5 py-2 bg-transparent border border-[#775684] text-[#775684] rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300"
               >
                 Review My Summary
               </button>
+            </div>
             </div>
           </div>
         </div>,
@@ -1256,4 +1242,4 @@ export default function MembershipSummary({
       )}
     </>
   );
- }
+}

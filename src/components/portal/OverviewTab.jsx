@@ -98,6 +98,16 @@ const OverviewTab = ({ setActiveTab }) => {
     }
   }, [customerFirstName]);
 
+  // Helper function to clean activity text
+  const cleanActivityText = (text) => {
+    if (!text) return text;
+    // Remove duplicate dollar signs (e.g., $15.00 $USD becomes $15.00 USD)
+    return text
+      .replace(/\$\$+/g, '$')  // Replace multiple $ with single $
+      .replace(/\$\s*USD/g, 'USD')  // Remove $ before USD
+      .replace(/\$\s*INV/g, 'INV');  // Remove $ before INV
+  };
+
   // Fetch user name - now using profile data as primary source
   useEffect(() => {
     const fetchUserName = async () => {
@@ -167,7 +177,7 @@ const OverviewTab = ({ setActiveTab }) => {
 
     fetchProfileData();
   }, [salesforceContactId, isPreloading]);
-  
+
   // Fetch recent activities - FILTERED FOR CHANGES ONLY
   useEffect(() => {
     const fetchRecentActivities = async () => {
@@ -198,7 +208,11 @@ const OverviewTab = ({ setActiveTab }) => {
           const isChange = changeKeywords.some(keyword => activityText.includes(keyword));
           
           return !isViewOnly && (isChange || activityText.length > 0);
-        });
+        }).map(activity => ({
+          ...activity,
+          displayText: cleanActivityText(activity.displayText),
+          activity: cleanActivityText(activity.activity)
+        }));
         
         console.log('✅ [OverviewTab] Activities loaded:', {
           raw: formattedActivities.length,
@@ -394,6 +408,13 @@ const OverviewTab = ({ setActiveTab }) => {
     </div>
   );
 
+  // Default announcement images if none provided
+  const getAnnouncementImage = (announcement, index) => {
+    if (announcement.imageUrl) return announcement.imageUrl;
+    // Use dewars image as fallback, alternating with podcast image
+    return index % 2 === 0 ? dewarsImage : podcastImage;
+  };
+
   return (
     <div className="overview-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
       {/* Small top padding */}
@@ -412,7 +433,7 @@ const OverviewTab = ({ setActiveTab }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                 </div>
-                <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
+                <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
               </div>
               <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed font-normal mb-6">
                 Access your membership settings, documents, and resources all in one place. Your membership portal provides everything you need to manage your Alcor membership and stay informed about the latest developments.
@@ -540,7 +561,7 @@ const OverviewTab = ({ setActiveTab }) => {
           </div>
         </div>
 
-        {/* Announcements Section - Grid layout matching document style */}
+        {/* Announcements Section - Only showing 2 announcements with images */}
         <div className="p-6 2xl:p-8">
           <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-6">Latest Announcements</h3>
           {!contentLoaded && announcements.length === 0 ? (
@@ -550,10 +571,10 @@ const OverviewTab = ({ setActiveTab }) => {
             </div>
           ) : announcements.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
-              {announcements.slice(0, 4).map((announcement, index) => (
+              {announcements.slice(0, 2).map((announcement, index) => (
                 <div
                   key={announcement.id}
-                  className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer"
+                  className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex gap-4"
                   onClick={() => {
                     if (salesforceContactId) {
                       analytics.logUserAction('announcement_clicked', {
@@ -567,51 +588,65 @@ const OverviewTab = ({ setActiveTab }) => {
                     }
                   }}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h4 className="text-base font-bold text-gray-900 mb-1">
-                        {announcement.title}
-                      </h4>
-                      {announcement.subtitle && (
-                        <p className="text-sm text-gray-600 mb-2 font-normal">{announcement.subtitle}</p>
-                      )}
-                      <p className="text-sm text-gray-700 mb-3 font-normal line-clamp-2">
-                        {announcement.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        {announcement.eventDate && (
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {announcement.eventDate}
-                          </span>
-                        )}
-                        {announcement.eventTime && (
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {announcement.eventTime}
-                          </span>
-                        )}
-                      </div>
+                  {/* Announcement image thumbnail */}
+                  <div className="flex-shrink-0">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden">
+                      <img 
+                        src={getAnnouncementImage(announcement, index)}
+                        alt={announcement.title}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    
-                    {announcement.link && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(announcement.link, '_blank');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
-                      >
-                        <span>Learn More</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    )}
+                  </div>
+                  
+                  {/* Announcement content */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="text-base font-bold text-gray-900 mb-1">
+                          {announcement.title}
+                        </h4>
+                        {announcement.subtitle && (
+                          <p className="text-sm text-gray-600 mb-2 font-normal">{announcement.subtitle}</p>
+                        )}
+                        <p className="text-sm text-gray-700 mb-3 font-normal line-clamp-2">
+                          {announcement.description}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          {announcement.eventDate && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {announcement.eventDate}
+                            </span>
+                          )}
+                          {announcement.eventTime && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {announcement.eventTime}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {announcement.link && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(announcement.link, '_blank');
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
+                        >
+                          <span>Learn More</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -833,19 +868,19 @@ const OverviewTab = ({ setActiveTab }) => {
           {/* Activity summary stats */}
           {recentActivities.length > 0 && !activitiesLoading && (
             <div className="mt-8 grid grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 text-center border border-[#1e2951]">
+              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
                 <p className="text-2xl font-semibold text-[#1e2951]">
                   {recentActivities.filter(a => a.category === 'profile').length}
                 </p>
                 <p className="text-sm text-[#1e2951] mt-1">Profile Updates</p>
               </div>
-              <div className="bg-white rounded-lg p-4 text-center border border-[#1e2951]">
+              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
                 <p className="text-2xl font-semibold text-[#1e2951]">
                   {recentActivities.filter(a => a.category === 'documents').length}
                 </p>
                 <p className="text-sm text-[#1e2951] mt-1">Document Changes</p>
               </div>
-              <div className="bg-white rounded-lg p-4 text-center border border-[#1e2951]">
+              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
                 <p className="text-2xl font-semibold text-[#1e2951]">
                   {recentActivities.filter(a => a.category === 'financial').length}
                 </p>

@@ -150,7 +150,7 @@ const ResponsiveBanner = ({
     
     switch(activeStep) {
       case 0: return "Become a member";
-      case 1: return "Account created!";
+      case 1: return "Account created";
       case 2: return "Contact information";
       case 3: return "Plan selection";
       case 4: return "Funding Options";
@@ -348,7 +348,7 @@ const ResponsiveBanner = ({
               {showStar && <img src={yellowStar} alt="" className="h-7 ml-1" />}
             </h1>
             {/* Changed from text-xl/2xl to text-lg/xl with font-light */}
-            <p className={`text-lg md:text-lg mt-4 text-white/90 font-light ${alignmentClasses.subtextClass}`}>
+            <p className={`text-sm md:text-base mt-4 text-white/90 font-light ${alignmentClasses.subtextClass}`}>
               {displaySubText}
             </p>
           </div>

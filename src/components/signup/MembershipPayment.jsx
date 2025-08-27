@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import membershipService from "../../services/membership";
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 
 export default function MembershipPayment({ 
   membershipData,
@@ -46,13 +47,25 @@ export default function MembershipPayment({
           throw new Error('Invalid payment amount. Please contact support.');
         }
         
-        // Validate total calculation
-        const calculatedTotal = paymentDetails.baseCost + 
-                               paymentDetails.applicationFee + 
-                               (paymentDetails.cmsAnnualFee || 0) - 
-                               (paymentDetails.iceDiscount || 0);
-                               
+        // Validate total calculation based on membership type
+        const isBasicMembership = completionData?.readyForPayment?.membershipInfo?.isBasicMembership;
+        let calculatedTotal;
+
+        if (isBasicMembership) {
+          // Basic members pay annual membership (minus ICE discount if applicable)
+          calculatedTotal = paymentDetails.baseCost - (paymentDetails.iceDiscount || 0);
+        } else {
+          // Cryo members only pay application fee today
+          calculatedTotal = paymentDetails.applicationFee;
+        }
+
         if (Math.abs(calculatedTotal - paymentDetails.totalDue) > 0.01) {
+          console.error('Payment validation failed:', {
+            calculatedTotal,
+            totalDue: paymentDetails.totalDue,
+            isBasicMembership,
+            paymentDetails
+          });
           throw new Error('Payment calculation error. Please contact support.');
         }
         
@@ -105,7 +118,7 @@ export default function MembershipPayment({
   useEffect(() => {
     const checkForSuccess = () => {
       const path = window.location.pathname;
-      if (path === '/welcome-member' || path.includes('success')) {
+      if (path === '/portal-home' || path.includes('success')) {
         if (onComplete) {
           onComplete({
             paymentCompleted: true,
@@ -153,12 +166,12 @@ export default function MembershipPayment({
 
   // Loading state while redirecting
   return (
-    <div className="w-screen h-screen fixed inset-0 bg-white flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#775684] mx-auto mb-4"></div>
-        <p className="text-xl text-gray-700">Preparing secure payment...</p>
-        <p className="text-sm text-gray-500 mt-2">Validating payment details...</p>
-      </div>
-    </div>
+    <DelayedCenteredLoader 
+      message="Preparing secure payment..." 
+      size="md" 
+      color="primary" 
+      minHeight="100vh"
+      delay={500}
+    />
   );
 }

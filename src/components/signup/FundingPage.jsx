@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import HelpPanel from "./HelpPanel";
-import alcorStar from "../../assets/images/alcor-yellow-star.png";
-import alcorStarSelected from "../../assets/images/alcor-star.png";
+import PrimaryButton from './PrimaryButton';
+import SecondaryButton from './SecondaryButton';
 
 // Import separated data
 import { 
@@ -459,47 +459,27 @@ const handleNext = async () => {
 
          </div>
        )}
+
        
        <div className={`flex justify-between mt-8 transition-all duration-700 ease-in-out delay-700 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-         <button
-           type="button"
-           onClick={handleBackClick}
-           className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.03]"
-           style={marcellusStyle}
-           disabled={isSubmitting}
-         >
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-             <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-           </svg>
-           Back
-         </button>
+       <SecondaryButton
+          onClick={handleBackClick}
+          disabled={isSubmitting}
+          showArrow={true}
+          arrowDirection="left"
+        >
+          Back
+        </SecondaryButton>
          
-         <button 
-           type="button"
-           onClick={handleNext}
-           disabled={isSubmitting || isLoading}
-           className={`py-5 px-8 rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.03] ${
-             (isSubmitting || isLoading) ? "bg-gray-400 text-white cursor-not-allowed" : "bg-[#775684] text-white hover:bg-[#664573]"
-           } disabled:opacity-70`}
-           style={marcellusStyle}
-         >
-           {isSubmitting ? (
-             <>
-               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-               </svg>
-               Processing...
-             </>
-           ) : (
-             <>
-               Continue
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                 <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-               </svg>
-             </>
-           )}
-         </button>
+         <PrimaryButton
+            type="button"
+            onClick={handleNext}
+            disabled={isSubmitting || isLoading}
+            isLoading={isSubmitting}
+            loadingText="Processing..."
+          >
+            Continue
+          </PrimaryButton>
        </div>
      </div>
      

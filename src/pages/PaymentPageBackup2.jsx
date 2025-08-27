@@ -264,7 +264,7 @@ function CheckoutForm({ userData }) {
         console.log('Membership created successfully');
         
         // Navigate immediately to welcome member page
-        navigate('/welcome-member', { 
+        navigate('/portal-home', { 
           replace: true,
           state: { paymentResult: confirmResult }
         });

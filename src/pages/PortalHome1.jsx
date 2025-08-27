@@ -17,7 +17,6 @@ import FormsTab from '../components/portal/FormsTab';
 import PaymentHistoryTab from '../components/portal/PaymentHistoryTab';
 import PaymentMethodsTab from '../components/portal/PaymentMethodsTab';
 import InvoicesTab from '../components/portal/InvoicesTab';
-import MediaTab from '../components/portal/MediaTab';
 import CommunityTab from '../components/portal/CommunityTab';
 import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
@@ -26,6 +25,7 @@ import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
 import ActivityLogTab from '../components/portal/ActivityLogTab';
 import PaymentContentWrapper from '../components/PaymentContentWrapper'
 import PortalPaymentPageWrapper from '../pages/PortalPaymentPageWrapper';
+import MediaTab from '../components/portal/MediaTab';
 
 // Import all overview tab versions
 import OverviewTab from '../components/portal/OverviewTab';
@@ -623,14 +623,7 @@ const PortalHome = () => {
 
       // Resources subtabs
       case 'resources-media':
-        return (
-          <div className="flex items-center justify-center min-h-[60vh] bg-white">
-            <div className="text-center">
-              <h2 className="text-3xl font-light text-gray-400 mb-2">Coming Soon</h2>
-              <p className="text-gray-400">Media resources are under development</p>
-            </div>
-          </div>
-        );
+        return <MediaTab />;
       
       case 'resources-community':
         return (

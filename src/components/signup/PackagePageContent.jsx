@@ -271,7 +271,7 @@ export const UpdatedVersionOptionCard = ({
                 <>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
-                    <span>Member Events & Resources</span>
+                    <span>Member Events</span>
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
@@ -395,7 +395,7 @@ export const UpdatedVersionOptionCard = ({
                 <>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                    <span>Member Events & Resources</span>
+                    <span>Member Events</span>
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
@@ -531,7 +531,7 @@ export const OriginalVersionOptionCard = ({
           </div>
           
           {/* More vertical spacing */}
-          <p style={{ fontSize: '16px' }} className="text-gray-600 mt-2 md:mt-5 mb-8 md:mb-7 font-light">
+          <p style={{ fontSize: '14px' }} className="text-gray-600 mt-2 md:mt-5 mb-8 md:mb-7 font-light">
             {planOption.short}
           </p>
           
@@ -615,7 +615,7 @@ export const OriginalVersionOptionCard = ({
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />
-                  <span>Member Events & Resources</span>
+                  <span>Member Events</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-4 h-4 mr-2 mt-1.5" />

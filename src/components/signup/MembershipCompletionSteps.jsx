@@ -1,13 +1,12 @@
-// File: pages/signup/MembershipCompletionSteps.jsx - Professional Design with Country Code Phone Input
 import React, { useState, useEffect, useRef } from "react";
-import { useUser } from "../../contexts/UserContext";
+import membershipService from '../../services/membership';
+import { createApplicantPortalAccount } from '../../services/auth';
 import { useNavigate, useLocation } from "react-router-dom";
-import membershipService from "../../services/membership";
-import { updateSignupProgressAPI, createApplicantPortalAccount } from "../../services/auth";
-import alcorStar from "../../assets/images/alcor-star.png";
-import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
+import { useUser } from "../../contexts/UserContext";
+import { auth } from '../../services/firebase';
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 
-// Font family from PackagePage
+// Font family from MembershipSummary
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 // Step Status Constants
@@ -77,8 +76,6 @@ export default function MembershipCompletionSteps({
   onNavigateToDocuSign,
   onNavigateToPayment
 }) {
-  const { user } = useUser();
-  const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -90,22 +87,16 @@ export default function MembershipCompletionSteps({
   const [isCreatingSalesforce, setIsCreatingSalesforce] = useState(false);
   const [backButtonError, setBackButtonError] = useState(false);
   const [isCompletingMembership, setIsCompletingMembership] = useState(false);
+
+  const navigate = useNavigate();
+  const { user } = useUser();
   
   // CRITICAL: Add refs to prevent duplicate calls
   const isCheckingStatus = useRef(false);
   const isCreatingSalesforceRef = useRef(false);
   const hasInitialized = useRef(false);
   const lastCheckTime = useRef(0);
-
-  // Animation styles from PackagePage
-  const fadeInStyle = {
-    opacity: 0,
-    animation: 'fadeIn 0.5s ease-in-out forwards'
-  };
-
-  const getAnimationDelay = (index) => ({
-    animationDelay: `${index * 0.1}s`
-  });
+  
 
   // Parse phone number and set country code
   const parsePhoneNumber = (fullPhone) => {
@@ -156,8 +147,9 @@ export default function MembershipCompletionSteps({
         console.log("✅ Completion status loaded:", result.data);
         setCompletionData(result.data);
         
-        // Parse phone number if exists
+        // Parse phone number if exists - KEEP THIS HERE
         if (result.data.docusignPhoneNumber) {
+          console.log("Parsing phone number:", result.data.docusignPhoneNumber);
           const parsed = parsePhoneNumber(result.data.docusignPhoneNumber);
           setSelectedCountryCode(parsed.countryCode);
           setPhoneNumber(parsed.number);
@@ -259,7 +251,7 @@ export default function MembershipCompletionSteps({
         setSalesforceStatus({
           exists: true,
           contactId: result.data.contactId,
-          agreementId: result.data.agreementId, // Make sure to save the agreement ID too
+          agreementId: result.data.agreementId,
           createdAt: result.data.createdAt
         });
         
@@ -306,61 +298,64 @@ export default function MembershipCompletionSteps({
   };
 
   // Handle completion and portal account creation
-// Handle completion and portal account creation
-const handleComplete = async () => {
-  try {
-    setIsCompletingMembership(true);
-    setError(null);
-    
-    console.log('All steps completed, creating portal account...');
-    
-    // Create applicant portal account
-    const portalResult = await createApplicantPortalAccount({
-      completedSignup: true
-    });
-    
-    if (portalResult.success) {
-      console.log('✅ Portal account created successfully');
+  const handleComplete = async () => {
+    try {
+      setIsCompletingMembership(true);
+      setError(null);
       
-      // Update payment status in Salesforce
-      if (salesforceStatus?.contactId) {
-        try {
-          console.log('💰 Updating payment status in Salesforce...');
-          const paymentUpdateResult = await membershipService.updateMemberPaymentStatus(
-            salesforceStatus.contactId,
-            {
-              amount: completionData?.totalDue || completionData?.readyForPayment?.paymentDetails?.totalDue,
-              method: completionData?.payment?.method || 'credit_card',
-              reference: completionData?.payment?.paymentId || completionData?.readyForPayment?.paymentStatus?.transactionId,
-              paymentDate: completionData?.payment?.completedAt || new Date().toISOString()
+      console.log('All steps completed, creating portal account...');
+      
+      // Create applicant portal account
+      const portalResult = await createApplicantPortalAccount({
+        completedSignup: true
+      });
+      
+      if (portalResult.success) {
+        console.log('✅ Portal account created successfully');
+        
+        // Update payment status in Salesforce
+        if (salesforceStatus?.contactId) {
+          try {
+            console.log('💰 Updating payment status in Salesforce...');
+            const paymentUpdateResult = await membershipService.updateMemberPaymentStatus(
+              salesforceStatus.contactId,
+              {
+                amount: completionData?.totalDue || completionData?.readyForPayment?.paymentDetails?.totalDue,
+                method: completionData?.payment?.method || 'credit_card',
+                reference: completionData?.payment?.paymentId || completionData?.readyForPayment?.paymentStatus?.transactionId,
+                paymentDate: completionData?.payment?.completedAt || new Date().toISOString()
+              }
+            );
+            
+            if (paymentUpdateResult.success) {
+              console.log('✅ Payment status updated in Salesforce');
+            } else {
+              console.warn('⚠️ Failed to update payment status:', paymentUpdateResult.error);
             }
-          );
-          
-          if (paymentUpdateResult.success) {
-            console.log('✅ Payment status updated in Salesforce');
-          } else {
-            console.warn('⚠️ Failed to update payment status:', paymentUpdateResult.error);
+          } catch (error) {
+            console.error('⚠️ Error updating payment status:', error);
+            // Don't fail the whole process, just log the error
           }
-        } catch (error) {
-          console.error('⚠️ Error updating payment status:', error);
-          // Don't fail the whole process, just log the error
         }
+        
+        // Call the onComplete prop if provided, otherwise redirect
+        if (onComplete) {
+          onComplete();
+        } else {
+          window.location.href = '/portal-home';
+        }
+        
+      } else {
+        throw new Error(portalResult.error || 'Failed to create portal account');
       }
       
-      // Redirect to portal
-      window.location.href = '/portal-home';
-      
-    } else {
-      throw new Error(portalResult.error || 'Failed to create portal account');
+    } catch (error) {
+      console.error('Error completing membership:', error);
+      setError(error.message || 'Failed to complete membership setup. Please try again.');
+    } finally {
+      setIsCompletingMembership(false);
     }
-    
-  } catch (error) {
-    console.error('Error completing membership:', error);
-    setError(error.message || 'Failed to complete membership setup. Please try again.');
-  } finally {
-    setIsCompletingMembership(false);
-  }
-};
+  };
 
   // Initial load - only once
   useEffect(() => {
@@ -456,14 +451,17 @@ const handleComplete = async () => {
       }
       
       console.log(`📝 Starting DocuSign for document type: ${docToSign}`);
+      console.log('USER OBJECT:', user);
+      console.log('USER UID:', user?.uid);
+      console.log('Firebase current user:', auth.currentUser);
+      console.log('Firebase current user UID:', auth.currentUser?.uid);
       
-      // Navigate to DocuSign
+      // Navigate to DocuSign using the prop
       if (onNavigateToDocuSign) {
         console.log(`📝 Calling onNavigateToDocuSign with: ${docToSign}`);
-        onNavigateToDocuSign(docToSign);
+        onNavigateToDocuSign(docToSign, auth.currentUser?.uid);
       } else {
-        console.log(`📝 Navigating to /signup/docusign with documentType: ${docToSign}`);
-        navigate('/signup/docusign', { state: { documentType: docToSign } });
+        console.log(`📝 No onNavigateToDocuSign prop provided`);
       }
       
     } catch (error) {
@@ -509,15 +507,7 @@ const handleComplete = async () => {
         if (onNavigateToPayment) {
           onNavigateToPayment(paymentData);
         } else {
-          navigate('/signup/payment', { 
-            state: { 
-              totalDue: createResult.data.paymentDetails.totalDue,
-              paymentBreakdown: createResult.data.paymentDetails,
-              membershipDetails: createResult.data.membershipInfo,
-              readyForPayment: createResult.data,
-              readyForDocuSign: completionData
-            } 
-          });
+          console.log("No onNavigateToPayment prop provided");
         }
       } catch (createError) {
         console.error("Error creating readyForPayment:", createError);
@@ -559,10 +549,13 @@ const handleComplete = async () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#775684]"></div>
-        <p className="ml-4 text-lg text-gray-600" style={{ fontFamily: SYSTEM_FONT }}>Loading membership completion steps...</p>
-      </div>
+      <DelayedCenteredLoader 
+        message="Loading membership completion steps..." 
+        size="md" 
+        color="primary" 
+        minHeight="200px"
+        delay={500}
+      />
     );
   }
 
@@ -573,7 +566,7 @@ const handleComplete = async () => {
         <p className="text-red-600 mb-4" style={{ fontFamily: SYSTEM_FONT }}>Failed to load membership data</p>
         <button
           onClick={handleManualRefresh}
-          className="py-3 px-6 bg-[#775684] text-white rounded-full font-medium hover:bg-[#664573] transition-all duration-300"
+          className="px-5 py-2 bg-transparent border border-[#775684] text-[#775684] rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300"
           style={{ fontFamily: SYSTEM_FONT }}
         >
           Retry
@@ -593,46 +586,51 @@ const handleComplete = async () => {
   const canStartPayment = bothDocusignCompleted && salesforceStatus?.exists;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8" style={{ fontFamily: SYSTEM_FONT }}>
-      
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6" style={fadeInStyle}>
-          <div className="flex">
-            <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <p className="text-red-700" style={{ fontSize: '14px' }}>{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Header - Smaller and more professional */}
-      <div className="text-center mb-6" style={{...fadeInStyle, ...getAnimationDelay(0)}}>
-        <h1 className="text-2xl font-semibold text-gray-900">Complete Your Membership</h1>
-        <p className="text-gray-600 mt-2" style={{ fontSize: '15px' }}>Please complete all steps below to finalize your membership</p>
-      </div>
-
-      {/* Phone Number Section - Professional design */}
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 mb-6" style={{...fadeInStyle, ...getAnimationDelay(1)}}>
-        <div className="flex items-start">
-          <div className="flex-shrink-0 mr-4">
-            <div className="bg-white p-2.5 rounded-lg border border-gray-200">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
+    <div className="w-full" style={{ fontFamily: SYSTEM_FONT }}>
+      <div 
+        className="w-full bg-gray-100" 
+        style={{
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
+          marginRight: 'calc(-50vw + 50%)',
+          position: 'relative'
+        }}
+      >
+        <div className="w-full mx-auto px-4 sm:px-6 md:px-8 py-8 max-w-[95%] sm:max-w-[90%] md:max-w-[80%] lg:max-w-[70%]">
+          
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+              <div className="flex">
+                <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <p className="text-red-700" style={{ fontSize: '14px' }}>{error}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-gray-900 mb-1" style={{ fontSize: '16px', fontWeight: '500' }}>SMS Verification Required</h3>
-            <p className="text-gray-600 mb-3" style={{ fontSize: '14px' }}>
+          )}
+
+          {/* Phone Number Section - Styled like MembershipSummary cards */}
+          <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8"
+               style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">SMS Verification Required</h2>
+              </div>
+            </div>
+            
+            <p className="text-gray-600 mb-4 font-light" style={{ fontSize: '15px' }}>
               DocuSign will send an SMS verification code to this number:
             </p>
             
             {isEditingPhone ? (
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  {/* Country Code Dropdown */}
                   <div className="relative">
                     <select
                       value={COUNTRY_CODES.indexOf(selectedCountryCode)}
@@ -653,7 +651,6 @@ const handleComplete = async () => {
                     </div>
                   </div>
                   
-                  {/* Phone Number Input */}
                   <input
                     type="tel"
                     value={phoneNumber}
@@ -666,7 +663,7 @@ const handleComplete = async () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handleSavePhone}
-                    className="bg-[#775684] text-white px-4 py-2 rounded-md hover:bg-[#664573] text-sm font-medium transition-all"
+                    className="px-3 py-2 bg-[#775684] text-white rounded-md hover:bg-[#664573] text-sm font-medium transition-all"
                   >
                     Save
                   </button>
@@ -691,7 +688,7 @@ const handleComplete = async () => {
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <p className="text-gray-900 font-medium">
+                <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>
                   {completionData.docusignPhoneNumber ? formatPhoneDisplay(completionData.docusignPhoneNumber) : 'No phone number provided'}
                 </p>
                 <button
@@ -710,281 +707,294 @@ const handleComplete = async () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-
-
-      {/* Two Cards Side by Side - Styled like Package Page cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        
-        {/* Step 1: DocuSign Card */}
-        <div 
-          className={`cursor-pointer transform transition duration-300 hover:scale-[1.02]`}
-          style={{...fadeInStyle, ...getAnimationDelay(3)}}
-        >
-          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ring-1 ring-gray-300 transition-all duration-300 hover:shadow-lg h-full flex flex-col`}>
+          {/* Two Cards Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             
-            {/* Card Header - White Section */}
-            <div className="bg-white p-7 md:px-8 md:pt-8 md:pb-6 flex-1 flex flex-col">
-              <div className="flex items-center mb-4">
-                <div className="p-3.5 rounded-lg mr-3.5" style={{ 
-                  background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' 
-                }}>
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-normal text-gray-900" style={{ fontSize: '20px' }}>Step 1: Sign Agreements</h3>
-              </div>
+            {/* Step 1: DocuSign Card */}
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col transform transition duration-300 hover:scale-[1.02]"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
               
-              <p className="text-gray-600 font-light" style={{ fontSize: '16px' }}>
-                Sign your membership documents electronically
-              </p>
-              
-              {/* Document Status List */}
-              <div className="mt-6 space-y-3 flex-1">
-                <div 
-                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
-                      ? 'bg-green-50' 
-                      : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                  }`}
-                  onClick={() => {
-                    if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                      handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
-                    }
-                  }}
-                >
-                  <span className="text-sm font-normal text-gray-700">Membership Agreement</span>
-                  {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
-                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <div className="p-4 sm:p-6 md:p-8 2xl:p-10 flex-1">
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-5">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                  ) : (
-                    <span className="text-xs text-[#775684] hover:underline">Sign →</span>
-                  )}
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Step 1: Sign Agreements</h3>
                 </div>
                 
-                <div 
-                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                    docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
-                      ? 'bg-green-50' 
-                      : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
+                  Sign your membership documents electronically
+                </p>
+                
+                {/* Document Status List */}
+                <div className="space-y-3">
+                  <div 
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
+                        ? 'bg-green-50' 
+                        : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                    }`}
+                    onClick={() => {
+                      if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                        handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
+                      }
+                    }}
+                  >
+                    <span className="text-sm font-normal text-gray-700">Membership Agreement</span>
+                    {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                    )}
+                  </div>
+                  
+                  <div 
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
+                        ? 'bg-green-50' 
+                        : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                    }`}
+                    onClick={() => {
+                      if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                        handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
+                      }
+                    }}
+                  >
+                    <span className="text-sm font-normal text-gray-700">Terms & Conditions</span>
+                    {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t border-gray-100">
+                <button
+                  onClick={() => handleStartDocuSign()}
+                  disabled={!completionData.docusignPhoneNumber || docusignCompleted}
+                  className={`w-full px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
+                    !completionData.docusignPhoneNumber || docusignCompleted
+                      ? 'bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed'
+                      : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
                   }`}
-                  onClick={() => {
-                    if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                      handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
-                    }
-                  }}
                 >
-                  <span className="text-sm font-normal text-gray-700">Terms & Conditions</span>
-                  {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
-                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  {docusignCompleted ? 'Agreements Signed' : 'Continue Signing'}
+                </button>
+              </div>
+            </div>
+            
+            {/* Step 2: Payment Card */}
+            <div className={`bg-white rounded-[1.25rem] shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col transform transition duration-300 hover:scale-[1.02] ${
+              !canStartPayment ? 'opacity-60' : ''
+            }`}
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              
+              <div className="p-4 sm:p-6 md:p-8 2xl:p-10 flex-1">
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-5">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Step 2: Payment</h3>
+                </div>
+                
+                <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
+                  Complete your membership payment
+                </p>
+                
+                <div className="border-t border-gray-200 pt-4">
+                  {/* Payment breakdown based on membership type */}
+                  {completionData?.membershipType === 'basic' ? (
+                    // Basic membership: show annual dues
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500" style={{ fontSize: '14px' }}>Annual Membership:</span>
+                        <span className="text-gray-700" style={{ fontSize: '14px' }}>
+                          {formatCurrency(completionData?.paymentBreakdown?.baseCost || 540)}
+                        </span>
+                      </div>
+                      {completionData?.paymentBreakdown?.iceDiscount > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500" style={{ fontSize: '14px' }}>ICE Discount:</span>
+                          <span className="text-green-600" style={{ fontSize: '14px' }}>
+                            -{formatCurrency(completionData.paymentBreakdown.iceDiscount)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                        <span className="text-gray-700 font-medium" style={{ fontSize: '16px' }}>Amount due:</span>
+                        <span className="font-semibold text-gray-900" style={{ fontSize: '18px' }}>
+                          {formatCurrency(totalDue)}
+                        </span>
+                      </div>
+                    </div>
                   ) : (
-                    <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                    // Cryo membership: show application fee (and CMS if applicable)
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500" style={{ fontSize: '14px' }}>Application Fee:</span>
+                        <span className="text-gray-700" style={{ fontSize: '14px' }}>
+                          {formatCurrency(completionData?.paymentBreakdown?.applicationFee || 300)}
+                        </span>
+                      </div>
+                      {completionData?.paymentBreakdown?.cmsAnnualFee > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500" style={{ fontSize: '14px' }}>CMS Annual Fee:</span>
+                          <span className="text-gray-700" style={{ fontSize: '14px' }}>
+                            {formatCurrency(completionData.paymentBreakdown.cmsAnnualFee)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                        <span className="text-gray-700 font-medium" style={{ fontSize: '16px' }}>Amount due:</span>
+                        <span className="font-semibold text-gray-900" style={{ fontSize: '18px' }}>
+                          {formatCurrency(totalDue)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 italic pt-1">
+                        Annual membership dues will begin after cryopreservation contracts are completed
+                      </p>
+                    </div>
+                  )}
+                  
+                  {paymentCompleted && (
+                    <div className="flex items-center mt-3 text-green-600">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-medium">Payment completed</span>
+                    </div>
+                  )}
+                  
+                  {!bothDocusignCompleted && (
+                    <p className="text-sm text-gray-500 mt-3 italic">Complete all agreements first</p>
                   )}
                 </div>
               </div>
-            </div>
-            
-            {/* Card Footer - White Section with Navy Button */}
-            <div className="bg-white p-6 border-t border-gray-100">
-              <button
-                onClick={() => handleStartDocuSign()}
-                disabled={!completionData.docusignPhoneNumber || docusignCompleted}
-                className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
-                  !completionData.docusignPhoneNumber || docusignCompleted
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
-                }`}
-              >
-                {docusignCompleted ? 'Agreements Signed' : 'Continue Signing'}
-              </button>
+              
+              <div className="p-6 border-t border-gray-100">
+                <button
+                  onClick={handleStartPayment}
+                  disabled={!canStartPayment || paymentCompleted}
+                  className={`w-full px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
+                    !canStartPayment || paymentCompleted
+                      ? 'bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed'
+                      : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
+                  }`}
+                >
+                  {paymentCompleted ? 'Payment Completed' : 'Make Payment'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Step 2: Payment Card */}
-        <div 
-          className={`cursor-pointer transform transition duration-300 hover:scale-[1.02] ${
-            !canStartPayment ? 'opacity-60' : ''
-          }`}
-          style={{...fadeInStyle, ...getAnimationDelay(4)}}
-        >
-          <div className={`rounded-lg md:rounded-[2rem] overflow-hidden shadow-md ring-1 ${
-            canStartPayment ? 'ring-gray-300' : 'ring-gray-200'
-          } transition-all duration-300 hover:shadow-lg h-full flex flex-col`}>
-            
-            {/* Card Header - White Section */}
-            <div className="bg-white p-7 md:px-8 md:pt-8 md:pb-6 flex-1 flex flex-col">
-              <div className="flex items-center mb-4">
-                <div className="p-3.5 rounded-lg mr-3.5" style={{ 
-                  background: 'linear-gradient(135deg, #162740 0%, #443660 40%, #785683 60%, #996a68 80%, #d4a574 100%)' 
-                }}>
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-                <h3 className="font-normal text-gray-900" style={{ fontSize: '20px' }}>Step 2: Payment</h3>
+
+          {/* Progress Summary */}
+          <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-6"
+               style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+            <h4 className="text-gray-900 mb-3" style={{ fontSize: '16px', fontWeight: '500' }}>Progress Summary</h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600" style={{ fontSize: '14px' }}>Documents Signed:</span>
+                <span className="font-medium text-gray-900">
+                  {[docusignDocuments.membershipAgreement, docusignDocuments.confidentialityAgreement]
+                    .filter(s => s === STEP_STATUS.COMPLETED).length} of 2
+                </span>
               </div>
-              
-              <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
-                Complete your membership payment
-              </p>
-              
-              {/* Payment Info */}
-              <div className="border-t border-gray-200 pt-4 flex-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: '500' }}>Amount due:</span>
-                  <span className="font-normal text-gray-900" style={{ fontSize: '18px' }}>
-                    {formatCurrency(totalDue)}
+              {bothDocusignCompleted && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600" style={{ fontSize: '14px' }}>Ready for Payment:</span>
+                  <span className="font-medium">
+                    {salesforceStatus?.exists ? (
+                      <span className="text-green-600">Yes</span>
+                    ) : isCreatingSalesforce ? (
+                      <span className="text-yellow-600">Creating...</span>
+                    ) : (
+                      <span className="text-yellow-600">Processing</span>
+                    )}
                   </span>
                 </div>
-                
-                {paymentCompleted && (
-                  <div className="flex items-center mt-3 text-green-600">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-medium">Payment completed</span>
-                  </div>
-                )}
-                
-                {!bothDocusignCompleted && (
-                  <p className="text-sm text-gray-500 mt-3 italic">Complete all agreements first</p>
-                )}
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600" style={{ fontSize: '14px' }}>Payment Status:</span>
+                <span className="font-medium text-gray-900">
+                  {paymentCompleted ? 'Completed' : 'Pending'}
+                </span>
               </div>
             </div>
-            
-            {/* Card Footer - White Section with Navy Button */}
-            <div className="bg-white p-6 border-t border-gray-100">
+          </div>
+
+          {/* Refresh Button */}
+          <div className="text-center mb-8">
+            <button
+              onClick={handleManualRefresh}
+              disabled={isCheckingStatus.current || isCreatingSalesforce}
+              className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-all duration-300 inline-flex items-center text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isCheckingStatus.current ? 'Refreshing...' : 'Refresh Status'}
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <div className="flex items-center">
               <button
-                onClick={handleStartPayment}
-                disabled={!canStartPayment || paymentCompleted}
-                className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
-                  !canStartPayment || paymentCompleted
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#1e293b] text-white hover:bg-[#0f172a]'
-                }`}
+                type="button"
+                onClick={() => {
+                  if (onBack) {
+                    onBack();
+                  } else {
+                    setBackButtonError(true);
+                  }
+                }}
+                className="px-5 py-2 bg-transparent border border-gray-400 text-gray-700 rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300 flex items-center"
               >
-                {paymentCompleted ? 'Payment Completed' : 'Make Payment'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Summary - Clean design */}
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6" style={{...fadeInStyle, ...getAnimationDelay(5)}}>
-        <h4 className="text-gray-900 mb-3" style={{ fontSize: '15px', fontWeight: '500' }}>Progress Summary</h4>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600" style={{ fontSize: '14px' }}>Documents Signed:</span>
-            <span className="font-medium text-gray-900">
-              {[docusignDocuments.membershipAgreement, docusignDocuments.confidentialityAgreement]
-                .filter(s => s === STEP_STATUS.COMPLETED).length} of 2
-            </span>
-          </div>
-          {bothDocusignCompleted && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600" style={{ fontSize: '14px' }}>Ready for Payment:</span>
-              <span className="font-medium">
-                {salesforceStatus?.exists ? (
-                  <span className="text-green-600">Yes</span>
-                ) : isCreatingSalesforce ? (
-                  <span className="text-yellow-600">Creating...</span>
-                ) : (
-                  <span className="text-yellow-600">Processing</span>
-                )}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600" style={{ fontSize: '14px' }}>Payment Status:</span>
-            <span className="font-medium text-gray-900">
-              {paymentCompleted ? 'Completed' : 'Pending'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Refresh Button */}
-      <div className="text-center mb-8" style={{...fadeInStyle, ...getAnimationDelay(6)}}>
-        <button
-          onClick={handleManualRefresh}
-          disabled={isCheckingStatus.current || isCreatingSalesforce}
-          className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-all duration-300 inline-flex items-center text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {isCheckingStatus.current ? 'Refreshing...' : 'Refresh Status'}
-        </button>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between mt-8" style={{...fadeInStyle, ...getAnimationDelay(7)}}>
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => setBackButtonError(true)}
-            className="py-5 px-8 border border-gray-300 rounded-full text-gray-700 font-medium flex items-center hover:bg-gray-50 transition-all duration-300 shadow-sm hover:shadow-md hover:translate-x-[-2px]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back
-          </button>
-          {backButtonError && (
-            <p className="ml-4 text-red-600 text-sm">Contact support for application modifications</p>
-          )}
-        </div>
-        
-        {(completionData.allStepsCompleted || (docusignCompleted && paymentCompleted)) && (
-          <button
-            onClick={handleComplete}
-            disabled={isCompletingMembership}
-            className="py-5 px-8 bg-[#775684] text-white rounded-full font-semibold text-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg hover:translate-x-[2px] hover:bg-[#664573] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCompletingMembership ? (
-              <span className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Creating Portal Access...
-              </span>
-            ) : (
-              <>
-                Complete & Access Portal
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
                 </svg>
-              </>
+                Back
+              </button>
+              {backButtonError && (
+                <p className="ml-4 text-red-600 text-sm">Contact support for application modifications</p>
+              )}
+            </div>
+            
+            {(completionData.allStepsCompleted || (docusignCompleted && paymentCompleted)) && (
+              <button
+                onClick={handleComplete}
+                disabled={isCompletingMembership}
+                className="px-5 py-2 bg-transparent border border-[#775684] text-[#775684] rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCompletingMembership ? (
+                  <span className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#775684] mr-2"></div>
+                    Creating Portal Access...
+                  </span>
+                ) : (
+                  <>
+                    Complete & Access Portal
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                    </svg>
+                  </>
+                )}
+              </button>
             )}
-          </button>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );
-}
-
-// Add global styles
-if (typeof document !== 'undefined') {
-  const globalStyles = document.createElement('style');
-  globalStyles.innerHTML = `
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .animate-fadeIn {
-      animation: fadeIn 0.5s ease-in-out forwards;
-    }
-  `;
-  
-  if (!document.head.querySelector('style[data-completion-steps-styles]')) {
-    globalStyles.setAttribute('data-completion-steps-styles', 'true');
-    document.head.appendChild(globalStyles);
-  }
 }

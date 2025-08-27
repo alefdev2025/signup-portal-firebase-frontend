@@ -12,6 +12,7 @@ import iceLogo from "../../assets/images/ICE-logo-temp.png";
 import navyALogo from "../../assets/images/navy-a-logo.png";
 import { auth } from "../../services/firebase";
 import { API_BASE_URL } from '../../config/api';
+import { DelayedCenteredLoader } from '../../components/DotLoader';
 
 // Import membership service
 import membershipService from "../../services/membership";
@@ -662,10 +663,13 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
   // Handle loading states
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#775684]"></div>
-        <p className="mt-4 text-xl text-gray-600">Loading membership options...</p>
-      </div>
+      <DelayedCenteredLoader 
+        message="Loading membership options..." 
+        size="md" 
+        color="primary" 
+        minHeight="200px"
+        delay={500}
+      />
     );
   }
   

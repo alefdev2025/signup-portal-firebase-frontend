@@ -110,12 +110,11 @@ export default function SinglePageSignup() {
       <MembershipDocuSign
         membershipData={{}}
         packageData={{}}
-        contactData={{}}
+        contactData={{ uid: docuSignState.userId }}  // THIS needs the userId
         documentType={docuSignState.documentType}
         onBack={() => setDocuSignState({ show: false, documentType: null })}
         onComplete={() => {
           setDocuSignState({ show: false, documentType: null });
-          // Reload to refresh completion status
           window.location.reload();
         }}
       />
@@ -151,11 +150,15 @@ const getStepProps = () => {
     return {
       onComplete: () => {
         console.log('All membership steps completed - redirecting to welcome page');
-        window.location.href = '/welcome-member';
+        window.location.href = '/portal-home';
       },
-      onNavigateToDocuSign: (documentType) => {
-        console.log('SinglePageSignup: Opening DocuSign for:', documentType);
-        setDocuSignState({ show: true, documentType: documentType });
+      onNavigateToDocuSign: (documentType, userId) => {
+        console.log('SinglePageSignup received userId:', userId);
+        setDocuSignState({ 
+          show: true, 
+          documentType: documentType,
+          userId: userId
+        });
       },
       onNavigateToPayment: (completionData) => {
         console.log('SinglePageSignup: Opening Payment with data:', completionData);
@@ -169,7 +172,10 @@ const getStepProps = () => {
 };
 
   // Full-screen steps with SimpleBanner
-  if (currentStep?.id === 'docusign' || currentStep?.id === 'payment' || currentStep?.id === 'completion') {
+  if (currentStep?.id === 'docusign' || 
+    currentStep?.id === 'payment' || 
+    currentStep?.id === 'completion' ||
+    currentStep?.component === 'MembershipCompletionStep') {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col">
         {/* SimpleBanner - ALWAYS SHOWS IMMEDIATELY */}
