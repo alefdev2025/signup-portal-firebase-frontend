@@ -271,8 +271,27 @@ const PersonalInfoSection = ({
  // Track if we're currently saving
  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
 
- // FIX: CryoApplicants can edit SSN only if it's empty
- const canEditSSN = memberCategory === 'CryoApplicant' && (!safePersonalInfo?.ssn || safePersonalInfo.ssn === '');
+// Check for both singular and plural forms of the category
+const [ssnWasInitiallyEmpty] = useState(() => {
+  const ssnValue = personalInfo?.ssn;
+  return !ssnValue || ssnValue === '' || ssnValue.trim() === '';
+});
+
+// Track if SSN has been saved (this can change after saves)
+const [ssnHasBeenSaved, setSsnHasBeenSaved] = useState(() => {
+  const ssnValue = personalInfo?.ssn;
+  return ssnValue && ssnValue.includes('*');
+});
+
+const canEditSSN = (memberCategory === 'CryoApplicant' || memberCategory === 'CryoApplicants') && 
+                   ssnWasInitiallyEmpty && 
+                   !ssnHasBeenSaved;
+
+useEffect(() => {
+  if (safePersonalInfo?.ssn && safePersonalInfo.ssn.includes('*')) {
+    setSsnHasBeenSaved(true);
+  }
+}, [safePersonalInfo?.ssn]);
 
  // Detect mobile
  useEffect(() => {
@@ -583,7 +602,6 @@ const PersonalInfoSection = ({
  ];
 
  const maritalStatusOptions = [
-   { value: "", label: "Select..." },
    { value: "Single", label: "Single" },
    { value: "Married", label: "Married" },
    { value: "Divorced", label: "Divorced" },

@@ -394,8 +394,11 @@ const MyInformationTab = () => {
         }
         
         if (memberInfoData.medical?.success && memberInfoData.medical.data) {
+          console.log('📦 MEDICAL DATA FROM CACHE:', memberInfoData.medical);
           const medicalData = memberInfoData.medical.data.data || memberInfoData.medical.data;
+          console.log('🔍 EXTRACTED MEDICAL DATA:', medicalData);
           const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
+          console.log('✨ CLEANED MEDICAL DATA:', cleanedMedical);
           setMedicalInfo(cleanedMedical);
           setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
         }
@@ -4001,6 +4004,27 @@ const saveFunding = async () => {
               </>
             )}
           </div>
+                  {/* Applicant Help Message - Desktop */}
+        {memberCategory === 'CryoApplicant' && (
+          <div className="mt-12 mb-8 mx-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              <p className="text-blue-800 text-base">
+                Completed your application details or have questions? 
+                <br className="hidden sm:inline" />
+                <span className="sm:inline block mt-1 sm:mt-0">
+                  Email us at{' '}
+                  <a 
+                    href="mailto:support@alcor.org" 
+                    className="text-blue-600 hover:text-blue-700 underline font-medium"
+                  >
+                    support@alcor.org
+                  </a>
+                  {' '}to let us know!
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
         </div>
 
         {/* Desktop view - Keep existing layout with separators */}
@@ -4249,9 +4273,9 @@ const saveFunding = async () => {
           </>
         )}
 
-        {/* Funding Allocations */}
-        {isSectionVisible(memberCategory, 'fundingAllocations') && (
-          <>
+          {/* Funding Allocations */}
+          {isSectionVisible(memberCategory, 'fundingAllocations') && (
+                    <>
             {!sectionsLoaded.fundingAllocations ? (
               <SectionSkeleton />
             ) : (
@@ -4272,8 +4296,31 @@ const saveFunding = async () => {
           </>
         )}
         </div>
+        
+        {/* Applicant Help Message - Desktop */}
+        {memberCategory === 'CryoApplicant' && (
+          <div className="mt-12 mb-8 mx-4">
+            <div className="bg-white border border-gray-300 rounded-lg p-6 text-center shadow-md">
+              <p className="text-gray-700 text-base">
+                Completed your application details or have questions? 
+                <br className="hidden sm:inline" />
+                <span className="sm:inline block mt-1 sm:mt-0">
+                  Email us at{' '}
+                  <a 
+                    href="mailto:support@alcor.org" 
+                    className="text-blue-600 hover:text-blue-700 underline font-medium"
+                  >
+                    support@alcor.org
+                  </a>
+                  {' '}to let us know!
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
         </div>
       </div>
+
       
       {/* Address Validation Modal - Rendered via Portal at the MyInformationTab level */}
       {addressValidationModal.isOpen && ReactDOM.createPortal(

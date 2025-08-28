@@ -267,7 +267,8 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     
     // Validate email domain
     const emailLower = email.toLowerCase();
-    const isValidDomain = emailLower.endsWith('@alcor.org') || emailLower === 'alcor.dev.2025@gmail.com';
+    const isValidDomain = emailLower.endsWith('@alcor.org') || 
+                         emailLower === 'alcor.dev.2025@gmail.com';
     
     if (!isValidDomain) {
       setError('Staff accounts can only be created with @alcor.org email addresses');
@@ -288,9 +289,13 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     setError('');
     
     try {
-      // First, send verification email
-      const createEmailVerification = httpsCallable(functions, 'authCore');
-      const verificationResult = await createEmailVerification({
+      console.log('=== STAFF ACCOUNT CREATION START ===');
+      console.log('Email:', emailLower);
+      console.log('Display Name:', displayName);
+      
+      // Step 1: Send verification email
+      const authCoreFn = httpsCallable(functions, 'authCore');
+      const verificationResult = await authCoreFn({
         action: 'createEmailVerification',
         email: emailLower,
         name: displayName
@@ -298,7 +303,8 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
       
       console.log('Email verification result:', verificationResult.data);
       
-      if (verificationResult.data.success) {
+      if (!verificationResult.data.success) {
+        // Check if it's because account already exists
         if (verificationResult.data.isExistingUser) {
           setError('An account with this email already exists. Please sign in instead.');
           setTimeout(() => {
@@ -307,30 +313,51 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
           return;
         }
         
-        // Store verification ID and user data for after verification
-        setVerificationId(verificationResult.data.verificationId);
-        sessionStorage.setItem('pendingStaffAccount', JSON.stringify({
-          email: emailLower,
-          displayName: displayName,
-          password: password,
-          verificationId: verificationResult.data.verificationId
-        }));
-        
-        // Switch to verification code input
-        setVerificationStep('verification');
-        setSuccessMessage('');
-        
-        // Log the verification code for development
-        if (verificationResult.data.__devOnly?.code) {
-          console.log('DEV: Verification code:', verificationResult.data.__devOnly.code);
-        }
-      } else {
         setError(verificationResult.data.error || 'Failed to send verification email');
+        return;
       }
+      
+      // Store verification ID and user data for after verification
+      setVerificationId(verificationResult.data.verificationId);
+      
+      // Store all account data in session for use after verification
+      const accountData = {
+        email: emailLower,
+        displayName: displayName,
+        password: password,
+        verificationId: verificationResult.data.verificationId,
+        timestamp: Date.now()
+      };
+      
+      sessionStorage.setItem('pendingStaffAccount', JSON.stringify(accountData));
+      
+      // Switch to verification code input
+      setVerificationStep('verification');
+      setSuccessMessage('');
+      
+      // Log the verification code in development
+      if (verificationResult.data.__devOnly?.code) {
+        console.log('DEV: Verification code:', verificationResult.data.__devOnly.code);
+      }
+      
+      console.log('=== STAFF ACCOUNT CREATION - VERIFICATION SENT ===');
       
     } catch (err) {
       console.error('Create account error:', err);
-      setError(err.message || 'Failed to create account. Please try again.');
+      
+      // Handle specific error cases
+      if (err.code === 'functions/permission-denied') {
+        setError('Permission denied. Please ensure you have the right to create staff accounts.');
+      } else if (err.code === 'functions/unauthenticated') {
+        setError('Authentication error. Please refresh the page and try again.');
+      } else if (err.message?.includes('already exists')) {
+        setError('An account already exists with this email. Please sign in instead.');
+        setTimeout(() => {
+          setIsCreateAccount(false);
+        }, 2000);
+      } else {
+        setError(err.message || 'Failed to create account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -430,6 +457,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     }
   };
 
+  // Handler for verification code submission
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     
@@ -442,9 +470,11 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     setError('');
     
     try {
-      // Verify the code
-      const verifyEmailCode = httpsCallable(functions, 'authCore');
-      const verifyResult = await verifyEmailCode({
+      console.log('=== VERIFYING EMAIL CODE ===');
+      
+      // Verify the email code
+      const authCoreFn = httpsCallable(functions, 'authCore');
+      const verifyResult = await authCoreFn({
         action: 'verifyEmailCode',
         verificationId: verificationId,
         code: verificationCode
@@ -452,71 +482,90 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
       
       console.log('Verification result:', verifyResult.data);
       
-      if (verifyResult.data.success) {
-        // Get stored account data
-        const pendingAccount = JSON.parse(sessionStorage.getItem('pendingStaffAccount') || '{}');
+      if (!verifyResult.data.success) {
+        setError(verifyResult.data.error || 'Invalid verification code');
+        return;
+      }
+      
+      // Get stored account data
+      const pendingAccount = JSON.parse(
+        sessionStorage.getItem('pendingStaffAccount') || '{}'
+      );
+      
+      if (!pendingAccount.email) {
+        setError('Session expired. Please start over.');
+        setVerificationStep('form');
+        return;
+      }
+      
+      // Now create the staff account or add staff access
+      console.log('Creating staff account/access...');
+      const createResult = await authCoreFn({
+        action: 'createOrAddStaffAccess',
+        email: pendingAccount.email,
+        displayName: pendingAccount.displayName,
+        password: pendingAccount.password
+      });
+      
+      console.log('Account creation result:', createResult.data);
+      
+      if (!createResult.data.success) {
+        setError(createResult.data.error || 'Failed to create account');
         
-        // Now create the staff account
-        const createStaffAccount = httpsCallable(functions, 'authCore');
-        const createResult = await createStaffAccount({
-          action: 'createStaffAccount',
-          email: pendingAccount.email,
-          displayName: pendingAccount.displayName,
-          password: pendingAccount.password
+        // If they already have staff access, redirect to login
+        if (createResult.data.hasStaffAccess) {
+          setTimeout(() => {
+            setIsCreateAccount(false);
+            setVerificationStep('form');
+          }, 2000);
+        }
+        return;
+      }
+      
+      // Clear stored account data
+      sessionStorage.removeItem('pendingStaffAccount');
+      
+      // Check if 2FA setup is required
+      if (createResult.data.requiresTwoFactorSetup || 
+          createResult.data.requires2FASetup) {
+        
+        // Store 2FA setup data
+        const twoFAData = {
+          qrCode: createResult.data.qrCode,
+          secret: createResult.data.secret,
+          userId: createResult.data.userId
+        };
+        
+        console.log('Setting up 2FA with data:', {
+          hasQrCode: !!twoFAData.qrCode,
+          hasSecret: !!twoFAData.secret,
+          userId: twoFAData.userId
         });
         
-        console.log('Account creation result:', createResult);
-        console.log('Result success:', createResult.data.success);
-        console.log('Result requires2FASetup:', createResult.data.requires2FASetup);
-        console.log('Result qrCode:', createResult.data.qrCode);
-        console.log('Result secret:', createResult.data.secret);
-        console.log('Result userId:', createResult.data.userId);
-        
-        if (createResult.data.success) {
-          // Clear stored data
-          sessionStorage.removeItem('pendingStaffAccount');
-          
-          // Check if 2FA setup is required (it should always be for staff)
-          if (createResult.data.requiresTwoFactorSetup || createResult.data.requires2FASetup || true) { // Force 2FA
-            // Store the 2FA setup data
-            const twoFAData = {
-              qrCode: createResult.data.qrCode || createResult.data.qrCodeUrl || createResult.data.qr_code || createResult.data.qrcode,
-              secret: createResult.data.secret || createResult.data.totpSecret || createResult.data.totp_secret,
-              userId: createResult.data.userId || createResult.data.user_id
-            };
-            
-            console.log('Setting twoFactorData to:', twoFAData);
-            console.log('UserId from createResult:', createResult.data.userId);
-            
-            // Check if we actually have a QR code
-            if (!twoFAData.qrCode) {
-              console.error('No QR code found in result. Checking all fields:', Object.keys(createResult.data));
-              setError('2FA setup data is missing. Please contact support.');
-              return;
-            }
-            
-            // Check if we have userId
-            if (!twoFAData.userId) {
-              console.error('No userId found in result. Full result:', createResult.data);
-              setError('User ID is missing. Please contact support.');
-              return;
-            }
-            
-            setTwoFactorData(twoFAData);
-            setTempUserId(twoFAData.userId);
-            console.log('Set tempUserId to:', twoFAData.userId);
-            setVerificationStep('twoFactorSetup');
-            setSuccessMessage('Account created! Now set up two-factor authentication.');
-          } else {
-            // This shouldn't happen for staff - 2FA should be mandatory
-            setError('Two-factor authentication setup is required for staff accounts. Please contact support.');
-          }
-        } else {
-          setError(createResult.data.error || 'Failed to create account');
+        if (!twoFAData.qrCode || !twoFAData.secret) {
+          console.error('Missing 2FA setup data');
+          setError('2FA setup data is missing. Please contact support.');
+          return;
         }
+        
+        setTwoFactorData(twoFAData);
+        setTempUserId(twoFAData.userId);
+        setVerificationStep('twoFactorSetup');
+        
+        const message = createResult.data.isExistingUser
+          ? 'Staff access added! Now set up two-factor authentication.'
+          : 'Account created! Now set up two-factor authentication.';
+        
+        setSuccessMessage(message);
+        
       } else {
-        setError(verifyResult.data.error || 'Invalid verification code');
+        // This shouldn't happen for staff
+        console.error('Staff account created without 2FA requirement');
+        setError('Two-factor authentication setup is required. Please contact support.');
       }
+      
+      console.log('=== EMAIL VERIFICATION COMPLETE ===');
+      
     } catch (err) {
       console.error('Verification error:', err);
       setError('Failed to verify code. Please try again.');
@@ -525,6 +574,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     }
   };
 
+  // Handler for 2FA setup completion
   const handleTwoFactorSetup = async (e) => {
     e.preventDefault();
     
@@ -537,25 +587,23 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     setError('');
     
     try {
-      console.log('Attempting to complete 2FA setup with code:', twoFactorCode);
+      console.log('=== COMPLETING STAFF 2FA SETUP ===');
       console.log('User ID:', tempUserId);
-      console.log('Auth current user:', auth.currentUser?.uid);
       
       // Make sure we have a userId
       const userIdToUse = tempUserId || auth.currentUser?.uid;
       if (!userIdToUse) {
         console.error('No user ID available for 2FA setup');
         setError('User ID is missing. Please restart the setup process.');
-        setLoading(false);
         return;
       }
       
-      const completeTwoFactorSetup = httpsCallable(functions, 'authCore');
-      const result = await completeTwoFactorSetup({
-        action: 'completeTwoFactorSetup',
+      const authCoreFn = httpsCallable(functions, 'authCore');
+      const result = await authCoreFn({
+        action: 'completeStaff2FASetup',
         userId: userIdToUse,
         token: twoFactorCode,
-        code: twoFactorCode // Some backends expect 'code' instead of 'token'
+        code: twoFactorCode
       });
       
       console.log('2FA setup result:', result.data);
@@ -563,16 +611,30 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
       if (result.data?.success) {
         setSuccessMessage('Two-factor authentication enabled! Signing you in...');
         
-        // Try to sign in the user automatically
+        // Try to sign in automatically
         try {
-          const pendingAccount = JSON.parse(sessionStorage.getItem('pendingStaffAccount') || '{}');
+          const pendingAccount = JSON.parse(
+            sessionStorage.getItem('pendingStaffAccount') || '{}'
+          );
+          
           if (pendingAccount.email && pendingAccount.password) {
-            const userCredential = await signInWithEmailAndPassword(auth, pendingAccount.email, pendingAccount.password);
+            const userCredential = await signInWithEmailAndPassword(
+              auth, 
+              pendingAccount.email, 
+              pendingAccount.password
+            );
+            
+            // Mark staff 2FA as verified for this session
+            sessionStorage.setItem(
+              `staff_2fa_verified_${userCredential.user.uid}`, 
+              'true'
+            );
+            
             if (onAuthenticated) {
               onAuthenticated(userCredential.user);
             }
           } else {
-            // Redirect to login if auto-signin fails
+            // Can't auto-sign in, redirect to login
             setTimeout(() => {
               setIsCreateAccount(false);
               setVerificationStep('form');
@@ -587,10 +649,26 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
             setSuccessMessage('Account created successfully! Please sign in.');
           }, 2000);
         }
+        
+        // Store backup codes if provided
+        if (result.data.backupCodes?.length > 0) {
+          console.log('=== IMPORTANT: BACKUP CODES ===');
+          console.log('Store these backup codes safely:');
+          result.data.backupCodes.forEach((code, index) => {
+            console.log(`${index + 1}. ${code}`);
+          });
+          
+          // You could show these in a modal or alert
+          alert(`IMPORTANT: Save these backup codes:\n\n${result.data.backupCodes.join('\n')}`);
+        }
+        
       } else {
         setError(result.data?.error || 'Invalid code. Please try again.');
         setTwoFactorCode('');
       }
+      
+      console.log('=== STAFF 2FA SETUP COMPLETE ===');
+      
     } catch (error) {
       console.error('2FA setup error:', error);
       setError('Failed to verify code. Please try again.');

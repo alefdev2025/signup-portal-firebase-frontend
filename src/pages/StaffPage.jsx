@@ -11,72 +11,54 @@ const StaffPage = () => {
   const [accessError, setAccessError] = useState(null);
   const [needs2FA, setNeeds2FA] = useState(false);
 
+  // In StaffPage.jsx useEffect:
   useEffect(() => {
-    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Check if user has staff access
           const idTokenResult = await firebaseUser.getIdTokenResult();
           const hasStaffRole = idTokenResult.claims.roles?.includes('staff') || 
                               idTokenResult.claims.roles?.includes('admin');
           
           if (hasStaffRole) {
-            // Check if 2FA is enabled and not yet verified
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
             if (userDoc.exists()) {
               const userData = userDoc.data();
               
-              // Check if user has 2FA enabled
-              if (userData?.twoFactorEnabled === true && userData?.twoFactorSecret) {
-                // Check if this session has completed 2FA
-                const twoFAVerified = sessionStorage.getItem(`2fa_verified_${firebaseUser.uid}`);
-                
-                if (!twoFAVerified) {
-                  console.log('User needs to complete 2FA verification');
-                  setNeeds2FA(true);
-                  setUser(null);
-                  setAccessError(null);
-                } else {
-                  setUser(firebaseUser);
-                  setNeeds2FA(false);
-                  setAccessError(null);
-                }
+              // Check for staff-specific 2FA
+              const needsStaff2FA = userData.staffTwoFactorEnabled === true && 
+                                  userData.staffTwoFactorSecret;
+              
+              // Check for session verification
+              const twoFAVerified = sessionStorage.getItem(`staff_2fa_verified_${firebaseUser.uid}`);
+              
+              if (needsStaff2FA && !twoFAVerified) {
+                console.log('Staff needs 2FA verification');
+                setNeeds2FA(true);
+                setUser(null);
               } else {
-                // No 2FA required or not enabled (this shouldn't happen for staff)
-                console.error('Staff user without 2FA enabled - this should not be allowed');
                 setUser(firebaseUser);
                 setNeeds2FA(false);
-                setAccessError(null);
               }
-            } else {
-              setAccessError('User profile not found. Please contact support.');
-              setUser(null);
             }
           } else {
-            // Don't immediately sign out - show error first
-            setAccessError('Access denied. This account does not have staff permissions. Please contact an administrator.');
+            setAccessError('Access denied. This account does not have staff permissions.');
             setUser(null);
-            
-            // Sign out after a delay to allow user to see the error
-            setTimeout(async () => {
-              await auth.signOut();
-            }, 5000);
           }
         } catch (error) {
           console.error('Error checking staff access:', error);
-          setAccessError('Error verifying staff access. Please try again.');
+          setAccessError('Error verifying staff access.');
           setUser(null);
         }
       } else {
         setUser(null);
         setAccessError(null);
         setNeeds2FA(false);
-        // Clear any 2FA verification from session
+        // Clear session storage
         if (typeof sessionStorage !== 'undefined') {
           const keys = Object.keys(sessionStorage);
           keys.forEach(key => {
-            if (key.startsWith('2fa_verified_')) {
+            if (key.startsWith('staff_2fa_verified_')) {
               sessionStorage.removeItem(key);
             }
           });

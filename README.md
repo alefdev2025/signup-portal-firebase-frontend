@@ -765,3 +765,5 @@ The system categorizes members into three types based on their cryopreservation 
 How to run unit tests 
 
 npm test PersonalInfoSection.test.jsx
+
+ npm run build && firebase deploy --only hosting --project alcor-membership-firebase

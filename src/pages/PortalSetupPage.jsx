@@ -294,7 +294,7 @@ const PortalSetupPage = () => {
         
         // 3. No existing portal account and allowed to proceed - continue with setup
         setStep('password');
-        setSuccessMessage('Email verified! Now create your password.');
+        //setSuccessMessage('Email verified! Now create your password.');
       } else {
         setError(result.error || 'Invalid verification code.');
       }
@@ -645,7 +645,7 @@ const PortalSetupPage = () => {
               Create Your Password
             </h2>
             
-            {salesforceData && (
+             {salesforceData && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-600">
                   <strong>Account:</strong> {salesforceData.firstName} {salesforceData.lastName}<br/>
