@@ -85,7 +85,7 @@ export const packageHelpContent = [
     title: "Need assistance?",
     content: (
       <>
-        Contact our support team at <a href="mailto:support@alcor.com" className="text-[#775684] hover:underline">support@alcor.com</a> or call (800) 555-1234.
+        Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-552-4338.
       </>
     )
   }
@@ -547,7 +547,7 @@ export const OriginalVersionOptionCard = ({
             {/* Add subtext for all options */}
             {(option === "neuro" || option === "wholebody") && (
               <div className="flex justify-end mt-1">
-                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Typically $25-$250/month with life insurance</span>
+                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">As low as $25-$45/month with life insurance</span>
               </div>
             )}
             {option === "basic" && (
@@ -812,8 +812,8 @@ export const ImportantInformation = ({ membershipAge, fadeInStyle, getAnimationD
           <div>
             <h4 style={{ fontSize: '16px', fontWeight: '500' }} className="text-gray-700 mb-3">Important Information</h4>
             <p style={{ fontSize: '14px' }} className="text-gray-600 font-light">
-              Most members fund their cryopreservation through <span className="underline">life insurance</span> policies with <span className="underline">manageable monthly premiums</span>. We'll discuss insurance options on the next page.
-            </p>
+ Most members fund their cryopreservation through <span className="font-semibold">life insurance</span> policies with <span className="font-semibold">manageable monthly premiums</span>. We'll discuss insurance options on the next page.
+</p>
             <p style={{ fontSize: '14px' }} className="text-gray-600 font-light mt-2">
               Your membership pricing is personalized based on your current age ({membershipAge} years).
             </p>

@@ -497,7 +497,7 @@ export default function WelcomeMember() {
              </svg>
              <span>Need assistance? Contact us at{' '}
                <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a>
-               {' '}or call 623-432-7775
+               {' '}or call 623-552-4338
              </span>
            </div>
          </div>

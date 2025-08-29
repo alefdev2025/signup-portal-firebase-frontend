@@ -599,7 +599,7 @@ useEffect(() => {
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                   placeholder="e.g. john.smith@example.com" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
                   disabled={isSubmittingReset}
                 />
               </div>
@@ -657,7 +657,7 @@ useEffect(() => {
                   }}
                   placeholder="000000" 
                   maxLength="6"
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-2xl text-center tracking-widest font-mono"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 text-2xl text-center tracking-widest font-mono"
                   disabled={is2FASubmitting}
                   autoComplete="one-time-code"
                   autoFocus
@@ -718,7 +718,7 @@ useEffect(() => {
                   value={email}
                   onChange={handleInputChange}
                   placeholder="e.g. john.smith@example.com" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
                   disabled={loading}
                 />
               </div>
@@ -746,7 +746,7 @@ useEffect(() => {
                   value={password}
                   onChange={handleInputChange}
                   placeholder="Enter your password" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
                   disabled={loading}
                 />
               </div>

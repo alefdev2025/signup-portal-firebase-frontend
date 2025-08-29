@@ -329,7 +329,7 @@ function CheckoutForm({ userData }) {
       title: "Need assistance?",
       content: (
         <span>
-          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
+          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-552-4338.
         </span>
       )
     }
@@ -538,7 +538,7 @@ function CheckoutForm({ userData }) {
                             <input
                               type="email"
                               value={contactData?.email || ''}
-                              className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                              className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent"
                               readOnly
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -643,7 +643,7 @@ function CheckoutForm({ userData }) {
                                   <input
                                     type="text"
                                     placeholder="9 digits"
-                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                                 <div>
@@ -653,14 +653,14 @@ function CheckoutForm({ userData }) {
                                   <input
                                     type="text"
                                     placeholder="Account number"
-                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                                 <div>
                                   <label className="block text-xs font-medium text-gray-600 mb-1">
                                     Account Type
                                   </label>
-                                  <select className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent">
+                                  <select className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent">
                                     <option value="checking">Checking</option>
                                     <option value="savings">Savings</option>
                                   </select>
@@ -672,7 +672,7 @@ function CheckoutForm({ userData }) {
                                   <input
                                     type="text"
                                     placeholder="Full name on account"
-                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-4 py-4 lg:py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent"
                                   />
                                 </div>
                               </div>

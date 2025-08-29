@@ -17,7 +17,7 @@ const HelpPanel = ({ showHelpInfo, toggleHelpInfo, helpItems = [] }) => {
       title: "Need assistance?",
       content: (
         <>
-          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
+          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-552-4338.
         </>
       )
     }

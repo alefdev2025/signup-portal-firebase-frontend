@@ -836,7 +836,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                   value={resetEmail}
                   onChange={handleResetEmailChange}
                   placeholder="e.g. john.smith@alcor.org" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                   disabled={isSubmittingReset}
                 />
               </div>
@@ -908,7 +908,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                     }
                   }}
                   placeholder="000000" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono text-2xl"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base text-center tracking-widest font-mono text-2xl"
                   disabled={loading}
                   maxLength={6}
                   autoComplete="one-time-code"
@@ -981,7 +981,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                     placeholder="Enter the 6-digit code" 
-                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest"
+                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base text-center tracking-widest"
                     disabled={loading}
                     maxLength={6}
                     autoComplete="one-time-code"
@@ -1154,7 +1154,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                     }}
                     placeholder="000000" 
                     maxLength="6"
-                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md text-center text-2xl tracking-widest font-mono focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400"
                     disabled={loading}
                     autoComplete="off"
                     autoFocus
@@ -1214,7 +1214,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                       value={displayName}
                       onChange={handleInputChange}
                       placeholder="e.g. John Smith" 
-                      className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                       disabled={loading}
                     />
                   </div>
@@ -1231,7 +1231,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                       value={email}
                       onChange={handleInputChange}
                       placeholder="e.g. john.smith@alcor.org" 
-                      className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                       disabled={loading}
                     />
                   </div>
@@ -1249,7 +1249,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                       value={password}
                       onChange={handleInputChange}
                       placeholder="Create a strong password" 
-                      className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                      className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                       disabled={loading}
                     />
                     <button
@@ -1305,7 +1305,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                       value={confirmPassword}
                       onChange={handleInputChange}
                       placeholder="Re-enter your password" 
-                      className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                      className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                       disabled={loading}
                     />
                     <button
@@ -1390,7 +1390,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                     value={email}
                     onChange={handleInputChange}
                     placeholder="e.g. john.smith@alcor.org" 
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    className="w-full pl-12 pr-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                     disabled={loading}
                   />
                 </div>
@@ -1416,7 +1416,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
                     value={password}
                     onChange={handleInputChange}
                     placeholder="Enter your password" 
-                    className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                    className="w-full pl-12 pr-12 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-base"
                     disabled={loading}
                   />
                   <button

@@ -75,7 +75,7 @@ const contactInfoHelpContent = [
     title: "Need assistance?",
     content: (
       <>
-        Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
+        Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-552-4338.
       </>
     )
   }
@@ -711,7 +711,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
                 </a>{" "}
                 or call{" "}
                 <a href="tel:8005551234" className="text-[#775684] hover:underline font-medium">
-                623-432-7775
+                623-552-4338
                 </a>.
               </p>
               <button

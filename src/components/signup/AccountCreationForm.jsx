@@ -64,7 +64,7 @@ const AccountCreationForm = ({
       title: "Need assistance?",
       content: (
         <>
-          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-432-7775.
+          Contact our support team at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a> or call 623-552-4338.
         </>
       )
     }
@@ -191,7 +191,7 @@ const AccountCreationForm = ({
                 value={formData.verificationCode}
                 onChange={handleFormChange}
                 placeholder="Enter the 6-digit code" 
-                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600 text-gray-800 text-base"
                 disabled={isSubmitting || resendingCode}
                 autoComplete="one-time-code"
                 maxLength={6}
@@ -324,7 +324,7 @@ const AccountCreationForm = ({
               value={formData.email}
               onChange={handleFormChange}
               placeholder="e.g. john.smith@example.com" 
-              className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+              className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600 text-gray-800 text-base"
               disabled={isSubmitting}
             />
             {errors.email && <p className="text-red-500 text-xs sm:text-sm mt-2">{errors.email}</p>}
@@ -338,7 +338,7 @@ const AccountCreationForm = ({
               isSubmitting={isSubmitting}
               error={errors.password}
               className="mb-0" 
-              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600 text-gray-800 text-base"
               labelClassName="block text-gray-800 text-base font-medium mb-2"
               errorClassName="text-red-500 text-xs sm:text-sm mt-2"
             />
@@ -357,7 +357,7 @@ const AccountCreationForm = ({
                 value={confirmPasswordState}
                 onChange={handleFormChange}
                 placeholder="Re-enter your password" 
-                className={`w-full px-4 py-3 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-purple-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base`}
+                className={`w-full px-4 py-3 bg-white border ${errors.confirmPassword ? 'border-red-500' : confirmPasswordState && confirmPasswordState === passwordState ? 'border-green-500' : 'border-purple-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600 text-gray-800 text-base`}
                 disabled={isSubmitting}
                 autoComplete="new-password"
               />
@@ -384,7 +384,7 @@ const AccountCreationForm = ({
                   checked={formData.termsAccepted}
                   onChange={handleFormChange}
                   disabled={isSubmitting}
-                  className={`mt-1 sm:mt-0 mr-3 h-4 w-4 appearance-none checked:bg-[#d39560] border ${errors.termsAccepted ? 'border-red-500' : 'border-purple-300'} bg-white rounded focus:ring-2 focus:ring-[#d39560] flex-shrink-0`}
+                  className={`mt-1 sm:mt-0 mr-3 h-4 w-4 appearance-none checked:bg-[#d39560] border ${errors.termsAccepted ? 'border-red-500' : 'border-purple-300'} bg-white rounded focus:ring-1 focus:ring-[#d39560] flex-shrink-0`}
                   style={{ 
                     backgroundImage: "url(\"data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e\")",
                     backgroundPosition: "center",
@@ -397,7 +397,7 @@ const AccountCreationForm = ({
                   <button 
                     type="button" 
                     onClick={() => openModal('terms')} 
-                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
+                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-1 focus:ring-purple-600 focus:ring-offset-1 rounded px-1"
                   >
                     Terms of Use
                   </button>
@@ -405,7 +405,7 @@ const AccountCreationForm = ({
                   <button 
                     type="button" 
                     onClick={() => openModal('privacy')} 
-                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded px-1"
+                    className="text-purple-700 font-medium underline hover:text-purple-800 focus:outline-none focus:ring-1 focus:ring-purple-600 focus:ring-offset-1 rounded px-1"
                   >
                     Privacy Policy
                   </button>

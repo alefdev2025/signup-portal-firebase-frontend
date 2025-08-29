@@ -88,7 +88,7 @@ const PasswordResetForm = ({ onBack, initialEmail = "", onSuccess = null }) => {
           value={resetEmail}
           onChange={handleResetEmailChange}
           placeholder="e.g. john.smith@example.com" 
-          className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-lg"
+          className="w-full px-5 py-4 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 text-gray-800 text-lg"
           disabled={isSubmitting}
         />
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}

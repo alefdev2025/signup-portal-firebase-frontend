@@ -633,7 +633,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
                   {/* Add life insurance text for preservation options */}
                   {selectedOption !== "basic" && (
                     <div className="flex justify-end mt-1">
-                      <span className="text-sm text-gray-400 font-light italic">Typically $25-$250/month with life insurance</span>
+                      <span className="text-sm text-gray-400 font-light italic">As low as $25-$45/month with life insurance</span>
                     </div>
                   )}
                 </div>

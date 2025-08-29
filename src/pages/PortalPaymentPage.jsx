@@ -832,7 +832,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                           onChange={(e) => setCardholderName(e.target.value)}
                           onBlur={() => handleFieldBlur('cardholderName')}
                           placeholder="John Doe"
-                          className={`w-full px-4 py-3 text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
+                          className={`w-full px-4 py-3 text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent ${
                             touchedFields.cardholderName && !cardholderName.trim() 
                               ? 'border-red-300' 
                               : 'border-gray-200'
@@ -989,7 +989,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                   <select
                                     value={billingAddress.country}
                                     onChange={(e) => setBillingAddress({...billingAddress, country: e.target.value})}
-                                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent"
+                                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent"
                                   >
                                     <option value="US">United States</option>
                                     <option value="CA">Canada</option>
@@ -1025,7 +1025,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                   onChange={(e) => setBillingAddress({...billingAddress, line1: e.target.value})}
                                   onBlur={() => handleFieldBlur('address')}
                                   placeholder="123 Main Street"
-                                  className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
+                                  className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent ${
                                     touchedFields.address && !billingAddress.line1.trim() 
                                       ? 'border-red-300' 
                                       : 'border-gray-200'
@@ -1047,7 +1047,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                     onChange={(e) => setBillingAddress({...billingAddress, city: e.target.value})}
                                     onBlur={() => handleFieldBlur('city')}
                                     placeholder="New York"
-                                    className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
+                                    className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent ${
                                       touchedFields.city && !billingAddress.city.trim() 
                                         ? 'border-red-300' 
                                         : 'border-gray-200'
@@ -1070,7 +1070,7 @@ function InvoicePaymentForm({ invoice, onBack }) {
                                       onBlur={() => handleFieldBlur('state')}
                                       placeholder={billingAddress.country === 'CA' ? 'ON' : 'NY'}
                                       maxLength="2"
-                                      className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13273f] focus:border-transparent ${
+                                      className={`w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#13273f] focus:border-transparent ${
                                         touchedFields.state && !billingAddress.state.trim() 
                                           ? 'border-red-300' 
                                           : 'border-gray-200'

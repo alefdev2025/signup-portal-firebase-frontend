@@ -107,7 +107,7 @@ const PortalSetupPage = () => {
       console.log('checkMemberAccount result:', result);
       
       // ALWAYS show the same success message
-      setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
+      //setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
       
       if (!result.success || !result.hasAccount) {
         // No account - just show success message but don't actually proceed
@@ -483,7 +483,7 @@ const PortalSetupPage = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="e.g. john.smith@example.com" 
-                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                 disabled={loading}
                 required
               />
@@ -547,7 +547,7 @@ const PortalSetupPage = () => {
                 value={formData.alcorId}
                 onChange={handleInputChange}
                 placeholder="e.g. A-1234" 
-                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                 disabled={loading}
                 required
               />
@@ -615,7 +615,7 @@ const PortalSetupPage = () => {
                 onChange={handleInputChange}
                 placeholder="Enter 6-digit code" 
                 maxLength="6"
-                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono"
+                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono"
                 disabled={loading}
                 required
               />
@@ -681,7 +681,7 @@ const PortalSetupPage = () => {
               label="Password"
               placeholder="Create a secure password"
               className="mb-6"
-              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
               labelClassName="block text-gray-800 text-base font-medium mb-2"
             />
             
@@ -696,7 +696,7 @@ const PortalSetupPage = () => {
               label="Confirm Password"
               placeholder="Re-enter your password"
               className="mb-8"
-              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
+              inputClassName="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base pr-12"
               labelClassName="block text-gray-800 text-base font-medium mb-2"
             />
             
@@ -868,87 +868,89 @@ const PortalSetupPage = () => {
           </div>
         );
 
-      case 'existingAccount':
-        return (
-          <div className="p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
-              Portal Account Already Exists
-            </h2>
-            
-            <div className="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-800">
-                    Account Found!
-                  </h3>
-                  <div className="mt-2 text-sm text-gray-700">
-                    <p>Good news! You already have a portal account for:</p>
-                    <p className="font-semibold mt-1">{formData.email}</p>
+        case 'existingAccount':
+          return (
+            <div className="p-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
+                Portal Account Already Exists
+              </h2>
+              
+              {/* Combined single message box */}
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 w-full">
+                    <h3 className="text-sm font-medium text-gray-800 mb-3">
+                      Account Found!
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-3">
+                      Good news! You already have a portal account for:<br/>
+                      <span className="font-semibold">{formData.email}</span>
+                    </p>
+                    
+                    <div className="border-t border-gray-200 pt-3 mt-3">
+                      <p className="text-sm font-medium text-gray-800 mb-2">What to do next:</p>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Simply sign in with your existing email and password. If you've forgotten your password, you can reset it on the login page.
+                      </p>
+                      
+                      {salesforceData && (
+                        <div className="text-sm text-gray-500 mt-3 pt-3 border-t border-gray-200">
+                          <p>Name: {salesforceData.firstName} {salesforceData.lastName}</p>
+                          {salesforceData.alcorId && <p>Member ID: {salesforceData.alcorId}</p>}
+                          <p>Email: {formData.email}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3">What to do next:</h3>
-              <p className="text-gray-600 mb-4">
-                Simply sign in with your existing email and password. If you've forgotten your password, you can reset it on the login page.
-              </p>
-              {salesforceData && (
-                <div className="text-sm text-gray-500">
-                  <p>Name: {salesforceData.firstName} {salesforceData.lastName}</p>
-                  {salesforceData.alcorId && <p>Member ID: {salesforceData.alcorId}</p>}
-                  <p>Email: {formData.email}</p>
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email))}
-                style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-4 px-6 rounded-full font-semibold text-lg hover:opacity-90 flex items-center justify-center"
-              >
-                Go to Login
-                <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
               
-              <button
-                type="button"
-                onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email) + '&reset=true')}
-                className="w-full bg-white border-2 border-purple-600 text-purple-700 py-4 px-6 rounded-full font-medium text-lg hover:bg-purple-50"
-              >
-                Reset Password
-              </button>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-center text-sm text-gray-600">
-                Not your account? 
+              <div className="space-y-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setStep('email');
-                    setFormData({ ...formData, email: '', verificationCode: '' });
-                    setError('');
-                    setSuccessMessage('');
-                  }}
-                  className="ml-1 text-purple-700 hover:underline"
+                  onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email))}
+                  style={{ backgroundColor: "#6f2d74", color: "white" }}
+                  className="w-full py-3 px-6 rounded-full font-semibold text-base hover:opacity-90 flex items-center justify-center"
                 >
-                  Try a different email
+                  Go to Login
+                  <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </button>
-              </p>
+                
+                <button
+                  type="button"
+                  onClick={() => navigate('/portal-login?email=' + encodeURIComponent(formData.email) + '&reset=true')}
+                  className="w-full bg-white border-2 border-purple-600 text-purple-700 py-3 px-6 rounded-full font-medium text-base hover:bg-purple-50"
+                >
+                  Reset Password
+                </button>
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <p className="text-center text-sm text-gray-600">
+                  Not your account? 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('email');
+                      setFormData({ ...formData, email: '', verificationCode: '' });
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    className="ml-1 text-purple-700 hover:underline"
+                  >
+                    Try a different email
+                  </button>
+                </p>
+              </div>
             </div>
-          </div>
-        );
+          );
 
       case 'noAccount':
         return (

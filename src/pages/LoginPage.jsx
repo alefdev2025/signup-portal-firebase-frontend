@@ -485,7 +485,7 @@ const LoginPage = () => {
                   value={resetEmail}
                   onChange={handleResetEmailChange}
                   placeholder="e.g. john.smith@example.com" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                   disabled={isSubmittingReset}
                 />
               </div>
@@ -548,7 +548,7 @@ const LoginPage = () => {
                   onChange={handle2FACodeChange}
                   placeholder="000000" 
                   maxLength="6"
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-2xl text-center tracking-widest font-mono"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-2xl text-center tracking-widest font-mono"
                   disabled={is2FASubmitting}
                   autoComplete="one-time-code"
                   autoFocus
@@ -646,7 +646,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={handleInputChange}
                   placeholder="e.g. john.smith@example.com" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                   disabled={loading}
                 />
               </div>
@@ -669,7 +669,7 @@ const LoginPage = () => {
                   value={password}
                   onChange={handleInputChange}
                   placeholder="Enter your password" 
-                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
+                  className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base"
                   disabled={loading}
                 />
               </div>

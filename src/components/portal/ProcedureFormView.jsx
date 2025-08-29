@@ -88,7 +88,7 @@ const TimeInput = ({ name, value, onChange, onBlur, isInvalid, label, required }
             onChange(e);
           }}
           placeholder="Select time"
-          className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent cursor-pointer ${
+          className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 pr-10 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent cursor-pointer ${
             isInvalid ? 'error-input' : 'border-gray-300'
           }`}
           readOnly
@@ -284,7 +284,7 @@ const ProcedureFormView = ({
                   onBlur={handleBlur}
                   rows="2"
                   placeholder="Brief description (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent"
                 />
               </div>
 
@@ -296,7 +296,7 @@ const ProcedureFormView = ({
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   rows="3"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('medicalCondition') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -313,7 +313,7 @@ const ProcedureFormView = ({
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   rows="2"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('facilityAddress') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -330,7 +330,7 @@ const ProcedureFormView = ({
                   value={formData.facilityPhone}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('facilityPhone') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -347,7 +347,7 @@ const ProcedureFormView = ({
                   value={formData.facilityFax}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('facilityFax') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -364,7 +364,7 @@ const ProcedureFormView = ({
                   value={formData.dateOfSurgery}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('dateOfSurgery') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -402,7 +402,7 @@ const ProcedureFormView = ({
                   value={formData.typeOfSurgery}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('typeOfSurgery') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -418,7 +418,7 @@ const ProcedureFormView = ({
                   value={formData.usingAnesthesia}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('usingAnesthesia') ? 'error-input' : 'border-gray-300'
                   }`}
                 >
@@ -439,7 +439,7 @@ const ProcedureFormView = ({
                   value={formData.physicianName}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('physicianName') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -456,7 +456,7 @@ const ProcedureFormView = ({
                   value={formData.physicianPhone}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('physicianPhone') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -472,7 +472,7 @@ const ProcedureFormView = ({
                   value={formData.physicianAwareOfCryonics}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('physicianAwareOfCryonics') ? 'error-input' : 'border-gray-300'
                   }`}
                 >
@@ -492,7 +492,7 @@ const ProcedureFormView = ({
                   value={formData.poaOnFile}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('poaOnFile') ? 'error-input' : 'border-gray-300'
                   }`}
                 >
@@ -530,7 +530,7 @@ const ProcedureFormView = ({
                   value={formData.memberName}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -548,7 +548,7 @@ const ProcedureFormView = ({
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   placeholder="A-####"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -567,7 +567,7 @@ const ProcedureFormView = ({
                   onBlur={handleBlur}
                   min="1"
                   max="150"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -584,7 +584,7 @@ const ProcedureFormView = ({
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   rows="2"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -601,7 +601,7 @@ const ProcedureFormView = ({
                   value={formData.phone}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -618,7 +618,7 @@ const ProcedureFormView = ({
                   value={formData.emergencyContact}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -635,7 +635,7 @@ const ProcedureFormView = ({
                   value={formData.heightWeight}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                     isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
                   }`}
                 />
@@ -746,7 +746,7 @@ const ProcedureFormView = ({
                       onBlur={handleBlur}
                       rows="2"
                       placeholder="Brief description (optional)"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent"
                     />
                   </div>
 
@@ -758,7 +758,7 @@ const ProcedureFormView = ({
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       rows="3"
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('medicalCondition') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -775,7 +775,7 @@ const ProcedureFormView = ({
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       rows="2"
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('facilityAddress') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -792,7 +792,7 @@ const ProcedureFormView = ({
                       value={formData.facilityPhone}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('facilityPhone') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -809,7 +809,7 @@ const ProcedureFormView = ({
                       value={formData.facilityFax}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('facilityFax') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -826,7 +826,7 @@ const ProcedureFormView = ({
                       value={formData.dateOfSurgery}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('dateOfSurgery') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -843,7 +843,7 @@ const ProcedureFormView = ({
                       value={formData.typeOfSurgery}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('typeOfSurgery') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -880,7 +880,7 @@ const ProcedureFormView = ({
                       value={formData.usingAnesthesia}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('usingAnesthesia') ? 'error-input' : 'border-gray-300'
                       }`}
                     >
@@ -901,7 +901,7 @@ const ProcedureFormView = ({
                       value={formData.physicianName}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('physicianName') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -918,7 +918,7 @@ const ProcedureFormView = ({
                       value={formData.physicianPhone}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('physicianPhone') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -934,7 +934,7 @@ const ProcedureFormView = ({
                       value={formData.physicianAwareOfCryonics}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('physicianAwareOfCryonics') ? 'error-input' : 'border-gray-300'
                       }`}
                     >
@@ -954,7 +954,7 @@ const ProcedureFormView = ({
                       value={formData.poaOnFile}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('poaOnFile') ? 'error-input' : 'border-gray-300'
                       }`}
                     >
@@ -993,7 +993,7 @@ const ProcedureFormView = ({
                       value={formData.memberName}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('memberName') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1011,7 +1011,7 @@ const ProcedureFormView = ({
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       placeholder="A-####"
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('alcorNumber') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1030,7 +1030,7 @@ const ProcedureFormView = ({
                       onBlur={handleBlur}
                       min="1"
                       max="150"
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('age') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1047,7 +1047,7 @@ const ProcedureFormView = ({
                       onChange={handleInputChange}
                       onBlur={handleBlur}
                       rows="2"
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('address') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1064,7 +1064,7 @@ const ProcedureFormView = ({
                       value={formData.phone}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('phone') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1081,7 +1081,7 @@ const ProcedureFormView = ({
                       value={formData.emergencyContact}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('emergencyContact') ? 'error-input' : 'border-gray-300'
                       }`}
                     />
@@ -1098,7 +1098,7 @@ const ProcedureFormView = ({
                       value={formData.heightWeight}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#12243c] focus:border-transparent ${
+                      className={`w-full px-4 py-2.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#12243c] focus:border-transparent ${
                         isFieldInvalid('heightWeight') ? 'error-input' : 'border-gray-300'
                       }`}
                     />

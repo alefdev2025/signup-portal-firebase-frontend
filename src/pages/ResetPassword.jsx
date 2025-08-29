@@ -272,7 +272,7 @@ const ResetPasswordPage = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/')}
                   style={{
                     backgroundColor: "#6f2d74",
                     color: "white"
@@ -382,14 +382,14 @@ const ResetPasswordPage = () => {
                 <p className="text-gray-600 mb-6">
                   Please request a new password reset link from the{" "}
                   <a 
-                    href="/login" 
+                    href="/" 
                     className="text-purple-700 hover:underline font-medium"
                   >
                     login page
                   </a>.
                 </p>
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/')}
                   style={{
                     backgroundColor: "#6f2d74",
                     color: "white"
