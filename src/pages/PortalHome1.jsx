@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useMemberPortal } from '../contexts/MemberPortalProvider';
 import { logoutUser } from '../services/auth';
 import alcorWhiteLogo from '../assets/images/alcor-white-logo.png';
@@ -68,6 +68,7 @@ const PortalHome = () => {
   const navigate = useNavigate();
   const { memberInfoData, currentUser, customerId, salesforceContactId, salesforceCustomer, customerFirstName, notifications, refreshNotifications, notificationsLoaded } = useMemberPortal();
   
+
   // Debug logging
   //console.log('PortalHome memberInfoData full structure:', JSON.stringify(memberInfoData, null, 2));
   //console.log('PortalHome salesforceContactId:', salesforceContactId);
@@ -430,35 +431,39 @@ const PortalHome = () => {
 
   // Handle tab changes with history
   const handleTabChange = (newTab) => {
-    // Don't push to history if it's the same tab
     if (newTab !== activeTab) {
-      // Add transition effect
       setIsTransitioning(true);
       setTimeout(() => setIsTransitioning(false), 50);
       
-      // Scroll to top when changing tabs
+      // More aggressive scroll reset
       const scrollToTop = () => {
-        // Find the main content area and scroll it to top
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        
+        // Find all possible scrollable containers
         const mainContent = document.querySelector('main');
         if (mainContent) {
           mainContent.scrollTop = 0;
         }
         
-        // Also try window scroll for mobile
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
+        // Mobile specific - scroll the viewport
+        if (window.innerWidth < 1280) {
+          document.querySelector('.min-h-screen')?.scrollTo(0, 0);
+          document.querySelector('[class*="overflow-y-auto"]')?.scrollTo(0, 0);
+        }
       };
       
-      // Execute scroll immediately
+      // Execute immediately
       scrollToTop();
       
-      // Also execute after transition completes
-      setTimeout(scrollToTop, 60);
+      // Execute after render
+      requestAnimationFrame(scrollToTop);
       
-      // Just update the hash - this automatically creates a history entry
+      // Execute after transition
+      setTimeout(scrollToTop, 100);
+      
       window.location.hash = newTab;
-      // The hashchange event listener will handle updating the activeTab
     }
   };
 

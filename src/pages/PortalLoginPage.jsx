@@ -13,6 +13,7 @@ import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import darkLogo from "../assets/images/alcor-white-logo.png";
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
+import MobilePortalLoginPage from './MobilePortalLoginPage';
 
 const PortalLoginPage = () => {
   const [email, setEmail] = useState('');
@@ -45,6 +46,8 @@ const PortalLoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const authCore = httpsCallable(functions, 'authCore');
+
+  const isMobile = window.innerWidth < 768;
 
   const handleGoogleSignInSuccess = async (result, isNewUser, additionalData) => {
     // SET FLAG AT THE VERY START
@@ -155,31 +158,6 @@ const PortalLoginPage = () => {
     setError('This account requires password sign-in. Please use your email and password.');
   };
 
-// Clear auth state on mount - CLEAR EVERYTHING
-useEffect(() => {
-    const clearAllState = async () => {
-      try {
-        // Sign out any existing user
-        await auth.signOut();
-        
-        // Clear ALL localStorage items
-        localStorage.clear();
-        
-        // Clear ALL sessionStorage items  
-        sessionStorage.clear();
-        
-        // Clear verification state specifically
-        clearVerificationState();
-        
-        console.log('Cleared all auth state on portal login page mount');
-      } catch (error) {
-        console.error('Error clearing state:', error);
-      }
-    };
-    
-    clearAllState();
-  }, []); // Run only on mount
-  
   // Clear auth state on mount
   useEffect(() => {
     if (!show2FAForm && !tempAuthData) {
@@ -241,8 +219,26 @@ useEffect(() => {
             const userData = userDoc.data();
             
             if (userData.isPortalUser === true) {
+              // SCROLL FIX: Reset all scroll positions before navigation
+              //window.scrollTo(0, 0);
+              //document.documentElement.scrollTop = 0;
+              //document.body.scrollTop = 0;
+              
+              // Also reset any scrollable containers
+              //const scrollableElements = document.querySelectorAll('main, .overflow-y-auto, .overflow-y-scroll');
+              //scrollableElements.forEach(element => {
+              //  element.scrollTop = 0;
+              //});
+              
+              // Small delay to ensure scroll completes before navigation
+              //await new Promise(resolve => setTimeout(resolve, 50));
+              
               // Success - navigate to portal
-              navigate('/portal-home', { replace: true });
+              //navigate('/portal-home', { replace: true }); <--- trying a different way below to deal with going to overview tab scrolled down
+
+
+              window.location.replace('/portal-home');
+              //window.location.href = `/portal-home?t=${Date.now()}`;
             } else {
               // Not a portal user
               if (!showNoPortalAccount && !showCreatePortalOption && !isProcessingGoogleSignIn) {
@@ -342,6 +338,10 @@ useEffect(() => {
           setShowNoPortalAccount(true);
           return;
         }
+
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
         
         setSuccessMessage('Successfully signed in. Redirecting to portal...');
         // Navigation handled by useEffect
@@ -360,7 +360,7 @@ useEffect(() => {
             setError('Invalid email or password. Please check your credentials and try again.');
             break;
           case 'auth/too-many-requests':
-            setError('Too many failed login attempts. Please try again later or reset your password.');
+            setError('Too many login attempts. Please try again later.');
             break;
           default:
             setError('Sign in failed. Please try again.');
@@ -440,12 +440,46 @@ useEffect(() => {
       setSuccessMessage(`If an account exists for ${resetEmail}, we've sent a password reset link.`);
       setShowResetForm(false);
       setResetEmail('');
+      setError('');
     } catch (error) {
       setResetError("Unable to send reset email. Please try again later.");
     } finally {
       setIsSubmittingReset(false);
     }
   };
+
+  if (isMobile && !showNoPortalAccount && !showCreatePortalOption) {
+    return (
+      <MobilePortalLoginPage
+        email={email}
+        password={password}
+        error={error}
+        successMessage={successMessage}
+        loading={loading}
+        showResetForm={showResetForm}
+        resetEmail={resetEmail}
+        resetError={resetError}
+        isSubmittingReset={isSubmittingReset}
+        show2FAForm={show2FAForm}
+        twoFactorCode={twoFactorCode}
+        is2FASubmitting={is2FASubmitting}
+        onLogin={handleLogin}
+        onInputChange={handleInputChange}
+        onResetPassword={handleResetPassword}
+        on2FASubmit={handle2FASubmit}
+        onGoogleSignInSuccess={handleGoogleSignInSuccess}
+        onGoogleSignInError={handleGoogleSignInError}
+        onGoogleAccountConflict={handleAccountConflict}
+        setResetEmail={setResetEmail}
+        setShowResetForm={setShowResetForm}
+        setTwoFactorCode={setTwoFactorCode}
+        setError={setError}
+        onSignOut={() => auth.signOut().catch(console.error)}
+        onNavigateToSetup={() => navigate('/portal-setup')}
+        onNavigateToHome={() => navigate('/')}
+      />
+    );
+  }
 
   // Render different views
   if (showNoPortalAccount) {
@@ -470,7 +504,7 @@ useEffect(() => {
             
             <div className="bg-blue-50 border border-blue-200 rounded-md p-6 mb-6">
               <p className="text-blue-800">
-                The portal is new! We couldn't find a portal account for <strong>{email}. Create your new portal account with the email on your Alcor membership.</strong>
+                The portal is new! Create your new portal account with the email on your Alcor membership.
               </p>
             </div>
             
@@ -561,7 +595,7 @@ useEffect(() => {
   }
 
   return (
-    <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
+    <div style={{ backgroundColor: isMobile ? "#13263f" : "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
       <ResponsiveBanner 
         logo={darkLogo}
         heading="Member Portal"
@@ -584,9 +618,9 @@ useEffect(() => {
               </p>
               
               {resetError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {resetError}
-                </div>
+                </p>
               )}
               
               <div className="mb-6">
@@ -619,6 +653,7 @@ useEffect(() => {
                     setShowResetForm(false);
                     setResetEmail('');
                     setResetError('');
+                    setError('');
                   }}
                   className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-full font-medium hover:bg-gray-50"
                 >
@@ -638,9 +673,9 @@ useEffect(() => {
               </p>
               
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {error}
-                </div>
+                </p>
               )}
               
               <div className="mb-6">
@@ -696,15 +731,15 @@ useEffect(() => {
               </h2>
               
               {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
+                <p className="text-green-600 text-sm mb-4">
                   {successMessage}
-                </div>
+                </p>
               )}
-              
+
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {error}
-                </div>
+                </p>
               )}
               
               <div className="mb-6">
@@ -733,6 +768,7 @@ useEffect(() => {
                     onClick={() => {
                       setResetEmail(email || '');
                       setShowResetForm(true);
+                      setError('');
                     }}
                     className="text-purple-700 text-sm hover:underline"
                   >

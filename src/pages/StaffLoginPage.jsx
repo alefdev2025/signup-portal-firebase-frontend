@@ -296,7 +296,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
       // Step 1: Send verification email
       const authCoreFn = httpsCallable(functions, 'authCore');
       const verificationResult = await authCoreFn({
-        action: 'createEmailVerification',
+        action: 'createStaffEmailVerification',  // Changed from 'createEmailVerification'
         email: emailLower,
         name: displayName
       });
@@ -688,7 +688,7 @@ const StaffLoginPage = ({ onAuthenticated, initialError }) => {
     try {
       const createEmailVerification = httpsCallable(functions, 'authCore');
       const result = await createEmailVerification({
-        action: 'createEmailVerification',
+        action: 'createStaffEmailVerification',
         email: pendingAccount.email,
         name: pendingAccount.displayName
       });

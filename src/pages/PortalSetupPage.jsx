@@ -106,37 +106,31 @@ const PortalSetupPage = () => {
       const result = await checkMemberAccount(formData.email);
       console.log('checkMemberAccount result:', result);
       
-      // ALWAYS show the same success message
-      //setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
-      
       if (!result.success || !result.hasAccount) {
-        // No account - just show success message but don't actually proceed
-        // Don't reveal that no account was found
+        // Show a generic message and move to verify step anyway (for security)
+        // This prevents revealing whether an account exists
+        setStep('verify');
+        setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
         setLoading(false);
         return;
       }
       
+      // Rest of your existing code for when an account IS found...
       if (result.requiresAlcorId) {
-        // Multiple accounts - need Alcor ID
-        // Don't reveal this until AFTER they verify email
-        // Store this info for later
         sessionStorage.setItem('pendingMultipleAccounts', 'true');
         sessionStorage.setItem('pendingAccountCount', result.count.toString());
-        
-        // Just send verification to the email
-        // Pick the first account for now
         const customerData = result.data[0];
         setSalesforceData(customerData);
         await sendVerificationEmail(customerData);
       } else {
-        // Single account found
         const customerData = result.data[0];
         setSalesforceData(customerData);
         await sendVerificationEmail(customerData);
       }
     } catch (err) {
       console.error('Email check error:', err);
-      // Don't reveal specific errors
+      // Show generic message even on error
+      setStep('verify');
       setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
     } finally {
       setLoading(false);
@@ -383,7 +377,18 @@ const PortalSetupPage = () => {
       console.log('Result secret:', result.secret);
       console.log('Result userId:', result.userId);
       
+
       if (result.success) {
+        // Skip 2FA setup entirely - just redirect to portal
+        //setSuccessMessage('Portal account created successfully!');
+        
+        setTimeout(() => {
+          navigate('/portal-login?setup=complete&email=' + encodeURIComponent(formData.email));
+        }, 1500);
+      }
+
+      // 2FA as part of it ... remove for now
+      /*if (result.success) {
         if (result.requires2FASetup) {
           // DEBUG: Log what we're setting in twoFactorData
           const twoFAData = {
@@ -429,7 +434,7 @@ const PortalSetupPage = () => {
         }
       } else {
         setError(result.error || 'Failed to create account.');
-      }
+      }*/
     } catch (err) {
       console.error('Account creation error:', err);
       setError('Failed to create account. Please try again.');
@@ -467,9 +472,9 @@ const PortalSetupPage = () => {
             </p>
             
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
-                {typeof error === 'string' ? error : <div>{error}</div>}
-              </div>
+              <p className="text-red-600 text-sm mb-4">
+                {error}
+              </p>
             )}
             
             <div className="mb-6">
@@ -645,7 +650,7 @@ const PortalSetupPage = () => {
               Create Your Password
             </h2>
             
-             {salesforceData && (
+             {/*{salesforceData && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-600">
                   <strong>Account:</strong> {salesforceData.firstName} {salesforceData.lastName}<br/>
@@ -656,7 +661,7 @@ const PortalSetupPage = () => {
                   )}
                 </p>
               </div>
-            )}
+                  )}*/}
             
             {successMessage && (
               <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
@@ -875,7 +880,6 @@ const PortalSetupPage = () => {
                 Portal Account Already Exists
               </h2>
               
-              {/* Combined single message box */}
               <div className="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -883,27 +887,15 @@ const PortalSetupPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div className="ml-3 w-full">
-                    <h3 className="text-sm font-medium text-gray-800 mb-3">
-                      Account Found!
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-gray-800">
+                      Account Found
                     </h3>
-                    <p className="text-sm text-gray-700 mb-3">
-                      Good news! You already have a portal account for:<br/>
-                      <span className="font-semibold">{formData.email}</span>
-                    </p>
-                    
-                    <div className="border-t border-gray-200 pt-3 mt-3">
-                      <p className="text-sm font-medium text-gray-800 mb-2">What to do next:</p>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Simply sign in with your existing email and password. If you've forgotten your password, you can reset it on the login page.
-                      </p>
-                      
-                      {salesforceData && (
-                        <div className="text-sm text-gray-500 mt-3 pt-3 border-t border-gray-200">
-                          <p>Name: {salesforceData.firstName} {salesforceData.lastName}</p>
-                          {salesforceData.alcorId && <p>Member ID: {salesforceData.alcorId}</p>}
-                          <p>Email: {formData.email}</p>
-                        </div>
+                    <div className="mt-2 text-sm text-gray-700">
+                      <p>You already have a portal account for:</p>
+                      <p className="font-semibold mt-1">{formData.email}</p>
+                      {salesforceData && salesforceData.alcorId && (
+                        <p className="text-gray-500 mt-2">Member ID: {salesforceData.alcorId}</p>
                       )}
                     </div>
                   </div>

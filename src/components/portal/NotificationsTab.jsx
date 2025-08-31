@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { X, Clock, User, Bell, AlertCircle, Mic, FileText, MapPin, RefreshCw, Info, Mail, Check } from 'lucide-react';
 import alcorStar from '../../assets/images/alcor-star.png';
 import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationsTab = () => {
   const { notifications, refreshNotifications, notificationsLoaded, salesforceContactId } = useMemberPortal();
@@ -20,6 +21,7 @@ const NotificationsTab = () => {
   const [messageContentCache, setMessageContentCache] = useState({});
   const notificationsRef = React.useRef(null);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
+  const navigate = useNavigate();
   
   // Define pagination constant
   const ITEMS_PER_PAGE = 3;
@@ -145,7 +147,7 @@ const NotificationsTab = () => {
       actionUrl: notification.actionUrl,
       read: notification.read
     });
-
+  
     if (!notification.read) {
       try {
         await markNotificationAsRead(notification.id);
@@ -154,7 +156,7 @@ const NotificationsTab = () => {
         console.error('Error marking notification as read:', error);
       }
     }
-
+  
     // Check if it's a message type first
     if (notification.type === 'message') {
       console.log('📧 DEBUG: Message type detected');
@@ -206,10 +208,12 @@ const NotificationsTab = () => {
       }
     } else if (notification.actionUrl) {
       console.log('🔗 DEBUG: ActionUrl detected:', notification.actionUrl);
+      
       if (notification.actionUrl.startsWith('http') || notification.actionType === 'external') {
         window.open(notification.actionUrl, '_blank');
       } else {
-        console.log('Navigate to:', notification.actionUrl);
+        // Use React Router navigation for internal routes
+        navigate(notification.actionUrl);
       }
     } else if (notification.metadata?.link) {
       console.log('🔗 DEBUG: Metadata link detected:', notification.metadata.link);

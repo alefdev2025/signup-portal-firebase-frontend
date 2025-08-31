@@ -7,6 +7,7 @@ import { MemberPortalProvider } from "./contexts/MemberPortalProvider";
 
 // Import the new ProtectedRoute component
 import ProtectedRoute from "./components/ProtectedRoute";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Import pages and components
 import WelcomePage from "./pages/WelcomePage";
@@ -182,6 +183,7 @@ function App() {
   return (
     <DebugWrapper name="App-Main">
       <BrowserRouter>
+        <ScrollToTop /> 
         <UserProvider>
           <Routes>
             {/* Public routes - no authentication required */}

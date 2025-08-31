@@ -14,6 +14,7 @@ import NoPortalAccountView from '../components/NoPortalAccountView';
 import darkLogo from "../assets/images/alcor-white-logo.png";
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
+import MobileLoginPage from './MobileLoginPage';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -46,6 +47,17 @@ const LoginPage = () => {
   const location = useLocation();
 
   const [isChecking2FA, setIsChecking2FA] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
+  // Clear errors when navigating to this page
+  useEffect(() => {
+    setError('');
+    setResetError('');
+    setSuccessMessage('');
+  }, [location.pathname]);
 
   // Clear auth state on component mount (unless in 2FA flow)
   useEffect(() => {
@@ -195,7 +207,7 @@ const LoginPage = () => {
           case 'auth/wrong-password':
           case 'auth/invalid-credential':
           case 'auth/invalid-email':
-            setError('Invalid email or password. Please check your credentials and try again. If you do not have a portal account, create one below.');
+            setError('Invalid email or password. Please check your credentials and try again. If you are already an Alcor member and do not have a portal account, create one below.');
             break;
           case 'auth/too-many-requests':
             setError('Too many failed login attempts. Please try again later or reset your password.');
@@ -357,12 +369,14 @@ const LoginPage = () => {
   const handleShowResetForm = () => {
     setResetEmail(email || '');
     setShowResetForm(true);
+    setError(''); // ADD THIS
   };
   
   const handleCancelReset = () => {
     setShowResetForm(false);
     setResetEmail('');
     setResetError('');
+    setError(''); // ADD THIS
   };
   
   const handleResetEmailChange = (e) => {
@@ -429,7 +443,8 @@ const LoginPage = () => {
     
     try {
       await resetPassword(resetEmail);
-      
+
+      setError('');
       const message = `If an account exists for ${resetEmail}, we've sent a password reset link. Please check your email.`;
       setSuccessMessage(message);
       setShowResetForm(false);
@@ -441,6 +456,53 @@ const LoginPage = () => {
       setIsSubmittingReset(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileLoginPage
+        email={email}
+        password={password}
+        error={error}
+        successMessage={successMessage}
+        loading={loading}
+        showResetForm={showResetForm}
+        resetEmail={resetEmail}
+        resetError={resetError}
+        isSubmittingReset={isSubmittingReset}
+        show2FAForm={show2FAForm}
+        twoFactorCode={twoFactorCode}
+        is2FASubmitting={is2FASubmitting}
+        showNoAccountMessage={showNoAccountMessage}
+        showNoPortalAccount={showNoPortalAccount}
+        highlightGoogleButton={highlightGoogleButton}
+        pendingGoogleLinking={pendingGoogleLinking}
+        isContinueSignup={isContinueSignup}
+        onLogin={handleLogin}
+        onInputChange={handleInputChange}
+        onResetPassword={handleResetPassword}
+        on2FASubmit={handle2FASubmit}
+        onCancel2FA={handleCancel2FA}
+        onGoogleSignInSuccess={handleGoogleSignInSuccess}
+        onGoogleSignInError={handleGoogleSignInError}
+        onGoogleAccountConflict={handleAccountConflict}
+        setResetEmail={setResetEmail}
+        setShowResetForm={setShowResetForm}
+        setTwoFactorCode={setTwoFactorCode}
+        setError={setError}
+        setLoading={setLoading}
+        setPendingGoogleLinking={setPendingGoogleLinking}
+        setShowNoPortalAccount={setShowNoPortalAccount}
+        onNavigateToSignup={() => navigate('/signup')}
+        onNavigateToPortalSetup={() => navigate('/portal-setup')}
+        onNavigateToSupport={() => navigate('/support')}
+        onNavigateToHome={() => navigate('/')}
+        onBackFromNoPortal={() => {
+          setShowNoPortalAccount(false);
+          setPassword('');
+        }}
+      />
+    );
+  }
   
   return (
     <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
@@ -472,9 +534,9 @@ const LoginPage = () => {
               <p className="text-gray-600 mb-6">Enter your email address below and we'll send you a link to reset your password.</p>
               
               {resetError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {resetError}
-                </div>
+                </p>
               )}
               
               <div className="mb-6">
@@ -532,9 +594,9 @@ const LoginPage = () => {
               </p>
               
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {error}
-                </div>
+                </p>
               )}
               
               <div className="mb-6">
@@ -608,16 +670,16 @@ const LoginPage = () => {
                 {isContinueSignup ? "Sign in to continue" : "Sign in to your account"}
               </h2>
               
-              {successMessage && (
+              {/*{successMessage && (
                 <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
                   {successMessage}
                 </div>
-              )}
+              )}*/}
               
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                <p className="text-red-600 text-sm mb-4">
                   {error}
-                </div>
+                </p>
               )}
               
               {showNoAccountMessage && (
@@ -715,7 +777,7 @@ const LoginPage = () => {
               
               <div className="text-center mt-6">
                 <p className="text-gray-700 mb-4">
-                  Don't have an account?{" "}
+                  Aren't a member?{" "}
                   <Link 
                     to="/signup" 
                     className="text-purple-700 hover:underline"
@@ -745,7 +807,7 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/portal-setup')}
-                  className="w-full bg-white border-2 border-purple-600 text-purple-700 py-3 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-purple-50 transition-colors"
+                  className="w-full bg-white border border-purple-600 text-purple-700 py-3 px-6 rounded-full font-medium text-base flex items-center justify-center hover:bg-purple-50 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -760,7 +822,7 @@ const LoginPage = () => {
                   onClick={handleGoBack}
                   className="text-gray-500 hover:text-gray-700 underline"
                 >
-                  Back to Welcome Page
+                  Go To Membership Home Page
                 </button>
               </div>
             </form>

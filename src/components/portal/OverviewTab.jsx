@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { getContactInfo } from '../../services/contact';
 import { getMemberProfile } from './services/salesforce/memberInfo';
 import { useUser } from '../../contexts/UserContext';
@@ -46,6 +46,21 @@ const OverviewTab = ({ setActiveTab }) => {
   const recentActivityRef = useRef(null);
 
   const [showWelcome, setShowWelcome] = useState(false);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
+    // Also reset any parent containers
+    const main = document.querySelector('main');
+    if (main) main.scrollTop = 0;
+    
+    const scrollableContainers = document.querySelectorAll('.overflow-y-auto, .overflow-y-scroll');
+    scrollableContainers.forEach(container => {
+      container.scrollTop = 0;
+    });
+  }, []);
 
   // Track page view when salesforceContactId is available
   useEffect(() => {
@@ -416,478 +431,580 @@ const OverviewTab = ({ setActiveTab }) => {
   };
 
   return (
-    <div className="overview-tab -mx-6 -mt-6 md:mx-0 md:-mt-4 md:w-[95%] md:pl-4">
+    <div className="overview-tab md:w-[95%] md:pl-4">
       {/* Small top padding */}
       <div className="h-8"></div>
       
-      {/* Main Welcome Section - Matching InformationDocumentsTab style */}
-      <div className="bg-white shadow-sm rounded-[1.25rem] overflow-hidden slide-in mx-4 md:mx-0" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-        {/* Content area with icon, welcome text and dewars image */}
-        <div className="p-8 2xl:p-10 border-b border-gray-100">
-          <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-            {/* Left side - Icon, Welcome text and button */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
+      {/* Desktop container - wraps ALL desktop content */}
+      <div className="hidden sm:block">
+        {/* Main Welcome Section - Desktop */}
+        <div className="bg-white shadow-sm rounded-[1.25rem] overflow-hidden slide-in" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          {/* Content area with icon and welcome text */}
+          <div className="p-8 2xl:p-10 border-b border-gray-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
               </div>
-              <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed font-normal mb-6">
-                Access your membership settings, documents, and resources all in one place. Your membership portal provides everything you need to manage your Alcor membership and stay informed about the latest developments.
-              </p>
-              <GradientButton 
-                onClick={() => {
-                  console.log('🔄 [OverviewTab] Navigating to membership status tab');
-                  
-                  if (salesforceContactId) {
-                    analytics.logUserAction('membership_status_button_clicked', {
-                      from: 'overview_tab'
-                    });
-                  }
-                  
-                  if (setActiveTab) {
-                    setActiveTab('membership-status');
-                  } else {
-                    console.error('❌ [OverviewTab] setActiveTab function not provided');
-                  }
-                }}
-                variant="outline"
-                size="sm"
-                className="border-[#12243c] text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white"
-              >
-                View Membership Status
-              </GradientButton>
+              <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
             </div>
-            
-            {/* Right side - Dewars image with podcast overlay - slightly less wide */}
-            {mediaItems.filter(item => item.type === 'podcast').length > 0 && (
-              <div className="relative w-full lg:w-[420px] 2xl:w-[480px] h-40 2xl:h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
-                <img 
-                  src={dewarsImage}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  style={{ filter: 'grayscale(0.2)' }}
-                />
+            <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed font-normal mb-6 max-w-3xl">
+              Access your membership settings, documents, and resources all in one place. Your membership portal provides everything you need to manage your Alcor membership and stay informed about the latest developments.
+            </p>
+            <GradientButton 
+              onClick={() => {
+                console.log('🔄 [OverviewTab] Navigating to membership status tab');
                 
-                {/* Dark purple/blue overlay base */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'rgba(26, 18, 47, 0.7)'
-                  }}
-                />
+                if (salesforceContactId) {
+                  analytics.logUserAction('membership_status_button_clicked', {
+                    from: 'overview_tab'
+                  });
+                }
                 
-                {/* Radial yellow glow from bottom */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'radial-gradient(ellipse 120% 80% at 50% 120%, rgba(255, 215, 0, 0.8) 0%, rgba(255, 184, 0, 0.6) 20%, rgba(255, 140, 0, 0.4) 40%, transparent 70%)'
-                  }}
-                />
-                
-                {/* Purple/pink glow overlay */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'radial-gradient(ellipse 100% 100% at 50% 100%, rgba(147, 51, 234, 0.3) 0%, rgba(109, 40, 217, 0.4) 30%, transparent 60%)',
-                    mixBlendMode: 'screen'
-                  }}
-                />
-                
-                {/* Star decoration */}
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-center" style={{ height: '150%' }}>
-                  <img 
-                    src={alcorStar} 
-                    alt="" 
-                    className="w-24 h-24 opacity-40"
-                    style={{
-                      filter: 'brightness(2) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))',
-                      transform: 'translateY(50%)'
-                    }}
-                  />
-                </div>
-                
-                {/* Podcast content overlay - centered in the space */}
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                  <div className="bg-white/15 backdrop-blur-sm rounded p-3 border border-white/20 w-full max-w-[380px]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-white text-xs font-semibold drop-shadow">LATEST MEDIA</h3>
-                      <img src={alcorStar} alt="Alcor Star" className="w-3 h-3" />
-                    </div>
-                    {(() => {
-                      const latestPodcast = mediaItems.find(item => item.type === 'podcast');
-                      if (!latestPodcast) return null;
+                if (setActiveTab) {
+                  setActiveTab('membership-status');
+                } else {
+                  console.error('❌ [OverviewTab] setActiveTab function not provided');
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="border-[#12243c] text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white"
+            >
+              View Membership Status
+            </GradientButton>
+          </div>
+
+          {/* Announcements Section - Only showing 2 announcements with images */}
+          <div className="p-6 2xl:p-8">
+            <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-6">Latest Announcements</h3>
+            {!contentLoaded && announcements.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ContentSkeleton />
+                <ContentSkeleton />
+              </div>
+            ) : announcements.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
+                {announcements.slice(0, 2).map((announcement, index) => (
+                  <div
+                    key={announcement.id}
+                    className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex gap-4"
+                    onClick={() => {
+                      if (salesforceContactId) {
+                        analytics.logUserAction('announcement_clicked', {
+                          announcementId: announcement.id,
+                          announcementTitle: announcement.title
+                        });
+                      }
                       
-                      return (
-                        <div className="flex items-start gap-3">
-                          <img 
-                            src={podcastImage} 
-                            alt={latestPodcast.title}
-                            className="w-16 h-12 object-cover rounded flex-shrink-0"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs bg-white/25 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-                                PODCAST
+                      if (announcement.link) {
+                        window.open(announcement.link, '_blank');
+                      }
+                    }}
+                  >
+                    {/* Announcement image thumbnail */}
+                    <div className="flex-shrink-0">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden">
+                        <img 
+                          src={getAnnouncementImage(announcement, index)}
+                          alt={announcement.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Announcement content */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="text-base font-bold text-gray-900 mb-1">
+                            {announcement.title}
+                          </h4>
+                          {announcement.subtitle && (
+                            <p className="text-sm text-gray-600 mb-2 font-normal">{announcement.subtitle}</p>
+                          )}
+                          <p className="text-sm text-gray-700 mb-3 font-normal line-clamp-2">
+                            {announcement.description}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            {announcement.eventDate && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {announcement.eventDate}
                               </span>
-                              <span className="text-xs text-white/70">
-                                {formatNotificationTime(latestPodcast.publishDate)}
+                            )}
+                            {announcement.eventTime && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {announcement.eventTime}
                               </span>
-                            </div>
-                            <h4 className="text-xs font-light text-white line-clamp-2 mb-1 drop-shadow">
-                              {latestPodcast.title}
-                            </h4>
-                            {latestPodcast.link && (
-                              <a 
-                                href={latestPodcast.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-white/90 hover:text-white transition-colors font-medium inline-block"
-                              >
-                                LISTEN NOW →
-                              </a>
                             )}
                           </div>
                         </div>
-                      );
-                    })()}
+                        
+                        {announcement.link && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(announcement.link, '_blank');
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
+                          >
+                            <span>Learn More</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-12 text-center">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                <p className="text-gray-500 text-lg mb-2">No announcements at this time</p>
+                <p className="text-gray-400 text-sm">Check back later for updates</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Announcements Section - Only showing 2 announcements with images */}
-        <div className="p-6 2xl:p-8">
-          <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900 mb-6">Latest Announcements</h3>
-          {!contentLoaded && announcements.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ContentSkeleton />
-              <ContentSkeleton />
-            </div>
-          ) : announcements.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
-              {announcements.slice(0, 2).map((announcement, index) => (
-                <div
-                  key={announcement.id}
-                  className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex gap-4"
-                  onClick={() => {
-                    if (salesforceContactId) {
-                      analytics.logUserAction('announcement_clicked', {
-                        announcementId: announcement.id,
-                        announcementTitle: announcement.title
-                      });
-                    }
-                    
-                    if (announcement.link) {
-                      window.open(announcement.link, '_blank');
-                    }
-                  }}
-                >
-                  {/* Announcement image thumbnail */}
-                  <div className="flex-shrink-0">
-                    <div className="w-20 h-20 rounded-lg overflow-hidden">
-                      <img 
-                        src={getAnnouncementImage(announcement, index)}
-                        alt={announcement.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Announcement content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="text-base font-bold text-gray-900 mb-1">
-                          {announcement.title}
-                        </h4>
-                        {announcement.subtitle && (
-                          <p className="text-sm text-gray-600 mb-2 font-normal">{announcement.subtitle}</p>
-                        )}
-                        <p className="text-sm text-gray-700 mb-3 font-normal line-clamp-2">
-                          {announcement.description}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          {announcement.eventDate && (
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              {announcement.eventDate}
-                            </span>
-                          )}
-                          {announcement.eventTime && (
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {announcement.eventTime}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {announcement.link && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(announcement.link, '_blank');
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
-                        >
-                          <span>Learn More</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-lg p-12 text-center">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-              </svg>
-              <p className="text-gray-500 text-lg mb-2">No announcements at this time</p>
-              <p className="text-gray-400 text-sm">Check back later for updates</p>
-            </div>
-          )}
+        {/* Divider */}
+        <div className="py-8">
+          <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
+            background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
+          }}></div>
         </div>
-      </div>
 
-      {/* Divider */}
-      <div className="py-8">
-        <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
-          background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
-        }}></div>
-      </div>
-
-      {/* Member Newsletter Section - Matching document box style */}
-      <div className={`bg-white shadow-sm rounded-[1.25rem] overflow-hidden scroll-slide-up mx-4 md:mx-0 ${visibleSections.has('newsletters-section') ? 'visible' : ''}`} id="newsletters-section" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-        {/* Section Header */}
-        <div className="p-8 2xl:p-10 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
+        {/* Member Newsletter Section - Desktop */}
+        <div className={`bg-white shadow-sm rounded-[1.25rem] overflow-hidden scroll-slide-up ${visibleSections.has('newsletters-section') ? 'visible' : ''}`} id="newsletters-section" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          {/* Section Header */}
+          <div className="p-8 2xl:p-10 border-b border-gray-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">Member Newsletters</h3>
             </div>
-            <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">Member Newsletters</h3>
+            <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed max-w-3xl font-normal">
+              Stay informed with the latest Alcor newsletters, research updates, and member communications.
+            </p>
           </div>
-          <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed max-w-xl font-normal">
-            Stay informed with the latest Alcor newsletters, research updates, and member communications.
-          </p>
-        </div>
 
-        {/* Newsletters Grid */}
-        <div className="p-6 2xl:p-8">
-          {!contentLoaded && mediaItems.filter(item => item.type === 'newsletter').length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <ContentSkeleton />
-              <ContentSkeleton />
-              <ContentSkeleton />
-            </div>
-          ) : mediaItems.filter(item => item.type === 'newsletter').length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-in">
-              {mediaItems
-                .filter(item => item.type === 'newsletter')
-                .slice(0, 6)
-                .map((newsletter, index) => (
-                  <div
-                    key={newsletter.id}
-                    className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex gap-4"
-                    onClick={() => {
-                      if (salesforceContactId) {
-                        analytics.logUserAction('newsletter_clicked', {
-                          newsletterId: newsletter.id,
-                          newsletterTitle: newsletter.title
-                        });
-                      }
-                      
-                      if (newsletter.link) {
-                        window.open(newsletter.link, '_blank');
-                      }
-                    }}
-                  >
-                    {/* Small newsletter image thumbnail */}
-                    {newsletter.imageUrl && (
+          {/* Newsletters Grid */}
+          <div className="p-6 2xl:p-8">
+            {!contentLoaded && mediaItems.filter(item => item.type === 'newsletter').length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ContentSkeleton />
+                <ContentSkeleton />
+              </div>
+            ) : mediaItems.filter(item => item.type === 'newsletter').length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger-in">
+                {mediaItems
+                  .filter(item => item.type === 'newsletter')
+                  .slice(0, 2)
+                  .map((newsletter, index) => (
+                    <div
+                      key={newsletter.id}
+                      className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex gap-4"
+                      onClick={() => {
+                        if (salesforceContactId) {
+                          analytics.logUserAction('newsletter_clicked', {
+                            newsletterId: newsletter.id,
+                            newsletterTitle: newsletter.title
+                          });
+                        }
+                        
+                        if (newsletter.link) {
+                          window.open(newsletter.link, '_blank');
+                        }
+                      }}
+                    >
+                      {/* Newsletter image thumbnail */}
                       <div className="flex-shrink-0">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden">
                           <img 
-                            src={newsletter.imageUrl}
+                            src={newsletter.imageUrl || dewarsImage}
                             alt={newsletter.title}
                             className="w-full h-full object-cover"
                           />
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Newsletter content */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-gray-900 mb-1">
-                        {newsletter.title}
-                      </h4>
-                      <p className="text-xs text-gray-500 mb-3">
-                        {newsletter.publishDate ? new Date(newsletter.publishDate).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        }) : ''}
-                      </p>
-                      <p className="text-sm text-gray-700 mb-4 line-clamp-2 font-normal">
-                        {newsletter.description}
-                      </p>
-                      <button className="text-[#d09163] hover:text-[#b87a52] font-medium text-sm transition-colors flex items-center gap-2 underline underline-offset-4">
-                        Read Newsletter
-                        <svg className="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                      
+                      {/* Newsletter content */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h4 className="text-base font-bold text-gray-900 mb-1">
+                              {newsletter.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-2 font-normal">
+                              {newsletter.publishDate ? new Date(newsletter.publishDate).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              }) : ''}
+                            </p>
+                            <p className="text-sm text-gray-700 mb-3 font-normal line-clamp-2">
+                              {newsletter.description}
+                            </p>
+                          </div>
+                          
+                          {newsletter.link && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(newsletter.link, '_blank');
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white border border-[#12243c] rounded-lg transition-all duration-200 flex-shrink-0"
+                            >
+                              <span>Read More</span>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-12 text-center">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                <p className="text-gray-500 text-lg mb-2">No newsletters available</p>
+                <p className="text-gray-400 text-sm">Check back later for new content</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="py-8">
+          <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
+            background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
+          }}></div>
+        </div>
+
+        {/* Recent Activity Section - Desktop */}
+        <div className={`bg-white shadow-sm rounded-[1.25rem] overflow-hidden scroll-slide-up ${visibleSections.has('recent-activity-section') ? 'visible' : ''}`} id="recent-activity-section" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          {/* Section Header */}
+          <div className="p-8 2xl:p-10 border-b border-gray-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">Recent Changes</h3>
+            </div>
+            <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed max-w-xl font-normal">
+              Track your recent updates and changes to your membership information.
+            </p>
+          </div>
+
+          {/* Activities List */}
+          <div className="p-6 2xl:p-8">
+            {activitiesLoading ? (
+              <div className="space-y-4 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-gray-200"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
                     </div>
                   </div>
                 ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-lg p-12 text-center">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-              <p className="text-gray-500 text-lg mb-2">No newsletters available</p>
-              <p className="text-gray-400 text-sm">Check back later for new content</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="py-8">
-        <div className="h-[0.5px] mx-8 rounded-full opacity-60" style={{ 
-          background: 'linear-gradient(90deg, transparent 0%, #4a5f7a 15%, #5a4f7a 40%, #7a5f8a 60%, #9e7398 85%, transparent 100%)' 
-        }}></div>
-      </div>
-
-      {/* Recent Activity Section - Matching document box style */}
-      <div className={`bg-white shadow-sm rounded-[1.25rem] overflow-hidden scroll-slide-up mx-4 md:mx-0 ${visibleSections.has('recent-activity-section') ? 'visible' : ''}`} id="recent-activity-section" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-        {/* Section Header */}
-        <div className="p-8 2xl:p-10 border-b border-gray-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg 2xl:text-xl font-semibold text-gray-900">Recent Changes</h3>
-          </div>
-          <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed max-w-xl font-normal">
-            Track your recent updates and changes to your membership information.
-          </p>
-        </div>
-
-        {/* Activities List */}
-        <div className="p-6 2xl:p-8">
-          {activitiesLoading ? (
-            <div className="space-y-4 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl">
-                  <div className="w-10 h-10 rounded-lg bg-gray-200"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : activitiesError ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-red-600 font-medium">{activitiesError}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="mt-3 text-sm text-red-500 hover:text-red-700 underline"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : recentActivities.length > 0 ? (
-            <div className="space-y-4 stagger-in">
-              {recentActivities.slice(0, 5).map((activity, index) => (
-                <div
-                  key={activity.id}
-                  className="p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all"
+              </div>
+            ) : activitiesError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <svg className="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-red-600 font-medium">{activitiesError}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-3 text-sm text-red-500 hover:text-red-700 underline"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Activity icon with gradient styling */}
-                    <div 
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg hover:shadow-xl transform transition duration-300 ${getActivityIconStyle(activity.category)}`}
-                    >
-                      {getActivityIcon(activity.category)}
+                  Try Again
+                </button>
+              </div>
+            ) : recentActivities.length > 0 ? (
+              <div className="space-y-4 stagger-in">
+                {recentActivities.slice(0, 5).map((activity, index) => (
+                  <div
+                    key={activity.id}
+                    className="p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Activity icon with gradient styling */}
+                      <div 
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg hover:shadow-xl transform transition duration-300 ${getActivityIconStyle(activity.category)}`}
+                      >
+                        {getActivityIcon(activity.category)}
+                      </div>
+                      
+                      {/* Activity details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#2a2346] font-medium text-base">
+                          {activity.displayText || activity.activity}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {activity.relativeTime}
+                        </p>
+                      </div>
+                      
+                      {/* Arrow icon */}
+                      <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
-                    
-                    {/* Activity details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[#2a2346] font-medium text-base">
-                        {activity.displayText || activity.activity}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {activity.relativeTime}
-                      </p>
-                    </div>
-                    
-                    {/* Arrow icon */}
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-12 text-center">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-500 text-lg mb-2">No recent changes</p>
+                <p className="text-sm text-gray-400">
+                  Your changes will appear here as you update your information
+                </p>
+              </div>
+            )}
+            
+            {/* Activity summary stats */}
+            {recentActivities.length > 0 && !activitiesLoading && (
+              <div className="mt-8 grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
+                  <p className="text-2xl font-semibold text-[#1e2951]">
+                    {recentActivities.filter(a => a.category === 'profile').length}
+                  </p>
+                  <p className="text-sm text-[#1e2951] mt-1">Profile Updates</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-lg p-12 text-center">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-gray-500 text-lg mb-2">No recent changes</p>
-              <p className="text-sm text-gray-400">
-                Your changes will appear here as you update your information
-              </p>
-            </div>
-          )}
-          
-          {/* Activity summary stats */}
-          {recentActivities.length > 0 && !activitiesLoading && (
-            <div className="mt-8 grid grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
-                <p className="text-2xl font-semibold text-[#1e2951]">
-                  {recentActivities.filter(a => a.category === 'profile').length}
-                </p>
-                <p className="text-sm text-[#1e2951] mt-1">Profile Updates</p>
+                <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
+                  <p className="text-2xl font-semibold text-[#1e2951]">
+                    {recentActivities.filter(a => a.category === 'documents').length}
+                  </p>
+                  <p className="text-sm text-[#1e2951] mt-1">Document Changes</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
+                  <p className="text-2xl font-semibold text-[#1e2951]">
+                    {recentActivities.filter(a => a.category === 'financial').length}
+                  </p>
+                  <p className="text-sm text-[#1e2951] mt-1">Financial Updates</p>
+                </div>
               </div>
-              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
-                <p className="text-2xl font-semibold text-[#1e2951]">
-                  {recentActivities.filter(a => a.category === 'documents').length}
-                </p>
-                <p className="text-sm text-[#1e2951] mt-1">Document Changes</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile container with proper padding */}
+      <div className="sm:hidden px-4 space-y-4">
+        {/* Main Welcome Section - Mobile */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden slide-in" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
               </div>
-              <div className="bg-white rounded-lg p-4 text-center border border-gray-300">
-                <p className="text-2xl font-semibold text-[#1e2951]">
-                  {recentActivities.filter(a => a.category === 'financial').length}
-                </p>
-                <p className="text-sm text-[#1e2951] mt-1">Financial Updates</p>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
             </div>
-          )}
+            <p className="text-gray-700 text-sm leading-relaxed font-normal mb-4">
+              Access your membership settings, documents, and resources all in one place.
+            </p>
+            <GradientButton 
+              onClick={() => {
+                if (salesforceContactId) {
+                  analytics.logUserAction('membership_status_button_clicked', {
+                    from: 'overview_tab'
+                  });
+                }
+                if (setActiveTab) {
+                  setActiveTab('membership-status');
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="border-[#12243c] text-[#12243c] hover:bg-gradient-to-r hover:from-[#12243c] hover:to-[#1a2f4a] hover:text-white w-full"
+            >
+              View Membership Status
+            </GradientButton>
+          </div>
+        </div>
+
+        {/* Announcements Section - Mobile */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          <div className="p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Latest Announcements</h3>
+            {!contentLoaded && announcements.length === 0 ? (
+              <ContentSkeleton />
+            ) : announcements.length > 0 ? (
+              <div className="space-y-4">
+                {announcements.slice(0, 2).map((announcement, index) => (
+                  <div
+                    key={announcement.id}
+                    className="p-4 border border-gray-200 rounded-lg"
+                    onClick={() => {
+                      if (announcement.link) {
+                        window.open(announcement.link, '_blank');
+                      }
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden">
+                          <img 
+                            src={getAnnouncementImage(announcement, index)}
+                            alt={announcement.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-900 mb-1">
+                          {announcement.title}
+                        </h4>
+                        {announcement.subtitle && (
+                          <p className="text-xs text-gray-600 mb-1">{announcement.subtitle}</p>
+                        )}
+                        <p className="text-xs text-gray-700 line-clamp-2">
+                          {announcement.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-8 text-center">
+                <p className="text-gray-500">No announcements</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Member Newsletter Section - Mobile */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          <div className="p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Member Newsletters</h3>
+            {!contentLoaded && mediaItems.filter(item => item.type === 'newsletter').length === 0 ? (
+              <ContentSkeleton />
+            ) : mediaItems.filter(item => item.type === 'newsletter').length > 0 ? (
+              <div className="space-y-4">
+                {mediaItems
+                  .filter(item => item.type === 'newsletter')
+                  .slice(0, 2)
+                  .map((newsletter) => (
+                    <div
+                      key={newsletter.id}
+                      className="p-4 border border-gray-200 rounded-lg"
+                      onClick={() => {
+                        if (newsletter.link) {
+                          window.open(newsletter.link, '_blank');
+                        }
+                      }}
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-16 rounded-lg overflow-hidden">
+                            <img 
+                              src={newsletter.imageUrl || dewarsImage}
+                              alt={newsletter.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 mb-1">
+                            {newsletter.title}
+                          </h4>
+                          <p className="text-xs text-gray-600 mb-1">
+                            {newsletter.publishDate ? new Date(newsletter.publishDate).toLocaleDateString() : ''}
+                          </p>
+                          <p className="text-xs text-gray-700 line-clamp-2">
+                            {newsletter.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-8 text-center">
+                <p className="text-gray-500">No newsletters available</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity Section - Mobile */}
+        <div className="bg-white shadow-sm rounded-xl overflow-hidden" style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+          <div className="p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Recent Changes</h3>
+            {activitiesLoading ? (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                    <div className="w-8 h-8 rounded-lg bg-gray-200"></div>
+                    <div className="flex-1">
+                      <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div>
+                      <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentActivities.length > 0 ? (
+              <div className="space-y-3">
+                {recentActivities.slice(0, 3).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="p-3 border border-gray-200 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${getActivityIconStyle(activity.category)}`}>
+                        {React.cloneElement(getActivityIcon(activity.category), {
+                          className: "w-4 h-4 text-white"
+                        })}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#2a2346] font-medium">
+                          {activity.displayText || activity.activity}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {activity.relativeTime}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-8 text-center">
+                <p className="text-gray-500">No recent changes</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

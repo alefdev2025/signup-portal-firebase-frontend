@@ -196,6 +196,9 @@ const WelcomePage = () => {
   }
  ];
 
+ // Mobile card order: Member Portal, New Membership, Continue Application
+ const mobileCardData = [cardData[2], cardData[0], cardData[1]];
+
  return (
    <div className="min-h-screen bg-gray-100 flex flex-col" style={{ fontFamily: SYSTEM_FONT }}>
      {/* Use the integrated ResponsiveBanner with progress bar hidden */}
@@ -211,14 +214,14 @@ const WelcomePage = () => {
      />
      
      {/* Main Content - Cards with smaller sizing */}
-     <div className="flex-grow px-6 sm:px-8 py-12 md:py-16 flex justify-center">
+     <div className="flex-grow px-6 sm:px-8 py-8 md:py-16 flex justify-center">
        <div className="w-full max-w-5xl md:mx-auto">
-         {/* Cards in horizontal layout on desktop with smaller spacing */}
-         <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+         {/* Desktop Cards in horizontal layout */}
+         <div className="hidden md:grid md:grid-cols-3 gap-6 md:gap-8">
            {cardData.map((card) => (
              <div 
                key={card.id}
-               className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-11/12 sm:w-9/12 md:w-full mx-auto md:mx-0`}
+               className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-full mx-auto md:mx-0`}
              >
                <div className="h-3"></div>
                
@@ -236,6 +239,41 @@ const WelcomePage = () => {
                  <button 
                    onClick={card.buttonAction}
                    className={`w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full font-semibold text-sm sm:text-base ${card.buttonClasses} flex items-center justify-center transition-all duration-300 shadow-sm mb-3`}
+                 >
+                   <img src={whiteStar} alt="" className="h-4 w-4 mr-2" />
+                   {card.buttonText}
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                     <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                   </svg>
+                 </button>
+               </div>
+             </div>
+           ))}
+         </div>
+         
+         {/* Mobile Cards - reordered with more spacing and bottom padding */}
+         <div className="md:hidden space-y-10 pb-20">
+           {mobileCardData.map((card) => (
+             <div 
+               key={card.id}
+               className={`rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border ${card.cardClasses} flex flex-col h-full transform hover:-translate-y-1 w-11/12 sm:w-9/12 mx-auto`}
+             >
+               <div className="h-3"></div>
+               
+               <div className="p-4 flex-1">
+                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-white shadow-sm border ${card.borderColor} mx-auto`}>
+                   {card.iconPath}
+                 </div>
+                 <h3 className="text-lg font-bold text-[#0C2340] mb-3 flex items-center justify-center">
+                   {card.title}
+                 </h3>
+                 <p className="text-gray-500 mb-5 text-sm text-center leading-relaxed font-light">{card.description}</p>
+               </div>
+               
+               <div className="px-4 pb-6 mt-auto">
+                 <button 
+                   onClick={card.buttonAction}
+                   className={`w-full py-3 px-4 rounded-full font-semibold text-sm ${card.buttonClasses} flex items-center justify-center transition-all duration-300 shadow-sm mb-3`}
                  >
                    <img src={whiteStar} alt="" className="h-4 w-4 mr-2" />
                    {card.buttonText}

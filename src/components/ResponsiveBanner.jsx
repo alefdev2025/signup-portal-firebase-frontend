@@ -252,7 +252,7 @@ const ResponsiveBanner = ({
 
   const getLogoSizeClass = () => {
     if (isSignupPage || isLoginPage) return "h-16 md:h-16";
-    if (isWelcomePage) return "h-12 md:h-14";
+    if (isWelcomePage) return "h-12 md:h-16";
     return "h-16 md:h-16";
   };
 
@@ -278,39 +278,36 @@ const ResponsiveBanner = ({
 
   return (
     <div className="banner-container" style={interStyle}>
-      {/* Mobile Banner */}
-      <div className="md:hidden">
-        <div 
-          className={`text-white px-4 ${isWelcomePage ? 'py-10' : isLoginPage ? 'pt-6 pb-16' : 'pt-6 pb-16'} relative overflow-hidden`}
-          style={{
-            ...interStyle,
-            ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
-          }}
-        >
-          {/* Dark overlay for image background */}
-          {shouldUseImage && <div style={overlayStyle}></div>}
-          
-          {/* Logo positioned absolutely */}
-          <div className="absolute top-6 left-4" style={{ zIndex: 2 }}>
-            <img 
-              src={logo} 
-              alt="Alcor Logo" 
-              className={isWelcomePage && !isLoginPage ? "h-10" : "h-16"}
-            />
-          </div>
-
-          {/* Heading section stays in normal flow */}
-          <div className="flex items-center justify-end pt-8" style={{ position: 'relative', zIndex: 2 }}>
-            <h1 className="flex items-center">
-              {/* Changed from text-xl to text-lg for smaller mobile heading */}
-              <span className="text-lg font-normal">
-                {displayHeading}
-              </span>
-              {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
-            </h1>
-          </div>
+    {/* Mobile Banner */}
+    <div className="md:hidden">
+      <div 
+        className="text-white px-4 py-5 relative overflow-hidden flex items-center"
+        style={{
+          ...interStyle,
+          ...(shouldUseGradient ? gradientStyle : (shouldUseImage ? imageBackgroundStyle : { backgroundColor: '#13263f' }))
+        }}
+      >
+        {/* Dark overlay for image background */}
+        {shouldUseImage && <div style={overlayStyle}></div>}
+        
+        {/* Logo on the left */}
+        <div className="mr-auto" style={{ position: 'relative', zIndex: 2 }}>
+          <img 
+            src={logo} 
+            alt="Alcor Logo" 
+            className={isWelcomePage && !isLoginPage ? "h-12" : "h-12"}
+          />
         </div>
+
+        {/* Heading on the right with slight downward offset */}
+        <h1 className="flex items-center mt-1" style={{ position: 'relative', zIndex: 2 }}>
+          <span className="text-lg font-normal">
+            {displayHeading}
+          </span>
+          {showStar && <img src={yellowStar} alt="" className="h-5 ml-0.5" />}
+        </h1>
       </div>
+    </div>
       
       {/* Desktop Banner - consistent height regardless of progress bar visibility */}
       <div 
