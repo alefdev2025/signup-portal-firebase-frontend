@@ -114,13 +114,13 @@ const PasswordField = ({
           <div className="mt-2 mb-1">
             <div className="flex items-center mb-1">
               <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full ${
-                    strength.isStrong ? 'bg-green-500' : 
-                    strength.isMedium ? 'bg-yellow-500' : 
-                    'bg-red-500'
-                  }`}
-                  style={{ width: `${strength.score}%` }}
+              <div 
+                className={`h-full ${
+                  strength.isStrong ? 'bg-purple-800' : 
+                  strength.isMedium ? 'bg-blue-800' : 
+                  'bg-red-800'
+                }`}
+                style={{ width: `${strength.score}%` }}
                   role="progressbar"
                   aria-valuenow={strength.score}
                   aria-valuemin="0"
@@ -128,10 +128,10 @@ const PasswordField = ({
                 ></div>
               </div>
               <span className={`ml-2 text-xs ${
-                strength.isStrong ? 'text-green-600' : 
-                strength.isMedium ? 'text-yellow-600' : 
-                'text-red-600'
-              }`}>
+            strength.isStrong ? 'text-purple-700' : 
+            strength.isMedium ? 'text-blue-700' : 
+            'text-red-700'
+          }`}>
                 {strength.isStrong ? 'Strong' : 
                  strength.isMedium ? 'Medium' : 
                  'Weak'}
