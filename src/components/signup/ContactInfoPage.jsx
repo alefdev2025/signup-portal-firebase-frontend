@@ -1171,7 +1171,7 @@ export default function ContactInfoPage({ onNext, onBack, initialData }) {
           </div>
           
           {/* Navigation buttons */}
-          <div className="flex justify-between mt-8 mb-6 md:mb-6 pb-8 md:pb-0 w-full">
+          <div className="flex justify-between mt-8 mb-6 md:mb-6 pb-[150px] md:pb-0 w-full">
             <SecondaryButton
               onClick={handleBack}
               disabled={isSubmitting}

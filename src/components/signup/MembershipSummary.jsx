@@ -916,10 +916,10 @@ export default function MembershipSummary({
                     className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="ml-3">
-                    <span className="text-gray-900 font-medium">I give Alcor permission to freely release my name and related Alcor membership status at its discretion</span>
+                    <span className="text-gray-900 font-medium text-sm md:text-base">I give Alcor permission to freely release my name and related Alcor membership status at its discretion</span>
                   </div>
                 </label>
-                
+
                 <label className="flex items-start cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
                   <input
                     type="checkbox"
@@ -928,17 +928,18 @@ export default function MembershipSummary({
                     className="mt-0.5 w-5 h-5 text-[#775684] border-gray-300 rounded focus:ring-[#775684] focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="ml-3">
-                    <span className="text-gray-900 font-medium">Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor's General Terms and Conditions</span>
+                    <span className="text-gray-900 font-medium text-sm md:text-base">Alcor is to make reasonable efforts to maintain confidentiality of my information, subject to Alcor's General Terms and Conditions</span>
                   </div>
                 </label>
               </div>
             </div>
 
             {/* Payment Notice - Clean white background with border */}
+            {/* Payment Notice - Clean white background with border */}
             {(
               <div className="bg-white border-2 border-gray-300 rounded-[1.25rem] p-6 md:p-8 mb-6 relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center flex-1">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start flex-1">
                     <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg flex-shrink-0 transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
                       <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -979,7 +980,7 @@ export default function MembershipSummary({
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
+            <div className="flex justify-between mt-8 pb-[150px] md:pb-0">
               <SecondaryButton
                 type="button"
                 onClick={onBack}
@@ -1069,7 +1070,7 @@ export default function MembershipSummary({
                   <div className="flex-1">
                     <h4 className="text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
                     <p className="text-gray-700 text-sm mb-3 leading-relaxed">
-                      DocuSign will send an SMS verification code to validate your identity for electronic signature.
+                      Docusign will send an SMS verification code to validate your identity for electronic signature.
                     </p>
                     
                     <div className="bg-white rounded-lg p-3 border border-gray-200">

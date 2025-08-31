@@ -183,7 +183,7 @@ function App() {
   return (
     <DebugWrapper name="App-Main">
       <BrowserRouter>
-        <ScrollToTop /> 
+        {/*<ScrollToTop /> */}
         <UserProvider>
           <Routes>
             {/* Public routes - no authentication required */}

@@ -675,7 +675,7 @@ export default function PackagePage({ onNext, onBack, initialData = {}, preloade
         </div>
         
         {/* Navigation buttons */}
-        <div className={`flex justify-between mt-8 mb-6 w-full transition-all duration-700 ease-in-out transform ${
+        <div className={`flex justify-between mt-8 mb-6 pb-[150px] md:pb-0 w-full transition-all duration-700 ease-in-out transform ${
           showCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`} style={{ transitionDelay: '900ms' }}>
           <SecondaryButton

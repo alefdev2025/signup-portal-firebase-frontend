@@ -13,6 +13,7 @@ import navyALogo from "../../assets/images/navy-a-logo.png";
 import { auth } from "../../services/firebase";
 import { API_BASE_URL } from '../../config/api';
 import { DelayedCenteredLoader } from '../../components/DotLoader';
+import SimpleBanner from "../../components/SimpleBanner";
 
 // Import membership service
 import membershipService from "../../services/membership";

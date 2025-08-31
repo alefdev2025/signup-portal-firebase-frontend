@@ -171,11 +171,14 @@ const getStepProps = () => {
   return {};
 };
 
+const isCompletionStep = currentStepIndex === 6;
+
   // Full-screen steps with SimpleBanner
-  if (currentStep?.id === 'docusign' || 
-    currentStep?.id === 'payment' || 
-    currentStep?.id === 'completion' ||
-    currentStep?.component === 'MembershipCompletionStep') {
+  if (isCompletionStep ||  // <-- ADD THIS FIRST
+      currentStep?.id === 'docusign' || 
+      currentStep?.id === 'payment' || 
+      currentStep?.id === 'completion' ||
+      currentStep?.component === 'MembershipCompletionStep') {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col">
         {/* SimpleBanner - ALWAYS SHOWS IMMEDIATELY */}

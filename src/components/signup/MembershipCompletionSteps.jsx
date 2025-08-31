@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { auth } from '../../services/firebase';
 import { DelayedCenteredLoader } from '../../components/DotLoader';
+import ResponsiveBanner from "../ResponsiveBanner";
 
 // Font family from MembershipSummary
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -87,6 +88,8 @@ export default function MembershipCompletionSteps({
   const [isCreatingSalesforce, setIsCreatingSalesforce] = useState(false);
   const [backButtonError, setBackButtonError] = useState(false);
   const [isCompletingMembership, setIsCompletingMembership] = useState(false);
+
+  const [isReady, setIsReady] = useState(false);
 
   const navigate = useNavigate();
   const { user } = useUser();
@@ -357,6 +360,15 @@ export default function MembershipCompletionSteps({
     }
   };
 
+  useEffect(() => {
+    // Give parent components time to update their state/banner
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 150); // 150ms delay
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Initial load - only once
   useEffect(() => {
     if (!hasInitialized.current) {
@@ -546,6 +558,10 @@ export default function MembershipCompletionSteps({
     return `${parsed.countryCode.code} ${formatted}`;
   };
 
+  if (!isReady) {
+    return null;
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -625,7 +641,7 @@ export default function MembershipCompletionSteps({
             </div>
             
             <p className="text-gray-600 mb-4 font-light" style={{ fontSize: '15px' }}>
-              DocuSign will send an SMS verification code to this number:
+              Docusign will send an SMS verification code to this number:
             </p>
             
             {isEditingPhone ? (
@@ -948,7 +964,7 @@ export default function MembershipCompletionSteps({
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between mt-8 pb-[150px] md:pb-0">
             <div className="flex items-center">
               <button
                 type="button"

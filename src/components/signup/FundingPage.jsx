@@ -461,7 +461,7 @@ const handleNext = async () => {
        )}
 
        
-       <div className={`flex justify-between mt-8 transition-all duration-700 ease-in-out delay-700 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`flex justify-between mt-8 pb-[165px] md:pb-0 transition-all duration-700 ease-in-out delay-700 transform ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
        <SecondaryButton
           onClick={handleBackClick}
           disabled={isSubmitting}
