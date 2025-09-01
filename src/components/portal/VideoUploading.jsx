@@ -62,21 +62,61 @@ const VideoUploading = ({
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
-    // Validation
+  
+    // File type validation
     if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
       setError(`Please select a valid video file. Supported formats: MP4, MOV, AVI, WMV, WebM, OGG`);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
-
+  
+    // File size validation
     if (file.size > MAX_VIDEO_SIZE) {
       setError(`Video file is too large. Maximum size is 2GB.`);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
-
-    setSelectedVideo(file);
-    setVideoPreview(URL.createObjectURL(file));
-    setError(null);
+  
+    // Duration validation
+    const video = document.createElement('video');
+    const tempUrl = URL.createObjectURL(file);
+    
+    video.preload = 'metadata';
+    
+    video.onloadedmetadata = function() {
+      // Clean up the temporary URL
+      URL.revokeObjectURL(tempUrl);
+      
+      // Check duration (allowing a small buffer for rounding)
+      if (video.duration > MAX_RECORDING_TIME + 1) {
+        setError(`Video must be ${MAX_RECORDING_TIME} seconds or less. Your video is ${Math.round(video.duration)} seconds long.`);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+      
+      // Duration is OK, proceed with setting the video
+      const previewUrl = URL.createObjectURL(file);
+      setSelectedVideo(file);
+      setVideoPreview(previewUrl);
+      setError(null);
+    };
+    
+    video.onerror = function() {
+      URL.revokeObjectURL(tempUrl);
+      setError('Unable to read video file. Please try a different video.');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    
+    // Set the source to trigger metadata loading
+    video.src = tempUrl;
   };
 
   // SINGLE UNIFIED UPLOAD METHOD - Direct to GCS

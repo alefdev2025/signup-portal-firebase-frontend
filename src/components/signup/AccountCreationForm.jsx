@@ -178,7 +178,14 @@ const AccountCreationForm = ({
     return (
       <>
         {/* White container box for verification form */}
-        <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] px-4 py-4 sm:w-full sm:max-w-2xl sm:mx-auto sm:relative sm:left-auto sm:right-auto sm:ml-auto sm:mr-auto sm:px-0 sm:py-0 bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="w-full" style={{
+  width: '100vw',
+  marginLeft: 'calc(-50vw + 50%)',
+  marginRight: 'calc(-50vw + 50%)',
+  position: 'relative'
+}}>
+  <div className="px-5 pt-6 sm:px-0 sm:pt-0 sm:-mt-4 sm:max-w-2xl sm:mx-auto">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <form onSubmit={onSubmitForm} className="p-8 space-y-10 sm:space-y-6">
             <div className="mb-10 sm:mb-10">
               <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-4 sm:mb-4">
@@ -268,15 +275,17 @@ const AccountCreationForm = ({
               </button>
               
               {/* Logo below the verify button - Only visible on mobile */}
-              <div className="flex justify-center mt-6 mb-10 sm:hidden">
+               {/*<div className="flex justify-center mt-6 mb-10 sm:hidden">
                 <img 
                   src={navyAlcorLogo} 
                   alt="Alcor Logo" 
                   className="h-16" 
                 />
-              </div>
+              </div> */}
             </div>
           </form>
+          </div>
+          </div>
         </div>
         
         {/* Help Panel Component - positioned fixed to viewport */}
@@ -293,7 +302,14 @@ const AccountCreationForm = ({
   return (
     <>
       {/* White container box for the entire form */}
-      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] px-4 py-4 sm:w-full sm:max-w-2xl sm:mx-auto sm:relative sm:left-auto sm:right-auto sm:ml-auto sm:mr-auto sm:px-0 sm:py-0 bg-white rounded-xl shadow-md overflow-hidden mt-0 sm:-mt-8">
+      <div className="w-full" style={{
+  width: '100vw',
+  marginLeft: 'calc(-50vw + 50%)',
+  marginRight: 'calc(-50vw + 50%)',
+  position: 'relative'
+}}>
+  <div className="px-5 pt-6 sm:px-0 sm:pt-0 sm:max-w-2xl sm:mx-auto">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <form onSubmit={onSubmitForm} className="p-4 sm:p-8 space-y-4">
           {/* Header */}
           <div className="mb-6">
@@ -425,7 +441,7 @@ const AccountCreationForm = ({
                 backgroundColor: "#31314f", 
                 color: "white"
               }}
-              className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
+              className="w-full py-3 px-6 rounded-full font-semibold text-base mb-8 flex items-center justify-center hover:opacity-90 disabled:opacity-70 shadow-sm"
             >
               {isSubmitting ? (
                 <>
@@ -503,6 +519,8 @@ const AccountCreationForm = ({
           toggleHelpInfo={toggleHelpInfo} 
           helpItems={accountCreationHelpContent} 
         />
+         </div>
+      </div>
       </div>
     </>
   );

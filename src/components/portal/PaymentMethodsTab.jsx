@@ -30,7 +30,7 @@ if (!STRIPE_PUBLISHABLE_KEY) {
   console.error('Stripe publishable key is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY in your .env file');
 }
 
-console.log('Using Stripe key:', STRIPE_PUBLISHABLE_KEY?.substring(0, 20) + '...'); // For debugging (only shows first part)
+//console.log('Using Stripe key:', STRIPE_PUBLISHABLE_KEY?.substring(0, 20) + '...'); // For debugging (only shows first part)
 
 // Initialize Stripe
 const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
