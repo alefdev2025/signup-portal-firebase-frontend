@@ -24,7 +24,7 @@ const InvoiceList = ({
     // Remove "INV" prefix (case insensitive) and any following dash or space
     return invoiceNumber.replace(/^INV[-\s]*/i, '');
   };
-  
+
   // Updated status styles with pill badges - all same width
   const getStatusBadge = (status) => {
     // On mobile, just return text without badge styling

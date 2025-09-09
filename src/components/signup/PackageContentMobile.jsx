@@ -120,7 +120,7 @@ export const PackageContentMobile = ({
               </div>
               <div className="flex items-start">
                 <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                <span>Possible Revival</span>
+                <span>Future Repair & Restorationl</span>
               </div>
             </>
           )}
@@ -140,7 +140,7 @@ export const PackageContentMobile = ({
               </div>
               <div className="flex items-start">
                 <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                <span>Possible Revival</span>
+                <span>Potential Restoration</span>
               </div>
             </>
           )}
@@ -160,7 +160,7 @@ export const PackageContentMobile = ({
               </div>
               <div className="flex items-start">
                 <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                <span>Consultation Services</span>
+                <span>Lock in age-based dues</span>
               </div>
             </>
           )}

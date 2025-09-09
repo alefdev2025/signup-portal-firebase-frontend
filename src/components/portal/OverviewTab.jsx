@@ -166,17 +166,17 @@ const OverviewTab = ({ setActiveTab }) => {
       if (salesforceContactId && !isPreloading) {
         try {
           setProfileLoading(true);
-          console.log('📞 [OverviewTab] Calling getMemberProfile with ID:', salesforceContactId);
+          //console.log('📞 [OverviewTab] Calling getMemberProfile with ID:', salesforceContactId);
           const result = await getMemberProfile(salesforceContactId);
-          console.log('📦 [OverviewTab] getMemberProfile result:', result);
+          //console.log('📦 [OverviewTab] getMemberProfile result:', result);
           
           if (result.success && result.data) {
             const profileInfo = result.data.data || result.data;
-            console.log('✅ [OverviewTab] Profile data received:', profileInfo);
+            //console.log('✅ [OverviewTab] Profile data received:', profileInfo);
             setProfileData(profileInfo);
             
             if (!userName && profileInfo.personalInfo?.firstName) {
-              console.log('🔄 [OverviewTab] Setting userName from profile data:', profileInfo.personalInfo.firstName);
+              //console.log('🔄 [OverviewTab] Setting userName from profile data:', profileInfo.personalInfo.firstName);
               setUserName(profileInfo.personalInfo.firstName);
             }
           }
@@ -205,7 +205,7 @@ const OverviewTab = ({ setActiveTab }) => {
         setActivitiesLoading(true);
         setActivitiesError(null);
         
-        console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
+        //console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
         
         const activities = await getContactActivities(100, null, salesforceContactId);
         const formattedActivities = activities.map(formatActivity);

@@ -264,7 +264,7 @@ export const reportActivity = async (salesforceId, activity, timestamp = null) =
 
 // Get recent activities - GET /api/activity
 export const getRecentActivities = async (limit = 5, offset = 0, salesforceContactId = null, category = null, startDate = null) => {
-  console.log('📊 [UserActivity] Fetching recent activities...', { limit, offset, category, salesforceContactId });
+  //console.log('📊 [UserActivity] Fetching recent activities...', { limit, offset, category, salesforceContactId });
   
   try {
     const token = await getAuthToken();
@@ -291,7 +291,7 @@ export const getRecentActivities = async (limit = 5, offset = 0, salesforceConta
     }
 
     const data = await response.json();
-    console.log('✅ [UserActivity] Activities retrieved:', data);
+    //console.log('✅ [UserActivity] Activities retrieved:', data);
     
     // The backend returns { success: true, activities: [...] }
     const activities = data.activities || [];
@@ -415,7 +415,7 @@ export const trackActivity = async (activityType, metadata = {}) => {
 
 // Get contact activities - GET /api/track-activity/recent
 export const getContactActivities = async (limit = 5, category = null, salesforceContactId = null) => {
-  console.log('📊 [ContactActivity] Fetching recent activities...', { limit, category, salesforceContactId });
+  //console.log('📊 [ContactActivity] Fetching recent activities...', { limit, category, salesforceContactId });
   
   try {
     const token = await getAuthToken();
@@ -445,7 +445,7 @@ export const getContactActivities = async (limit = 5, category = null, salesforc
     }
 
     const data = await response.json();
-    console.log('✅ [ContactActivity] Activities retrieved:', data);
+    //console.log('✅ [ContactActivity] Activities retrieved:', data);
     
     // Format each activity before returning
     const activities = data.data || [];

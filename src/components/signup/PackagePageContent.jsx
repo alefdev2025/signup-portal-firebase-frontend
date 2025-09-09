@@ -15,7 +15,7 @@ const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', R
 export const planOptions = {
   neuro: {
     title: "Neuropreservation",
-    short: "Preserves brain and neural structures at a lower cost.",
+    short: "Neuro preservation with Alcor’s advanced vitrification.",
     long: "Preserves the brain's neural connections that define your identity.",
     baseEstimate: 80000,
     internationalEstimate: 90000,
@@ -30,7 +30,7 @@ export const planOptions = {
   },
   wholebody: {
     title: "Whole Body",
-    short: "Preserves your entire body for complete restoration.",
+    short: "Whole-Body preservation with Alcor’s advanced vitrification.",
     long: "Complete body preservation for potential full restoration.",
     baseEstimate: 220000,
     internationalEstimate: 230000,
@@ -263,7 +263,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-start">
                     <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                    <span>Possible Revival</span>
+                    <span>Potential Restoration</span>
                   </div>
                 </>
               )}
@@ -283,7 +283,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-start">
                     <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                    <span>Possible Revival</span>
+                    <span>Potential Restoration</span>
                   </div>
                 </>
               )}
@@ -303,7 +303,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-start">
                     <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 mt-0.5 filter brightness-0 invert" />
-                    <span>Consultation Services</span>
+                    <span>Lock in age-based dues</span>
                   </div>
                 </>
               )}
@@ -388,7 +388,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                    <span>Possible Revival</span>
+                    <span>Potential Restoration</span>
                   </div>
                 </>
               )}
@@ -408,7 +408,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                    <span>Possible Revival</span>
+                    <span>Potenial Restoration</span>
                   </div>
                 </>
               )}
@@ -428,7 +428,7 @@ export const UpdatedVersionOptionCard = ({
                   </div>
                   <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                     <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                    <span>Consultation Services</span>
+                    <span>Lock in age-based dues</span>
                   </div>
                 </>
               )}
@@ -570,7 +570,7 @@ export const OriginalVersionOptionCard = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 md:mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Future Repair & Restorationl</span>
                 </div>
               </>
             )}
@@ -590,7 +590,7 @@ export const OriginalVersionOptionCard = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 md:mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Future Repair & Restorationl</span>
                 </div>
               </>
             )}
@@ -610,7 +610,7 @@ export const OriginalVersionOptionCard = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-2 md:mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Consultation Services</span>
+                  <span>Lock in age-based dues</span>
                 </div>
               </>
             )}

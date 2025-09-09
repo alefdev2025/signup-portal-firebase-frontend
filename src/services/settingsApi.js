@@ -49,7 +49,7 @@ const makeRequest = async (endpoint, options = {}) => {
     console.log(`[SettingsAPI] Response statusText: ${response.statusText}`);
 
     const responseText = await response.text();
-    console.log('[SettingsAPI] Response body:', responseText);
+    //console.log('[SettingsAPI] Response body:', responseText);
     
     let responseData = null;
     try {

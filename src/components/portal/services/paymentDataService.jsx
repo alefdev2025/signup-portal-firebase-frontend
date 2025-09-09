@@ -89,14 +89,14 @@ class PaymentDataService {
       }
 
       // Debug log the structure
-      console.log('✅ Consolidated data structure:', {
+      /*console.log('✅ Consolidated data structure:', {
         hasPayments: !!result.payments,
         paymentsType: typeof result.payments,
         paymentsKeys: result.payments ? Object.keys(result.payments) : [],
         hasRecords: !!(result.payments?.records),
         recordsLength: result.payments?.records?.length || 0,
         samplePayment: result.payments?.records?.[0]
-      });
+      });*/
 
       // Extract the actual payments array from the nested structure
       let paymentsArray = [];

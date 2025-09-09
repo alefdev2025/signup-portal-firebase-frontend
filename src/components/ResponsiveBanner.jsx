@@ -33,7 +33,7 @@ const ResponsiveBanner = ({
   const signupFlowContext = useSignupFlow();
   const navigateToStep = signupFlowContext?.navigateToStep;
   const canAccessStep = signupFlowContext?.canAccessStep;
-  const { currentUser } = useUser() || {};
+  const { currentUser, logout } = useUser() || {};
   
   // State to track the max step the user can access (from backend)
   const [maxCompletedStep, setMaxCompletedStep] = useState(0);
@@ -71,6 +71,56 @@ const ResponsiveBanner = ({
   const isLoginPage = !isSignupPage && textAlignment === "center";
   const shouldUseGradient = useGradient || isWelcomePage;
   const shouldUseImage = useImageBackground && !shouldUseGradient;
+  
+  // Logo click handler - navigate to alcor.org and log out user
+  const handleLogoClick = async (e) => {
+    e.preventDefault();
+    
+    // Only attempt logout if user exists and logout function is available
+    if (currentUser && onLogout && typeof onLogout === 'function') {
+      try {
+        console.log('Logging out user before navigation to alcor.org');
+        await onLogout();
+      } catch (error) {
+        console.error('Error during logout:', error);
+        // Continue with navigation even if logout fails
+      }
+    }
+    
+    // Safely clear session data
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.clear();
+      }
+    } catch (error) {
+      console.error('Error clearing sessionStorage:', error);
+    }
+    
+    try {
+      if (typeof localStorage !== 'undefined') {
+        // Optionally clear localStorage - be careful not to clear other app data
+        const keysToRemove = ['authToken', 'userSession', 'currentUser'];
+        keysToRemove.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (err) {
+            console.error(`Error removing ${key} from localStorage:`, err);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
+    
+    // Navigate to alcor.org - this should always happen
+    try {
+      window.location.href = 'https://alcor.org';
+    } catch (error) {
+      console.error('Error navigating to alcor.org:', error);
+      // Fallback
+      window.open('https://alcor.org', '_self');
+    }
+  };
   
   // Fetch user's step information from backend
   useEffect(() => {
@@ -290,13 +340,19 @@ const ResponsiveBanner = ({
         {/* Dark overlay for image background */}
         {shouldUseImage && <div style={overlayStyle}></div>}
         
-        {/* Logo on the left */}
+        {/* Logo on the left - now clickable */}
         <div className="mr-auto" style={{ position: 'relative', zIndex: 2 }}>
-          <img 
-            src={logo} 
-            alt="Alcor Logo" 
-            className={isWelcomePage && !isLoginPage ? "h-12" : "h-12"}
-          />
+          <button
+            onClick={handleLogoClick}
+            className="focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-md p-1 -m-1 transition-opacity hover:opacity-80"
+            aria-label="Go to Alcor.org homepage"
+          >
+            <img 
+              src={logo} 
+              alt="Alcor Logo" 
+              className={isWelcomePage && !isLoginPage ? "h-12" : "h-12"}
+            />
+          </button>
         </div>
 
         {/* Heading on the right with slight downward offset */}
@@ -325,13 +381,19 @@ const ResponsiveBanner = ({
           className={`text-white px-10 ${topPaddingClass} pb-20 relative`}
           style={{ position: 'relative', zIndex: 2 }}
         >
-          {/* Logo at the top with conditional positioning */}
+          {/* Logo at the top with conditional positioning - now clickable */}
           <div className={`flex ${logoPositioningClass} ${isWelcomePage && !isLoginPage ? 'mb-8' : 'mb-4'}`}>
-            <img 
-              src={logo} 
-              alt="Alcor Logo" 
-              className={logoSizeClass}
-            />
+            <button
+              onClick={handleLogoClick}
+              className="focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-md p-2 -m-2 transition-opacity hover:opacity-80"
+              aria-label="Go to Alcor.org homepage"
+            >
+              <img 
+                src={logo} 
+                alt="Alcor Logo" 
+                className={logoSizeClass}
+              />
+            </button>
           </div>
           
           {/* Banner content - alignment based on textAlignment prop */}

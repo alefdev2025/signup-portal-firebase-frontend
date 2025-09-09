@@ -264,7 +264,7 @@ class InvoiceDataServiceWorkingButExtraCall {
     }
 
     try {
-      console.log('🔍 Fetching Alcor ID using getMemberProfile for contact:', salesforceContactId);
+      //console.log('🔍 Fetching Alcor ID using getMemberProfile for contact:', salesforceContactId);
       
       // Use the EXACT same function as MembershipStatusTab
       const result = await getMemberProfile(salesforceContactId);

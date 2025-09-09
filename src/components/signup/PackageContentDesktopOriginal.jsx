@@ -62,7 +62,7 @@ export const PackageContentDesktopOriginal = ({
             {/* Add subtext for all options */}
             {(option === "neuro" || option === "wholebody") && (
               <div className="flex justify-end mt-1">
-                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">Tyypically $25-$250/month with life insurance</span>
+                <span style={{ fontSize: '13px' }} className="text-gray-400 font-light italic">As low as $25-$75/month with life insurance</span>
               </div>
             )}
             {option === "basic" && (
@@ -107,7 +107,7 @@ export const PackageContentDesktopOriginal = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Potential Restoration</span>
                 </div>
               </>
             )}
@@ -127,7 +127,7 @@ export const PackageContentDesktopOriginal = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Potential Restoration</span>
                 </div>
               </>
             )}
@@ -135,7 +135,7 @@ export const PackageContentDesktopOriginal = ({
               <>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Member Events</span>
+                  <span>Lock in age-based dues</span>
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
@@ -147,7 +147,7 @@ export const PackageContentDesktopOriginal = ({
                 </div>
                 <div className="flex items-start transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-4 h-4 mr-3 mt-0.5 filter brightness-0 invert" />
-                  <span>Consultation Services</span>
+                  <span>Member Events</span>
                 </div>
               </>
             )}

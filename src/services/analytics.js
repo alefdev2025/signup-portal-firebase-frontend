@@ -62,12 +62,12 @@ const CRITICAL_ERRORS = [
 export const analytics = {
   // Log user action
   async logUserAction(action, details = {}) {
-    console.log('🟦 [Analytics Service] logUserAction called');
-    console.log('🟦 [Analytics Service] action:', action);
-    console.log('🟦 [Analytics Service] details:', details);
+    //console.log('🟦 [Analytics Service] logUserAction called');
+    //console.log('🟦 [Analytics Service] action:', action);
+    //console.log('🟦 [Analytics Service] details:', details);
     
     const salesforceId = getSalesforceId();
-    console.log('🟦 [Analytics Service] getSalesforceId() returned:', salesforceId);
+    //console.log('🟦 [Analytics Service] getSalesforceId() returned:', salesforceId);
     
     if (!salesforceId || !IMPORTANT_ACTIONS.includes(action)) {
       console.log('🟦 [Analytics Service] SKIPPING - No ID or not important action');

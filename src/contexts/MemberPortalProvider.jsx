@@ -416,16 +416,16 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer, i
 export const MemberPortalProvider = ({ children }) => {
   const { currentUser, netsuiteCustomerId, salesforceCustomer, isLoading } = useUser();
   
-  console.log('=== MEMBER PORTAL PROVIDER DEBUG ===');
-  console.log('isLoading:', isLoading);
-  console.log('salesforceCustomer:', salesforceCustomer);
-  console.log('currentUser:', currentUser);
-  console.log('netsuiteCustomerId:', netsuiteCustomerId);
-  console.log('===================================');
+  //console.log('=== MEMBER PORTAL PROVIDER DEBUG ===');
+  //console.log('isLoading:', isLoading);
+  //console.log('salesforceCustomer:', salesforceCustomer);
+  //console.log('currentUser:', currentUser);
+  //console.log('netsuiteCustomerId:', netsuiteCustomerId);
+  //console.log('===================================');
   
   // CRITICAL SECURITY CHECK
   if (!isLoading && !currentUser) {
-    console.error('[MemberPortalProvider] SECURITY: No authenticated user - blocking access');
+    //console.error('[MemberPortalProvider] SECURITY: No authenticated user - blocking access');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

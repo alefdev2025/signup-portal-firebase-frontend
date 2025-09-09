@@ -162,24 +162,24 @@ const PaymentHistoryTab = () => {
       // Always get fresh data - removed includeLineItems parameter
       const data = await paymentDataService.getPaymentData(customerId, false);
       
-      console.log('Payment data received:', {
+      /*console.log('Payment data received:', {
         data: data,
         paymentsType: typeof data.payments,
         paymentCount: data.payments?.length || 0,
         hasInvoiceDetails: data.payments?.some(p => paymentDataService.hasInvoiceDetails(p)),
         samplePayment: data.payments?.[0]
-      });
+      });*/
       
       // Process and set payments - data.payments should now be a proper array
       const processedPayments = (data.payments || []).map(payment => {
         // Debug individual payment
-        console.log('Processing payment:', {
+        /*console.log('Processing payment:', {
           id: payment.id,
           documentNumber: payment.documentNumber,
           amount: payment.amount,
           date: payment.date,
           appliedTo: payment.appliedTo?.length || 0
-        });
+        });*/
         
         return {
           id: payment.id || payment.internalId || Math.random().toString(),

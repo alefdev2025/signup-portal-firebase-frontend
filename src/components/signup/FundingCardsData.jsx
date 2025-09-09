@@ -169,7 +169,7 @@ export const basicMembershipContent = {
         "Member Events & Resources",
         "Pet Preservation Options",
         "Add On Cryopreservation Anytime",
-        "Consultation Services"
+        "Lock in age-based dues"
       ]
     }
   }

@@ -179,14 +179,14 @@ const AccountCreationForm = ({
       <>
         {/* White container box for verification form */}
         <div className="w-full" style={{
-  width: '100vw',
-  marginLeft: 'calc(-50vw + 50%)',
-  marginRight: 'calc(-50vw + 50%)',
-  position: 'relative'
-}}>
-  <div className="px-5 pt-6 sm:px-0 sm:pt-0 sm:-mt-4 sm:max-w-2xl sm:mx-auto">
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <form onSubmit={onSubmitForm} className="p-8 space-y-10 sm:space-y-6">
+            width: '100vw',
+            marginLeft: 'calc(-50vw + 50%)',
+            marginRight: 'calc(-50vw + 50%)',
+            position: 'relative'
+          }}>
+            <div className="px-5 pt-6 sm:px-0 sm:pt-0 sm:-mt-4 sm:max-w-2xl sm:mx-auto">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    <form onSubmit={onSubmitForm} className="p-8 space-y-10 sm:space-y-6">
             <div className="mb-10 sm:mb-10">
               <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-4 sm:mb-4">
                 Verification Code

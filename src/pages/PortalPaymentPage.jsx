@@ -27,7 +27,13 @@ const ENABLE_STRIPE_MIGRATION = true; // Toggle to enable/disable migration prom
 const ENABLE_AUTOPAY_ENROLLMENT = true; // Toggle to enable/disable autopay enrollment during payment
 const ENABLE_PROCESSING_FEE = false; // Toggle to enable/disable Stripe processing fee
 
-const stripePromise = loadStripe('pk_test_51Nj3BLHe6bV7aBLAJc7oOoNpLXdwDq3KDy2hpgxw0bn0OOSh7dkJTIU8slJoIZIKbvQuISclV8Al84X48iWHLzRK00WnymRlqp');
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.error('Stripe publishable key is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY in your .env file');
+}
+
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 const CARD_ELEMENT_OPTIONS = {
   style: {

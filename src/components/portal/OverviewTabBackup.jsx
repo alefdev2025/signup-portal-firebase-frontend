@@ -204,7 +204,7 @@ const OverviewTab = ({ setActiveTab }) => {
        setActivitiesLoading(true);
        setActivitiesError(null);
        
-       console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
+       //console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
        
        // Fetch more activities to account for filtering
        const activities = await getContactActivities(100, null, salesforceContactId);

@@ -926,7 +926,7 @@ export const checkUserStep = async (data) => {
         };
       }
       
-      console.log(`Checking user step for userId: ${userId}`);
+      //console.log(`Checking user step for userId: ${userId}`);
       
       let token;
       
@@ -934,7 +934,7 @@ export const checkUserStep = async (data) => {
       if (auth.currentUser) {
         try {
           token = await auth.currentUser.getIdToken();
-          console.log("Got auth token for user");
+          //console.log("Got auth token for user");
         } catch (tokenError) {
           console.error("Failed to get auth token:", tokenError);
           // Continue without token - will use direct userId approach

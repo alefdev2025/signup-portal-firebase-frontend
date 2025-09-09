@@ -49,7 +49,7 @@ const makeRequest = async (endpoint, options = {}) => {
     console.log(`[InvoiceNotificationsAPI] Response statusText: ${response.statusText}`);
 
     const responseText = await response.text();
-    console.log('[InvoiceNotificationsAPI] Response body:', responseText);
+    //console.log('[InvoiceNotificationsAPI] Response body:', responseText);
     
     let responseData = null;
     try {
@@ -73,10 +73,10 @@ const makeRequest = async (endpoint, options = {}) => {
 // Create the invoiceNotificationsApi object with all methods
 export const invoiceNotificationsApi = {
   async getSettings() {
-    console.log('[InvoiceNotificationsAPI] Getting notification settings...');
+    //console.log('[InvoiceNotificationsAPI] Getting notification settings...');
     try {
       const data = await makeRequest('/api/invoice-notifications');
-      console.log('[InvoiceNotificationsAPI] Settings received:', data);
+      //console.log('[InvoiceNotificationsAPI] Settings received:', data);
       return data;
     } catch (error) {
       console.error('[InvoiceNotificationsAPI] Error getting settings:', error);

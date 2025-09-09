@@ -245,7 +245,7 @@ const ProcedureTab = ({ contactId }) => {
         }
         
         if (medical.weight) {
-          heightWeight.push(`${medical.weight} lbs`);
+          heightWeight.push(`${medical.weight}`);
         }
         
         if (heightWeight.length > 0) {

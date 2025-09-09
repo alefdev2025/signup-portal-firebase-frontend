@@ -174,7 +174,7 @@ if (typeof window !== 'undefined') {
   
   // Add a helpful message on page load
   setTimeout(() => {
-    console.info('Debug logging is enabled! Type window.printLogs() to view logs in console');
+    console.info('Debug logging is disabled!');
   }, 1000);
 }
 

@@ -45,7 +45,7 @@ const UserProvider = ({ children }) => {
   const fetchSalesforceCustomer = useCallback(async (salesforceCustomerId, user) => {
     // Check if we've already loaded this customer
     if (loadedDataRef.current.salesforceId === salesforceCustomerId && salesforceCustomer) {
-      LOG_TO_TERMINAL(`Salesforce customer ${salesforceCustomerId} already loaded, skipping`);
+      //LOG_TO_TERMINAL(`Salesforce customer ${salesforceCustomerId} already loaded, skipping`);
       return salesforceCustomer;
     }
     
@@ -85,9 +85,9 @@ const UserProvider = ({ children }) => {
         setNetsuiteCustomerId(customer.netsuiteCustomerId);
         setUserDataError(null);
         
-        console.log('=== SALESFORCE FETCH RESULT ===');
-        console.log('Setting salesforceCustomer:', customer);
-        console.log('==============================');
+        //console.log('=== SALESFORCE FETCH RESULT ===');
+        //console.log('Setting salesforceCustomer:', customer);
+        //console.log('==============================');
         
         return {
           salesforceId: customer.id,
@@ -96,14 +96,14 @@ const UserProvider = ({ children }) => {
           customer: customer
         };
       } else if (response.status === 404) {
-        LOG_TO_TERMINAL(`ERROR: Salesforce customer not found for ID: ${salesforceCustomerId}`);
+        //LOG_TO_TERMINAL(`ERROR: Salesforce customer not found for ID: ${salesforceCustomerId}`);
         setUserDataError("Customer record not found. Please contact support.");
       } else {
-        LOG_TO_TERMINAL(`ERROR: Failed to fetch customer: ${response.status} ${response.statusText}`);
+        //LOG_TO_TERMINAL(`ERROR: Failed to fetch customer: ${response.status} ${response.statusText}`);
         setUserDataError("Failed to load customer data. Please try again.");
       }
     } catch (error) {
-      LOG_TO_TERMINAL(`ERROR: Exception fetching customer: ${error.message}`);
+      //LOG_TO_TERMINAL(`ERROR: Exception fetching customer: ${error.message}`);
       setUserDataError("Network error loading customer data. Please check your connection.");
     }
     
@@ -133,11 +133,11 @@ const UserProvider = ({ children }) => {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const userData = userDoc.data();
   
-      console.log('=== USER DOCUMENT DEBUG ===');
-      console.log('Document exists:', userDoc.exists());
-      console.log('User data:', userData);
-      console.log('salesforceContactId:', userData?.salesforceContactId);
-      console.log('=========================');
+      //console.log('=== USER DOCUMENT DEBUG ===');
+      //console.log('Document exists:', userDoc.exists());
+      //console.log('User data:', userData);
+      //console.log('salesforceContactId:', userData?.salesforceContactId);
+      //console.log('=========================');
       
       if (!userData) {
         LOG_TO_TERMINAL("ERROR: No user document found");

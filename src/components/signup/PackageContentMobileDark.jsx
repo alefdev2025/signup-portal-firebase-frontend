@@ -146,7 +146,7 @@ export const PackageContentMobile = ({
                </div>
                <div className={`flex ${USE_UPDATED_VERSION ? 'items-center' : 'items-start'} transform transition duration-300 hover:translate-x-1`}>
                  <img src={alcorYellowStar} alt="Star" className={`${USE_UPDATED_VERSION ? 'w-5 h-5 mr-2' : 'w-4 h-4 mr-2 mt-1.5'}`} />
-                 <span>Possible Revival</span>
+                 <span>Potential Restoration</span>
                </div>
              </>
            )}
@@ -166,7 +166,7 @@ export const PackageContentMobile = ({
                </div>
                <div className={`flex ${USE_UPDATED_VERSION ? 'items-center' : 'items-start'} transform transition duration-300 hover:translate-x-1`}>
                  <img src={alcorYellowStar} alt="Star" className={`${USE_UPDATED_VERSION ? 'w-5 h-5 mr-2' : 'w-4 h-4 mr-2 mt-1.5'}`} />
-                 <span>Possible Revival</span>
+                 <span>Potential Restoration</span>
                </div>
              </>
            )}
@@ -186,7 +186,7 @@ export const PackageContentMobile = ({
                </div>
                <div className={`flex ${USE_UPDATED_VERSION ? 'items-center' : 'items-start'} transform transition duration-300 hover:translate-x-1`}>
                  <img src={alcorYellowStar} alt="Star" className={`${USE_UPDATED_VERSION ? 'w-5 h-5 mr-2' : 'w-4 h-4 mr-2 mt-1.5'}`} />
-                 <span>Consultation Services</span>
+                 <span>Lock in age-based dues</span>
                </div>
              </>
            )}

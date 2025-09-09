@@ -28,6 +28,17 @@ import { handlePrintInvoice, handleDownloadInvoice } from './InvoicesComponents/
 const SHOW_STRIPE_AUTOPAY_BANNER = true;
 const SHOW_LEGACY_AUTOPAY_BANNER = true;
 
+// Add this after your state declarations, around line 90
+const filterOutFutureInvoices = (invoices) => {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // End of today
+  
+  return invoices.filter(invoice => {
+    const invoiceDate = new Date(invoice.date);
+    return invoiceDate <= today;
+  });
+};
+
 // Empty state component
 const EmptyInvoiceListView = () => (
   <div className="bg-white shadow-sm border border-gray-200 rounded-[1.25rem] animate-fadeIn" 
@@ -210,10 +221,14 @@ const InvoicesTab = ({ setActiveTab }) => {
       }
       
       // Process invoices with payments to get correct statuses
+      // Filter out future invoices first
+      const pastAndCurrentInvoices = filterOutFutureInvoices(result.invoices || []);
+
+      // Process invoices with payments to get correct statuses
       let processedInvoices = [];
-      if (result.invoices && result.invoices.length > 0) {
+      if (pastAndCurrentInvoices.length > 0) {
         processedInvoices = processInvoices(
-          { invoices: result.invoices }, 
+          { invoices: pastAndCurrentInvoices }, 
           { payments: result.payments || [] }
         );
       }
@@ -221,7 +236,7 @@ const InvoicesTab = ({ setActiveTab }) => {
       // Set ALL data at once
       setData({
         invoices: processedInvoices,
-        rawInvoices: result.invoices || [],
+        rawInvoices: pastAndCurrentInvoices, 
         payments: result.payments || [],
         autopayStatus: result.autopayStatus || null,
         customerInfo: result.customerInfo || null,
@@ -233,7 +248,7 @@ const InvoicesTab = ({ setActiveTab }) => {
       
       // Set email notification settings - UPDATED TO USE notificationSettings
       if (result.notificationSettings) {
-        console.log('Setting notification settings from API:', result.notificationSettings);
+        //console.log('Setting notification settings from API:', result.notificationSettings);
         setNewInvoiceAlerts(result.notificationSettings.newInvoiceAlerts || false);
         setPaymentFailureAlerts(result.notificationSettings.paymentFailureAlerts || false);
         setNotificationEmail(result.notificationSettings.notificationEmail || '');

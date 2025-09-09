@@ -4,9 +4,9 @@ import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 
 export const planOptions = {
   neuro: {
-    title: "MMMMMMMMMMMNeuropreservation",
-    short: "Preserves brain and neural structures at a lower cost.",
-    long: "Preserves the brain's neural connections that define your identity.",
+    title: "Neuropreservation",
+    short: "Neuro preservation with Alcor’s advanced vitrification.",
+    long: "Neuro preservation with Alcor’s advanced vitrification.",
     baseEstimate: 80000,
     internationalEstimate: 90000,
     titleBgColor: "bg-[#323053]",
@@ -17,8 +17,8 @@ export const planOptions = {
   },
   wholebody: {
     title: "Whole Body",
-    short: "Preserves your entire body for complete restoration.",
-    long: "Complete body preservation for potential full restoration.",
+    short: "Whole-Body preservation with Alcor’s advanced vitrification.",
+    long: "Whole-Body preservation with Alcor’s advanced vitrification.",
     baseEstimate: 220000,
     internationalEstimate: 230000,
     titleBgColor: "bg-[#1a2342]",
@@ -136,7 +136,7 @@ export const DesktopInvertedOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Potention Restoration</span>
                 </div>
               </>
             )}
@@ -156,7 +156,7 @@ export const DesktopInvertedOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                  <span>Possible Revival</span>
+                  <span>Potential Restoration</span>
                 </div>
               </>
             )}
@@ -164,7 +164,7 @@ export const DesktopInvertedOptionCard = ({
               <>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                  <span>Member Events</span>
+                  <span>Lock in age-based dues</span>
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
@@ -176,7 +176,7 @@ export const DesktopInvertedOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorStar} alt="Star" className="w-5 h-5 md:w-4 md:h-4 mr-2 filter brightness-0 invert" />
-                  <span>Consultation Services</span>
+                  <span>Member Events</span>
                 </div>
               </>
             )}

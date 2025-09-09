@@ -297,13 +297,13 @@ class PaymentMethodsDataService {
         throw new Error(result.error || 'Failed to load payment method data');
       }
 
-      console.log(`✨ Got consolidated data in ${duration}ms`);
-      console.log('💳 Payment method data:', {
+      //console.log(`✨ Got consolidated data in ${duration}ms`);
+      /*console.log('💳 Payment method data:', {
         hasAutopayStatus: !!result.autopayStatus,
         hasStripeIntegration: !!result.stripeIntegration,
         hasSalesOrderAnalysis: !!result.salesOrderAnalysis,
         retryStats: this.getRetryStats()
-      });
+      });*/
 
       // Determine autopay flags based on the data
       const legacyAutopay = result.salesOrderAnalysis?.analysis?.autopayStatus === 'ON_AUTOPAY' || false;

@@ -265,19 +265,19 @@ class InvoiceDataService {
     }
 
     try {
-      console.log('🔍 Fetching Alcor ID using getMemberProfile for contact:', salesforceContactId);
+      //console.log('🔍 Fetching Alcor ID using getMemberProfile for contact:', salesforceContactId);
       
       // Use the EXACT same function as MembershipStatusTab
       const result = await getMemberProfile(salesforceContactId);
       
-      console.log('📊 getMemberProfile result:', result);
+      //console.log('📊 getMemberProfile result:', result);
       
       if (result.success && result.data) {
         const profileData = result.data.data || result.data;
         const alcorId = profileData?.personalInfo?.alcorId;
         
-        console.log('✅ Extracted Alcor ID:', alcorId || 'Not found');
-        console.log('📋 Full personalInfo:', profileData?.personalInfo);
+        //console.log('✅ Extracted Alcor ID:', alcorId || 'Not found');
+        //console.log('📋 Full personalInfo:', profileData?.personalInfo);
         
         return alcorId || null;
       } else {
@@ -392,7 +392,7 @@ class InvoiceDataService {
         const result = await invoiceDataPromise.value.json();
         
         if (result.success) {
-          console.log(`✨ Got fresh data from consolidated endpoint in ${duration}ms:`, {
+          /*console.log(`✨ Got fresh data from consolidated endpoint in ${duration}ms:`, {
             invoiceCount: result.invoices?.length || 0,
             paymentCount: result.payments?.length || 0,
             hasAutopayStatus: !!result.autopayStatus,
@@ -400,10 +400,10 @@ class InvoiceDataService {
             hasNotificationSettings: !!notificationSettings,
             alcorId: alcorId,
             retryStats: this.getRetryStats()
-          });
+          });*/
           
           // Log detailed invoice data
-          console.log('📊 Detailed Invoice Data:', {
+          /*console.log('📊 Detailed Invoice Data:', {
             totalInvoices: result.invoices?.length || 0,
             firstInvoice: result.invoices?.[0],
             lastInvoice: result.invoices?.[result.invoices.length - 1],
@@ -435,10 +435,10 @@ class InvoiceDataService {
               acc[year] = (acc[year] || 0) + 1;
               return acc;
             }, {})
-          });
+          });*/
           
           // Log detailed payment data
-          console.log('💰 Detailed Payment Data:', {
+          /*console.log('💰 Detailed Payment Data:', {
             firstPayment: result.payments?.[0],
             paymentFields: result.payments?.length > 0 ? Object.keys(result.payments[0]) : [],
             samplePayment: result.payments?.length > 0 ? {
@@ -482,7 +482,7 @@ class InvoiceDataService {
             invoiceSummary: result.invoiceSummary,
             emailNotificationSettings: result.emailNotificationSettings,
             fullResponse: result
-          });
+          });*/
           
           // REMOVED: The redundant legacy autopay fetch that was here
           // The consolidated endpoint already provides complete autopay status

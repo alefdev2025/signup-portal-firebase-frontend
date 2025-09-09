@@ -181,18 +181,18 @@ const PortalSidebar = ({
   // Update display name when memberData or currentUser changes
   useEffect(() => {
     const updateDisplayName = () => {
-      console.log('Updating display name with:', { memberData, currentUser });
+      //console.log('Updating display name with:', { memberData, currentUser });
       
       // Only update if we have actual name data - don't overwrite with "Member"
       if (memberData?.firstName && memberData?.lastName) {
         const fullName = `${memberData.firstName} ${memberData.lastName}`;
-        console.log('Setting display name from memberData:', fullName);
+        //console.log('Setting display name from memberData:', fullName);
         setDisplayName(fullName);
       } else if (memberData?.name && memberData.name !== 'Member') {
-        console.log('Setting display name from memberData.name:', memberData.name);
+        //console.log('Setting display name from memberData.name:', memberData.name);
         setDisplayName(memberData.name);
       } else if (currentUser?.displayName && currentUser.displayName !== 'Member') {
-        console.log('Setting display name from currentUser.displayName:', currentUser.displayName);
+        //console.log('Setting display name from currentUser.displayName:', currentUser.displayName);
         setDisplayName(currentUser.displayName);
       } else if (displayName === 'Member') {
         // Only set to 'Member' if we don't already have a name

@@ -7,8 +7,8 @@ import { API_BASE_URL } from '../../../../config/api';
  */
 export const searchCustomerByEmail = async (email) => {
   try {
-    console.log('[Salesforce Service] Searching for customer with email:', email);
-    console.log('[Salesforce Service] Using API URL:', API_BASE_URL);
+    //console.log('[Salesforce Service] Searching for customer with email:', email);
+    //console.log('[Salesforce Service] Using API URL:', API_BASE_URL);
     
     const url = `${API_BASE_URL}/api/salesforce/customers/search?email=${encodeURIComponent(email)}`;
     console.log('[Salesforce Service] Full URL:', url);

@@ -589,12 +589,12 @@ const MemberPortalProviderInner = ({ children, customerId, salesforceCustomer, i
 export const MemberPortalProvider = ({ children }) => {
  const { currentUser, netsuiteCustomerId, salesforceCustomer, isLoading } = useUser();
  
- console.log('=== MEMBER PORTAL PROVIDER DEBUG ===');
- console.log('isLoading:', isLoading);
- console.log('salesforceCustomer:', salesforceCustomer);
- console.log('currentUser:', currentUser);
- console.log('netsuiteCustomerId:', netsuiteCustomerId);
- console.log('===================================');
+ //console.log('=== MEMBER PORTAL PROVIDER DEBUG ===');
+ //console.log('isLoading:', isLoading);
+ //console.log('salesforceCustomer:', salesforceCustomer);
+ //console.log('currentUser:', currentUser);
+ //console.log('netsuiteCustomerId:', netsuiteCustomerId);
+ //console.log('===================================');
  
  // CRITICAL SECURITY CHECK - Don't render anything if no authenticated user
  if (!isLoading && !currentUser) {

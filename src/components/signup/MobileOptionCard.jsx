@@ -5,7 +5,7 @@ import alcorYellowStar from "../../assets/images/alcor-yellow-star.png";
 export const planOptions = {
   neuro: {
     title: "Neuropreservation",
-    short: "Preserves brain and neural structures at a lower costadsfadsfadsfadfadsfs.",
+    short: "Neuro preservation with Alcor’s advanced vitrification.",
     long: "Preserves the brain's neural connections that define your identity.",
     baseEstimate: 80000,
     internationalEstimate: 90000,
@@ -17,7 +17,7 @@ export const planOptions = {
   },
   wholebody: {
     title: "Whole Body",
-    short: "Preserves your entire body for complete restoration.",
+    short: "Whole-Body preservation with Alcor’s advanced vitrification.",
     long: "Complete body preservation for potential full restoration.",
     baseEstimate: 220000,
     internationalEstimate: 230000,
@@ -136,7 +136,7 @@ export const MobileOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
-                  <span>Possible Revival</span>
+                  <span>Future Repair & Restorationl</span>
                 </div>
               </>
             )}
@@ -156,7 +156,7 @@ export const MobileOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
-                  <span>Possible Revival</span>
+                  <span>Potential Restoration</span>
                 </div>
               </>
             )}
@@ -176,7 +176,7 @@ export const MobileOptionCard = ({
                 </div>
                 <div className="flex items-center transform transition duration-300 hover:translate-x-1">
                   <img src={alcorYellowStar} alt="Star" className="w-5 h-5 mr-2" />
-                  <span>Consultation Services</span>
+                  <span>Lock in age-based dues</span>
                 </div>
               </>
             )}

@@ -801,7 +801,7 @@ const cleanPersonData = (person) => {
     }
   }
   
-  console.log('🌍 Final citizenship array:', formattedCitizenship);
+  //console.log('🌍 Final citizenship array:', formattedCitizenship);
   
   const cleaned = {
     ...person, // This preserves all original fields
@@ -829,26 +829,26 @@ const cleanPersonData = (person) => {
   };
   
   // Log what happened to our key fields
-  console.log('🔍 Key fields after cleaning:', {
+  /*console.log('🔍 Key fields after cleaning:', {
     ethnicity: cleaned.ethnicity,
     citizenship: cleaned.citizenship,
     maritalStatus: cleaned.maritalStatus,
     race: cleaned.race,
     gender: cleaned.gender
-  });
+  });*/
   
   // Check if spreading person preserved the fields
-  console.log('✅ Fields preserved by spread operator:', {
+  /*console.log('✅ Fields preserved by spread operator:', {
     ethnicityPreserved: cleaned.ethnicity === person.ethnicity,
     citizenshipPreserved: Array.isArray(cleaned.citizenship) && Array.isArray(person.citizenship) && 
                         cleaned.citizenship.length === person.citizenship.length,
     maritalStatusPreserved: cleaned.maritalStatus === person.maritalStatus,
     racePreserved: JSON.stringify(cleaned.race) === JSON.stringify(person.race),
     genderPreserved: cleaned.gender === person.gender
-  });
+  });*/
   
-  console.log('📤 Full cleaned data:', cleaned);
-  console.log('🧹 === cleanPersonData END ===\n');
+  //console.log('📤 Full cleaned data:', cleaned);
+  //console.log('🧹 === cleanPersonData END ===\n');
   
   return cleaned;
 };

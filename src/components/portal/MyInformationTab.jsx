@@ -394,19 +394,19 @@ const MyInformationTab = () => {
         }
         
         if (memberInfoData.medical?.success && memberInfoData.medical.data) {
-          console.log('📦 MEDICAL DATA FROM CACHE:', memberInfoData.medical);
+          //console.log('📦 MEDICAL DATA FROM CACHE:', memberInfoData.medical);
           const medicalData = memberInfoData.medical.data.data || memberInfoData.medical.data;
-          console.log('🔍 EXTRACTED MEDICAL DATA:', medicalData);
+          //console.log('🔍 EXTRACTED MEDICAL DATA:', medicalData);
           const cleanedMedical = cleanDataBeforeSave(medicalData, 'medical');
-          console.log('✨ CLEANED MEDICAL DATA:', cleanedMedical);
+          //console.log('✨ CLEANED MEDICAL DATA:', cleanedMedical);
           setMedicalInfo(cleanedMedical);
           setOriginalData(prev => ({ ...prev, medical: cleanedMedical }));
         }
         
         if (memberInfoData.cryo?.success && memberInfoData.cryo.data) {
           const cryoData = memberInfoData.cryo.data.data || memberInfoData.cryo.data;
-          console.log('🔍 === CACHED CRYO DATA PROCESSING START ===');
-          console.log('🔍 Cached cryo data:', cryoData);
+          //console.log('🔍 === CACHED CRYO DATA PROCESSING START ===');
+          //console.log('🔍 Cached cryo data:', cryoData);
           
           const transformedCryo = {
             method: cryoData.methodOfPreservation?.includes('Whole Body') ? 'WholeBody' : 
@@ -435,8 +435,8 @@ const MyInformationTab = () => {
           setOriginalData(prev => ({ ...prev, cryoArrangements: transformedCryo }));
           
           // Extract funding allocation fields with debugging
-          console.log('💰 === FUNDING ALLOCATIONS FROM CACHE START ===');
-          console.log('📦 Raw funding data from cached backend:', {
+          //console.log('💰 === FUNDING ALLOCATIONS FROM CACHE START ===');
+          /*console.log('📦 Raw funding data from cached backend:', {
             Patient_Care_Trust__c: cryoData.Patient_Care_Trust__c,
             General_Operating_Fund__c: cryoData.General_Operating_Fund__c,
             Alcor_Research_Fund__c: cryoData.Alcor_Research_Fund__c,
@@ -445,10 +445,10 @@ const MyInformationTab = () => {
             Others__c: cryoData.Others__c,
             Following_Person_s__c: cryoData.Following_Person_s__c,
             Other__c: cryoData.Other__c
-          });
+          });*/
           
           // Log individual field details for debugging
-          console.log('\n🔍 CACHED PRIMARY ALLOCATION RAW VALUES:');
+          /*console.log('\n🔍 CACHED PRIMARY ALLOCATION RAW VALUES:');
           console.log('  Patient_Care_Trust__c:', {
             value: cryoData.Patient_Care_Trust__c,
             type: typeof cryoData.Patient_Care_Trust__c,
@@ -470,7 +470,7 @@ const MyInformationTab = () => {
             isUndefined: cryoData.Individuals__c === undefined,
             isZero: cryoData.Individuals__c === 0,
             is100: cryoData.Individuals__c === 100
-          });
+          });*/
           
           // Parse all allocation values with proper null handling
           const primaryAllocations = {
@@ -503,31 +503,31 @@ const MyInformationTab = () => {
                  ? parseFloat(cryoData.Others_OM__c) : null
           };
           
-          console.log('\n📊 PARSED CACHED PRIMARY ALLOCATIONS:', primaryAllocations);
-          console.log('📊 PARSED CACHED OVER-MIN ALLOCATIONS:', overMinAllocations);
+          //console.log('\n📊 PARSED CACHED PRIMARY ALLOCATIONS:', primaryAllocations);
+          //console.log('📊 PARSED CACHED OVER-MIN ALLOCATIONS:', overMinAllocations);
           
           // Check if we have ANY funding allocation data
           const hasPrimaryData = Object.values(primaryAllocations).some(val => val !== null);
           const hasOverMinData = Object.values(overMinAllocations).some(val => val !== null);
           
-          console.log('\n🔍 CACHED DATA PRESENCE CHECK:');
-          console.log('  Has primary data:', hasPrimaryData);
-          console.log('  Has over-min data:', hasOverMinData);
+          //console.log('\n🔍 CACHED DATA PRESENCE CHECK:');
+          //console.log('  Has primary data:', hasPrimaryData);
+          //console.log('  Has over-min data:', hasOverMinData);
           
           // Determine if allocations are custom
           let isCustomPrimary = false;
           let isCustomOverMin = false;
           
           if (hasPrimaryData) {
-            console.log('\n🔍 CHECKING CACHED PRIMARY ALLOCATION TYPE:');
+            //console.log('\n🔍 CHECKING CACHED PRIMARY ALLOCATION TYPE:');
             
             // Calculate total with null-safe values
             const primaryTotal = Object.values(primaryAllocations)
               .filter(val => val !== null)
               .reduce((sum, val) => sum + val, 0);
             
-            console.log('  Primary total:', primaryTotal);
-            console.log('  Total equals 100?', Math.abs(primaryTotal - 100) < 0.01);
+            //console.log('  Primary total:', primaryTotal);
+            //console.log('  Total equals 100?', Math.abs(primaryTotal - 100) < 0.01);
             
             if (Math.abs(primaryTotal - 100) < 0.01) {
               // We have valid allocation data totaling 100%
@@ -540,38 +540,38 @@ const MyInformationTab = () => {
                 (primaryAllocations.oth === null || primaryAllocations.oth === 0)
               );
               
-              console.log('  Is default 50/50 pattern?', isDefault);
+              //console.log('  Is default 50/50 pattern?', isDefault);
               isCustomPrimary = !isDefault;
               
               // CRITICAL FIX: If Individuals has ANY value > 0, it's ALWAYS custom
               if (primaryAllocations.ind > 0) {
-                console.log('  🚨 OVERRIDE: Individuals = ' + primaryAllocations.ind + ' > 0, FORCING CUSTOM');
+                //console.log('  🚨 OVERRIDE: Individuals = ' + primaryAllocations.ind + ' > 0, FORCING CUSTOM');
                 isCustomPrimary = true;
               }
               
             } else if (primaryTotal > 0) {
               // We have some data but it doesn't total 100 - treat as custom
               isCustomPrimary = true;
-              console.log('  Partial data detected, treating as CUSTOM');
+              //console.log('  Partial data detected, treating as CUSTOM');
             } else {
               // No data or all zeros - treat as default
               isCustomPrimary = false;
-              console.log('  No data, treating as DEFAULT');
+              //console.log('  No data, treating as DEFAULT');
             }
             
-            console.log('  ✅ CACHED PRIMARY RESULT:', isCustomPrimary ? 'CUSTOM' : 'DEFAULT');
+            //console.log('  ✅ CACHED PRIMARY RESULT:', isCustomPrimary ? 'CUSTOM' : 'DEFAULT');
           } else {
             console.log('  ❌ NO PRIMARY DATA - Using DEFAULT');
           }
           
           if (hasOverMinData) {
-            console.log('\n🔍 CHECKING CACHED OVER-MIN ALLOCATION TYPE:');
+            //console.log('\n🔍 CHECKING CACHED OVER-MIN ALLOCATION TYPE:');
             
             const overMinTotal = Object.values(overMinAllocations)
               .filter(val => val !== null)
               .reduce((sum, val) => sum + val, 0);
             
-            console.log('  Over-min total:', overMinTotal);
+            //console.log('  Over-min total:', overMinTotal);
             
             if (Math.abs(overMinTotal - 100) < 0.01) {
               const isDefault = (
@@ -587,19 +587,19 @@ const MyInformationTab = () => {
               
               // CRITICAL FIX: If Individuals OM has ANY value > 0, it's ALWAYS custom
               if (overMinAllocations.ind > 0) {
-                console.log('  🚨 OVERRIDE: Individuals OM = ' + overMinAllocations.ind + ' > 0, FORCING CUSTOM');
+                //console.log('  🚨 OVERRIDE: Individuals OM = ' + overMinAllocations.ind + ' > 0, FORCING CUSTOM');
                 isCustomOverMin = true;
               }
               
             } else if (overMinTotal > 0) {
               isCustomOverMin = true;
-              console.log('  Partial data detected, treating as CUSTOM');
+              //console.log('  Partial data detected, treating as CUSTOM');
             } else {
               isCustomOverMin = false;
-              console.log('  No data, treating as DEFAULT');
+              //console.log('  No data, treating as DEFAULT');
             }
             
-            console.log('  ✅ CACHED OVER-MIN RESULT:', isCustomOverMin ? 'CUSTOM' : 'DEFAULT');
+            //console.log('  ✅ CACHED OVER-MIN RESULT:', isCustomOverMin ? 'CUSTOM' : 'DEFAULT');
           } else {
             console.log('  ❌ NO OVER-MIN DATA - Using DEFAULT');
           }
@@ -631,8 +631,8 @@ const MyInformationTab = () => {
             otherOM: cryoData.Other_Over_Minimum__c || ''
           };
           
-          console.log('\n📦 FINAL CACHED fundingAllocationsData:', fundingAllocationsData);
-          console.log('💰 === FUNDING ALLOCATIONS FROM CACHE END ===\n');
+          //console.log('\n📦 FINAL CACHED fundingAllocationsData:', fundingAllocationsData);
+          //console.log('💰 === FUNDING ALLOCATIONS FROM CACHE END ===\n');
           
           setFundingAllocations(fundingAllocationsData);
           setOriginalData(prev => ({ ...prev, fundingAllocations: fundingAllocationsData }));
@@ -737,7 +737,7 @@ const MyInformationTab = () => {
         if (memberInfoData.category?.success && memberInfoData.category.data) {
           // Note the double .data.data structure in your response
           const categoryInfo = memberInfoData.category.data.data || memberInfoData.category.data;
-          console.log('📦 Category data:', categoryInfo);
+          //console.log('📦 Category data:', categoryInfo);
           setMemberCategory(categoryInfo.category); // This will set "CryoApplicant" etc
           setCategoryLoading(false);
         }

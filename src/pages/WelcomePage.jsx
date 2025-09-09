@@ -71,13 +71,7 @@ const WelcomePage = () => {
       buttonAction: goToSignup,
       iconPath: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <defs>
-            <linearGradient id="newMemberGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#d59560" />
-              <stop offset="100%" stopColor="#513a6d" />
-            </linearGradient>
-          </defs>
-          <path stroke="url(#newMemberGradient)" fill="none" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          <path stroke="#d59560" fill="none" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
         </svg>
       ),
       buttonClasses: 'bg-[#13273f] hover:bg-[#1d3351] text-white',
@@ -92,13 +86,7 @@ const WelcomePage = () => {
       buttonAction: () => goToLogin(true),
       iconPath: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <defs>
-            <linearGradient id="continueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#d59560" />
-              <stop offset="100%" stopColor="#513a6d" />
-            </linearGradient>
-          </defs>
-          <path stroke="url(#continueGradient)" fill="none" d="M8 7h12m0 0l-4-4m4 4l-4 4m-4 6H4m0 0l4 4m-4-4l4-4" />
+          <path stroke="#d59560" fill="none" d="M8 7h12m0 0l-4-4m4 4l-4 4m-4 6H4m0 0l4 4m-4-4l4-4" />
         </svg>
       ),
       buttonClasses: 'bg-[#825f7c] hover:bg-[#936e8c] text-white border border-[#825f7c]',
@@ -113,13 +101,7 @@ const WelcomePage = () => {
       buttonAction: () => goToLogin(false, true),
       iconPath: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-          <defs>
-            <linearGradient id="portalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#d59560" />
-              <stop offset="100%" stopColor="#513a6d" />
-            </linearGradient>
-          </defs>
-          <path stroke="url(#portalGradient)" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <path stroke="#d59560" fill="none" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
       buttonClasses: 'bg-[#404060] hover:bg-[#4e4e73] text-white font-semibold',

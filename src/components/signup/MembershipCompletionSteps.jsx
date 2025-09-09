@@ -9,6 +9,7 @@ import ResponsiveBanner from "../ResponsiveBanner";
 
 // Font family from MembershipSummary
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const BLOCK_DOCUSIGN_SIGNING = true;
 
 // Step Status Constants
 const STEP_STATUS = {
@@ -108,7 +109,20 @@ export default function MembershipCompletionSteps({
     // Remove all non-digits
     const digitsOnly = fullPhone.replace(/\D/g, '');
     
-    // Try to match country code
+    // Check for 10-digit US number first (prioritize domestic)
+    if (digitsOnly.length === 10) {
+      return { countryCode: COUNTRY_CODES[0], number: digitsOnly }; // US +1
+    }
+    
+    // Check for 11-digit number starting with 1 (US with country code)
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+      return { 
+        countryCode: COUNTRY_CODES[0], // US +1
+        number: digitsOnly.substring(1) 
+      };
+    }
+    
+    // Try to match other international country codes
     for (const country of COUNTRY_CODES) {
       const codeDigits = country.code.replace(/\D/g, '');
       if (digitsOnly.startsWith(codeDigits)) {
@@ -119,11 +133,7 @@ export default function MembershipCompletionSteps({
       }
     }
     
-    // Default to US if no match
-    if (digitsOnly.length === 10) {
-      return { countryCode: COUNTRY_CODES[0], number: digitsOnly };
-    }
-    
+    // Default fallback
     return { countryCode: COUNTRY_CODES[0], number: digitsOnly };
   };
 
@@ -437,9 +447,13 @@ export default function MembershipCompletionSteps({
     }
   };
 
-  // Handle starting DocuSign for a specific document
   const handleStartDocuSign = async (documentType = null) => {
     setError(null);
+    
+    // Check if DocuSign is blocked
+    if (BLOCK_DOCUSIGN_SIGNING) {
+      return; // Do nothing, button will show blocked state
+    }
     
     try {
       if (!completionData?.docusignPhoneNumber) {
@@ -747,63 +761,93 @@ export default function MembershipCompletionSteps({
                 
                 {/* Document Status List */}
                 <div className="space-y-3">
-                  <div 
+                <div 
                     className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
                       docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
                         ? 'bg-green-50' 
-                        : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                        : BLOCK_DOCUSIGN_SIGNING
+                          ? 'bg-blue-900 cursor-not-allowed'
+                          : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
                     }`}
                     onClick={() => {
+                      if (BLOCK_DOCUSIGN_SIGNING) {
+                        return; // Do nothing when blocked
+                      }
                       if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
                         handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
                       }
                     }}
                   >
-                    <span className="text-sm font-normal text-gray-700">Membership Agreement</span>
+                    <span className={`text-sm font-normal ${
+                      BLOCK_DOCUSIGN_SIGNING ? 'text-white' : 'text-gray-700'
+                    }`}>
+                      Membership Agreement
+                    </span>
                     {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
                       <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
+                    ) : BLOCK_DOCUSIGN_SIGNING ? (
+                      <span className="text-xs text-white">Temporarily Unavailable</span>
                     ) : (
                       <span className="text-xs text-[#775684] hover:underline">Sign →</span>
                     )}
                   </div>
-                  
                   <div 
-                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                      docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
-                        ? 'bg-green-50' 
-                        : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                    }`}
-                    onClick={() => {
-                      if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                        handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
-                      }
-                    }}
-                  >
-                    <span className="text-sm font-normal text-gray-700">Terms & Conditions</span>
-                    {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
-                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <span className="text-xs text-[#775684] hover:underline">Sign →</span>
-                    )}
-                  </div>
+                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
+                          ? 'bg-green-50' 
+                          : BLOCK_DOCUSIGN_SIGNING
+                            ? 'bg-blue-900 cursor-not-allowed'
+                            : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                      }`}
+                      onClick={() => {
+                        if (BLOCK_DOCUSIGN_SIGNING) {
+                          return; // Do nothing when blocked
+                        }
+                        if (docusignDocuments.confidentialityAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                          handleStartDocuSign(DOCUSIGN_DOCS.CONFIDENTIALITY_AGREEMENT);
+                        }
+                      }}
+                    >
+                      <span className={`text-sm font-normal ${
+                        BLOCK_DOCUSIGN_SIGNING ? 'text-white' : 'text-gray-700'
+                      }`}>
+                        Terms & Conditions
+                      </span>
+                      {docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED ? (
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : BLOCK_DOCUSIGN_SIGNING ? (
+                        <span className="text-xs text-white">Temporarily Unavailable</span>
+                      ) : (
+                        <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                      )}
+                    </div>
                 </div>
               </div>
               
               <div className="p-6 border-t border-gray-100">
-                <button
-                  onClick={() => handleStartDocuSign()}
+              <button
+                  onClick={() => {
+                    if (BLOCK_DOCUSIGN_SIGNING) {
+                      return; // Do nothing when blocked
+                    }
+                    handleStartDocuSign();
+                  }}
                   disabled={!completionData.docusignPhoneNumber || docusignCompleted}
                   className={`w-full px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
                     !completionData.docusignPhoneNumber || docusignCompleted
                       ? 'bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed'
-                      : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
+                      : BLOCK_DOCUSIGN_SIGNING
+                        ? 'bg-blue-900 border border-blue-900 text-white cursor-not-allowed'
+                        : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
                   }`}
                 >
-                  {docusignCompleted ? 'Agreements Signed' : 'Continue Signing'}
+                  {docusignCompleted ? 'Agreements Signed' : 
+                  BLOCK_DOCUSIGN_SIGNING ? 'Temporarily Unavailable' : 
+                  'Continue Signing'}
                 </button>
               </div>
             </div>
