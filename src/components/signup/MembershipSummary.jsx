@@ -44,6 +44,7 @@ export default function MembershipSummary({
   
   // Use system font like PackagePage
   const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  const SKIP_DOCUSIGN_TEMP = import.meta.env.VITE_SKIP_DOCUSIGN_TEMP === 'true';
 
   // Load summary data from backend
   useEffect(() => {
@@ -219,6 +220,136 @@ export default function MembershipSummary({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Add this new function after handleProceedToDocuSign
+const handleCompleteDirectly = async () => {
+  setIsSubmitting(true);
+  setError(null);
+  
+  try {
+    console.log("MembershipSummary: Completing membership directly (bypass mode)...");
+    
+    let finalIceCode = '';
+    let finalIceDiscountAmount = 0;
+    
+    if (localIceCode && localIceCode.trim()) {
+      console.log("Validating ICE code before submission...");
+      const validationResult = await membershipService.validateIceCode(localIceCode.trim());
+      
+      if (validationResult.valid) {
+        finalIceCode = localIceCode.trim();
+        const discountPercent = validationResult.discountPercent || 25;
+        finalIceDiscountAmount = Math.round((summaryData?.calculatedCosts?.baseCost || 540) * (discountPercent / 100));
+        console.log("ICE code validated:", finalIceCode, "Discount amount:", finalIceDiscountAmount);
+      } else {
+        console.log("ICE code validation failed, proceeding without discount");
+      }
+    }
+    
+    const membershipCost = summaryData?.calculatedCosts?.baseCost || packageData?.annualCost;
+    if (!membershipCost) {
+      console.error("Missing membership cost - cannot proceed");
+      setError("Membership cost not found. Please refresh and try again.");
+      return;
+    }
+
+    // Use the phone number from contact data as fallback
+    const phoneForRecord = smsPhoneNumber || 
+                          data.contactData?.mobilePhone || 
+                          data.contactData?.homePhone || 
+                          data.contactData?.workPhone || '';
+
+    const fundingMethod = summaryData?.fundingData?.fundingMethod || summaryData?.fundingData?.method || '';
+    let fundingChoice = 'other';
+    if (fundingMethod === 'insurance') fundingChoice = 'insurance';
+    else if (fundingMethod === 'prepay') fundingChoice = 'prepay';
+    
+    const data = summaryData || {
+      contactData: contactData || {},
+      packageData: packageData || {},
+      membershipData: membershipData || {},
+      fundingData: {},
+      calculatedCosts: calculateCosts()
+    };
+    
+    const userFinalSelections = {
+      firstName: data.contactData?.firstName || null,
+      lastName: data.contactData?.lastName || null,
+      fullName: `${data.contactData?.firstName || ''} ${data.contactData?.lastName || ''}`.trim(),
+      email: data.contactData?.email || user?.email || '',
+      sex: data.contactData?.sex || null,
+      dateOfBirth: data.contactData?.dateOfBirth || null,
+      
+      phoneType: data.contactData?.phoneType || null,
+      mobilePhone: data.contactData?.mobilePhone || null,
+      workPhone: data.contactData?.workPhone || null,
+      homePhone: data.contactData?.homePhone || null,
+      primaryPhone: data.contactData?.mobilePhone || data.contactData?.homePhone || data.contactData?.workPhone || null,
+      
+      streetAddress: data.contactData?.streetAddress || null,
+      city: data.contactData?.city || null,
+      region: data.contactData?.region || null,
+      postalCode: data.contactData?.postalCode || null,
+      country: data.contactData?.country || null,
+      cnty_hm: data.contactData?.cnty_hm || null,
+      fullHomeAddress: data.contactData?.streetAddress ? 
+        `${data.contactData.streetAddress}, ${data.contactData.city}, ${data.contactData.region} ${data.contactData.postalCode}, ${data.contactData.country}` : null,
+      
+      sameMailingAddress: data.contactData?.sameMailingAddress || 'Yes',
+      mailingStreetAddress: data.contactData?.mailingStreetAddress || null,
+      mailingCity: data.contactData?.mailingCity || null,
+      mailingRegion: data.contactData?.mailingRegion || null,
+      mailingPostalCode: data.contactData?.mailingPostalCode || null,
+      mailingCountry: data.contactData?.mailingCountry || null,
+      cnty_ml: data.contactData?.cnty_ml || null,
+      fullMailingAddress: data.contactData?.mailingStreetAddress ? 
+        `${data.contactData.mailingStreetAddress}, ${data.contactData.mailingCity}, ${data.contactData.mailingRegion} ${data.contactData.mailingPostalCode}, ${data.contactData.mailingCountry}` : null,
+      
+      iceCode: finalIceCode,
+      iceCodeDiscountAmount: finalIceDiscountAmount,
+      membership: membershipCost,
+      submissionDate: new Date().toISOString(),
+      
+      cmsWaiver: cmsWaiver,
+      freelyReleaseName: freelyReleaseName,
+      maintainConfidentiality: maintainConfidentiality,
+      
+      fundingChoice: fundingChoice,
+      preservationType: data.packageData?.preservationType || 'Not specified',
+      preservationEstimate: data.packageData?.preservationEstimate || 0
+    };
+    
+    console.log("User final selections:", userFinalSelections);
+    
+    if (onSignAgreement) {
+      const updatedData = {
+        paymentFrequency: 'annually',
+        iceCode: localIceCode,
+        iceCodeValid: localIceCodeValid,
+        iceDiscountPercent: localIceDiscountPercent,
+        userFinalSelections: userFinalSelections,
+        docusignPhoneNumber: phoneForRecord
+      };
+      
+      console.log("Passing to parent with docusignPhoneNumber:", updatedData.docusignPhoneNumber);
+      await onSignAgreement(updatedData);
+    }
+  } catch (err) {
+    console.error("Error completing membership:", err);
+    setError("Failed to complete membership. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+// Handle showing the confirmation overlay OR completing directly
+  const handleProceed = () => {
+    if (SKIP_DOCUSIGN_TEMP) {
+      handleCompleteDirectly();
+    } else {
+      handleShowConfirmation();
+    }
   };
 
   // Get preservation type display text
@@ -992,15 +1123,19 @@ export default function MembershipSummary({
               </SecondaryButton>
               
               <PrimaryButton
-                onClick={handleShowConfirmation}
+                onClick={handleProceed}
                 disabled={isSubmitting}
                 isLoading={isSubmitting}
                 loadingText="Processing..."
                 showArrow={false}
               >
-                Sign Agreement
+                {SKIP_DOCUSIGN_TEMP ? 'Complete Membership' : 'Sign Agreement'}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  {SKIP_DOCUSIGN_TEMP ? (
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  ) : (
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  )}
                 </svg>
               </PrimaryButton>
             </div>
@@ -1009,145 +1144,146 @@ export default function MembershipSummary({
       </div>
 
       {/* DocuSign Confirmation Overlay */}
-      {showDocuSignOverlay && createPortal(
-        <div 
-          onClick={() => setShowDocuSignOverlay(false)}
-          className="fixed inset-0 z-[100] overflow-y-auto"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-50"></div>
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div 
-              className="relative bg-white rounded-2xl w-full max-w-3xl animate-fadeInUp shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-          <div className="px-10 py-6 border-b border-gray-100 relative">
-            <button 
-              onClick={() => setShowDocuSignOverlay(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300" 
-                  style={{
-                    background: 'linear-gradient(135deg, #512BD9 0%, #032CA6 100%)',
-                    border: '1px solid rgba(81, 43, 217, 0.2)',
-                    boxShadow: '0 4px 12px rgba(81, 43, 217, 0.15)'
-                  }}>
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      {/* DocuSign/Payment Confirmation Overlay - Only show when not bypassing */}
+        {!SKIP_DOCUSIGN_TEMP && showDocuSignOverlay && createPortal(
+          <div 
+            onClick={() => setShowDocuSignOverlay(false)}
+            className="fixed inset-0 z-[100] overflow-y-auto"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div 
+                className="relative bg-white rounded-2xl w-full max-w-3xl animate-fadeInUp shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+            <div className="px-10 py-6 border-b border-gray-100 relative">
+              <button 
+                onClick={() => setShowDocuSignOverlay(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900">Confirm Your Information</h3>
-              </div>
-            </div>
-          </div>
-              
-          <div className="px-10 py-8 bg-white">
-            <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </button>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300" 
+                    style={{
+                      background: 'linear-gradient(135deg, #512BD9 0%, #032CA6 100%)',
+                      border: '1px solid rgba(81, 43, 217, 0.2)',
+                      boxShadow: '0 4px 12px rgba(81, 43, 217, 0.15)'
+                    }}>
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <div>
-                    <h4 className="text-base font-semibold text-blue-800 mb-1">Ready to Proceed?</h4>
-                    <p className="text-blue-700 text-sm leading-relaxed">
-                      Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
-                    </p>
-                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900">Confirm Your Information</h3>
                 </div>
               </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 text-gray-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  <div className="flex-1">
-                    <h4 className="text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
-                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">
-                      Docusign will send an SMS verification code to validate your identity for electronic signature.
-                    </p>
-                    
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-gray-600 font-medium text-sm">SMS will be sent to:</label>
-                        <button
-                          onClick={() => setIsEditingPhone(!isEditingPhone)}
-                          className="text-[#775684] hover:text-[#664573] font-medium text-sm"
-                        >
-                          {isEditingPhone ? 'Cancel' : 'Change'}
-                        </button>
-                      </div>
+            </div>
+                
+            <div className="px-10 py-8 bg-white">
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-base font-semibold text-blue-800 mb-1">Ready to Proceed?</h4>
+                      <p className="text-blue-700 text-sm leading-relaxed">
+                        Please confirm that all your information in the summary is correct. You'll be taken to sign your membership agreement electronically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-gray-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-base font-semibold text-gray-800 mb-2">SMS Verification Required</h4>
+                      <p className="text-gray-700 text-sm mb-3 leading-relaxed">
+                        Docusign will send an SMS verification code to validate your identity for electronic signature.
+                      </p>
                       
-                      {isEditingPhone ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="tel"
-                            value={smsPhoneNumber}
-                            onChange={(e) => setSmsPhoneNumber(e.target.value)}
-                            className="flex-1 p-2 border border-gray-300 rounded-md text-base"
-                            placeholder="Enter phone number"
-                          />
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-gray-600 font-medium text-sm">SMS will be sent to:</label>
                           <button
-                            onClick={() => setIsEditingPhone(false)}
-                            className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-sm"
+                            onClick={() => setIsEditingPhone(!isEditingPhone)}
+                            className="text-[#775684] hover:text-[#664573] font-medium text-sm"
                           >
-                            Save
+                            {isEditingPhone ? 'Cancel' : 'Change'}
                           </button>
                         </div>
-                      ) : (
-                        <p className="text-gray-900 text-lg font-medium">
-                          {smsPhoneNumber || 'No phone number provided'}
-                        </p>
-                      )}
+                        
+                        {isEditingPhone ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="tel"
+                              value={smsPhoneNumber}
+                              onChange={(e) => setSmsPhoneNumber(e.target.value)}
+                              className="flex-1 p-2 border border-gray-300 rounded-md text-base"
+                              placeholder="Enter phone number"
+                            />
+                            <button
+                              onClick={() => setIsEditingPhone(false)}
+                              className="bg-[#775684] text-white px-3 py-2 rounded-md hover:bg-[#664573] text-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-gray-900 text-lg font-medium">
+                            {smsPhoneNumber || 'No phone number provided'}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-              
-              <div className="px-10 py-5 border-t border-gray-100 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowDocuSignOverlay(false)}
-                  className="px-5 py-2 bg-transparent border border-gray-400 text-gray-700 rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
                 
-                <button
-                  onClick={handleProceedToDocuSign}
-                  disabled={isSubmitting || !smsPhoneNumber}
-                  className={`px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
-                    !isSubmitting && smsPhoneNumber
-                      ? "bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50" 
-                      : "bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed"
-                  } disabled:opacity-50`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin inline -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Proceed to DocuSign"
-                  )}
-                </button>
+                <div className="px-10 py-5 border-t border-gray-100 flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowDocuSignOverlay(false)}
+                    className="px-5 py-2 bg-transparent border border-gray-400 text-gray-700 rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    onClick={handleProceedToDocuSign}
+                    disabled={isSubmitting || !smsPhoneNumber}
+                    className={`px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
+                      !isSubmitting && smsPhoneNumber
+                        ? "bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50" 
+                        : "bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed"
+                    } disabled:opacity-50`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin inline -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      "Proceed to DocuSign"
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
  
       {/* Summary Introduction Overlay */}
       {showSummaryIntroOverlay && createPortal(

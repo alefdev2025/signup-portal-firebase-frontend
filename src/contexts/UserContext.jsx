@@ -110,6 +110,7 @@ const UserProvider = ({ children }) => {
     return null;
   }, [salesforceCustomer]);
   
+  
   const refreshUserProgress = useCallback(async (user) => {
     if (!user) return null;
     
@@ -351,14 +352,24 @@ const UserProvider = ({ children }) => {
     salesforceCustomer,
     netsuiteCustomerId,
     customerId: netsuiteCustomerId, // Alias for compatibility
-    refreshUserProgress: () => {
+    refreshUserProgress: (force = false) => {
+      if (currentUser && (force || loadedDataRef.current.userId !== currentUser.uid || !loadedDataRef.current.hasLoadedUserData)) {
+        if (force) {
+          // Clear cache flags to force fresh fetch
+          loadedDataRef.current.hasLoadedUserData = false;
+        }
+        return refreshUserProgress(currentUser);
+      }
+      return Promise.resolve(signupState);
+    }
+    /*refreshUserProgress: () => {
       if (currentUser && loadedDataRef.current.userId !== currentUser.uid) {
         // Clear the loaded flag to force a refresh
         loadedDataRef.current.hasLoadedUserData = false;
         return refreshUserProgress(currentUser);
       }
       return Promise.resolve(signupState);
-    }
+    }*/
   }), [currentUser, signupState, isLoading, authResolved, userDataError, salesforceCustomer, netsuiteCustomerId, refreshUserProgress]);
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

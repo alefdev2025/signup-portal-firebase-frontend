@@ -10,6 +10,7 @@ import ResponsiveBanner from "../ResponsiveBanner";
 // Font family from MembershipSummary
 const SYSTEM_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const BLOCK_DOCUSIGN_SIGNING = true;
+const SKIP_DOCUSIGN_TEMP = import.meta.env.VITE_SKIP_DOCUSIGN_TEMP === 'true';
 
 // Step Status Constants
 const STEP_STATUS = {
@@ -168,13 +169,14 @@ export default function MembershipCompletionSteps({
           setPhoneNumber(parsed.number);
         }
         
-        // Check if both DocuSign documents are completed
+        // Check if both DocuSign documents are completed OR we're skipping DocuSign
         const docs = result.data.docusignDocuments;
-        const bothDocusignCompleted = 
+        const bothDocusignCompleted = SKIP_DOCUSIGN_TEMP ? true : (
           docs.membershipAgreement === STEP_STATUS.COMPLETED && 
-          docs.confidentialityAgreement === STEP_STATUS.COMPLETED;
+          docs.confidentialityAgreement === STEP_STATUS.COMPLETED
+        );
         
-        // If both DocuSign documents are completed, check Salesforce status
+        // If both DocuSign documents are completed OR we're skipping DocuSign, check Salesforce status
         if (bothDocusignCompleted) {
           const sfStatus = await checkSalesforceStatus();
           
@@ -268,29 +270,33 @@ export default function MembershipCompletionSteps({
           createdAt: result.data.createdAt
         });
         
-        // NEW: Retrieve and upload DocuSign documents to Salesforce
-        try {
-          console.log("📄 Retrieving and uploading DocuSign documents...");
-          const docResult = await membershipService.retrieveAndUploadDocuments(
-            result.data.contactId,
-            result.data.agreementId
-          );
-          
-          if (docResult.success) {
-            console.log("✅ Documents retrieved and uploaded:", docResult.data);
-            // Optionally update the UI to show documents were uploaded
-            setSalesforceStatus(prev => ({
-              ...prev,
-              documentsUploaded: true,
-              documentUploadResults: docResult.data
-            }));
-          } else {
-            console.warn("⚠️ Document upload failed but continuing:", docResult.error);
+        // NEW: Retrieve and upload DocuSign documents to Salesforce (only if not skipping)
+        if (!SKIP_DOCUSIGN_TEMP) {
+          try {
+            console.log("📄 Retrieving and uploading DocuSign documents...");
+            const docResult = await membershipService.retrieveAndUploadDocuments(
+              result.data.contactId,
+              result.data.agreementId
+            );
+            
+            if (docResult.success) {
+              console.log("✅ Documents retrieved and uploaded:", docResult.data);
+              // Optionally update the UI to show documents were uploaded
+              setSalesforceStatus(prev => ({
+                ...prev,
+                documentsUploaded: true,
+                documentUploadResults: docResult.data
+              }));
+            } else {
+              console.warn("⚠️ Document upload failed but continuing:", docResult.error);
+            }
+          } catch (docError) {
+            console.error("❌ Failed to retrieve/upload documents:", docError);
+            // Don't fail the whole process if document upload fails
+            // Maybe show a warning to the user but let them continue
           }
-        } catch (docError) {
-          console.error("❌ Failed to retrieve/upload documents:", docError);
-          // Don't fail the whole process if document upload fails
-          // Maybe show a warning to the user but let them continue
+        } else {
+          console.log("📄 Skipping document upload - SKIP_DOCUSIGN_TEMP enabled");
         }
         
         // Refresh completion status to get updated data
@@ -302,7 +308,7 @@ export default function MembershipCompletionSteps({
       }
     } catch (error) {
       console.error("❌ Error creating Salesforce contact:", error);
-      setError("Failed to create Salesforce contact. Please try again or contact support.");
+      setError("Please try again or contact support.");
       return false;
     } finally {
       setIsCreatingSalesforce(false);
@@ -450,9 +456,9 @@ export default function MembershipCompletionSteps({
   const handleStartDocuSign = async (documentType = null) => {
     setError(null);
     
-    // Check if DocuSign is blocked
-    if (BLOCK_DOCUSIGN_SIGNING) {
-      return; // Do nothing, button will show blocked state
+    // Check if DocuSign is blocked or being skipped
+    if (BLOCK_DOCUSIGN_SIGNING || SKIP_DOCUSIGN_TEMP) {
+      return; // Do nothing, button will show blocked/skipped state
     }
     
     try {
@@ -501,7 +507,7 @@ export default function MembershipCompletionSteps({
     setError(null);
     
     try {
-      if (!completionData?.docusignCompleted) {
+      if (!SKIP_DOCUSIGN_TEMP && !completionData?.docusignCompleted) {
         setError("Please complete signing all agreements first.");
         return;
       }
@@ -607,13 +613,16 @@ export default function MembershipCompletionSteps({
 
   const { docusignDocuments, payment, docusignCompleted, paymentCompleted, totalDue } = completionData;
   
-  // Check if both DocuSign documents are completed
-  const bothDocusignCompleted = 
+  // Check if both DocuSign documents are completed OR we're skipping DocuSign
+  const bothDocusignCompleted = SKIP_DOCUSIGN_TEMP ? true : (
     docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED && 
-    docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED;
+    docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED
+  );
   
-  // Determine if payment can be started
-  const canStartPayment = bothDocusignCompleted && salesforceStatus?.exists;
+  // Determine if payment can be started - simplified for bypass mode
+  const canStartPayment = SKIP_DOCUSIGN_TEMP ? 
+    salesforceStatus?.exists : // Only need Salesforce when bypassing
+    (bothDocusignCompleted && salesforceStatus?.exists); // Need both DocuSign and Salesforce normally
 
   return (
     <div className="w-full" style={{ fontFamily: SYSTEM_FONT }}>
@@ -640,160 +649,163 @@ export default function MembershipCompletionSteps({
             </div>
           )}
 
-          {/* Phone Number Section - Styled like MembershipSummary cards */}
-          <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8"
-               style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
+          {/* Phone Number Section - Only show when NOT bypassing DocuSign */}
+          {!SKIP_DOCUSIGN_TEMP && (
+            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 2xl:p-10 mb-6 md:mb-8"
+                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 2xl:mb-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">SMS Verification Required</h2>
                 </div>
-                <h2 className="text-lg sm:text-xl 2xl:text-2xl font-semibold text-gray-900">SMS Verification Required</h2>
               </div>
-            </div>
-            
-            <p className="text-gray-600 mb-4 font-light" style={{ fontSize: '15px' }}>
-              Docusign will send an SMS verification code to this number:
-            </p>
-            
-            {isEditingPhone ? (
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className="relative">
-                    <select
-                      value={COUNTRY_CODES.indexOf(selectedCountryCode)}
-                      onChange={(e) => setSelectedCountryCode(COUNTRY_CODES[parseInt(e.target.value)])}
-                      className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
-                      style={{ minWidth: '120px' }}
-                    >
-                      {COUNTRY_CODES.map((country, index) => (
-                        <option key={country.code + country.country} value={index}>
-                          {country.flag} {country.code}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
+              
+              <p className="text-gray-600 mb-4 font-light" style={{ fontSize: '15px' }}>
+                Docusign will send an SMS verification code to this number:
+              </p>
+              
+              {isEditingPhone ? (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="relative">
+                      <select
+                        value={COUNTRY_CODES.indexOf(selectedCountryCode)}
+                        onChange={(e) => setSelectedCountryCode(COUNTRY_CODES[parseInt(e.target.value)])}
+                        className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
+                        style={{ minWidth: '120px' }}
+                      >
+                        {COUNTRY_CODES.map((country, index) => (
+                          <option key={country.code + country.country} value={index}>
+                            {country.flag} {country.code}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
                     </div>
+                    
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
+                      placeholder="Phone number"
+                    />
                   </div>
                   
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#775684] focus:border-transparent"
-                    placeholder="Phone number"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleSavePhone}
+                      className="px-3 py-2 bg-[#775684] text-white rounded-md hover:bg-[#664573] text-sm font-medium transition-all"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingPhone(false);
+                        if (completionData.docusignPhoneNumber) {
+                          const parsed = parsePhoneNumber(completionData.docusignPhoneNumber);
+                          setSelectedCountryCode(parsed.countryCode);
+                          setPhoneNumber(parsed.number);
+                        } else {
+                          setPhoneNumber('');
+                          setSelectedCountryCode(COUNTRY_CODES[0]);
+                        }
+                        setError(null);
+                      }}
+                      className="text-gray-600 hover:text-gray-800 px-3 py-2 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleSavePhone}
-                    className="px-3 py-2 bg-[#775684] text-white rounded-md hover:bg-[#664573] text-sm font-medium transition-all"
-                  >
-                    Save
-                  </button>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>
+                    {completionData.docusignPhoneNumber ? formatPhoneDisplay(completionData.docusignPhoneNumber) : 'No phone number provided'}
+                  </p>
                   <button
                     onClick={() => {
-                      setIsEditingPhone(false);
+                      setIsEditingPhone(true);
                       if (completionData.docusignPhoneNumber) {
                         const parsed = parsePhoneNumber(completionData.docusignPhoneNumber);
                         setSelectedCountryCode(parsed.countryCode);
                         setPhoneNumber(parsed.number);
-                      } else {
-                        setPhoneNumber('');
-                        setSelectedCountryCode(COUNTRY_CODES[0]);
                       }
-                      setError(null);
                     }}
-                    className="text-gray-600 hover:text-gray-800 px-3 py-2 text-sm"
+                    className="text-[#775684] hover:text-[#664573] font-medium text-sm"
                   >
-                    Cancel
+                    {completionData.docusignPhoneNumber ? 'Change' : 'Add Phone'}
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="text-gray-900 font-medium" style={{ fontSize: '16px' }}>
-                  {completionData.docusignPhoneNumber ? formatPhoneDisplay(completionData.docusignPhoneNumber) : 'No phone number provided'}
-                </p>
-                <button
-                  onClick={() => {
-                    setIsEditingPhone(true);
-                    if (completionData.docusignPhoneNumber) {
-                      const parsed = parsePhoneNumber(completionData.docusignPhoneNumber);
-                      setSelectedCountryCode(parsed.countryCode);
-                      setPhoneNumber(parsed.number);
-                    }
-                  }}
-                  className="text-[#775684] hover:text-[#664573] font-medium text-sm"
-                >
-                  {completionData.docusignPhoneNumber ? 'Change' : 'Add Phone'}
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
-          {/* Two Cards Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Payment Step - Single card when bypassing, two cards when normal flow */}
+          <div className={`${SKIP_DOCUSIGN_TEMP ? 'mb-8' : 'grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'}`}>
             
-            {/* Step 1: DocuSign Card */}
-            <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col transform transition duration-300 hover:scale-[1.02]"
-                 style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-              
-              <div className="p-4 sm:p-6 md:p-8 2xl:p-10 flex-1">
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-5">
-                  <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Step 1: Sign Agreements</h3>
-                </div>
+            {/* Step 1: DocuSign Card - Only show when NOT bypassing */}
+            {!SKIP_DOCUSIGN_TEMP && (
+              <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col transform transition duration-300 hover:scale-[1.02]"
+                   style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
                 
-                <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
-                  Sign your membership documents electronically
-                </p>
-                
-                {/* Document Status List */}
-                <div className="space-y-3">
-                <div 
-                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                      docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
-                        ? 'bg-green-50' 
-                        : BLOCK_DOCUSIGN_SIGNING
-                          ? 'bg-blue-900 cursor-not-allowed'
-                          : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                    }`}
-                    onClick={() => {
-                      if (BLOCK_DOCUSIGN_SIGNING) {
-                        return; // Do nothing when blocked
-                      }
-                      if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
-                        handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
-                      }
-                    }}
-                  >
-                    <span className={`text-sm font-normal ${
-                      BLOCK_DOCUSIGN_SIGNING ? 'text-white' : 'text-gray-700'
-                    }`}>
-                      Membership Agreement
-                    </span>
-                    {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
-                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <div className="p-4 sm:p-6 md:p-8 2xl:p-10 flex-1">
+                  <div className="flex items-center gap-2.5 sm:gap-3 mb-5">
+                    <div className="p-2.5 sm:p-3 2xl:p-3.5 rounded-lg transform transition duration-300 bg-gradient-to-br from-[#5a4e73] via-[#483d5e] to-[#362c49] border-2 border-[#A78BFA] shadow-lg hover:shadow-xl">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 2xl:w-7 2xl:h-7 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                    ) : BLOCK_DOCUSIGN_SIGNING ? (
-                      <span className="text-xs text-white">Temporarily Unavailable</span>
-                    ) : (
-                      <span className="text-xs text-[#775684] hover:underline">Sign →</span>
-                    )}
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Step 1: Sign Agreements</h3>
                   </div>
-                  <div 
+                  
+                  <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
+                    Sign your membership documents electronically
+                  </p>
+                  
+                  {/* Document Status List */}
+                  <div className="space-y-3">
+                    <div 
+                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED 
+                          ? 'bg-green-50' 
+                          : BLOCK_DOCUSIGN_SIGNING
+                            ? 'bg-blue-900 cursor-not-allowed'
+                            : 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+                      }`}
+                      onClick={() => {
+                        if (BLOCK_DOCUSIGN_SIGNING) {
+                          return; // Do nothing when blocked
+                        }
+                        if (docusignDocuments.membershipAgreement !== STEP_STATUS.COMPLETED && completionData.docusignPhoneNumber) {
+                          handleStartDocuSign(DOCUSIGN_DOCS.MEMBERSHIP_AGREEMENT);
+                        }
+                      }}
+                    >
+                      <span className={`text-sm font-normal ${
+                        BLOCK_DOCUSIGN_SIGNING ? 'text-white' : 'text-gray-700'
+                      }`}>
+                        Membership Agreement
+                      </span>
+                      {docusignDocuments.membershipAgreement === STEP_STATUS.COMPLETED ? (
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : BLOCK_DOCUSIGN_SIGNING ? (
+                        <span className="text-xs text-white">Temporarily Unavailable</span>
+                      ) : (
+                        <span className="text-xs text-[#775684] hover:underline">Sign →</span>
+                      )}
+                    </div>
+                    <div 
                       className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
                         docusignDocuments.confidentialityAgreement === STEP_STATUS.COMPLETED 
                           ? 'bg-green-50' 
@@ -825,34 +837,35 @@ export default function MembershipCompletionSteps({
                         <span className="text-xs text-[#775684] hover:underline">Sign →</span>
                       )}
                     </div>
+                  </div>
+                </div>
+                
+                <div className="p-6 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      if (BLOCK_DOCUSIGN_SIGNING) {
+                        return; // Do nothing when blocked
+                      }
+                      handleStartDocuSign();
+                    }}
+                    disabled={!completionData.docusignPhoneNumber || docusignCompleted}
+                    className={`w-full px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
+                      !completionData.docusignPhoneNumber || docusignCompleted
+                        ? 'bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed'
+                        : BLOCK_DOCUSIGN_SIGNING
+                          ? 'bg-blue-900 border border-blue-900 text-white cursor-not-allowed'
+                          : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
+                    }`}
+                  >
+                    {docusignCompleted ? 'Agreements Signed' : 
+                     BLOCK_DOCUSIGN_SIGNING ? 'Temporarily Unavailable' : 
+                     'Continue Signing'}
+                  </button>
                 </div>
               </div>
-              
-              <div className="p-6 border-t border-gray-100">
-              <button
-                  onClick={() => {
-                    if (BLOCK_DOCUSIGN_SIGNING) {
-                      return; // Do nothing when blocked
-                    }
-                    handleStartDocuSign();
-                  }}
-                  disabled={!completionData.docusignPhoneNumber || docusignCompleted}
-                  className={`w-full px-5 py-2 rounded-full font-normal text-sm transition-all duration-300 ${
-                    !completionData.docusignPhoneNumber || docusignCompleted
-                      ? 'bg-transparent border border-gray-300 text-gray-400 cursor-not-allowed'
-                      : BLOCK_DOCUSIGN_SIGNING
-                        ? 'bg-blue-900 border border-blue-900 text-white cursor-not-allowed'
-                        : 'bg-transparent border border-[#775684] text-[#775684] hover:bg-gray-50'
-                  }`}
-                >
-                  {docusignCompleted ? 'Agreements Signed' : 
-                  BLOCK_DOCUSIGN_SIGNING ? 'Temporarily Unavailable' : 
-                  'Continue Signing'}
-                </button>
-              </div>
-            </div>
+            )}
             
-            {/* Step 2: Payment Card */}
+            {/* Payment Card - Full width when bypassing, half width when normal */}
             <div className={`bg-white rounded-[1.25rem] shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col transform transition duration-300 hover:scale-[1.02] ${
               !canStartPayment ? 'opacity-60' : ''
             }`}
@@ -865,7 +878,9 @@ export default function MembershipCompletionSteps({
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Step 2: Payment</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+                    {SKIP_DOCUSIGN_TEMP ? 'Payment Step' : 'Step 2: Payment'}
+                  </h3>
                 </div>
                 
                 <p className="text-gray-600 font-light mb-6" style={{ fontSize: '16px' }}>
@@ -936,7 +951,7 @@ export default function MembershipCompletionSteps({
                     </div>
                   )}
                   
-                  {!bothDocusignCompleted && (
+                  {!bothDocusignCompleted && !SKIP_DOCUSIGN_TEMP && (
                     <p className="text-sm text-gray-500 mt-3 italic">Complete all agreements first</p>
                   )}
                 </div>
@@ -961,16 +976,20 @@ export default function MembershipCompletionSteps({
           {/* Progress Summary */}
           <div className="bg-white rounded-[1.25rem] shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-6"
                style={{ boxShadow: '4px 6px 12px rgba(0, 0, 0, 0.08), -2px -2px 6px rgba(0, 0, 0, 0.03)' }}>
-            <h4 className="text-gray-900 mb-3" style={{ fontSize: '16px', fontWeight: '500' }}>Progress Summary</h4>
+            <h4 className="text-gray-900 mb-3" style={{ fontSize: '16px', fontWeight: '500' }}>
+              {SKIP_DOCUSIGN_TEMP ? 'Payment Status' : 'Progress Summary'}
+            </h4>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600" style={{ fontSize: '14px' }}>Documents Signed:</span>
-                <span className="font-medium text-gray-900">
-                  {[docusignDocuments.membershipAgreement, docusignDocuments.confidentialityAgreement]
-                    .filter(s => s === STEP_STATUS.COMPLETED).length} of 2
-                </span>
-              </div>
-              {bothDocusignCompleted && (
+              {!SKIP_DOCUSIGN_TEMP && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600" style={{ fontSize: '14px' }}>Documents Signed:</span>
+                  <span className="font-medium text-gray-900">
+                    {`${[docusignDocuments.membershipAgreement, docusignDocuments.confidentialityAgreement]
+                      .filter(s => s === STEP_STATUS.COMPLETED).length} of 2`}
+                  </span>
+                </div>
+              )}
+              {(bothDocusignCompleted || SKIP_DOCUSIGN_TEMP) && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600" style={{ fontSize: '14px' }}>Ready for Payment:</span>
                   <span className="font-medium">

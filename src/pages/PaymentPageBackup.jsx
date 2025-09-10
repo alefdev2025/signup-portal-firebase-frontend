@@ -451,7 +451,24 @@ function CheckoutForm({ userData, paymentLineItems }) {
   }
 
   return (
-    <div>
+    <div 
+      style={{
+        animation: 'fadeInUp 0.6s ease-out forwards',
+        opacity: 0
+      }}
+    >
+      <style>{`
+        @keyframes fadeInUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         {/* Top Header Bar - Mobile */}
         <div className="md:hidden">
@@ -991,7 +1008,14 @@ function PaymentPageLoader() {
   }, [currentUser, navigate, location.state]);
 
   if (isLoading) {
-    return <ButtonLoader message="Loading payment information..." />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684] mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading payment information...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !userData || !paymentLineItems) {
