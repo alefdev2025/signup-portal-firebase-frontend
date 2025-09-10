@@ -16,6 +16,7 @@ import { getContactInfo } from "../services/contact";
 import membershipService from "../services/membership";
 import { getMembershipCost } from "../services/pricing";
 import { createPaymentIntent, confirmPayment } from "../services/payment";
+import { createApplicantPortalAccount } from "../services/auth";
 import { useUser } from "../contexts/UserContext";
 
 // Import logo
@@ -290,19 +291,58 @@ function CheckoutForm({ userData, paymentLineItems }) {
 
         console.log('Membership created successfully');
 
-        navigate('/signup/completion', { 
-          replace: true,
-          state: { 
-            paymentCompleted: true,
-            paymentResult: confirmResult 
+        // NEW: Create portal account and redirect directly instead of going to completion page
+        console.log('Payment completed, creating portal account...');
+        setPaymentStatus('creating_portal');
+
+        try {
+          // Create applicant portal account
+          const portalResult = await createApplicantPortalAccount({
+            completedSignup: true
+          });
+          
+          if (!portalResult.success) {
+            throw new Error(portalResult.error || 'Failed to create portal account');
           }
-        });
-        
-        // Navigate immediately to welcome member page
-        /*navigate('/welcome-member', { 
-          replace: true,
-          state: { paymentResult: confirmResult }
-        });*/
+          
+          console.log('✅ Portal account created successfully');
+          
+          // Update payment status in Salesforce (if we can get the contact data)
+          try {
+            const sfStatus = await membershipService.getSalesforceStatus();
+            if (sfStatus.success && sfStatus.data?.contactId) {
+              console.log('💰 Updating payment status in Salesforce...');
+              
+              await membershipService.updateMemberPaymentStatus(
+                sfStatus.data.contactId,
+                {
+                  amount: paymentInfo.totalDue,
+                  method: 'credit_card',
+                  reference: confirmResult.paymentIntentId || intentResult.paymentIntentId,
+                  paymentDate: new Date().toISOString()
+                }
+              );
+              
+              console.log('✅ Payment status updated in Salesforce');
+            }
+          } catch (sfError) {
+            console.warn('⚠️ Could not update Salesforce payment status:', sfError);
+            // Don't fail the whole flow for this
+          }
+          
+          // Show success briefly, then redirect
+          setPaymentStatus('portal_ready');
+          
+          // Brief delay to show success, then redirect to portal
+          setTimeout(() => {
+            window.location.href = '/portal-home';
+          }, 1500);
+          
+        } catch (portalError) {
+          console.error('❌ Error creating portal account:', portalError);
+          setError(`Payment succeeded but portal setup failed: ${portalError.message}. Please contact support.`);
+          setPaymentStatus('portal_error');
+        }
 
       } else {
         // Handle ACH payment
@@ -425,6 +465,112 @@ function CheckoutForm({ userData, paymentLineItems }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#775684]"></div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'creating_portal') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a1629] to-[#1e2650] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+        
+        <div className="bg-white rounded-2xl shadow-2xl p-8 sm:p-12 text-center max-w-md mx-auto relative z-10" 
+             style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+          <div className="mb-8">
+            <img src={whiteALogoNoText} alt="Alcor Logo" className="h-16 mx-auto opacity-20 mb-6" />
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#775684]/20 border-t-[#775684] mx-auto mb-6"></div>
+          </div>
+          
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4" style={{ letterSpacing: '-0.025em' }}>
+            Setting Up Your Portal
+          </h2>
+          <p className="text-gray-600 mb-4 leading-relaxed" style={{ fontSize: '16px' }}>
+            Payment successful! Creating your member portal access...
+          </p>
+          
+          <div className="flex items-center justify-center space-x-1 text-[#775684]" style={{ fontSize: '14px' }}>
+            <span>Processing</span>
+            <div className="flex space-x-1">
+              <div className="w-1 h-1 bg-[#775684] rounded-full animate-pulse"></div>
+              <div className="w-1 h-1 bg-[#775684] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1 h-1 bg-[#775684] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'portal_ready') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a1629] to-[#1e2650] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0a1629]/90 via-transparent to-[#1e2650]/70"></div>
+        
+        <div className="bg-white rounded-2xl shadow-2xl p-8 sm:p-12 text-center max-w-md mx-auto relative z-10"
+             style={{ 
+               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+               animation: 'fadeInScale 0.6s ease-out forwards'
+             }}>
+          <style>{`
+            @keyframes fadeInScale {
+              from { 
+                opacity: 0;
+                transform: scale(0.95);
+              }
+              to { 
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+          `}</style>
+          
+          <div className="mb-8">
+            <div className="relative mb-6">
+              <div className="bg-gradient-to-br from-[#775684] to-[#13273f] rounded-full p-6 mx-auto w-24 h-24 flex items-center justify-center shadow-lg relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent"></div>
+                <img src={alcorStar} alt="Alcor Star" className="h-10 w-10 relative z-10" />
+              </div>
+            </div>
+          </div>
+          
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4" style={{ letterSpacing: '-0.025em' }}>
+            Welcome to Alcor!
+          </h2>
+          <p className="text-gray-600 mb-6 leading-relaxed" style={{ fontSize: '16px' }}>
+            Your membership is active and portal access is ready.
+          </p>
+          
+          <div className="flex items-center justify-center space-x-2 text-[#775684]" style={{ fontSize: '14px' }}>
+            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Taking you to your member portal...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'portal_error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#12243c] to-[#4b3965] flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md mx-auto">
+          <div className="bg-red-100 rounded-full p-3 mb-4 mx-auto w-14 h-14 flex items-center justify-center">
+            <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Portal Setup Issue</h2>
+          <p className="text-base text-gray-600 mb-4">
+            Your payment was successful, but there was an issue setting up portal access.
+          </p>
+          {error && (
+            <p className="text-sm text-red-600 mb-4">{error}</p>
+          )}
+          <p className="text-sm text-gray-500">
+            Please contact support at <a href="mailto:info@alcor.org" className="text-[#775684] hover:underline">info@alcor.org</a>
+          </p>
+        </div>
       </div>
     );
   }
