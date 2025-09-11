@@ -882,16 +882,18 @@ function CheckoutForm({ userData, paymentLineItems }) {
                               />
                             </div>
                             
-                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                              <div className="flex items-start">
-                                <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div className="text-xs text-blue-700">
-                                  <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                            {(import.meta.env.NODE_ENV === 'development' || STRIPE_PUBLISHABLE_KEY?.includes('pk_test')) && (
+                              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start">
+                                  <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <div className="text-xs text-blue-700">
+                                    <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with any future expiry and CVC.
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         ) : (
                           <div className="space-y-4">
