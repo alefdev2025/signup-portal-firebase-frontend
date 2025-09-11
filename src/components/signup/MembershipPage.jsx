@@ -53,7 +53,8 @@ const membershipHelpContent = [
 
 export default function MembershipPage({ initialData, onBack, onNext, preloadedMembershipData = null, preloadedPackageData = null }) {
   const { user } = useUser();
-  
+  const [paymentCompletionData, setPaymentCompletionData] = useState(null);
+  const [shouldNavigateToPayment, setShouldNavigateToPayment] = useState(false);
   // Page state management
   // TEMPORARY: Start directly on summary page
   const [currentPage, setCurrentPage] = useState('summary'); // Changed from 'membership' to 'summary'
@@ -84,7 +85,7 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     fontFamily: "'Marcellus', 'Marcellus Pro Regular', serif",
     fontSize: "1.05rem"
   };
-  
+
   // Load package info when component mounts
   useEffect(() => {
     const loadPackageInfo = async () => {
@@ -190,6 +191,15 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     
     loadPackageInfo();
   }, [initialData, preloadedMembershipData, preloadedPackageData]);
+
+  // Race condition fix: Navigate to payment only after state update
+  useEffect(() => {
+    if (shouldNavigateToPayment && paymentCompletionData) {
+      console.log("🏁 State updated, navigating to payment");
+      setCurrentPage('payment');
+      setShouldNavigateToPayment(false);
+    }
+  }, [shouldNavigateToPayment, paymentCompletionData]);
   
   // Validate ICE code when it changes
   const validateIceCode = async (code) => {
@@ -525,10 +535,37 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
     setCurrentPage('summary');
   };
   
+  // fixes race condition but them payment goes back to membership summary page 
   // Handler for navigating to payment
-  const handleNavigateToPayment = (paymentData) => {
-    console.log("Navigating to payment page with data:", paymentData);
+  /*const handleNavigateToPayment = (paymentData) => {
+    console.log("🏁 Setting payment data:", !!paymentData?.readyForPayment);
+    setPaymentCompletionData(paymentData);
+    setShouldNavigateToPayment(true); // This triggers useEffect after state update
+  };*/
+
+  // works but race condition
+  /*const handleNavigateToPayment = (paymentData) => {
+    console.log("🔧 TESTING: Direct navigation");
+    setPaymentCompletionData(paymentData);
     setCurrentPage('payment');
+  };*/
+
+  const handleNavigateToPayment = (paymentData) => {
+    console.log("🏁 Received payment data:", paymentData);
+    
+    // Validate the data structure first
+    if (!paymentData?.readyForPayment?.paymentDetails) {
+      console.error("❌ Invalid payment data structure:", paymentData);
+      setError("Payment data is missing. Please refresh and try again.");
+      return;
+    }
+    
+    setPaymentCompletionData(paymentData);
+    
+    // Use requestAnimationFrame to ensure state update completes BEFORE navigation
+    requestAnimationFrame(() => {
+      setCurrentPage('payment');
+    });
   };
   
   // FIXED: Handler for navigating to DocuSign
@@ -706,13 +743,14 @@ export default function MembershipPage({ initialData, onBack, onNext, preloadedM
         membershipData={membershipData}
         packageData={packageData}
         contactData={contactData}
-        onBack={() => setCurrentPage('completion')} // Go back to completion steps
+        completionData={paymentCompletionData} // This was missing!
+        onBack={() => setCurrentPage('completion')}
         onComplete={handlePaymentComplete}
       />,
       document.body
     );
   }
-  
+
   // Render completion steps page
   if (currentPage === 'completion') {
     return (

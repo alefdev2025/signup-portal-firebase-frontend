@@ -70,9 +70,9 @@ const AccountCreationForm = ({
     }
   ];
   
-  console.log("AccountCreationForm rendered with verificationStep:", verificationStep);
-  console.log("Form data:", formData);
-  console.log("Errors:", errors);
+  //console.log("AccountCreationForm rendered with verificationStep:", verificationStep);
+  //console.log("Form data:", formData);
+  //console.log("Errors:", errors);
   
   // Function to open the modal
   const openModal = (type) => {

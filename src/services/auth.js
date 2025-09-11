@@ -619,16 +619,16 @@ export async function requestEmailVerification(email, name) {
       
       // If we get here, it's either a new user or an existing user with password auth
       // Get the Firebase function for email verification
-      console.log("Getting Firebase function: createEmailVerification");
+      //console.log("Getting Firebase function: createEmailVerification");
       
       // Call the function with a timeout - INCLUDING SALESFORCE INFO
-      console.log("Calling createEmailVerification with:", { 
+      /*console.log("Calling createEmailVerification with:", { 
           email, 
           name,
           hasSalesforceAccount,
           salesforceContactId,
           salesforceAlcorId
-      });
+      });*/
       
       const result = await Promise.race([
           authCoreFn({ 
