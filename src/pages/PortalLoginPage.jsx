@@ -41,11 +41,14 @@ const PortalLoginPage = () => {
   const [skipPortalCheck, setSkipPortalCheck] = useState(false);
 
   const [isProcessingGoogleSignIn, setIsProcessingGoogleSignIn] = useState(false);
+
+  const [justCompletedSetup, setJustCompletedSetup] = useState(false);
   
   const { currentUser, signupState, isLoading: userLoading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const authCore = httpsCallable(functions, 'authCore');
+  
 
   const isMobile = window.innerWidth < 768;
 
@@ -179,6 +182,7 @@ const PortalLoginPage = () => {
     }
     
     if (setupComplete) {
+      setJustCompletedSetup(true); // Add this line
       setSuccessMessage('Portal account created successfully! Please sign in with your new credentials.');
     }
   }, [location.search]);
@@ -242,7 +246,7 @@ const PortalLoginPage = () => {
             } else {
               // Not a portal user
               if (!showNoPortalAccount && !showCreatePortalOption && !isProcessingGoogleSignIn) {
-                setError('No portal user found. Create an account below.');
+                setError('No portal user found. Create an account above.');
                 await auth.signOut();
               }
             }
@@ -730,6 +734,28 @@ const PortalLoginPage = () => {
                 Member Portal Sign In
               </h2>
               
+              {/* First time here section - MOVED TO TOP */}
+              {/* First time here section - MOVED TO TOP */}
+              {!justCompletedSetup && (
+                <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-md">
+                  <div className="text-center">
+                    <p className="text-gray-700 font-semibold text-lg mb-2">
+                      First time here?
+                    </p>
+                    <p className="text-gray-600 text-base mb-3">
+                      If you've previously submitted an application or are an Alcor member, please go to the create portal link below to verify your email address
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/portal-setup')}
+                      className="text-purple-700 font-semibold text-base hover:underline"
+                    >
+                      Create Portal Account
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               {successMessage && (
                 <p className="text-green-600 text-sm mb-4">
                   {successMessage}
@@ -822,21 +848,6 @@ const PortalLoginPage = () => {
                 label="Continue with Google"
                 className="py-3 text-base"
               />
-              
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="text-center">
-                  <p className="text-gray-600 mb-4">
-                    Need portal access?
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/portal-setup')}
-                    className="text-purple-700 font-medium hover:underline"
-                  >
-                    Create Portal Account
-                  </button>
-                </div>
-              </div>
               
               <div className="text-center mt-6">
                 <button

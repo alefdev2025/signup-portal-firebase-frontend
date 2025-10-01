@@ -7,14 +7,15 @@ import { memberDataService } from './services/memberDataService';
 import dewarsImage from '../../assets/images/dewars2.jpg';
 import contactImage from '../../assets/images/contact-image.jpg';
 import personalInfoImage from '../../assets/images/personal-info.jpg';
-import addressesImage from '../../assets/images/home-address.jpg';
+import addressesImage from '../../assets/images/home-address.png';
 import familyImage from '../../assets/images/family-info.jpg';
 import occupationImage from '../../assets/images/occupation.jpg';
 import healthImage from '../../assets/images/health-building.jpg';
-import fundingImage from '../../assets/images/financial.jpg';
+import fundingImage from '../../assets/images/financial.png';
 import legalImage from '../../assets/images/computer-table.jpg';
 import contractsImage from '../../assets/images/contracts.jpg';
 import emergencyContactImage from '../../assets/images/emergency-contact.jpg';
+import { updateUserNameProfile } from '../../services/auth';
 
 import { 
   updateMemberPersonalInfo,
@@ -106,7 +107,8 @@ const MyInformationTab = () => {
     salesforceContactId, 
     memberInfoData, 
     memberInfoLoaded, 
-    refreshMemberInfo 
+    refreshMemberInfo,
+    currentUser 
   } = useMemberPortal();
   
   // Loading states
@@ -327,7 +329,8 @@ const MyInformationTab = () => {
             homePhone: formatPhone(contactData.homePhone),
             mobilePhone: formatPhone(contactData.mobilePhone),
             workPhone: formatPhone(contactData.workPhone),
-            preferredPhone: cleanString(contactData.preferredPhone)
+            preferredPhone: cleanString(contactData.preferredPhone),
+            preferredName: cleanString(contactData.preferredName),
           };
           setContactInfo(cleanedContact);
           setOriginalData(prev => ({ ...prev, contact: cleanedContact }));
@@ -946,7 +949,8 @@ const MyInformationTab = () => {
           homePhone: formatPhone(contactData.homePhone),
           mobilePhone: formatPhone(contactData.mobilePhone),
           workPhone: formatPhone(contactData.workPhone),
-          preferredPhone: cleanString(contactData.preferredPhone)
+          preferredPhone: cleanString(contactData.preferredPhone),
+          preferredName: cleanString(contactData.preferredName) 
         };
         
         setContactInfo(cleanedContact);
@@ -1945,7 +1949,8 @@ const loadMemberCategory = async () => {
         homePhone: cleanedContactData.homePhone || '',
         mobilePhone: cleanedContactData.mobilePhone || '',
         workPhone: cleanedContactData.workPhone || '',
-        preferredPhone: cleanedContactData.preferredPhone || ''
+        preferredPhone: cleanedContactData.preferredPhone || '',
+        preferredName: cleanedContactData.preferredName || '' 
       };
       
       const personalData = {
@@ -1962,7 +1967,8 @@ const loadMemberCategory = async () => {
         homePhone: originalData.contact.homePhone || '',
         mobilePhone: originalData.contact.mobilePhone || '',
         workPhone: originalData.contact.workPhone || '',
-        preferredPhone: originalData.contact.preferredPhone || ''
+        preferredPhone: originalData.contact.preferredPhone || '',
+        preferredName: originalData.contact.preferredName || ''
       });
       
       const personalChanged = personalData.firstName !== (originalData.personal.firstName || '') || 
@@ -2106,6 +2112,21 @@ const loadMemberCategory = async () => {
       
       // Clear cache after successful save
       memberDataService.clearCache(salesforceContactId);
+
+      try {
+        if (currentUser?.uid) {
+          await updateUserNameProfile({
+            userId: currentUser.uid,
+            firstName: cleanedPersonalData.firstName,
+            lastName: cleanedPersonalData.lastName,
+            preferredName: cleanedContactData.preferredName
+          });
+          console.log('✅ Updated user name profile');
+        }
+      } catch (nameProfileError) {
+        console.error('⚠️ Failed to update name profile:', nameProfileError);
+        // Non-critical - main save succeeded, so don't throw
+      }
       
       // Fetch fresh data to ensure sync
       try {
@@ -2124,7 +2145,8 @@ const loadMemberCategory = async () => {
             homePhone: formatPhone(contactData.homePhone),
             mobilePhone: formatPhone(contactData.mobilePhone),
             workPhone: formatPhone(contactData.workPhone),
-            preferredPhone: cleanString(contactData.preferredPhone)
+            preferredPhone: cleanString(contactData.preferredPhone),
+            preferredName: cleanString(contactData.preferredName),
           };
           setContactInfo(cleanedContact);
           setOriginalData(prev => ({ ...prev, contact: cleanedContact }));

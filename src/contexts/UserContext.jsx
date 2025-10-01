@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { saveSignupState, clearSignupState, getSignupState } from "../services/storage";
-import { checkUserStep } from "../services/auth";
+import { checkUserStep, getUserNameProfile } from "../services/auth";
 import { API_BASE_URL } from '../config/api';
 
 const LOG_TO_TERMINAL = (message) => {
@@ -26,10 +26,14 @@ const UserProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authResolved, setAuthResolved] = useState(false);
   const [userDataError, setUserDataError] = useState(null);
+  const [userData, setUserData] = useState(null);
   
   // Salesforce customer data
   const [salesforceCustomer, setSalesforceCustomer] = useState(null);
   const [netsuiteCustomerId, setNetsuiteCustomerId] = useState(null);
+  
+  // User name profile
+  const [userNameProfile, setUserNameProfile] = useState(null);
   
   // Track what we've already loaded to prevent re-fetching
   const loadedDataRef = useRef({
@@ -40,6 +44,24 @@ const UserProvider = ({ children }) => {
   
   // Track if we're currently loading to prevent concurrent loads
   const isLoadingRef = useRef(false);
+
+  // Fetch user name profile
+  const fetchUserNameProfile = useCallback(async (userId) => {
+    try {
+      console.log('Fetching user name profile for:', userId);
+      const result = await getUserNameProfile(userId);
+      if (result.success && result.data) {
+        console.log('✅ User name profile loaded:', result.data);
+        setUserNameProfile(result.data);
+        return result.data;
+      }
+      console.log('No user name profile found or empty data');
+      return null;
+    } catch (error) {
+      console.error('Error fetching user name profile:', error);
+      return null;
+    }
+  }, []);
   
   // Fetch Salesforce customer data using the stored ID
   const fetchSalesforceCustomer = useCallback(async (salesforceCustomerId, user) => {
@@ -58,7 +80,6 @@ const UserProvider = ({ children }) => {
     LOG_TO_TERMINAL(`Fetching Salesforce customer by ID: ${salesforceCustomerId}`);
     
     try {
-      //const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://alcor-backend-dev-ik555kxdwq-uc.a.run.app';
       const token = await user.getIdToken();
       
       const response = await fetch(
@@ -85,10 +106,6 @@ const UserProvider = ({ children }) => {
         setNetsuiteCustomerId(customer.netsuiteCustomerId);
         setUserDataError(null);
         
-        //console.log('=== SALESFORCE FETCH RESULT ===');
-        //console.log('Setting salesforceCustomer:', customer);
-        //console.log('==============================');
-        
         return {
           salesforceId: customer.id,
           netsuiteId: customer.netsuiteCustomerId,
@@ -96,14 +113,11 @@ const UserProvider = ({ children }) => {
           customer: customer
         };
       } else if (response.status === 404) {
-        //LOG_TO_TERMINAL(`ERROR: Salesforce customer not found for ID: ${salesforceCustomerId}`);
         setUserDataError("Customer record not found. Please contact support.");
       } else {
-        //LOG_TO_TERMINAL(`ERROR: Failed to fetch customer: ${response.status} ${response.statusText}`);
         setUserDataError("Failed to load customer data. Please try again.");
       }
     } catch (error) {
-      //LOG_TO_TERMINAL(`ERROR: Exception fetching customer: ${error.message}`);
       setUserDataError("Network error loading customer data. Please check your connection.");
     }
     
@@ -132,38 +146,37 @@ const UserProvider = ({ children }) => {
     try {
       // First, get the user document to retrieve stored IDs
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const userData = userDoc.data();
-  
-      //console.log('=== USER DOCUMENT DEBUG ===');
-      //console.log('Document exists:', userDoc.exists());
-      //console.log('User data:', userData);
-      //console.log('salesforceContactId:', userData?.salesforceContactId);
-      //console.log('=========================');
+      const userDocData = userDoc.data();
       
-      if (!userData) {
+      if (!userDocData) {
         LOG_TO_TERMINAL("ERROR: No user document found");
         setUserDataError("User profile not found. Please contact support.");
         return null;
       }
       
+      // Store the full user data in context
+      if (userDocData) {
+        setUserData(userDocData);
+      }
+      
       // Check for Salesforce ID but don't return early if missing
-      if (!userData.salesforceContactId) {
+      if (!userDocData.salesforceContactId) {
         LOG_TO_TERMINAL("WARNING: User document missing salesforceContactId - will check backend for step info");
         // Don't return - continue to check backend state
       }
       
       // Set NetSuite ID if available
-      if (userData.netsuiteCustomerId) {
-        setNetsuiteCustomerId(userData.netsuiteCustomerId);
+      if (userDocData.netsuiteCustomerId) {
+        setNetsuiteCustomerId(userDocData.netsuiteCustomerId);
       }
       
-      // Fetch user step and Salesforce data in parallel
-      // Only fetch Salesforce data if we have an ID
-      const [userStepResult, salesforceData] = await Promise.all([
+      // Fetch user step, Salesforce data, and name profile in parallel
+      const [userStepResult, salesforceData, nameProfile] = await Promise.all([
         checkUserStep({ userId: user.uid }),
-        userData.salesforceContactId 
-          ? fetchSalesforceCustomer(userData.salesforceContactId, user)
-          : Promise.resolve(null)
+        userDocData.salesforceContactId 
+          ? fetchSalesforceCustomer(userDocData.salesforceContactId, user)
+          : Promise.resolve(null),
+        fetchUserNameProfile(user.uid)
       ]);
       
       LOG_TO_TERMINAL(`checkUserStep API result: ${JSON.stringify(userStepResult)}`);
@@ -172,14 +185,14 @@ const UserProvider = ({ children }) => {
         const newSignupState = {
           userId: user.uid,
           email: user.email,
-          displayName: user.displayName || userData.displayName || "Member",
+          displayName: user.displayName || userDocData.displayName || "Member",
           signupStep: userStepResult.stepName || "account",
           signupProgress: (typeof userStepResult.step === 'object' ? userStepResult.step.step : userStepResult.step) || 0,
           signupCompleted: userStepResult.isCompleted || false,
           lastUpdated: new Date(),
           timestamp: Date.now(),
-          salesforceContactId: userData.salesforceContactId || null,
-          netsuiteCustomerId: salesforceData?.netsuiteId || userData.netsuiteCustomerId || null
+          salesforceContactId: userDocData.salesforceContactId || null,
+          netsuiteCustomerId: salesforceData?.netsuiteId || userDocData.netsuiteCustomerId || null
         };
         
         LOG_TO_TERMINAL(`Signup state updated: step=${newSignupState.signupStep}, progress=${newSignupState.signupProgress}, completed=${newSignupState.signupCompleted}`);
@@ -203,13 +216,13 @@ const UserProvider = ({ children }) => {
         const defaultState = {
           userId: user.uid,
           email: user.email,
-          displayName: user.displayName || userData.displayName || "Member",
+          displayName: user.displayName || userDocData.displayName || "Member",
           signupStep: "account", // Default to account step instead of error
           signupProgress: 0,
           signupCompleted: false,
           timestamp: Date.now(),
-          salesforceContactId: userData.salesforceContactId || null,
-          netsuiteCustomerId: salesforceData?.netsuiteId || userData.netsuiteCustomerId || null
+          salesforceContactId: userDocData.salesforceContactId || null,
+          netsuiteCustomerId: salesforceData?.netsuiteId || userDocData.netsuiteCustomerId || null
         };
         
         // Mark as loaded
@@ -220,7 +233,7 @@ const UserProvider = ({ children }) => {
         saveSignupState(defaultState);
         
         // Set a warning instead of error if just missing Salesforce ID
-        if (!userData.salesforceContactId && userStepResult.error) {
+        if (!userDocData.salesforceContactId && userStepResult.error) {
           setUserDataError("Some account data is missing but you can continue your application.");
         }
         
@@ -252,7 +265,7 @@ const UserProvider = ({ children }) => {
     } finally {
       isLoadingRef.current = false;
     }
-  }, [fetchSalesforceCustomer, signupState, salesforceCustomer]);
+  }, [fetchSalesforceCustomer, fetchUserNameProfile, signupState, salesforceCustomer]);
   
   // Auth state listener - only set up once
   useEffect(() => {
@@ -320,9 +333,11 @@ const UserProvider = ({ children }) => {
           isLoadingRef.current = false;
           
           setCurrentUser(null);
+          setUserData(null);
           setSignupState(null);
           setSalesforceCustomer(null);
           setNetsuiteCustomerId(null);
+          setUserNameProfile(null);
           setUserDataError(null);
           clearSignupState();
           setIsLoading(false);
@@ -345,6 +360,7 @@ const UserProvider = ({ children }) => {
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     currentUser,
+    userData,
     signupState,
     isLoading,
     authResolved,
@@ -352,6 +368,7 @@ const UserProvider = ({ children }) => {
     salesforceCustomer,
     netsuiteCustomerId,
     customerId: netsuiteCustomerId, // Alias for compatibility
+    userNameProfile,
     refreshUserProgress: (force = false) => {
       if (currentUser && (force || loadedDataRef.current.userId !== currentUser.uid || !loadedDataRef.current.hasLoadedUserData)) {
         if (force) {
@@ -362,15 +379,7 @@ const UserProvider = ({ children }) => {
       }
       return Promise.resolve(signupState);
     }
-    /*refreshUserProgress: () => {
-      if (currentUser && loadedDataRef.current.userId !== currentUser.uid) {
-        // Clear the loaded flag to force a refresh
-        loadedDataRef.current.hasLoadedUserData = false;
-        return refreshUserProgress(currentUser);
-      }
-      return Promise.resolve(signupState);
-    }*/
-  }), [currentUser, signupState, isLoading, authResolved, userDataError, salesforceCustomer, netsuiteCustomerId, refreshUserProgress]);
+  }), [currentUser, userData, signupState, isLoading, authResolved, userDataError, salesforceCustomer, netsuiteCustomerId, userNameProfile, refreshUserProgress]);
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };

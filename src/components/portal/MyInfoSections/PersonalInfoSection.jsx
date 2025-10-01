@@ -5,7 +5,7 @@ import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle'
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import PersonalInfoMobile from './PersonalInfoMobile';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import { 
  overlayStyles, 

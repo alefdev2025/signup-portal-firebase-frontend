@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 import ContactInfoMobile from './ContactInfoMobile';
@@ -408,6 +408,14 @@ const ContactInfoSection = ({
                 error={fieldErrors.firstName}
               />
               <Input
+                label="Preferred Name"
+                type="text"
+                value={safeContactInfo?.preferredName || ''}
+                onChange={(e) => setContactInfo({...safeContactInfo, preferredName: e.target.value})}
+                disabled={savingSection === 'contact'}
+                placeholder="Name you prefer to be called"
+              />
+              <Input
                 label="Middle Name"
                 type="text"
                 value={safePersonalInfo?.middleName || ''}
@@ -510,7 +518,14 @@ const ContactInfoSection = ({
               disabled={savingSection === 'contact'}
               error={fieldErrors.firstName}
             />
-            
+            <Input
+              label="Preferred Name"
+              type="text"
+              value={safeContactInfo?.preferredName || ''}
+              onChange={(e) => setContactInfo({...safeContactInfo, preferredName: e.target.value})}
+              disabled={savingSection === 'contact'}
+              placeholder="Name you prefer to be called"
+            />
             <Input
               label="Middle Name"
               type="text"
@@ -617,6 +632,12 @@ const ContactInfoSection = ({
                   {safePersonalInfo?.firstName || '—'}
                 </p>
               </div>
+              <div>
+              <label className={overlayStyles.displayMode.field.label}>Preferred Name</label>
+              <p className={overlayStyles.displayMode.field.value}>
+                {safeContactInfo?.preferredName || '—'}
+              </p>
+            </div>
               <div>
                 <label className={overlayStyles.displayMode.field.label}>Middle Name</label>
                 <p 
@@ -849,7 +870,7 @@ const ContactInfoSection = ({
               {!editMode.contact ? (
                 /* Display Mode with Cards */
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Personal Information Card */}
+                {/* Personal Information Card */}
                   <InfoCard 
                     title="Name" 
                     icon={
@@ -866,8 +887,11 @@ const ContactInfoSection = ({
                     isVisible={cardsVisible}
                   >
                     <InfoField label="First Name" value={safePersonalInfo?.firstName || '—'} isRequired />
-                    <InfoField label="Middle Name" value={safePersonalInfo?.middleName || '—'} isRecommended />
                     <InfoField label="Last Name" value={safePersonalInfo?.lastName || '—'} isRequired />
+                    <InfoField label="Preferred Name" value={safeContactInfo?.preferredName || '—'} isOptional />
+                    <div className="text-xs text-gray-500 italic mt-1">
+                      1 additional field, tap to view
+                    </div>
                   </InfoCard>
 
                   {/* Phone Card */}

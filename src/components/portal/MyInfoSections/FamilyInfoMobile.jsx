@@ -1,7 +1,7 @@
 // FamilyInfoMobile.js
 import React from 'react';
 import { FormInput } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 
@@ -368,7 +368,7 @@ const FamilyInfoMobile = ({
                <div>
                  <h4 className="text-base font-medium text-gray-900 mb-4">Spouse Information</h4>
                  <FormInput
-                   label={`${personalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+                   label={`${personalInfo?.gender === 'Female' ? "Spouse's Name (including maiden name if applicable)" : "Spouse's Name (including maiden name if applicable)"} *`}
                    value={familyInfo?.spousesName || ''}
                    onChange={(e) => {
                      setFamilyInfo({...familyInfo, spousesName: e.target.value});

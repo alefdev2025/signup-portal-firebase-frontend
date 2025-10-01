@@ -5,7 +5,7 @@ import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle'
 import LegalMobile from './LegalMobile';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { HelpCircle } from 'lucide-react';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import fieldStyles from './desktopCardStyles/fieldStyles';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import { 

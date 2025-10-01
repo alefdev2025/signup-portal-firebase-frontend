@@ -6,7 +6,7 @@ import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import FamilyInfoMobile from './FamilyInfoMobile';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 import { 
@@ -576,7 +576,7 @@ const ProfileImprovementNotice = () => (
 
         {isInOverlay && overlaySection === 'spouse' && (
           <Input
-            label={`${safePersonalInfo?.gender === 'Female' ? "Spouse's Name" : "Wife's Maiden Name"} *`}
+            label={`${safePersonalInfo?.gender === 'Female' ? "Spouse's Name (including maiden name if applicable)" : "Spouse's Name (including maiden name if applicable)"} *`}
             type="text"
             value={safeFamilyInfo?.spousesName || ''}
             onChange={(e) => setFamilyInfo({...safeFamilyInfo, spousesName: e.target.value})}

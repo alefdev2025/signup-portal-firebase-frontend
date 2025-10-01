@@ -3,7 +3,7 @@ import { Download, FileText, Shield, Clock, ExternalLink } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
-import formsHeaderImage from '../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../assets/images/forms-image.png';
 
 const FormsTab = () => {
   // Hardcoded wider setting - set to true to make desktop content 20% wider

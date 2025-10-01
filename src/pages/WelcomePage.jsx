@@ -80,8 +80,8 @@ const WelcomePage = () => {
     },
     {
       id: 'continue-application',
-      title: 'Continue Application',
-      description: 'Already started the signup process? Sign in to continue where you left off.',
+      title: 'Continue Initial Signup',
+      description: 'If you have not yet submitted an initial application, continue here.',
       buttonText: 'Continue Sign Up',
       buttonAction: () => goToLogin(true),
       iconPath: (

@@ -303,6 +303,20 @@ const InvoicesTab = ({ setActiveTab }) => {
     };
   }, []);
 
+  // Refresh data when returning to this page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && window.location.hash.includes('invoices')) {
+        // Clear cache and refresh data when page becomes visible
+        invoiceDataService.clearCache();
+        fetchAllData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchAllData]);
+
   // Handle notification toggle
   const handleNotificationToggle = async (type, value) => {
     setSavingNotificationSettings(true);

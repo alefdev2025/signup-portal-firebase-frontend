@@ -3,7 +3,7 @@ import { Input, Button, ButtonGroup } from '../FormComponents';
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2, { getSectionCheckboxColor } from '../styleConfig2';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 
 // Multi-select dropdown component for desktop

@@ -508,7 +508,7 @@ const LoginPage = () => {
     <div style={{ backgroundColor: "#f2f3fe" }} className="min-h-screen flex flex-col md:bg-white relative">
       <ResponsiveBanner 
         logo={darkLogo}
-        heading={isContinueSignup ? "Continue Application" : "Member Portal"}
+        heading={isContinueSignup ? "Initial Application" : "Member Portal"}
         subText={isContinueSignup ? "Sign in to continue where you left off." : "Access your Alcor membership account."}
         showSteps={false}
         showStar={true}
@@ -669,7 +669,7 @@ const LoginPage = () => {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
                 {isContinueSignup ? "Sign in to continue" : "Sign in to your account"}
               </h2>
-              
+   
               {/*{successMessage && (
                 <div className="bg-green-50 border border-green-200 text-green-600 rounded-md p-4 mb-6">
                   {successMessage}
@@ -773,8 +773,8 @@ const LoginPage = () => {
                 setPendingGoogleLinking={setPendingGoogleLinking}
                 label={highlightGoogleButton ? "Sign in with Google (Recommended)" : "Continue with Google"}
                 className="py-3 text-base"
-              />
-              
+                  />
+                          
               <div className="text-center mt-6">
                 <p className="text-gray-700 mb-4">
                   Aren't a member?{" "}

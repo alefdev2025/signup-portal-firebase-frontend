@@ -3083,6 +3083,85 @@ export const getUserProfile = async (userId) => {
 };
 
 /**
+ * Get user name profile from backend
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} User name profile data
+ */
+ export const getUserNameProfile = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    console.log('Fetching user name profile for:', userId);
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'getUserNameProfile',
+      userId
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('getUserNameProfile result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error getting user name profile:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to get user name profile'
+    };
+  }
+};
+
+/**
+ * Update user name profile in separate userNames collection
+ * @param {Object} data - Contains userId, firstName, lastName, preferredName
+ * @returns {Promise<Object>} Update result
+ */
+ export const updateUserNameProfile = async (data) => {
+  try {
+    const { userId, firstName, lastName, preferredName } = data;
+    
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    console.log('Updating user name profile:', { userId, firstName, lastName, preferredName });
+    
+    const authCoreFn = httpsCallable(functions, 'authCore');
+    
+    const result = await authCoreFn({
+      action: 'updateUserNameProfile',
+      userId,
+      firstName,
+      lastName,
+      preferredName
+    });
+    
+    if (!result.data) {
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('updateUserNameProfile result:', result.data);
+    
+    return result.data;
+    
+  } catch (error) {
+    console.error('Error updating user name profile:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update user name profile'
+    };
+  }
+};
+
+/**
  * Force logout for session timeout
  * @returns {Promise<Object>} Logout result
  */

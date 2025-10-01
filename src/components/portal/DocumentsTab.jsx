@@ -6,7 +6,7 @@ import { memberDataService } from './services/memberDataService';
 import { downloadDocument as originalDownloadDocument, formatFileSize } from './services/salesforce/memberDocuments';
 import documentImage from '../../assets/images/document-image.png';
 import pdfImage from '../../assets/images/pdf-image.png';
-import documentsHeaderImage from '../../assets/images/documents-image.jpg';
+import documentsHeaderImage from '../../assets/images/documents-image.png';
 import alcorYellowStar from '../../assets/images/alcor-yellow-star.png';
 import { API_BASE_URL } from '../../config/api';
 

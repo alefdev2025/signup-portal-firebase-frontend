@@ -3,11 +3,11 @@ import { FileText, Info, AlertCircle, DollarSign, BookOpen, Users } from 'lucide
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
-import informationImage from '../../assets/images/information-image.JPG';
+import informationImage from '../../assets/images/information-image.png';
 import emergencyImage from '../../components/portal/emergency-image.jpg';
 import financialImage from '../../components/portal/financial-image.jpg';
-import educationImage from '../../assets/images/education-image.jpg';
-import petImage from '../../assets/images/home-address.jpg';
+import educationImage from '../../assets/images/education-image.png';
+import petImage from '../../assets/images/home-address.png';
 
 const InformationDocumentsTab = () => {
   const [downloading, setDownloading] = useState({});

@@ -1032,11 +1032,7 @@ export default function MembershipCompletionSteps({
               <button
                 type="button"
                 onClick={() => {
-                  if (onBack) {
-                    onBack();
-                  } else {
-                    setBackButtonError(true);
-                  }
+                  setBackButtonError(true);
                 }}
                 className="px-5 py-2 bg-transparent border border-gray-400 text-gray-700 rounded-full font-normal text-sm hover:bg-gray-50 transition-all duration-300 flex items-center"
               >
@@ -1046,7 +1042,9 @@ export default function MembershipCompletionSteps({
                 Back
               </button>
               {backButtonError && (
-                <p className="ml-4 text-red-600 text-sm">Contact support for application modifications</p>
+                <p className="ml-4 text-red-600 text-sm">
+                  Contact Alcor at <a href="mailto:info@alcor.org" className="underline">info@alcor.org</a> or <a href="tel:623-552-4338" className="underline">623-552-4338</a> to modify your application
+                </p>
               )}
             </div>
             
