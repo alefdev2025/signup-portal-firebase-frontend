@@ -153,8 +153,8 @@ function App() {
   // Show password page if protection is enabled and user is not authenticated
   if (shouldProtect && !isAuthenticated) {
     //console.log('[APP] Rendering demo password page');
-    return (
-      <DemoPasswordPage 
+     return (
+     <DemoPasswordPage 
         onAuthenticated={async () => {
           //console.log('[APP] Demo authentication successful');
           await new Promise(resolve => setTimeout(resolve, 100));

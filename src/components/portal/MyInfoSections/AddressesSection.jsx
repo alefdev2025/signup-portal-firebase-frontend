@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { Input, Checkbox } from '../FormComponents';
+import { Input, Checkbox, Select } from '../FormComponents';  // CHANGED: Added Select to imports
 import { WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import styleConfig2 from '../styleConfig2';
 import { cleanAddressData } from '../utils/dataFormatting';
 import { MobileInfoCard, DisplayField, FormInput, ActionButtons } from './MobileInfoCard';
 import AddressesMobile from './AddressesMobile';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import fieldStyles from './desktopCardStyles/fieldStyles';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import { normalizeAddressCountries } from './CountryMapper';
+import { countries } from './countries';  // CHANGED: Added countries import
 import { 
   overlayStyles, 
   infoCardStyles, 
@@ -428,15 +429,18 @@ const CardOverlay = ({
                         disabled={isOverlaySaving}
                         error={currentErrors.homePostalCode}
                       />
-                      <Input
+                      <Select
                         label="Country *"
-                        type="text"
-                        value={addresses?.homeCountry || ''}
-                        placeholder="United States"
+                        value={addresses?.homeCountry || 'United States'}
                         onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
                         disabled={isOverlaySaving}
                         error={currentErrors.homeCountry}
-                      />
+                      >
+                        <option value="">Select a country</option>
+                        {countries.map(country => (
+                          <option key={country} value={country}>{country}</option>
+                        ))}
+                      </Select>
                     </div>
                   </div>
                 )}
@@ -487,15 +491,18 @@ const CardOverlay = ({
                             disabled={isOverlaySaving}
                             error={currentErrors.mailingPostalCode}
                           />
-                          <Input
+                          <Select
                             label="Country *"
-                            type="text"
-                            value={addresses?.mailingCountry || ''}
-                            placeholder="United States"
+                            value={addresses?.mailingCountry || 'United States'}
                             onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
                             disabled={isOverlaySaving}
                             error={currentErrors.mailingCountry}
-                          />
+                          >
+                            <option value="">Select a country</option>
+                            {countries.map(country => (
+                              <option key={country} value={country}>{country}</option>
+                            ))}
+                          </Select>
                         </div>
                       </>
                     )}
@@ -851,14 +858,17 @@ const AddressesSection = ({
                         onChange={(e) => setAddresses({...safeAddresses, homePostalCode: e.target.value})}
                         disabled={savingSection === 'addresses'}
                       />
-                      <Input
+                      <Select
                         label="Country *"
-                        type="text"
-                        value={safeAddresses.homeCountry || ''}
-                        placeholder="United States"
+                        value={safeAddresses.homeCountry || 'United States'}
                         onChange={(e) => setAddresses({...safeAddresses, homeCountry: e.target.value})}
                         disabled={savingSection === 'addresses'}
-                      />
+                      >
+                        <option value="">Select a country</option>
+                        {countries.map(country => (
+                          <option key={country} value={country}>{country}</option>
+                        ))}
+                      </Select>
                     </div>
                   </div>
 
@@ -903,14 +913,17 @@ const AddressesSection = ({
                             onChange={(e) => setAddresses({...safeAddresses, mailingPostalCode: e.target.value})}
                             disabled={savingSection === 'addresses'}
                           />
-                          <Input
+                          <Select
                             label="Country *"
-                            type="text"
-                            value={safeAddresses.mailingCountry || ''}
-                            placeholder="United States"
+                            value={safeAddresses.mailingCountry || 'United States'}
                             onChange={(e) => setAddresses({...safeAddresses, mailingCountry: e.target.value})}
                             disabled={savingSection === 'addresses'}
-                          />
+                          >
+                            <option value="">Select a country</option>
+                            {countries.map(country => (
+                              <option key={country} value={country}>{country}</option>
+                            ))}
+                          </Select>
                         </div>
                       </>
                     )}

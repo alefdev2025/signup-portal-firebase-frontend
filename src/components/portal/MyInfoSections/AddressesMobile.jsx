@@ -1,10 +1,11 @@
 // AddressesMobile.js
 import React from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 import { normalizeAddressCountries } from './CountryMapper';
+import { countries } from './countries';  // CHANGED: Added countries import
 
 const AddressesMobile = ({ 
   addresses,
@@ -223,13 +224,17 @@ const AddressesMobile = ({
                       onChange={(e) => setAddresses({...addresses, homePostalCode: e.target.value})}
                       disabled={savingSection === 'addresses'}
                     />
-                    <FormInput
+                    <FormSelect
                       label="Country *"
-                      value={addresses?.homeCountry || ''}
-                      placeholder="United States"
+                      value={addresses?.homeCountry || 'United States'}
                       onChange={(e) => setAddresses({...addresses, homeCountry: e.target.value})}
                       disabled={savingSection === 'addresses'}
-                    />
+                    >
+                      <option value="">Select a country</option>
+                      {countries.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </FormSelect>
                   </div>
                 </div>
               </div>
@@ -282,13 +287,17 @@ const AddressesMobile = ({
                           onChange={(e) => setAddresses({...addresses, mailingPostalCode: e.target.value})}
                           disabled={savingSection === 'addresses'}
                         />
-                        <FormInput
+                        <FormSelect
                           label="Country *"
-                          value={addresses?.mailingCountry || ''}
-                          placeholder="United States"
+                          value={addresses?.mailingCountry || 'United States'}
                           onChange={(e) => setAddresses({...addresses, mailingCountry: e.target.value})}
                           disabled={savingSection === 'addresses'}
-                        />
+                        >
+                          <option value="">Select a country</option>
+                          {countries.map(country => (
+                            <option key={country} value={country}>{country}</option>
+                          ))}
+                        </FormSelect>
                       </div>
                     </div>
                   </div>

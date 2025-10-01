@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import dewarsImage from '../../../assets/images/dewars2.jpg';
 import styleConfig2 from '../styleConfig2';

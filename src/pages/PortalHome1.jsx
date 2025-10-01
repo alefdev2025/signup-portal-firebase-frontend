@@ -22,6 +22,7 @@ import SupportTab from '../components/portal/SupportTab';
 import DocumentsTab from '../components/portal/DocumentsTab';
 import InformationDocumentsTab from '../components/portal/InformationDocumentsTab';
 import VideoTestimonyTab from '../components/portal/VideoTestimonyTab';
+import NotaryTab from '../components/portal/NotaryTab';
 import ActivityLogTab from '../components/portal/ActivityLogTab';
 import PaymentContentWrapper from '../components/PaymentContentWrapper'
 import PortalPaymentPageWrapper from '../pages/PortalPaymentPageWrapper';
@@ -627,6 +628,9 @@ const PortalHome = () => {
         return <PortalPaymentPageWrapper />;
 
       // Resources subtabs
+      case 'resources-notary':
+        return <NotaryTab />;
+      
       case 'resources-media':
         return <MediaTab />;
       

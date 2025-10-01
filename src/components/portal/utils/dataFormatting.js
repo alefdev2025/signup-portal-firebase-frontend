@@ -612,7 +612,8 @@ switch (dataType) {
       homePhone: formatPhone(data.homePhone),
       mobilePhone: formatPhone(data.mobilePhone),
       workPhone: formatPhone(data.workPhone),
-      preferredPhone: formatSelectValue(data.preferredPhone)
+      preferredPhone: formatSelectValue(data.preferredPhone),
+      preferredName: formatSelectValue(data.preferredName)
     };
     
   case 'addresses':

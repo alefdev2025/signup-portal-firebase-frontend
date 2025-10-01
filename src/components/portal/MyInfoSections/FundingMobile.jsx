@@ -1,7 +1,7 @@
 // FundingMobile.jsx
 import React, { useState } from 'react';
 import { FormInput, FormSelect } from './MobileInfoCard';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import { findInsuranceCompany } from '../utils/lifeInsuranceCompanyMatcher';
 import styleConfig2 from '../styleConfig2';

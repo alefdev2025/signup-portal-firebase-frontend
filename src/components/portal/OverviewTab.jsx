@@ -13,7 +13,8 @@ import WelcomeOverlay from './WelcomeOverlay';
 import { backgroundDataLoader } from '../../services/backgroundDataLoader';
 
 const OverviewTab = ({ setActiveTab }) => {
-  const { currentUser } = useUser();
+  //const { currentUser } = useUser();
+  const { currentUser, userData, userNameProfile } = useUser();
   const { 
     salesforceContactId,
     customerFirstName, 
@@ -25,7 +26,8 @@ const OverviewTab = ({ setActiveTab }) => {
     lastRefresh,
     salesforceCustomer
   } = useMemberPortal();
-  const [userName, setUserName] = useState(customerFirstName || '');
+
+  const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -33,6 +35,7 @@ const OverviewTab = ({ setActiveTab }) => {
   // Profile data state
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [preferredName, setPreferredName] = useState('');
   
   // Recent activities state
   const [recentActivities, setRecentActivities] = useState([]);
@@ -107,11 +110,6 @@ const OverviewTab = ({ setActiveTab }) => {
     }
   }, [salesforceContactId, profileLoading, userName]);
 
-  useEffect(() => {
-    if (customerFirstName) {
-      setUserName(customerFirstName);
-    }
-  }, [customerFirstName]);
 
   // Helper function to clean activity text
   const cleanActivityText = (text) => {
@@ -124,74 +122,94 @@ const OverviewTab = ({ setActiveTab }) => {
   };
 
   // Fetch user name - now using profile data as primary source
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchUserName = async () => {
-      if (userName) {
+      // Wait for profile to finish loading
+      if (profileLoading) return;
+      
+      // Check for preferred name first from profile data
+      if (profileData?.contactInfo?.preferredName) {
+        console.log('✅ Using preferred name from profile:', profileData.contactInfo.preferredName);
+        setUserName(profileData.contactInfo.preferredName);
+        setLoading(false);
         return;
       }
-
+    
+      // Fall back to first name if no preferred name
       if (profileData?.personalInfo?.firstName) {
-        console.log('✅ [OverviewTab] Using firstName from profile data:', profileData.personalInfo.firstName);
+        console.log('✅ Using firstName from profile data:', profileData.personalInfo.firstName);
         setUserName(profileData.personalInfo.firstName);
         setLoading(false);
         return;
       }
-
-      if (currentUser) {
-        try {
-          console.log('📞 [OverviewTab] Calling getContactInfo()...');
-          const response = await getContactInfo();
-          console.log('📦 [OverviewTab] getContactInfo response:', response);
-          
-          if (response.success && response.contactInfo?.firstName) {
-            console.log('✅ [OverviewTab] Found firstName in contactInfo:', response.contactInfo.firstName);
-            setUserName(response.contactInfo.firstName);
-          } else {
-            console.warn('⚠️ [OverviewTab] No valid contactInfo, will wait for profile data');
-          }
-        } catch (error) {
-          console.error('❌ [OverviewTab] Error fetching contact info:', error);
-        }
+      
+      // Only use customerFirstName as absolute last resort if no profile data
+      if (!profileData && customerFirstName) {
+        setUserName(customerFirstName);
       }
       
       setLoading(false);
     };
-
+    
     fetchUserName();
-  }, [currentUser, profileData, userName]);
+  }, [profileData, profileLoading, customerFirstName]);*/
+
+  // Get user name from Firebase user data (loaded at login)
+  useEffect(() => {
+    if (userData) {
+      // Priority: userNameProfile.preferredName > userNameProfile.firstName > userData.firstName > userData.name > 'Member'
+      const displayName = 
+        userNameProfile?.preferredName || 
+        userNameProfile?.firstName ||
+        userData.firstName || 
+        userData.name || 
+        'Member';
+      
+      setUserName(displayName);
+      setLoading(false);
+      
+      console.log('✅ Display name resolved:', {
+        source: userNameProfile?.preferredName ? 'preferredName from profile' : 
+                userNameProfile?.firstName ? 'firstName from profile' : 
+                userData.firstName ? 'userData.firstName' : 
+                userData.name ? 'userData.name' : 'default',
+        value: displayName,
+        userNameProfile: userNameProfile // Log the full profile for debugging
+      });
+    }
+  }, [userData, userNameProfile]); // Add userNameProfile to dependencies
 
   // Fetch profile data
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchProfileData = async () => {
       if (salesforceContactId && !isPreloading) {
         try {
           setProfileLoading(true);
-          //console.log('📞 [OverviewTab] Calling getMemberProfile with ID:', salesforceContactId);
           const result = await getMemberProfile(salesforceContactId);
-          //console.log('📦 [OverviewTab] getMemberProfile result:', result);
           
           if (result.success && result.data) {
             const profileInfo = result.data.data || result.data;
-            //console.log('✅ [OverviewTab] Profile data received:', profileInfo);
             setProfileData(profileInfo);
             
-            if (!userName && profileInfo.personalInfo?.firstName) {
-              //console.log('🔄 [OverviewTab] Setting userName from profile data:', profileInfo.personalInfo.firstName);
-              setUserName(profileInfo.personalInfo.firstName);
+            // Check for preferred name first, then fall back to first name
+            if (!userName) {
+              if (profileInfo.contactInfo?.preferredName) {
+                setUserName(profileInfo.contactInfo.preferredName);
+              } else if (profileInfo.personalInfo?.firstName) {
+                setUserName(profileInfo.personalInfo.firstName);
+              }
             }
           }
         } catch (error) {
-          console.error('❌ [OverviewTab] Error fetching profile data:', error);
+          console.error('❌ Error fetching profile data:', error);
         } finally {
           setProfileLoading(false);
         }
-      } else {
-        setProfileLoading(false);
       }
     };
-
+  
     fetchProfileData();
-  }, [salesforceContactId, isPreloading]);
+  }, [salesforceContactId, isPreloading]);*/
 
   // Fetch recent activities - FILTERED FOR CHANGES ONLY
   useEffect(() => {
@@ -204,8 +222,6 @@ const OverviewTab = ({ setActiveTab }) => {
       try {
         setActivitiesLoading(true);
         setActivitiesError(null);
-        
-        //console.log('📊 [OverviewTab] Fetching recent activities for Salesforce ID:', salesforceContactId);
         
         const activities = await getContactActivities(100, null, salesforceContactId);
         const formattedActivities = activities.map(formatActivity);
@@ -276,25 +292,25 @@ const OverviewTab = ({ setActiveTab }) => {
         font-weight: 400 !important;
       }
       .overview-tab .fade-in {
-        animation: fadeIn 0.6s ease-out;
+        animation: fadeIn 0.6s ease-out 0.3s both;
       }
       .overview-tab .slide-in {
-        animation: slideIn 0.6s ease-out;
+        animation: slideIn 0.6s ease-out 0.3s both;
       }
       .overview-tab .slide-in-delay-1 {
-        animation: slideIn 0.6s ease-out 0.1s both;
+        animation: slideIn 0.6s ease-out 0.4s both;
       }
       .overview-tab .slide-in-delay-2 {
-        animation: slideIn 0.6s ease-out 0.2s both;
+        animation: slideIn 0.6s ease-out 0.5s both;
       }
       .overview-tab .stagger-in > * {
         opacity: 0;
         animation: slideIn 0.5s ease-out forwards;
       }
-      .overview-tab .stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
-      .overview-tab .stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
-      .overview-tab .stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
-      .overview-tab .stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+      .overview-tab .stagger-in > *:nth-child(1) { animation-delay: 0.35s; }
+      .overview-tab .stagger-in > *:nth-child(2) { animation-delay: 0.4s; }
+      .overview-tab .stagger-in > *:nth-child(3) { animation-delay: 0.45s; }
+      .overview-tab .stagger-in > *:nth-child(4) { animation-delay: 0.5s; }
       
       /* Scroll-triggered animations */
       .overview-tab .scroll-fade-in {
@@ -447,7 +463,11 @@ const OverviewTab = ({ setActiveTab }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
               </div>
-              <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
+              {userName && (
+                <h3 className="text-xl 2xl:text-2xl font-semibold text-gray-900 transition-all duration-500 opacity-0 -translate-x-4 animate-[slideIn_0.5s_ease-out_0.4s_forwards]">
+                  Welcome, {userName}!
+                </h3>
+              )}
             </div>
             <p className="text-gray-700 text-sm 2xl:text-base leading-relaxed font-normal mb-6 max-w-3xl">
               Access your membership settings, documents, and resources all in one place. Your membership portal provides everything you need to manage your Alcor membership and stay informed about the latest developments.
@@ -828,7 +848,11 @@ const OverviewTab = ({ setActiveTab }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
               </div>
-              <h3 className="text-base font-semibold text-gray-900">Welcome{userName ? `, ${userName}` : ''}!</h3>
+              {userName && (
+                <h3 className="text-base font-semibold text-gray-900 transition-all duration-500 opacity-0 -translate-x-4 animate-[slideIn_0.5s_ease-out_0.4s_forwards]">
+                  Welcome, {userName}!
+                </h3>
+              )}
             </div>
             <p className="text-gray-700 text-sm leading-relaxed font-normal mb-4">
               Access your membership settings, documents, and resources all in one place.

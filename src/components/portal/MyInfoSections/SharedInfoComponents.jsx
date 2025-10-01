@@ -4,17 +4,21 @@ import fieldStyles from './desktopCardStyles/fieldStyles';
 import infoCardStyles from './desktopCardStyles/infoCardStylesBlues';
 import animationStyles from './desktopCardStyles/animationStyles';
 
-export const InfoField = ({ label, value, isRequired, isRecommended, requiredColor = '#512BD9', recommendedColor = '#F26430' }) => {
+export const InfoField = ({ label, value, isRequired, isRecommended, isOptional, requiredColor = '#512BD9', recommendedColor = '#F26430' }) => {
   const isEmpty = !value || value === '—' || value === 'Not provided';
   
   return (
     <div className={infoCardStyles.field.wrapper}>
       <div className="flex items-center gap-1.5">
-        {(isRequired || isRecommended) && (
+        {(isRequired || isRecommended || isOptional) && (
           <div 
-  className="w-2 h-2 rounded-full flex-shrink-0" 
-  style={{ backgroundColor: isRequired ? '#7d4582' : '#D1D5DB' }}
-/>
+            className="w-2 h-2 rounded-full flex-shrink-0" 
+            style={{ 
+              backgroundColor: isRequired ? '#7d4582' : 
+                             isRecommended ? '#D1D5DB' : 
+                             'transparent' 
+            }}
+          />
         )}
         <label 
           className={infoCardStyles.field.label}
@@ -27,7 +31,7 @@ export const InfoField = ({ label, value, isRequired, isRecommended, requiredCol
         className={isEmpty ? infoCardStyles.field.emptyValue : infoCardStyles.field.value}
         style={{ 
           fontWeight: fieldStyles.weights[isEmpty ? 'empty' : 'value'],
-          paddingLeft: (isRequired || isRecommended) ? '0.75rem' : '0' // 12px indent
+          paddingLeft: (isRequired || isRecommended || isOptional) ? '0.75rem' : '0' // 12px indent
         }}
       >
         {value || '—'}

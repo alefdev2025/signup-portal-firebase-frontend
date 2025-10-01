@@ -35,6 +35,7 @@ const PortalSetupPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showHelpOverlay, setShowHelpOverlay] = useState(false); // ADD THIS LINE
   
   const navigate = useNavigate();
   const pageTopRef = useRef(null);
@@ -110,7 +111,7 @@ const PortalSetupPage = () => {
         // Show a generic message and move to verify step anyway (for security)
         // This prevents revealing whether an account exists
         setStep('verify');
-        setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
+        setSuccessMessage('If an Alcor membership exists with this email, you\'ll receive a verification code.');
         setLoading(false);
         return;
       }
@@ -131,7 +132,7 @@ const PortalSetupPage = () => {
       console.error('Email check error:', err);
       // Show generic message even on error
       setStep('verify');
-      setSuccessMessage('If an account exists with this email, you\'ll receive a verification code.');
+      setSuccessMessage('If an Alcor membership exists with this email, you\'ll receive a verification code.');
     } finally {
       setLoading(false);
     }
@@ -370,12 +371,12 @@ const PortalSetupPage = () => {
       });
       
       // DEBUG: Log the entire result to see what's being returned
-      console.log('Account creation result:', result);
-      console.log('Result success:', result.success);
-      console.log('Result requires2FASetup:', result.requires2FASetup);
-      console.log('Result qrCode:', result.qrCode);
-      console.log('Result secret:', result.secret);
-      console.log('Result userId:', result.userId);
+      //console.log('Account creation result:', result);
+      //console.log('Result success:', result.success);
+      //console.log('Result requires2FASetup:', result.requires2FASetup);
+      //console.log('Result qrCode:', result.qrCode);
+      //console.log('Result secret:', result.secret);
+      //console.log('Result userId:', result.userId);
       
 
       if (result.success) {
@@ -585,63 +586,118 @@ const PortalSetupPage = () => {
           </form>
         );
 
-      case 'verify':
-        return (
-          <form onSubmit={handleCodeVerification} className="p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
-              Verify Your Email
-            </h2>
-            
-            <p className="text-gray-600 mb-6">
-              Enter the 6-digit verification code sent to <strong>{formData.email}</strong>
-            </p>
-            
-            {successMessage && (
-              <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
-                {successMessage}
-              </div>
-            )}
-            
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
-                {typeof error === 'string' ? error : <div>{error}</div>}
-              </div>
-            )}
-            
-            <div className="mb-6">
-              <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-2">
-                Verification Code <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="verificationCode"
-                name="verificationCode"
-                value={formData.verificationCode}
-                onChange={handleInputChange}
-                placeholder="Enter 6-digit code" 
-                maxLength="6"
-                className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono"
-                disabled={loading}
-                required
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <button 
-                type="submit"
-                disabled={loading}
-                style={{ backgroundColor: "#6f2d74", color: "white" }}
-                className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
-              >
-                {loading ? 'Verifying...' : 'Verify Email'}
-              </button>
-            </div>
-            
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Didn't receive the code? Check your spam folder or contact support.
-            </p>
-          </form>
-        );
+        case 'verify':
+          return (
+            <>
+              <form onSubmit={handleCodeVerification} className="p-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
+                  Verify Your Email
+                </h2>
+                
+                <p className="text-gray-600 mb-6">
+                  Enter the 6-digit verification code sent to <strong>{formData.email}</strong>
+                </p>
+                
+                {successMessage && (
+                  <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-md p-4 mb-6">
+                    {successMessage}
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 rounded-md p-4 mb-6">
+                    {typeof error === 'string' ? error : <div>{error}</div>}
+                  </div>
+                )}
+                
+                <div className="mb-6">
+                  <label htmlFor="verificationCode" className="block text-gray-800 text-base font-medium mb-2">
+                    Verification Code <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="verificationCode"
+                    name="verificationCode"
+                    value={formData.verificationCode}
+                    onChange={handleInputChange}
+                    placeholder="Enter 6-digit code" 
+                    maxLength="6"
+                    className="w-full px-4 py-3 bg-white border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-gray-800 text-base text-center tracking-widest font-mono"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    style={{ backgroundColor: "#6f2d74", color: "white" }}
+                    className="w-full py-3 px-6 rounded-full font-semibold text-base flex items-center justify-center hover:opacity-90 disabled:opacity-70"
+                  >
+                    {loading ? 'Verifying...' : 'Verify Email'}
+                  </button>
+                </div>
+                
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowHelpOverlay(true)}
+                    className="text-gray-500 hover:text-gray-700 underline text-sm"
+                  >
+                    Didn't receive a code?
+                  </button>
+                </div>
+              </form>
+        
+              {/* Help Overlay */}
+              {showHelpOverlay && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg max-w-md w-full p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">Help Checklist</h3>
+                      <button
+                        onClick={() => setShowHelpOverlay(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3 text-sm text-gray-600">
+                      <div className="flex items-start">
+                        <span className="text-purple-600 mr-2">•</span>
+                        <span>Make sure it's the same email you receive correspondence with Alcor on</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="text-purple-600 mr-2">•</span>
+                        <span>Make sure it's not in the spam folder</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="text-purple-600 mr-2">•</span>
+                        <span>Wait a few minutes - emails can sometimes be delayed</span>
+                      </div>
+                      <div className="flex items-start">
+                        <span className="text-purple-600 mr-2">•</span>
+                        <span>Try going back and using a different email address you may have used with Alcor</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        If all of the above doesn't work, contact support at{' '}
+                        <a href="mailto:info@alcor.org" className="text-purple-600 hover:underline">
+                          info@alcor.org
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          );
 
       case 'password':
         return (

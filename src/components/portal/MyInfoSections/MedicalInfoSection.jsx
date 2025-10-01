@@ -4,7 +4,7 @@ import { Input, Select, Checkbox, Button, ButtonGroup } from '../FormComponents'
 import { RainbowButton, WhiteButton, PurpleButton } from '../WebsiteButtonStyle';
 import { MobileInfoCard, DisplayField, FormInput, FormSelect, ActionButtons } from './MobileInfoCard';
 import MedicalInfoMobile from './MedicalInfoMobile';
-import formsHeaderImage from '../../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../../assets/images/forms-image.png';
 import alcorStar from '../../../assets/images/alcor-star.png';
 import styleConfig2 from '../styleConfig2';
 import { 

@@ -3,7 +3,7 @@ import { Download, FileText, Shield, Clock } from 'lucide-react';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../services/firebase';
 import alcorStar from '../../assets/images/alcor-star.png';
-import formsHeaderImage from '../../assets/images/forms-image.jpg';
+import formsHeaderImage from '../../assets/images/forms-image.png';
 
 const FormsTab2 = () => {
   const [downloading, setDownloading] = useState({});
